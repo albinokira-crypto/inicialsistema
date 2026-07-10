@@ -143,6 +143,30 @@ input, textarea {
   background: #f8fbff;
 }
 
+.form-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.status-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #27435f;
+}
+
+.display-field {
+  min-height: 46px;
+  border: 1px solid #d7e2f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #f8fbff;
+  color: #102542;
+  display: flex;
+  align-items: center;
+}
+
 .full-width { grid-column: 1 / -1; }
 
 .toolbar {
@@ -164,6 +188,55 @@ input, textarea {
   flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-start;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.report-table th,
+.report-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e7edf6;
+}
+
+.report-table tfoot th {
+  border-top: 2px solid #d7e2f0;
+}
+
+.tabs-card {
+  background: white;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 12px 30px rgba(16, 37, 66, 0.08);
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tab-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #eef4ff;
+  color: #174077;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: #2563eb;
+  color: white;
+}
+
+.weekly-total-row th {
+  border-top: 1px solid #d7e2f0;
+  padding-top: 14px;
 }
 
 .item-list {
