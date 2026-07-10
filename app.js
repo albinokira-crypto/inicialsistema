@@ -24,7 +24,7 @@ const insurerForm = document.getElementById('insurerForm');
 const insurerNameInput = document.getElementById('insurerNameInput');
 const insurerValueInput = document.getElementById('insurerValueInput');
 const cancelInsurerEditButton = document.getElementById('cancelInsurerEditButton');
-const insurerListCard = document.getElementById('insurerListCard');
+const insurerCard = document.getElementById('insurerCard');
 const insurerList = document.getElementById('insurerList');
 const noInsurersNote = document.getElementById('noInsurersNote');
 
@@ -321,8 +321,8 @@ function updateFormDisplay() {
   if (insurerForm) {
     insurerForm.hidden = selectedDay !== 'Seguradoras';
   }
-  if (insurerListCard) {
-    insurerListCard.hidden = selectedDay !== 'Seguradoras';
+  if (insurerCard) {
+    insurerCard.hidden = selectedDay !== 'Seguradoras';
   }
   if (noInsurersNote) {
     noInsurersNote.hidden = selectedDay !== 'Seguradoras';

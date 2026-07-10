@@ -78,7 +78,23 @@
           <p class="field-note" id="noInsurersNote" hidden>Cadastre uma seguradora na aba de seguradoras antes de registrar o vistoria.</p>
         </form>
 
-        <form id="insurerForm" class="form-grid" hidden>
+        <!-- insurer form moved to its own card (see below) -->
+      </section>
+
+      <section class="card">
+        <div class="toolbar">
+          <h2>Registros</h2>
+          <div class="search-actions">
+            <input id="searchInput" type="search" placeholder="Pesquisar por placa, seguradora ou dia" />
+            <button id="clearSearchButton" class="ghost-btn" type="button" hidden>Limpar</button>
+          </div>
+        </div>
+        <ul id="itemList" class="item-list"></ul>
+      </section>
+
+      <section class="card" id="insurerCard">
+        <h2>Seguradoras</h2>
+        <form id="insurerForm" class="form-grid">
           <label>
             Seguradora
             <input id="insurerNameInput" type="text" required placeholder="Ex.: Porto Seguro" />
@@ -92,21 +108,9 @@
             <button id="cancelInsurerEditButton" class="ghost-btn" type="button" hidden>Cancelar</button>
           </div>
         </form>
-        <section class="card" id="insurerListCard" hidden>
-          <h3>Seguradoras cadastradas</h3>
-          <ul id="insurerList" class="item-list"></ul>
-        </section>
-      </section>
 
-      <section class="card">
-        <div class="toolbar">
-          <h2>Registros</h2>
-          <div class="search-actions">
-            <input id="searchInput" type="search" placeholder="Pesquisar por placa, seguradora ou dia" />
-            <button id="clearSearchButton" class="ghost-btn" type="button" hidden>Limpar</button>
-          </div>
-        </div>
-        <ul id="itemList" class="item-list"></ul>
+        <h3 style="margin-top:12px">Seguradoras cadastradas</h3>
+        <ul id="insurerList" class="item-list"></ul>
       </section>
 
       <section class="card">
