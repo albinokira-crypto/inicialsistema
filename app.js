@@ -311,7 +311,6 @@ function render() {
           <div class="plate-badge">
             <span class="plate-badge-code">BR</span>
             <span class="plate-badge-text">${escapeHtml(item.plate)}</span>
-            <span class="plate-badge-region">SP</span>
           </div>
           <div>
             <strong>${escapeHtml(item.provider || 'Sem seguradora')}</strong>

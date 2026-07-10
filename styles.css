@@ -323,20 +323,6 @@ input, textarea {
   letter-spacing: 0.32em;
 }
 
-.plate-badge-region {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  background: #2563eb;
-  color: #fff;
-  font-size: 0.72rem;
-  letter-spacing: 0.2em;
-  font-weight: 700;
-}
-
 .plate-caption {
   margin: 10px 0 0;
   color: #2563eb;
