@@ -254,6 +254,95 @@ input, textarea {
   background: #fcfdff;
 }
 
+.plate-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.plate-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 180px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 1px solid #102542;
+  color: #102542;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.65), 0 16px 28px rgba(16, 37, 66, 0.08);
+  text-transform: uppercase;
+  overflow: hidden;
+}
+
+.plate-badge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  border: 1px solid rgba(16, 37, 66, 0.08);
+  pointer-events: none;
+}
+
+.plate-badge::after {
+  content: '';
+  position: absolute;
+  top: 8%;
+  left: -30%;
+  width: 80%;
+  height: 35%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.45), rgba(255,255,255,0) 80%);
+  transform: rotate(-18deg);
+  filter: blur(1px);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.plate-badge-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #102542;
+  color: #fff;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22);
+}
+
+.plate-badge-text {
+  flex: 1;
+  display: inline-flex;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.32em;
+}
+
+.plate-badge-region {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+}
+
+.plate-caption {
+  margin: 10px 0 0;
+  color: #2563eb;
+  font-weight: 700;
+}
+
 .item-card header {
   display: flex;
   justify-content: space-between;

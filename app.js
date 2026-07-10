@@ -95,6 +95,7 @@ installButton.addEventListener('click', async () => {
     console.log('Usuário aceitou o atalho');
   }
 });
+plateInput.addEventListener('input', formatPlateInput);
 insurerForm.addEventListener('submit', saveInsurer);
 cancelInsurerEditButton.addEventListener('click', cancelInsurerEdit);
 providerSelect.addEventListener('change', () => {
@@ -112,6 +113,23 @@ clearButton.addEventListener('click', () => {
     render();
   }
 });
+
+function formatPlateInput() {
+  if (!plateInput) return;
+  plateInput.value = normalizePlate(plateInput.value);
+}
+
+function normalizePlate(value) {
+  if (!value) return '';
+  const raw = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (raw.length <= 3) return raw;
+  if (raw.length <= 7) return `${raw.slice(0, 3)}-${raw.slice(3)}`;
+  return `${raw.slice(0, 3)}-${raw.slice(3, 7)}`;
+}
+
+function isValidPlate(value) {
+  return /^[A-Z]{3}-?[0-9]{4}$/.test(value);
+}
 
 function cancelEdit() {
   editingId = null;
@@ -176,13 +194,14 @@ function saveItem(event) {
 
   const date = getTodayDateValue();
   const day = getSelectedSaveDay();
-  const plate = plateInput.value.trim();
+  const plate = normalizePlate(plateInput.value.trim());
   const providerId = providerSelect.value;
   const selectedInsurer = insurers.find((insurer) => insurer.id === providerId);
   const provider = selectedInsurer ? selectedInsurer.name : '';
   const value = selectedInsurer ? selectedInsurer.price : parseFloat(valueInput.value) || 0;
 
   if (!date || !day || !plate || !providerId) return;
+  if (!isValidPlate(plate)) return;
 
   if (editingId) {
     items = items.map((item) => item.id === editingId ? { ...item, plate, provider, value, providerId } : item);
@@ -288,16 +307,23 @@ function render() {
   itemList.innerHTML = filtered.map((item) => `
     <li class="item-card">
       <header>
-        <div>
-          <strong>${escapeHtml(item.plate)} · ${escapeHtml(item.day)}</strong>
-          <div class="meta">${escapeHtml(item.date)}</div>
+        <div class="plate-card">
+          <div class="plate-badge">
+            <span class="plate-badge-code">BR</span>
+            <span class="plate-badge-text">${escapeHtml(item.plate)}</span>
+            <span class="plate-badge-region">SP</span>
+          </div>
+          <div>
+            <strong>${escapeHtml(item.provider || 'Sem seguradora')}</strong>
+            <div class="meta">${escapeHtml(item.day)} · ${escapeHtml(item.date)}</div>
+          </div>
         </div>
         <div class="actions">
           <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
           <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
         </div>
       </header>
-      <p>${escapeHtml(item.provider || 'Sem seguradora')}</p>
+      <p class="plate-caption">Vistoria registrada com a placa do carro</p>
       <div class="meta">Valor: R$ ${escapeHtml(Number(item.value).toFixed(2).replace('.', ','))}</div>
       <div class="meta">Criado em ${escapeHtml(item.createdAt)}</div>
     </li>

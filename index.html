@@ -65,7 +65,8 @@
           <input id="dayInput" name="day" type="hidden" />
           <label>
             Placa
-            <input id="plateInput" name="plate" type="text" required placeholder="Ex.: ABC-1234" />
+            <input id="plateInput" name="plate" type="text" required placeholder="ABC-1234" maxlength="8" pattern="[A-Za-z]{3}-[0-9]{4}" />
+            <small class="field-note">Use o formato padrão: três letras e quatro números.</small>
           </label>
           <label>
             Seguradora
