@@ -26,9 +26,16 @@
         </div>
       </header>
 
-      <section class="summary-grid" id="summaryGrid"></section>
+      <section class="card" id="welcomeScreen">
+        <h2>Bem-vindo ao sistema</h2>
+        <p>Este é o painel de controle de vistorias iniciais. Clique abaixo para iniciar o uso do sistema.</p>
+        <button id="continueButton" class="primary-btn" type="button">Começar</button>
+      </section>
 
-      <section class="card tabs-card">
+      <div id="appContent" hidden>
+        <section class="summary-grid" id="summaryGrid"></section>
+
+        <section class="card tabs-card">
         <div id="dayTabs" class="tabs">
           <button class="tab-btn" type="button" data-day="Segunda">Segunda</button>
           <button class="tab-btn" type="button" data-day="Terça">Terça</button>
@@ -136,6 +143,7 @@
           </tfoot>
         </table>
       </section>
+      </div>
     </main>
 
     <script src="app.js"></script>

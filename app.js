@@ -31,6 +31,9 @@ const recordsCard = document.getElementById('recordsCard');
 const reportCard = document.getElementById('reportCard');
 const shareWhatsappButton = document.getElementById('shareWhatsappButton');
 const noInsurersNote = document.getElementById('noInsurersNote');
+const continueButton = document.getElementById('continueButton');
+const welcomeScreen = document.getElementById('welcomeScreen');
+const appContent = document.getElementById('appContent');
 
 let deferredPrompt = null;
 let items = loadItems();
@@ -99,19 +102,37 @@ clearButton.addEventListener('click', () => {
   }
 });
 
-ensureAuthentication();
-registerServiceWorker();
-updateFormState();
-updateFormDisplay();
-updateDayTabs();
-render();
-renderInsurers();
-if (shareWhatsappButton) {
-  shareWhatsappButton.addEventListener('click', () => {
-    const text = buildWeeklyReportText();
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-    window.location.href = url;
+if (continueButton) {
+  continueButton.addEventListener('click', () => {
+    if (welcomeScreen) welcomeScreen.hidden = true;
+    if (appContent) appContent.hidden = false;
+    initializeApp();
   });
+}
+
+function initializeApp() {
+  selectedDay = 'Seguradoras';
+  ensureAuthentication();
+  registerServiceWorker();
+  updateFormState();
+  updateFormDisplay();
+  updateDayTabs();
+  render();
+  renderInsurers();
+  if (shareWhatsappButton) {
+    shareWhatsappButton.addEventListener('click', () => {
+      const text = buildWeeklyReportText();
+      const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.location.href = url;
+    });
+  }
+}
+
+if (sessionStorage.getItem('authenticated') === 'true') {
+  if (welcomeScreen) welcomeScreen.hidden = false;
+  if (appContent) appContent.hidden = true;
+} else {
+  window.location.href = 'login.html';
 }
 
 function saveItem(event) {
