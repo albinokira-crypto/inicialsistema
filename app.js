@@ -85,7 +85,11 @@ installButton.addEventListener('click', async () => {
 insurerForm.addEventListener('submit', saveInsurer);
 cancelInsurerEditButton.addEventListener('click', cancelInsurerEdit);
 if (addInsurerButton) addInsurerButton.addEventListener('click', () => {
+  // switch to Seguradoras tab and show the insurer form
+  selectedDay = 'Seguradoras';
+  updateDayTabs();
   insurerForm.hidden = false;
+  if (insurerCard) insurerCard.hidden = false;
   insurerNameInput.focus();
 });
 providerSelect.addEventListener('change', () => {
@@ -159,9 +163,10 @@ function saveInsurer(event) {
   event.preventDefault();
 
   const name = insurerNameInput.value.trim();
-  // accept comma as decimal separator
-  const raw = (insurerValueInput.value || '').toString().trim().replace(',', '.');
-  const price = parseFloat(raw);
+  // accept comma as decimal separator; default to 0 when empty
+  const raw = (insurerValueInput.value || '').toString().trim();
+  const normalized = raw === '' ? '0' : raw.replace(',', '.');
+  const price = parseFloat(normalized);
   if (!name) return;
   if (!Number.isFinite(price) || price < 0) return;
 
