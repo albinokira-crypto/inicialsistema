@@ -94,7 +94,11 @@
 
       <section class="card" id="insurerCard">
         <h2>Seguradoras</h2>
-        <form id="insurerForm" class="form-grid">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
+          <div>Lista de seguradoras cadastradas</div>
+          <button id="addInsurerButton" class="primary-btn" type="button">Adicionar seguradora</button>
+        </div>
+        <form id="insurerForm" class="form-grid" hidden>
           <label>
             Seguradora
             <input id="insurerNameInput" type="text" required placeholder="Ex.: Porto Seguro" />

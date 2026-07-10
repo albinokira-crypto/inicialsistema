@@ -26,6 +26,7 @@ const insurerValueInput = document.getElementById('insurerValueInput');
 const cancelInsurerEditButton = document.getElementById('cancelInsurerEditButton');
 const insurerCard = document.getElementById('insurerCard');
 const insurerList = document.getElementById('insurerList');
+const addInsurerButton = document.getElementById('addInsurerButton');
 const noInsurersNote = document.getElementById('noInsurersNote');
 
 let deferredPrompt = null;
@@ -79,6 +80,10 @@ installButton.addEventListener('click', async () => {
 });
 insurerForm.addEventListener('submit', saveInsurer);
 cancelInsurerEditButton.addEventListener('click', cancelInsurerEdit);
+if (addInsurerButton) addInsurerButton.addEventListener('click', () => {
+  insurerForm.hidden = false;
+  insurerNameInput.focus();
+});
 providerSelect.addEventListener('change', () => {
   const selected = insurers.find((insurer) => insurer.id === providerSelect.value);
   if (selected) {
@@ -143,8 +148,11 @@ function saveInsurer(event) {
   event.preventDefault();
 
   const name = insurerNameInput.value.trim();
-  const price = parseFloat(insurerValueInput.value) || 0;
-  if (!name || price <= 0) return;
+  // accept comma as decimal separator
+  const raw = (insurerValueInput.value || '').toString().trim().replace(',', '.');
+  const price = parseFloat(raw);
+  if (!name) return;
+  if (!Number.isFinite(price) || price < 0) return;
 
   if (editingInsurerId) {
     insurers = insurers.map((insurer) => insurer.id === editingInsurerId ? { ...insurer, name, price } : insurer);
@@ -162,6 +170,8 @@ function saveInsurer(event) {
   cancelInsurerEditButton.hidden = true;
   renderInsurers();
   populateProviderSelect();
+  // hide form after saving and show list only
+  if (insurerForm) insurerForm.hidden = true;
 }
 
 function cancelInsurerEdit() {
