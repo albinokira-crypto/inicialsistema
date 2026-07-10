@@ -41,6 +41,7 @@ let insurers = loadInsurers();
 let editingId = null;
 let editingInsurerId = null;
 let selectedDay = 'Seguradoras';
+let appInitialized = false;
 
 function ensureAuthentication() {
   if (sessionStorage.getItem('authenticated') !== 'true') {
@@ -52,6 +53,16 @@ function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch((error) => {
       console.warn('Registro do service worker falhou', error);
+    });
+  }
+}
+
+function attachGlobalEventListeners() {
+  if (shareWhatsappButton) {
+    shareWhatsappButton.addEventListener('click', () => {
+      const text = buildWeeklyReportText();
+      const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.location.href = url;
     });
   }
 }
@@ -102,7 +113,27 @@ clearButton.addEventListener('click', () => {
   }
 });
 
-if (continueButton) {
+function cancelEdit() {
+  editingId = null;
+  form.reset();
+  updateFormState();
+  updateFormDisplay();
+}
+
+function cancelInsurerEdit() {
+  editingInsurerId = null;
+  insurerForm.reset();
+  cancelInsurerEditButton.hidden = true;
+}
+
+function showWelcomeScreen() {
+  if (welcomeScreen) welcomeScreen.hidden = false;
+  if (appContent) appContent.hidden = true;
+}
+
+function attachWelcomeFlow() {
+  if (!continueButton) return;
+
   continueButton.addEventListener('click', () => {
     if (welcomeScreen) welcomeScreen.hidden = true;
     if (appContent) appContent.hidden = false;
@@ -111,28 +142,33 @@ if (continueButton) {
 }
 
 function initializeApp() {
-  selectedDay = 'Seguradoras';
-  ensureAuthentication();
-  registerServiceWorker();
-  updateFormState();
-  updateFormDisplay();
-  updateDayTabs();
-  render();
-  renderInsurers();
-  if (shareWhatsappButton) {
-    shareWhatsappButton.addEventListener('click', () => {
-      const text = buildWeeklyReportText();
-      const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-      window.location.href = url;
-    });
+  if (appInitialized) return;
+  appInitialized = true;
+
+  try {
+    selectedDay = 'Seguradoras';
+    ensureAuthentication();
+    registerServiceWorker();
+    updateFormState();
+    updateFormDisplay();
+    updateDayTabs();
+    render();
+    renderInsurers();
+  } catch (error) {
+    console.error('Erro ao iniciar o app:', error);
   }
 }
 
-if (sessionStorage.getItem('authenticated') === 'true') {
-  if (welcomeScreen) welcomeScreen.hidden = false;
-  if (appContent) appContent.hidden = true;
-} else {
+if (sessionStorage.getItem('authenticated') !== 'true') {
   window.location.href = 'login.html';
+} else {
+  showWelcomeScreen();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachWelcomeFlow);
+  } else {
+    attachWelcomeFlow();
+  }
+  attachGlobalEventListeners();
 }
 
 function saveItem(event) {
@@ -472,9 +508,18 @@ function formatDateForDisplay(date) {
   return date.toLocaleDateString('pt-BR');
 }
 
+function safeParseJson(raw, fallback) {
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn('Falha ao analisar JSON do localStorage:', error);
+    return fallback;
+  }
+}
+
 function loadItems() {
   const raw = localStorage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) : [];
+  return raw ? safeParseJson(raw, []) : [];
 }
 
 function saveItems() {
@@ -483,7 +528,7 @@ function saveItems() {
 
 function loadInsurers() {
   const raw = localStorage.getItem('web-system-insurers-v1');
-  return raw ? JSON.parse(raw) : [];
+  return raw ? safeParseJson(raw, []) : [];
 }
 
 function saveInsurers() {
