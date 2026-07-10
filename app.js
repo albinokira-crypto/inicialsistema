@@ -43,6 +43,18 @@ let editingInsurerId = null;
 let selectedDay = 'Seguradoras';
 let appInitialized = false;
 
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  deferredPrompt = event;
+  if (installButton) installButton.hidden = false;
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  if (installButton) installButton.hidden = true;
+  console.log('App instalado');
+});
+
 function ensureAuthentication() {
   if (sessionStorage.getItem('authenticated') !== 'true') {
     window.location.href = 'login.html';
@@ -180,6 +192,7 @@ function initializeApp() {
 if (sessionStorage.getItem('authenticated') !== 'true') {
   window.location.href = 'login.html';
 } else {
+  registerServiceWorker();
   showWelcomeScreen();
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', attachWelcomeFlow);
