@@ -27,6 +27,10 @@ const cancelInsurerEditButton = document.getElementById('cancelInsurerEditButton
 const insurerCard = document.getElementById('insurerCard');
 const insurerList = document.getElementById('insurerList');
 const addInsurerButton = document.getElementById('addInsurerButton');
+const formCard = document.getElementById('formCard');
+const recordsCard = document.getElementById('recordsCard');
+const reportCard = document.getElementById('reportCard');
+const shareWhatsappButton = document.getElementById('shareWhatsappButton');
 const noInsurersNote = document.getElementById('noInsurersNote');
 
 let deferredPrompt = null;
@@ -107,6 +111,13 @@ updateFormDisplay();
 updateDayTabs();
 render();
 renderInsurers();
+if (shareWhatsappButton) {
+  shareWhatsappButton.addEventListener('click', () => {
+    const text = buildWeeklyReportText();
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  });
+}
 
 function saveItem(event) {
   event.preventDefault();
@@ -248,7 +259,7 @@ function render() {
 function renderReport(filteredItems) {
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
   const totals = days.map((day) => {
-    const itemsForDay = filteredItems.filter((item) => item.day === day);
+    const itemsForDay = items.filter((item) => item.day === day);
     return {
       day,
       visits: itemsForDay.length,
@@ -264,20 +275,10 @@ function renderReport(filteredItems) {
     </tr>
   `).join('');
 
-  const totalVisits = totals.reduce((sum, day) => sum + day.visits, 0);
-  const totalValue = totals.reduce((sum, day) => sum + day.value, 0);
+  const totalVisits = totals.reduce((sum, d) => sum + d.visits, 0);
+  const totalValue = totals.reduce((sum, d) => sum + d.value, 0);
   weeklyVisits.textContent = totalVisits;
   weeklyValue.textContent = `R$ ${totalValue.toFixed(2).replace('.', ',')}`;
-
-  if (selectedDay === 'Total da semana') {
-    reportBody.innerHTML += `
-      <tr class="weekly-total-row">
-        <th>Totais:</th>
-        <th>${totalVisits}</th>
-        <th>R$ ${totalValue.toFixed(2).replace('.', ',')}</th>
-      </tr>
-    `;
-  }
 }
 
 function handleAction(action, id) {
@@ -337,9 +338,10 @@ function updateFormDisplay() {
   if (noInsurersNote) {
     noInsurersNote.hidden = selectedDay !== 'Seguradoras';
   }
-  if (form) {
-    form.hidden = selectedDay === 'Seguradoras';
-  }
+  // control visibility of main cards depending on selected tab
+  if (formCard) formCard.hidden = selectedDay === 'Seguradoras' || selectedDay === 'Total da semana';
+  if (recordsCard) recordsCard.hidden = selectedDay === 'Seguradoras' || selectedDay === 'Total da semana';
+  if (reportCard) reportCard.hidden = !(selectedDay === 'Total da semana');
 
   populateProviderSelect();
 }
@@ -402,6 +404,23 @@ function handleInsurerAction(action, id) {
   insurerNameInput.value = insurer.name;
   insurerValueInput.value = insurer.price.toFixed(2);
   cancelInsurerEditButton.hidden = false;
+}
+
+function buildWeeklyReportText() {
+  const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+  let lines = ['Relatório semanal - Vistorias'];
+  let totalVisits = 0;
+  let totalValue = 0;
+  days.forEach((day) => {
+    const itemsForDay = items.filter((item) => item.day === day);
+    const visits = itemsForDay.length;
+    const value = itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+    lines.push(`${day}: ${visits} vistorias - R$ ${value.toFixed(2).replace('.', ',')}`);
+    totalVisits += visits;
+    totalValue += value;
+  });
+  lines.push(`Totais: ${totalVisits} vistorias - R$ ${totalValue.toFixed(2).replace('.', ',')}`);
+  return lines.join('\n');
 }
 
 function updateFormState() {

@@ -41,7 +41,7 @@
         </div>
       </section>
 
-      <section class="card">
+      <section class="card" id="formCard">
         <h2 id="formTitle">Novo registro</h2>
 
         <form id="itemForm" class="form-grid">
@@ -81,7 +81,7 @@
         <!-- insurer form moved to its own card (see below) -->
       </section>
 
-      <section class="card">
+      <section class="card" id="recordsCard">
         <div class="toolbar">
           <h2>Registros</h2>
           <div class="search-actions">
@@ -117,8 +117,11 @@
         <ul id="insurerList" class="item-list"></ul>
       </section>
 
-      <section class="card">
-        <h2>Relatório semanal</h2>
+      <section class="card" id="reportCard">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <h2>Relatório semanal</h2>
+          <button id="shareWhatsappButton" class="primary-btn" type="button">Compartilhar (WhatsApp)</button>
+        </div>
         <table class="report-table">
           <thead>
             <tr>
