@@ -188,6 +188,10 @@ function saveInsurer(event) {
   populateProviderSelect();
   // hide form after saving and show list only
   if (insurerForm) insurerForm.hidden = true;
+  // keep user on the Seguradoras tab after saving
+  selectedDay = 'Seguradoras';
+  updateDayTabs();
+  render();
 }
 
 function cancelInsurerEdit() {
