@@ -26,7 +26,6 @@ const insurerValueInput = document.getElementById('insurerValueInput');
 const cancelInsurerEditButton = document.getElementById('cancelInsurerEditButton');
 const insurerCard = document.getElementById('insurerCard');
 const insurerList = document.getElementById('insurerList');
-const addInsurerButton = document.getElementById('addInsurerButton');
 const formCard = document.getElementById('formCard');
 const recordsCard = document.getElementById('recordsCard');
 const reportCard = document.getElementById('reportCard');
@@ -38,7 +37,7 @@ let items = loadItems();
 let insurers = loadInsurers();
 let editingId = null;
 let editingInsurerId = null;
-let selectedDay = 'Todos';
+let selectedDay = 'Seguradoras';
 
 function ensureAuthentication() {
   if (sessionStorage.getItem('authenticated') !== 'true') {
@@ -84,14 +83,6 @@ installButton.addEventListener('click', async () => {
 });
 insurerForm.addEventListener('submit', saveInsurer);
 cancelInsurerEditButton.addEventListener('click', cancelInsurerEdit);
-if (addInsurerButton) addInsurerButton.addEventListener('click', () => {
-  // switch to Seguradoras tab and show the insurer form
-  selectedDay = 'Seguradoras';
-  updateDayTabs();
-  insurerForm.hidden = false;
-  if (insurerCard) insurerCard.hidden = false;
-  insurerNameInput.focus();
-});
 providerSelect.addEventListener('change', () => {
   const selected = insurers.find((insurer) => insurer.id === providerSelect.value);
   if (selected) {
@@ -119,7 +110,7 @@ if (shareWhatsappButton) {
   shareWhatsappButton.addEventListener('click', () => {
     const text = buildWeeklyReportText();
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+    window.location.href = url;
   });
 }
 
@@ -186,25 +177,22 @@ function saveInsurer(event) {
   cancelInsurerEditButton.hidden = true;
   renderInsurers();
   populateProviderSelect();
-  // hide form after saving and show list only
-  if (insurerForm) insurerForm.hidden = true;
-  // keep user on the Seguradoras tab after saving
+  // keep user on Seguradoras tab after saving
   selectedDay = 'Seguradoras';
   updateDayTabs();
+  if (insurerForm) insurerForm.hidden = false;
+  if (insurerCard) insurerCard.hidden = false;
+  if (formCard) formCard.hidden = true;
+  if (recordsCard) recordsCard.hidden = true;
+  if (reportCard) reportCard.hidden = true;
   render();
-}
-
-function cancelInsurerEdit() {
-  editingInsurerId = null;
-  insurerForm.reset();
-  cancelInsurerEditButton.hidden = true;
 }
 
 function render() {
   const query = searchInput.value.toLowerCase();
   const filtered = items.filter((item) => {
     const isTotalWeek = selectedDay === 'Total da semana';
-    const sameDay = selectedDay === 'Todos' || item.day === selectedDay;
+    const sameDay = item.day === selectedDay;
     const haystack = `${item.date} ${item.day} ${item.plate} ${item.provider}`.toLowerCase();
     return (isTotalWeek ? true : sameDay) && haystack.includes(query);
   });
