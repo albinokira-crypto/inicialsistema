@@ -133,14 +133,18 @@ function formatPlateInput() {
 
 function normalizePlate(value) {
   if (!value) return '';
-  const raw = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const raw = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7);
   if (raw.length <= 3) return raw;
-  if (raw.length <= 7) return `${raw.slice(0, 3)}-${raw.slice(3)}`;
-  return `${raw.slice(0, 3)}-${raw.slice(3, 7)}`;
+  // Mercosul (ABC1D23): 5º caractere é letra -> sem traço
+  if (/^[A-Z]{3}[0-9][A-Z]/.test(raw)) return raw;
+  // Placa antiga (ABC-1234)
+  return `${raw.slice(0, 3)}-${raw.slice(3)}`;
 }
 
 function isValidPlate(value) {
-  return /^[A-Z]{3}-?[0-9]{4}$/.test(value);
+  const raw = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  // Placa antiga: ABC1234 | Placa Mercosul: ABC1D23
+  return /^[A-Z]{3}[0-9]{4}$/.test(raw) || /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(raw);
 }
 
 function cancelEdit() {

@@ -65,8 +65,8 @@
           <input id="dayInput" name="day" type="hidden" />
           <label>
             Placa
-            <input id="plateInput" name="plate" type="text" required placeholder="ABC-1234" maxlength="8" pattern="[A-Za-z]{3}-[0-9]{4}" />
-            <small class="field-note">Use o formato padrão: três letras e quatro números.</small>
+            <input id="plateInput" name="plate" type="text" required placeholder="ABC-1234 ou ABC1D23" maxlength="8" pattern="[A-Za-z]{3}-?[0-9]{4}|[A-Za-z]{3}[0-9][A-Za-z][0-9]{2}" />
+            <small class="field-note">Aceita placa antiga (ABC-1234) e Mercosul (ABC1D23).</small>
           </label>
           <label>
             Seguradora
