@@ -323,26 +323,21 @@ function render() {
   }
 
   itemList.innerHTML = filtered.map((item) => `
-    <li class="item-card">
-      <header>
-        <div class="plate-card">
-          <div class="plate-badge">
-            <span class="plate-badge-code">BR</span>
-            <span class="plate-badge-text">${escapeHtml(item.plate)}</span>
-          </div>
-          <div>
-            <strong>${escapeHtml(item.provider || 'Sem seguradora')}</strong>
-            <div class="meta">${escapeHtml(item.day)} · ${escapeHtml(item.date)}</div>
-          </div>
+    <li class="item-card compact-item-card">
+      <div class="item-main-info">
+        <div class="plate-badge compact-plate-badge">
+          <span class="plate-badge-code">BR</span>
+          <span class="plate-badge-text">${escapeHtml(item.plate)}</span>
         </div>
-        <div class="actions">
-          <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
-          <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
+        <div class="item-details">
+          <strong>${escapeHtml(item.provider || 'Sem seguradora')}</strong>
+          <span class="meta">${escapeHtml(item.day)} · ${escapeHtml(item.date)} · R$ ${escapeHtml(Number(item.value).toFixed(2).replace('.', ','))}</span>
         </div>
-      </header>
-      <p class="plate-caption">Vistoria registrada com a placa do carro</p>
-      <div class="meta">Valor: R$ ${escapeHtml(Number(item.value).toFixed(2).replace('.', ','))}</div>
-      <div class="meta">Criado em ${escapeHtml(item.createdAt)}</div>
+      </div>
+      <div class="actions vertical-actions">
+        <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
+        <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
+      </div>
     </li>
   `).join('');
 

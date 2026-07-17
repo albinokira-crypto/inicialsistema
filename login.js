@@ -13,10 +13,7 @@ const toggleLoginView = document.getElementById('toggleLoginView');
 const toggleRegisterView = document.getElementById('toggleRegisterView');
 const showRegisterLink = document.getElementById('showRegisterLink');
 const showLoginLink = document.getElementById('showLoginLink');
-const adminCredentialsHint = document.getElementById('adminCredentialsHint');
 
-const validUser = 'admin';
-const validPassword = '1234';
 const USERS_STORAGE_KEY = 'web-system-users-v1';
 
 // Toggle views
@@ -26,7 +23,6 @@ showRegisterLink.addEventListener('click', (e) => {
   registerForm.hidden = false;
   toggleLoginView.hidden = true;
   toggleRegisterView.hidden = false;
-  adminCredentialsHint.hidden = true;
   registerError.hidden = true;
   registerSuccess.hidden = true;
   registerForm.reset();
@@ -38,7 +34,6 @@ showLoginLink.addEventListener('click', (e) => {
   registerForm.hidden = true;
   toggleLoginView.hidden = false;
   toggleRegisterView.hidden = true;
-  adminCredentialsHint.hidden = false;
   loginError.hidden = true;
   loginForm.reset();
 });
@@ -77,12 +72,6 @@ registerForm.addEventListener('submit', (event) => {
     return;
   }
 
-  if (username.toLowerCase() === validUser) {
-    registerError.hidden = false;
-    registerError.textContent = 'Este nome de usuário já existe.';
-    return;
-  }
-
   const users = getRegisteredUsers();
   if (users[username]) {
     registerError.hidden = false;
@@ -102,13 +91,6 @@ loginForm.addEventListener('submit', (event) => {
 
   const username = usernameInput.value.trim();
   const password = passwordInput.value.trim();
-
-  // Check admin
-  if (username === validUser && password === validPassword) {
-    sessionStorage.setItem('authenticated', 'true');
-    window.location.href = 'index.html';
-    return;
-  }
 
   // Check registered users
   const users = getRegisteredUsers();

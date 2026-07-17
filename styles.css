@@ -459,6 +459,76 @@ input, textarea {
   box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
 }
 
+/* Compact Survey Card Layout */
+.compact-item-card {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 8px 12px !important;
+  gap: 12px !important;
+}
+
+.item-main-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.compact-plate-badge {
+  min-width: 105px !important;
+  padding: 4px 6px !important;
+  border-radius: 10px !important;
+  gap: 4px !important;
+  box-shadow: none !important;
+  border-width: 1px !important;
+}
+
+.compact-plate-badge .plate-badge-code {
+  width: 22px !important;
+  height: 22px !important;
+  font-size: 0.55rem !important;
+  border-radius: 6px !important;
+}
+
+.compact-plate-badge .plate-badge-text {
+  font-size: 0.8rem !important;
+  letter-spacing: 0.1em !important;
+}
+
+.item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.item-details strong {
+  font-size: 0.85rem;
+  color: #102542;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-details .meta {
+  font-size: 0.75rem;
+  color: #5b6e84;
+}
+
+.vertical-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.vertical-actions .action-btn {
+  font-size: 0.7rem !important;
+  padding: 3px 8px !important;
+}
+
 @media (max-width: 720px) {
   .summary-grid { grid-template-columns: 1fr; }
   .toolbar { flex-direction: column; align-items: stretch; }
