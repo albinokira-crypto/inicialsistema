@@ -427,6 +427,38 @@ input, textarea {
   padding: 8px 14px;
 }
 
+/* Insurer Selection Buttons */
+.insurer-buttons-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+.insurer-btn {
+  border: 1px solid #d7e2f0;
+  border-radius: 12px;
+  padding: 8px 14px;
+  background: #f8fbff;
+  color: #27435f;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.insurer-btn:hover {
+  background: #eef4ff;
+  border-color: #2563eb;
+}
+
+.insurer-btn.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+}
+
 @media (max-width: 720px) {
   .summary-grid { grid-template-columns: 1fr; }
   .toolbar { flex-direction: column; align-items: stretch; }

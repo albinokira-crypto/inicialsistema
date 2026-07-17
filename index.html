@@ -10,6 +10,9 @@
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- jsPDF and jsPDF-AutoTable CDNs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   </head>
   <body>
     <main class="app">
@@ -85,9 +88,8 @@
           </label>
           <label>
             Seguradora
-            <select id="providerSelect" name="provider" required>
-              <option value="">Selecione a seguradora</option>
-            </select>
+            <div id="insurerButtonsContainer" class="insurer-buttons-container"></div>
+            <input type="hidden" id="providerSelect" name="provider" required />
           </label>
           <label>
             Valor da vistoria
@@ -139,7 +141,7 @@
       <section class="card" id="reportCard">
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <h2>Relatório semanal</h2>
-          <button id="shareWhatsappButton" class="primary-btn" type="button">Compartilhar (WhatsApp)</button>
+          <button id="sharePdfButton" class="primary-btn" type="button">Compartilhar Relatório (PDF)</button>
         </div>
         <table class="report-table">
           <thead>

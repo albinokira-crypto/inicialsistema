@@ -29,12 +29,13 @@ const insurerList = document.getElementById('insurerList');
 const formCard = document.getElementById('formCard');
 const recordsCard = document.getElementById('recordsCard');
 const reportCard = document.getElementById('reportCard');
-const shareWhatsappButton = document.getElementById('shareWhatsappButton');
+const sharePdfButton = document.getElementById('sharePdfButton');
 const noInsurersNote = document.getElementById('noInsurersNote');
 const welcomeScreen = document.getElementById('welcomeScreen');
 const appContent = document.getElementById('appContent');
 const backToMenuButton = document.getElementById('backToMenuButton');
 const currentPageTitle = document.getElementById('currentPageTitle');
+const insurerButtonsContainer = document.getElementById('insurerButtonsContainer');
 
 let deferredPrompt = null;
 let items = loadItems();
@@ -71,11 +72,9 @@ function registerServiceWorker() {
 }
 
 function attachGlobalEventListeners() {
-  if (shareWhatsappButton) {
-    shareWhatsappButton.addEventListener('click', () => {
-      const text = buildWeeklyReportText();
-      const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-      window.location.href = url;
+  if (sharePdfButton) {
+    sharePdfButton.addEventListener('click', () => {
+      generateWeeklyReportPDF();
     });
   }
 }
@@ -111,14 +110,6 @@ installButton.addEventListener('click', async () => {
 plateInput.addEventListener('input', formatPlateInput);
 insurerForm.addEventListener('submit', saveInsurer);
 cancelInsurerEditButton.addEventListener('click', cancelInsurerEdit);
-providerSelect.addEventListener('change', () => {
-  const selected = insurers.find((insurer) => insurer.id === providerSelect.value);
-  if (selected) {
-    valueInput.value = selected.price.toFixed(2);
-  } else {
-    valueInput.value = '';
-  }
-});
 clearButton.addEventListener('click', () => {
   if (window.confirm('Deseja apagar todos os registros salvos?')) {
     items = [];
@@ -148,6 +139,8 @@ function isValidPlate(value) {
 function cancelEdit() {
   editingId = null;
   form.reset();
+  if (providerSelect) providerSelect.value = '';
+  updateInsurerButtonsHighlight();
   updateFormState();
   updateFormDisplay();
 }
@@ -243,6 +236,8 @@ function saveItem(event) {
 
   saveItems();
   form.reset();
+  if (providerSelect) providerSelect.value = '';
+  updateInsurerButtonsHighlight();
   editingId = null;
   updateFormState();
   updateFormDisplay();
@@ -401,6 +396,7 @@ function handleAction(action, id) {
   plateInput.value = item.plate || '';
   providerSelect.value = item.providerId || '';
   valueInput.value = item.value || '';
+  updateInsurerButtonsHighlight();
   updateFormState();
   plateInput.focus();
 }
@@ -459,23 +455,50 @@ function updateFormDisplay() {
   if (reportCard) reportCard.hidden = !(selectedDay === 'Total da semana');
 
   populateProviderSelect();
+  updateInsurerButtonsHighlight();
 }
 
 function populateProviderSelect() {
-  if (!providerSelect) return;
+  if (!insurerButtonsContainer) return;
 
-  providerSelect.innerHTML = '<option value="">Selecione a seguradora</option>';
-  insurers.forEach((insurer) => {
-    providerSelect.innerHTML += `<option value="${insurer.id}">${escapeHtml(insurer.name)}</option>`;
-  });
-
+  insurerButtonsContainer.innerHTML = '';
   if (!insurers.length) {
     noInsurersNote.hidden = false;
-    providerSelect.disabled = true;
-  } else {
-    noInsurersNote.hidden = true;
-    providerSelect.disabled = false;
+    if (providerSelect) providerSelect.value = '';
+    return;
   }
+
+  noInsurersNote.hidden = true;
+
+  insurers.forEach((insurer) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'insurer-btn';
+    btn.dataset.id = insurer.id;
+    btn.textContent = insurer.name;
+    btn.addEventListener('click', () => {
+      selectInsurer(insurer);
+    });
+    insurerButtonsContainer.appendChild(btn);
+  });
+}
+
+function selectInsurer(insurer) {
+  if (providerSelect) {
+    providerSelect.value = insurer.id;
+  }
+  if (valueInput) {
+    valueInput.value = insurer.price.toFixed(2);
+  }
+  updateInsurerButtonsHighlight();
+}
+
+function updateInsurerButtonsHighlight() {
+  if (!insurerButtonsContainer || !providerSelect) return;
+  const selectedId = providerSelect.value;
+  insurerButtonsContainer.querySelectorAll('.insurer-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.id === selectedId);
+  });
 }
 
 function renderInsurers() {
@@ -521,23 +544,122 @@ function handleInsurerAction(action, id) {
   cancelInsurerEditButton.hidden = false;
 }
 
-function buildWeeklyReportText() {
+function generateWeeklyReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(37, 99, 235); // #2563eb
+  doc.text("Gestão de Vistoria Inicial", pageWidth / 2, 20, { align: "center" });
+
+  // Subtitle
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(75, 93, 118); // #4b5d76
+  const todayStr = new Date().toLocaleDateString('pt-BR');
+  doc.text(`Relatório Semanal - Gerado em ${todayStr}`, pageWidth / 2, 28, { align: "center" });
+
+  // Draw line
+  doc.setDrawColor(215, 226, 240);
+  doc.setLineWidth(0.5);
+  doc.line(14, 34, pageWidth - 14, 34);
+
+  // Statistics
+  const totalVisitsCount = items.length;
+  const totalValueSum = items.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(16, 37, 66);
+  doc.text(`Total de Vistorias na Semana: ${totalVisitsCount}`, 14, 42);
+  doc.text(`Valor Total Geral: R$ ${totalValueSum.toFixed(2).replace('.', ',')}`, 14, 48);
+
+  // Prepare table data
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
-  let lines = ['Relatório semanal - Vistorias'];
-  let totalVisits = 0;
-  let totalValue = 0;
-  days.forEach((day) => {
+  const tableRows = days.map((day) => {
     const itemsForDay = items.filter((item) => item.day === day);
     const visits = itemsForDay.length;
-    const value = itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
     const plates = itemsForDay.map((item) => item.plate).join(', ');
-    const platesStr = plates ? ` [Placas: ${plates}]` : '';
-    lines.push(`${day}: ${visits} vistorias - R$ ${value.toFixed(2).replace('.', ',')}${platesStr}`);
-    totalVisits += visits;
-    totalValue += value;
+    const value = itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+    return [
+      `${day}-feira`,
+      visits.toString(),
+      plates || '—',
+      `R$ ${value.toFixed(2).replace('.', ',')}`
+    ];
   });
-  lines.push(`Totais: ${totalVisits} vistorias - R$ ${totalValue.toFixed(2).replace('.', ',')}`);
-  return lines.join('\n');
+
+  const displayedVisits = items.filter(item => days.includes(item.day)).length;
+  const displayedValue = items.filter(item => days.includes(item.day)).reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+
+  // Add Totals row
+  tableRows.push([
+    'Totais',
+    displayedVisits.toString(),
+    '—',
+    `R$ ${displayedValue.toFixed(2).replace('.', ',')}`
+  ]);
+
+  // Generate Table using jsPDF-AutoTable
+  doc.autoTable({
+    startY: 55,
+    head: [['Dia', 'Vistorias', 'Placas Vistoriadas', 'Total Valor']],
+    body: tableRows,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [37, 99, 235],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    footStyles: {
+      fillColor: [241, 245, 249],
+      textColor: [16, 37, 66],
+      fontStyle: 'bold'
+    },
+    columnStyles: {
+      0: { cellWidth: 35 },
+      1: { cellWidth: 25, halign: 'center' },
+      2: { cellWidth: 95 },
+      3: { cellWidth: 35, halign: 'right' }
+    },
+    styles: {
+      font: 'helvetica',
+      fontSize: 9,
+      cellPadding: 4
+    },
+    didParseCell: function (data) {
+      if (data.row.index === tableRows.length - 1) {
+        data.cell.styles.fontStyle = 'bold';
+        data.cell.styles.fillColor = [226, 232, 240];
+      }
+    }
+  });
+
+  const filename = `relatorio_semanal_${new Date().toISOString().slice(0, 10)}.pdf`;
+  try {
+    const pdfBlob = doc.output('blob');
+    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({
+        files: [file],
+        title: 'Relatório Semanal de Vistorias',
+        text: 'Segue em anexo o relatório semanal de vistorias.'
+      }).catch(err => {
+        console.warn('Erro ao abrir diálogo de compartilhamento:', err);
+        doc.save(filename);
+      });
+    } else {
+      doc.save(filename);
+    }
+  } catch (error) {
+    console.error('Falha ao compartilhar PDF, executando download direto:', error);
+    doc.save(filename);
+  }
 }
 
 function updateFormState() {
