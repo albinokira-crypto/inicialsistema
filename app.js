@@ -31,9 +31,10 @@ const recordsCard = document.getElementById('recordsCard');
 const reportCard = document.getElementById('reportCard');
 const shareWhatsappButton = document.getElementById('shareWhatsappButton');
 const noInsurersNote = document.getElementById('noInsurersNote');
-const continueButton = document.getElementById('continueButton');
 const welcomeScreen = document.getElementById('welcomeScreen');
 const appContent = document.getElementById('appContent');
+const backToMenuButton = document.getElementById('backToMenuButton');
+const currentPageTitle = document.getElementById('currentPageTitle');
 
 let deferredPrompt = null;
 let items = loadItems();
@@ -135,9 +136,6 @@ function normalizePlate(value) {
   if (!value) return '';
   const raw = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7);
   if (raw.length <= 3) return raw;
-  // Mercosul (ABC1D23): 5º caractere é letra -> sem traço
-  if (/^[A-Z]{3}[0-9][A-Z]/.test(raw)) return raw;
-  // Placa antiga (ABC-1234)
   return `${raw.slice(0, 3)}-${raw.slice(3)}`;
 }
 
@@ -165,14 +163,23 @@ function showWelcomeScreen() {
   if (appContent) appContent.hidden = true;
 }
 
-function attachWelcomeFlow() {
-  if (!continueButton) return;
-
-  continueButton.addEventListener('click', () => {
-    if (welcomeScreen) welcomeScreen.hidden = true;
-    if (appContent) appContent.hidden = false;
-    initializeApp();
+function attachMenuListeners() {
+  const menuButtons = document.querySelectorAll('.menu-btn');
+  menuButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedDay = btn.dataset.day;
+      initializeApp();
+      updateDayTabs();
+      if (welcomeScreen) welcomeScreen.hidden = true;
+      if (appContent) appContent.hidden = false;
+    });
   });
+
+  if (backToMenuButton) {
+    backToMenuButton.addEventListener('click', () => {
+      showWelcomeScreen();
+    });
+  }
 }
 
 function initializeApp() {
@@ -180,12 +187,10 @@ function initializeApp() {
   appInitialized = true;
 
   try {
-    selectedDay = 'Seguradoras';
     ensureAuthentication();
     registerServiceWorker();
     updateFormState();
-    updateFormDisplay();
-    updateDayTabs();
+    populateProviderSelect();
     render();
     renderInsurers();
   } catch (error) {
@@ -197,11 +202,12 @@ if (sessionStorage.getItem('authenticated') !== 'true') {
   window.location.href = 'login.html';
 } else {
   registerServiceWorker();
+  initializeApp();
   showWelcomeScreen();
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', attachWelcomeFlow);
+    document.addEventListener('DOMContentLoaded', attachMenuListeners);
   } else {
-    attachWelcomeFlow();
+    attachMenuListeners();
   }
   attachGlobalEventListeners();
 }
@@ -356,17 +362,20 @@ function renderReport(filteredItems) {
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
   const totals = days.map((day) => {
     const itemsForDay = items.filter((item) => item.day === day);
+    const plates = itemsForDay.map((item) => item.plate).join(', ');
     return {
       day,
       visits: itemsForDay.length,
+      plates: plates || '—',
       value: itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0)
     };
   });
 
-  reportBody.innerHTML = totals.map(({ day, visits, value }) => `
+  reportBody.innerHTML = totals.map(({ day, visits, plates, value }) => `
     <tr>
       <td>${escapeHtml(day)}</td>
       <td>${visits}</td>
+      <td style="word-break: break-all; max-width: 250px;">${escapeHtml(plates)}</td>
       <td>R$ ${value.toFixed(2).replace('.', ',')}</td>
     </tr>
   `).join('');
@@ -420,6 +429,16 @@ function updateFormDisplay() {
   }
   if (dayInput) {
     dayInput.value = currentDay;
+  }
+
+  if (currentPageTitle) {
+    if (selectedDay === 'Seguradoras') {
+      currentPageTitle.textContent = 'Seguradoras';
+    } else if (selectedDay === 'Total da semana') {
+      currentPageTitle.textContent = 'Total da Semana';
+    } else {
+      currentPageTitle.textContent = `${selectedDay}-feira`;
+    }
   }
 
   if (formTitle) {
@@ -511,7 +530,9 @@ function buildWeeklyReportText() {
     const itemsForDay = items.filter((item) => item.day === day);
     const visits = itemsForDay.length;
     const value = itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
-    lines.push(`${day}: ${visits} vistorias - R$ ${value.toFixed(2).replace('.', ',')}`);
+    const plates = itemsForDay.map((item) => item.plate).join(', ');
+    const platesStr = plates ? ` [Placas: ${plates}]` : '';
+    lines.push(`${day}: ${visits} vistorias - R$ ${value.toFixed(2).replace('.', ',')}${platesStr}`);
     totalVisits += visits;
     totalValue += value;
   });

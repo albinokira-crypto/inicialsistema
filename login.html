@@ -31,8 +31,29 @@
           <p id="loginError" class="login-error" hidden></p>
         </form>
 
-        <div class="login-hint">
-          Usuário: <strong>admin</strong> | Senha: <strong>1234</strong>
+        <form id="registerForm" class="login-form" hidden>
+          <label>
+            Novo Usuário
+            <input id="newUsernameInput" type="text" required placeholder="Digite o usuário" />
+          </label>
+          <label>
+            Nova Senha
+            <input id="newPasswordInput" type="password" required placeholder="Digite a senha" />
+          </label>
+          <button class="primary-btn" type="submit">Cadastrar</button>
+          <p id="registerError" class="login-error" hidden></p>
+          <p id="registerSuccess" style="color: #10b981; font-size: 0.875rem; text-align: center; margin-top: 10px;" hidden>Cadastro realizado com sucesso! Faça login.</p>
+        </form>
+
+        <div class="login-hint" id="toggleLoginView">
+          Não tem uma conta? <a href="#" id="showRegisterLink" style="color: #2563eb; font-weight: 600; text-decoration: none;">Cadastre-se</a>
+        </div>
+        <div class="login-hint" id="toggleRegisterView" hidden>
+          Já tem uma conta? <a href="#" id="showLoginLink" style="color: #2563eb; font-weight: 600; text-decoration: none;">Entrar</a>
+        </div>
+
+        <div class="login-hint" id="adminCredentialsHint" style="margin-top: 12px; font-size: 0.85rem; border-top: 1px dashed #d7e2f0; padding-top: 12px;">
+          Usuário padrão: <strong>admin</strong> | Senha: <strong>1234</strong>
         </div>
       </section>
     </main>
