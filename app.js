@@ -738,8 +738,10 @@ function renderReport(filteredItems) {
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
   const totals = days.map((day) => {
     const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
+    itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
+
     const platesHtml = itemsForDay.length
-      ? itemsForDay.map((item) => `<div style="padding: 3px 0; border-bottom: 1px dashed #cbd5e1; font-weight: 500;">${escapeHtml(item.plate)}</div>`).join('')
+      ? itemsForDay.map((item, index) => `<div style="padding: 3px 0; border-bottom: 1px dashed #cbd5e1; font-weight: 500;">${index + 1}. ${escapeHtml(item.plate)}</div>`).join('')
       : '—';
     return {
       day,
@@ -2150,6 +2152,116 @@ function generateSupervisaoReportPDF() {
     }
   } catch (error) {
     console.error('Falha ao compartilhar PDF, executando download direto:', error);
+    doc.save(filename);
+  }
+}
+
+function generateWeeklyReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('portrait');
+
+  const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(37, 99, 235);
+  doc.text("Gestão de Vistoria - Relatório Semanal", pageWidth / 2, 20, { align: "center" });
+
+  // Subtitle
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(75, 93, 118);
+  const todayStr = new Date().toLocaleDateString('pt-BR');
+  doc.text(`Gerado em ${todayStr}`, pageWidth / 2, 27, { align: "center" });
+
+  // Line
+  doc.setDrawColor(215, 226, 240);
+  doc.setLineWidth(0.5);
+  doc.line(14, 32, pageWidth - 14, 32);
+
+  const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+  
+  let grandTotalVisits = 0;
+  let grandTotalValue = 0;
+
+  const tableRows = days.map((day) => {
+    // Get items for this day
+    const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
+    
+    // Sort in ascending order by id/creation time
+    itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
+
+    grandTotalVisits += itemsForDay.length;
+    const dayValue = itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+    grandTotalValue += dayValue;
+
+    // Format vistorias on numbered lines in ascending order: "1. ABC-1234", "2. DEF-5678", ...
+    let numberedPlatesText = '—';
+    if (itemsForDay.length > 0) {
+      numberedPlatesText = itemsForDay.map((item, index) => `${index + 1}. ${item.plate}${item.type ? ` (${item.type})` : ''}`).join('\n');
+    }
+
+    return [
+      `${day}-feira`,
+      itemsForDay.length.toString(),
+      numberedPlatesText,
+      `R$ ${dayValue.toFixed(2).replace('.', ',')}`
+    ];
+  });
+
+  // Add Totals row
+  tableRows.push([
+    'Totais',
+    grandTotalVisits.toString(),
+    '—',
+    `R$ ${grandTotalValue.toFixed(2).replace('.', ',')}`
+  ]);
+
+  // Generate Table using jsPDF-AutoTable
+  doc.autoTable({
+    startY: 38,
+    head: [['Dia', 'Vistorias', 'Placas (Ordenadas)', 'Total Valor']],
+    body: tableRows,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [37, 99, 235],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    styles: {
+      font: 'helvetica',
+      fontSize: 9.5,
+      cellPadding: 5
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 35 },
+      1: { halign: 'center', cellWidth: 25 },
+      2: { cellWidth: 'auto' },
+      3: { fontStyle: 'bold', halign: 'right', cellWidth: 35 }
+    }
+  });
+
+  const filename = `relatorio_semanal_${new Date().toISOString().slice(0, 10)}.pdf`;
+  try {
+    const pdfBlob = doc.output('blob');
+    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({
+        files: [file],
+        title: 'Relatório Semanal de Vistorias',
+        text: 'Segue em anexo o relatório semanal de vistorias em PDF.'
+      }).catch(err => {
+        if (err.name === 'AbortError') return;
+        console.warn('Erro ao abrir diálogo de compartilhamento:', err);
+        doc.save(filename);
+      });
+    } else {
+      doc.save(filename);
+    }
+  } catch (error) {
+    console.error('Falha ao gerar/compartilhar PDF, salvando diretamente:', error);
     doc.save(filename);
   }
 }
