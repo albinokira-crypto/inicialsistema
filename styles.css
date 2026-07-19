@@ -644,7 +644,7 @@ html, body {
 .card, .hero, .tabs-card, .menu-card {
   max-width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .table-responsive {
@@ -798,27 +798,75 @@ html, body {
     text-align: center;
   }
 
-  /* Supervisão Table responsiveness */
-  .report-table {
-    font-size: 0.8rem;
-    min-width: 600px;
+  /* Supervisão Table Mobile Card View - Prevents Any Clipping */
+  .report-table,
+  .report-table thead,
+  .report-table tbody,
+  .report-table th,
+  .report-table td,
+  .report-table tr {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
   }
 
-  .report-table th,
+  .report-table {
+    min-width: unset !important;
+  }
+
+  .report-table thead {
+    display: none;
+  }
+
+  .report-table tr {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 4px rgba(16, 37, 66, 0.04);
+  }
+
   .report-table td {
-    padding: 8px 6px;
+    padding: 6px 0;
+    border-bottom: 1px dashed #e2e8f0;
+    font-size: 0.84rem;
+    word-break: break-word;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    text-align: right;
+  }
+
+  .report-table td:last-child {
+    border-bottom: none;
+    padding-top: 8px;
+  }
+
+  .report-table td::before {
+    content: attr(data-label) ": ";
+    font-weight: 700;
+    color: #475569;
+    font-size: 0.78rem;
+    text-align: left;
+    margin-right: auto;
   }
 
   .report-table td .actions {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+    margin-top: 4px;
   }
 
   .report-table td .actions .action-btn {
-    width: 100%;
-    font-size: 0.72rem;
-    padding: 4px 6px;
+    flex: 1 1 auto;
+    font-size: 0.75rem;
+    padding: 6px 8px;
     text-align: center;
   }
 

@@ -1853,15 +1853,15 @@ function renderSupervisaoReport() {
 
     return `
       <tr>
-        <td style="font-weight: 600;">${escapeHtml(s.vehicle)}</td>
-        <td style="font-weight: 500;">${escapeHtml(s.oficinaName || 'Sem oficina')}</td>
-        <td>${escapeHtml(s.attended)}</td>
-        <td>
+        <td data-label="Veículo" style="font-weight: 600;">${escapeHtml(s.vehicle)}</td>
+        <td data-label="Oficina" style="font-weight: 500;">${escapeHtml(s.oficinaName || 'Sem oficina')}</td>
+        <td data-label="Atendido por">${escapeHtml(s.attended)}</td>
+        <td data-label="Status">
           <span class="${stageClass}">${escapeHtml(s.stage)}</span>
         </td>
-        <td>${partsPendingHtml}</td>
-        <td>${prevEst}</td>
-        <td>
+        <td data-label="Pendência Peças">${partsPendingHtml}</td>
+        <td data-label="Previsão/Estimativa">${prevEst}</td>
+        <td data-label="Ações">
           <div class="actions">
             <button class="action-btn" type="button" data-super-action="share-text" data-id="${s.id}" title="Compartilhar texto">📱 Compartilhar</button>
             <button class="action-btn" type="button" data-super-action="copy-text" data-id="${s.id}" title="Copiar texto">📋 Copiar</button>
