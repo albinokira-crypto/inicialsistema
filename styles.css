@@ -440,6 +440,9 @@ input, select, textarea {
   white-space: nowrap !important;
   word-break: keep-all !important;
   hyphens: manual !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
 }
 
 #backToMenuButton {
@@ -744,12 +747,14 @@ html, body {
   }
 
   .view-header h2 {
-    font-size: clamp(0.8rem, 3.8vw, 1.05rem) !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
     white-space: nowrap !important;
     word-break: keep-all !important;
     hyphens: manual !important;
     text-align: right !important;
-    flex-shrink: 0 !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
   }
 
   /* Responsive Wrap for Tabs in Mobile */
