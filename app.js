@@ -1815,26 +1815,53 @@ function handleSupervisaoAction(action, id) {
 }
 
 function formatSingleSupervisaoText(s) {
-  const isPending = s.partsPending === 'Sim';
-  const partsPendingText = isPending ? '( X ) sim  (   ) não' : '(   ) sim  ( X ) não';
-  const quaisText = isPending ? (s.parts || 'Nenhuma') : 'Nenhuma';
-  const chegadaText = isPending ? (s.arrival || 'N/A') : 'N/A';
-  const otherText = s.other || 'Nenhuma';
-  const finishText = s.finish || 'N/A';
+  const lines = ['Supervisão \n'];
 
-  let veiculoLine = s.vehicle ? `Veículo: ${s.vehicle}\n` : '';
-  let oficinaLine = s.oficinaName ? `Oficina: ${s.oficinaName}\n` : '';
+  if (s.vehicle && s.vehicle.trim()) {
+    lines.push(`Veículo: ${s.vehicle.trim()}`);
+  }
 
-  return `Supervisão 
+  const dateVal = s.date || getTodayDateValue();
+  if (dateVal && dateVal.trim()) {
+    lines.push(`Data: ${dateVal.trim()}`);
+  }
 
-${veiculoLine}Data: ${s.date || getTodayDateValue()}
-${oficinaLine}Atendido por : ${s.attended || ''}
-Em que parte do serviço esta?: ${s.stage || ''}
-Pendências de peças?: ${partsPendingText}
-Quais?: ${quaisText}
-Previsão de chegada?: ${chegadaText}
-Alguma outra pendência?: ${otherText}
-Estimativa de finalização do veículo?: ${finishText}`;
+  if (s.oficinaName && s.oficinaName.trim()) {
+    lines.push(`Oficina: ${s.oficinaName.trim()}`);
+  }
+
+  if (s.attended && s.attended.trim()) {
+    lines.push(`Atendido por : ${s.attended.trim()}`);
+  }
+
+  if (s.stage && s.stage.trim()) {
+    lines.push(`Em que parte do serviço esta?: ${s.stage.trim()}`);
+  }
+
+  if (s.partsPending && s.partsPending.trim()) {
+    const isPending = s.partsPending === 'Sim';
+    const partsPendingText = isPending ? '( X ) sim  (   ) não' : '(   ) sim  ( X ) não';
+    lines.push(`Pendências de peças?: ${partsPendingText}`);
+
+    if (isPending) {
+      if (s.parts && s.parts.trim()) {
+        lines.push(`Quais?: ${s.parts.trim()}`);
+      }
+      if (s.arrival && s.arrival.trim()) {
+        lines.push(`Previsão de chegada?: ${s.arrival.trim()}`);
+      }
+    }
+  }
+
+  if (s.other && s.other.trim()) {
+    lines.push(`Alguma outra pendência?: ${s.other.trim()}`);
+  }
+
+  if (s.finish && s.finish.trim()) {
+    lines.push(`Estimativa de finalização do veículo?: ${s.finish.trim()}`);
+  }
+
+  return lines.join('\n');
 }
 
 function getFilteredSupervisoes() {
