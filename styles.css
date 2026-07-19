@@ -922,7 +922,7 @@ html, body {
     text-align: center;
   }
 
-  /* Form & Buttons Responsiveness */
+  /* Form & Buttons Responsiveness - 2 Column Grid for Toggles */
   .form-grid {
     grid-template-columns: 1fr !important;
     width: 100% !important;
@@ -942,15 +942,15 @@ html, body {
     box-sizing: border-box !important;
   }
 
-  input, select, textarea {
+  input, select, textarea, .display-field {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
   .type-buttons-container, .insurer-buttons-container {
-    display: flex !important;
-    flex-wrap: wrap !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     width: 100% !important;
     max-width: 100% !important;
     gap: 6px !important;
@@ -958,12 +958,16 @@ html, body {
   }
 
   .type-btn, .insurer-btn {
-    padding: 6px 10px;
-    font-size: 0.78rem;
-    flex: 1 1 auto;
-    text-align: center;
+    width: 100% !important;
+    min-width: 0 !important;
     max-width: 100% !important;
+    padding: 8px 4px !important;
+    font-size: 0.8rem !important;
+    text-align: center !important;
     box-sizing: border-box !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   .form-actions {
