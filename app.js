@@ -1822,13 +1822,13 @@ function formatSingleSupervisaoText(s) {
   const otherText = s.other || 'Nenhuma';
   const finishText = s.finish || 'N/A';
 
-  let veiculoText = s.vehicle ? `\nVeículo: ${s.vehicle}` : '';
-  let oficinaText = s.oficinaName ? `\nOficina: ${s.oficinaName}` : '';
+  let veiculoLine = s.vehicle ? `Veículo: ${s.vehicle}\n` : '';
+  let oficinaLine = s.oficinaName ? `Oficina: ${s.oficinaName}\n` : '';
 
   return `Supervisão 
 
-Data: ${s.date || getTodayDateValue()}${veiculoText}${oficinaText}
-Atendido por : ${s.attended || ''}
+${veiculoLine}Data: ${s.date || getTodayDateValue()}
+${oficinaLine}Atendido por : ${s.attended || ''}
 Em que parte do serviço esta?: ${s.stage || ''}
 Pendências de peças?: ${partsPendingText}
 Quais?: ${quaisText}
