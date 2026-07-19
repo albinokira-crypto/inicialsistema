@@ -694,6 +694,38 @@ html, body {
     border-radius: 14px;
   }
 
+  /* Prevent Any Text Wrapping on Buttons & Tabs in Mobile */
+  .tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px !important;
+    padding-bottom: 6px;
+    width: 100%;
+  }
+
+  .tab-btn {
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    font-size: 0.84rem !important;
+    padding: 8px 12px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .menu-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .menu-btn {
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    font-size: clamp(0.75rem, 3.4vw, 0.9rem) !important;
+    padding: 14px 6px !important;
+  }
+
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;

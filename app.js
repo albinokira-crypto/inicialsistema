@@ -738,21 +738,23 @@ function renderReport(filteredItems) {
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
   const totals = days.map((day) => {
     const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
-    const plates = itemsForDay.map((item) => item.plate).join(', ');
+    const platesHtml = itemsForDay.length
+      ? itemsForDay.map((item) => `<div style="padding: 3px 0; border-bottom: 1px dashed #cbd5e1; font-weight: 500;">${escapeHtml(item.plate)}</div>`).join('')
+      : '—';
     return {
       day,
       visits: itemsForDay.length,
-      plates: plates || '—',
+      platesHtml,
       value: itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0)
     };
   });
 
-  reportBody.innerHTML = totals.map(({ day, visits, plates, value }) => `
+  reportBody.innerHTML = totals.map(({ day, visits, platesHtml, value }) => `
     <tr>
-      <td>${escapeHtml(day)}</td>
-      <td>${visits}</td>
-      <td style="word-break: break-all; max-width: 250px;">${escapeHtml(plates)}</td>
-      <td>R$ ${value.toFixed(2).replace('.', ',')}</td>
+      <td style="font-weight: 600;">${escapeHtml(day)}</td>
+      <td style="font-weight: 600;">${visits}</td>
+      <td style="word-break: break-word;">${platesHtml}</td>
+      <td style="font-weight: 600; white-space: nowrap;">R$ ${value.toFixed(2).replace('.', ',')}</td>
     </tr>
   `).join('');
 
