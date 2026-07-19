@@ -217,12 +217,12 @@
             </select>
           </label>
           <label>
-            Atendido por
+            Atendido por :
             <input id="supervisaoAttendedInput" name="attended" type="text" required placeholder="Ex: Alexandre" />
           </label>
           
           <label>
-            Em que parte do serviço está?
+            Em que parte do serviço esta?:
             <select id="supervisaoStageInput" name="stage" required>
               <option value="" disabled selected>Selecione a etapa...</option>
               <option value="Aguardando peças fora de serviço">Aguardando peças fora de serviço</option>
@@ -239,7 +239,7 @@
           </label>
 
           <label>
-            Pendências de peças?
+            Pendências de peças?:
             <div id="supervisaoPartsPendingButtons" class="type-buttons-container">
               <button type="button" class="type-btn" data-value="Sim">Sim</button>
               <button type="button" class="type-btn active" data-value="Não">Não</button>
@@ -249,22 +249,22 @@
 
           <div id="supervisaoPartsDetailsContainer" style="display: none;">
             <label>
-              Quais peças pendentes?
+              Quais?:
               <input id="supervisaoPartsInput" name="parts" type="text" placeholder="Ex: guia LD" />
             </label>
             <label>
-              Previsão de chegada (dias úteis)
-              <input id="supervisaoArrivalInput" name="arrival" type="text" placeholder="Ex: chega até amanhã" />
+              Previsão de chegada?: (em dias úteis)
+              <input id="supervisaoArrivalInput" name="arrival" type="text" placeholder="Ex: 2 dias úteis" />
             </label>
           </div>
 
           <label>
-            Alguma outra pendência?
+            Alguma outra pendência?:
             <input id="supervisaoOtherInput" name="other" type="text" placeholder="Descreva outra pendência se houver" />
           </label>
 
           <label>
-            Estimativa de finalização do veículo (dias úteis)
+            Estimativa de finalização do veículo?:
             <input id="supervisaoFinishInput" name="finish" type="text" placeholder="Ex: 10 dias úteis" />
           </label>
 
@@ -276,9 +276,12 @@
       </section>
 
       <section class="card" id="supervisaoRecordsCard" hidden>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
           <h2>Registros de Supervisão</h2>
-          <button id="shareSupervisaoPdfButton" class="primary-btn" type="button">Compartilhar Relatório (PDF)</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="shareSupervisaoTextButton" class="primary-btn" type="button">📱 Compartilhar Relatório (Texto)</button>
+            <button id="copySupervisaoTextButton" class="ghost-btn" type="button">📋 Copiar Texto</button>
+          </div>
         </div>
         
         <div class="filter-group" style="margin-bottom: 16px;">

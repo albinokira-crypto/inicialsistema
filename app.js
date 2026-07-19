@@ -70,7 +70,8 @@ const supervisaoOtherInput = document.getElementById('supervisaoOtherInput');
 const supervisaoFinishInput = document.getElementById('supervisaoFinishInput');
 const saveSupervisaoButton = document.getElementById('saveSupervisaoButton');
 const cancelSupervisaoEditButton = document.getElementById('cancelSupervisaoEditButton');
-const shareSupervisaoPdfButton = document.getElementById('shareSupervisaoPdfButton');
+const shareSupervisaoTextButton = document.getElementById('shareSupervisaoTextButton');
+const copySupervisaoTextButton = document.getElementById('copySupervisaoTextButton');
 const supervisaoStageFilterContainer = document.getElementById('supervisaoStageFilterContainer');
 const supervisaoOficinaFilterContainer = document.getElementById('supervisaoOficinaFilterContainer');
 const supervisaoReportContent = document.getElementById('supervisaoReportContent');
@@ -285,9 +286,19 @@ if (supervisaoOficinaFilterContainer) {
   });
 }
 
-if (shareSupervisaoPdfButton) {
-  shareSupervisaoPdfButton.addEventListener('click', () => {
-    generateSupervisaoReportPDF();
+if (shareSupervisaoTextButton) {
+  shareSupervisaoTextButton.addEventListener('click', () => {
+    const filtered = getFilteredSupervisoes();
+    const text = formatAllSupervisoesText(filtered);
+    shareSupervisaoText(text, 'Relatório de Supervisão');
+  });
+}
+
+if (copySupervisaoTextButton) {
+  copySupervisaoTextButton.addEventListener('click', () => {
+    const filtered = getFilteredSupervisoes();
+    const text = formatAllSupervisoesText(filtered);
+    copySupervisaoTextToClipboard(text);
   });
 }
 
@@ -1735,6 +1746,8 @@ function renderSupervisaoReport() {
         <td>${prevEst}</td>
         <td>
           <div class="actions">
+            <button class="action-btn" type="button" data-super-action="share-text" data-id="${s.id}" title="Compartilhar texto">📱 Compartilhar</button>
+            <button class="action-btn" type="button" data-super-action="copy-text" data-id="${s.id}" title="Copiar texto">📋 Copiar</button>
             <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
             <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
           </div>
@@ -1760,6 +1773,18 @@ function handleSupervisaoAction(action, id) {
 
   const s = supervisoes.find((entry) => entry.id === id);
   if (!s) return;
+
+  if (action === 'share-text') {
+    const text = formatSingleSupervisaoText(s);
+    shareSupervisaoText(text, `Supervisão - ${s.vehicle || ''}`);
+    return;
+  }
+
+  if (action === 'copy-text') {
+    const text = formatSingleSupervisaoText(s);
+    copySupervisaoTextToClipboard(text);
+    return;
+  }
 
   editingSupervisaoId = s.id;
   supervisaoVehicleInput.value = s.vehicle || '';
@@ -1787,6 +1812,88 @@ function handleSupervisaoAction(action, id) {
   if (saveSupervisaoButton) saveSupervisaoButton.textContent = 'Atualizar';
   
   supervisaoVehicleInput.focus();
+}
+
+function formatSingleSupervisaoText(s) {
+  const isPending = s.partsPending === 'Sim';
+  const partsPendingText = isPending ? '( X ) sim  (   ) não' : '(   ) sim  ( X ) não';
+  const quaisText = isPending ? (s.parts || 'Nenhuma') : 'Nenhuma';
+  const chegadaText = isPending ? (s.arrival || 'N/A') : 'N/A';
+  const otherText = s.other || 'Nenhuma';
+  const finishText = s.finish || 'N/A';
+
+  let veiculoText = s.vehicle ? `\nVeículo: ${s.vehicle}` : '';
+  let oficinaText = s.oficinaName ? `\nOficina: ${s.oficinaName}` : '';
+
+  return `Supervisão 
+
+Data: ${s.date || getTodayDateValue()}${veiculoText}${oficinaText}
+Atendido por : ${s.attended || ''}
+Em que parte do serviço esta?: ${s.stage || ''}
+Pendências de peças?: ${partsPendingText}
+Quais?: ${quaisText}
+Previsão de chegada?: ${chegadaText}
+Alguma outra pendência?: ${otherText}
+Estimativa de finalização do veículo?: ${finishText}`;
+}
+
+function getFilteredSupervisoes() {
+  return supervisoes.filter((s) => {
+    if (selectedSupervisaoStage !== 'Todos' && s.stage !== selectedSupervisaoStage) return false;
+    if (selectedSupervisaoOficina !== 'Todas' && s.oficinaId !== selectedSupervisaoOficina) return false;
+    return true;
+  });
+}
+
+function formatAllSupervisoesText(filteredList) {
+  if (!filteredList || filteredList.length === 0) {
+    return 'Nenhum registro de supervisão encontrado.';
+  }
+  return filteredList.map((s) => formatSingleSupervisaoText(s)).join('\n\n----------------------------------------\n\n');
+}
+
+async function shareSupervisaoText(text, title = 'Relatório de Supervisão') {
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: title,
+        text: text
+      });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.warn('Erro ao compartilhar via navigator.share:', err);
+    }
+  }
+  copySupervisaoTextToClipboard(text);
+}
+
+function copySupervisaoTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Relatório em texto copiado para a área de transferência!');
+    }).catch(() => {
+      fallbackCopyText(text);
+    });
+  } else {
+    fallbackCopyText(text);
+  }
+}
+
+function fallbackCopyText(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand('copy');
+    alert('Relatório em texto copiado para a área de transferência!');
+  } catch (e) {
+    alert('Não foi possível copiar o texto automaticamente.');
+  }
+  document.body.removeChild(textarea);
 }
 
 function generateSupervisaoReportPDF() {
