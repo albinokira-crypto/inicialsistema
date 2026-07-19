@@ -608,10 +608,6 @@ function shareSurveyText(id) {
 
   const details = item.details || {};
 
-  // Header format: [VEHICLE/PLATE] - [INSURER] - [WORKSHOP]
-  let text = `${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}\n\n`;
-  text += `VISTORIA REALIZADA EM: ${formattedDate}\n`;
-
   // Checklist helper
   const getCheckmark = (val, field) => {
     const isSim = (val || '').toLowerCase() === 'sim';
@@ -627,55 +623,81 @@ function shareSurveyText(id) {
     return isSim ? 'Sim (x ) Não ( )' : 'Sim ( ) Não (x )';
   };
 
-  text += `REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}\n`;
-  text += `MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}\n`;
-  text += `VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}\n`;
-  text += `MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}\n`;
-  text += `TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}\n`;
-  text += `CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}\n`;
-
   const radioVal = details.radio === 'Original' ? 'original' : (details.radioBrand || 'Outra');
-  text += `RÁDIO / MARCA:${radioVal}\n`;
-  text += `PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}\n`;
-  text += `BATERIA / MARCA: ${details.bateria || ''}\n`;
 
-  // Type specific notes
-  if (item.type === 'Roubo Recuperado' && details.obsRoubo) {
-    text += `Observações Roubo: ${details.obsRoubo}\n`;
-  }
+  let text = '';
+
   if (item.type === 'Incêndio') {
-    if (details.origemIncendio) text += `Ponto de Origem do Incêndio: ${details.origemIncendio}\n`;
-    if (details.sistemaCombustivel) text += `Sistema de Combustível: ${details.sistemaCombustivel}\n`;
-    if (details.sistemaEletrico) text += `Sistema Elétrico: ${details.sistemaEletrico}\n`;
-    if (details.residuosExtincao) text += `Resíduos de Extinção: ${details.residuosExtincao}\n`;
-    if (details.tanqueAfetado) text += `Tanque Afetado: ${details.tanqueAfetado}\n`;
-  }
-  if (item.type === 'Enchente') {
-    const yesNo = (val) => val === 'Sim' ? 'Sim' : 'Não';
-    if (details.aguaOleo) text += `Vestígios de água no óleo: ${yesNo(details.aguaOleo)}\n`;
-    if (details.aguaVelas) text += `Vestígios de água nas velas: ${yesNo(details.aguaVelas)}\n`;
-    if (details.aguaFarois) text += `Vestígios de água nos faróis: ${yesNo(details.aguaFarois)}\n`;
-    if (details.aguaLanternas) text += `Vestígios de água nas lanternas: ${yesNo(details.aguaLanternas)}\n`;
-    if (details.aguaFiltro) text += `Vestígios de água no filtro: ${yesNo(details.aguaFiltro)}\n`;
-    if (details.motorTravado) text += `Motor travado: ${yesNo(details.motorTravado)}\n`;
-    if (details.alturaAgua) text += `Altura da água: ${details.alturaAgua}\n`;
-  }
-  if ((item.type === 'Complemento' || item.type === 'Pós entrega') && details.conteudoLivre) {
-    text += `Conteúdo: ${details.conteudoLivre}\n`;
+    text += `Incêndio\n\n`;
+    text += `${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}\n\n`;
+    text += `VISTORIA REALIZADA EM: ${formattedDate}\n`;
+    text += `REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}\n`;
+    text += `MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}\n`;
+    text += `VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}\n`;
+    text += `MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}\n`;
+    text += `TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}\n`;
+    text += `CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}\n`;
+    text += `RÁDIO / MARCA:${radioVal}\n`;
+    text += `PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}\n`;
+    text += `BATERIA / MARCA: ${details.bateria || ''}\n\n`;
+
+    text += ` Ponto de Origem do Incêndio : ${details.origemIncendio || ''}\n`;
+    text += `Avaliação do Sistema de Combustível e Fluidos : ${details.sistemaCombustivel || 'Ok'}\n`;
+    text += `Avaliação do Sistema Elétrico : ${details.sistemaEletrico || 'Ok'}\n`;
+    text += `Resíduos de Extinção do Incêndio : ${getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao')}\n`;
+    text += `Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}\n`;
+    text += `Observações Complementares : ${details.obs || ''}\n`;
+  } else {
+    // Other survey types
+    text += `${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}\n\n`;
+    text += `VISTORIA REALIZADA EM: ${formattedDate}\n`;
+    text += `REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}\n`;
+    text += `MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}\n`;
+    
+    if ('estepe' in details) {
+      text += `VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}\n`;
+      text += `MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}\n`;
+      text += `TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}\n`;
+      text += `CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}\n`;
+      text += `RÁDIO / MARCA:${radioVal}\n`;
+      text += `PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}\n`;
+      text += `BATERIA / MARCA: ${details.bateria || ''}\n`;
+    }
+
+    if (item.type === 'Roubo Recuperado' && details.obsRoubo) {
+      text += `Observações Roubo: ${details.obsRoubo}\n`;
+    }
+    if (item.type === 'Enchente') {
+      const yesNo = (val) => val === 'Sim' ? 'Sim' : 'Não';
+      if (details.aguaOleo) text += `Vestígios de água no óleo: ${yesNo(details.aguaOleo)}\n`;
+      if (details.aguaVelas) text += `Vestígios de água nas velas: ${yesNo(details.aguaVelas)}\n`;
+      if (details.aguaFarois) text += `Vestígios de água nos faróis: ${yesNo(details.aguaFarois)}\n`;
+      if (details.aguaLanternas) text += `Vestígios de água nas lanternas: ${yesNo(details.aguaLanternas)}\n`;
+      if (details.aguaFiltro) text += `Vestígios de água no filtro: ${yesNo(details.aguaFiltro)}\n`;
+      if (details.motorTravado) text += `Motor travado: ${yesNo(details.motorTravado)}\n`;
+      if (details.alturaAgua) text += `Altura da água: ${details.alturaAgua}\n`;
+    }
+    if ((item.type === 'Complemento' || item.type === 'Pós entrega') && details.conteudoLivre) {
+      text += `Conteúdo: ${details.conteudoLivre}\n`;
+    }
+
+    const obsVal = details.obs || details.obsRoubo || details.obsIncendio || details.obsEnchente || '';
+    if (obsVal) {
+      text += `\nObs.: ${obsVal}\n`;
+    }
   }
 
-  // Obs, Trocas, Reparos (universal fields)
-  const obsVal = details.obs || details.obsRoubo || details.obsIncendio || details.obsEnchente || '';
-  if (obsVal) {
-    text += `\nObs.: ${obsVal}\n`;
-  }
-
+  // Universal fields (Trocas & Reparos)
   if (details.trocas) {
     text += `\nTrocas\n${details.trocas}\n`;
+  } else if (item.type === 'Incêndio') {
+    text += `\nTrocas\n`;
   }
 
   if (details.reparos) {
     text += `\nReparos\n${details.reparos}\n`;
+  } else if (item.type === 'Incêndio') {
+    text += `\nReparos\n`;
   }
 
   // Try sharing via Web Share API, fallback to clipboard
@@ -1039,13 +1061,6 @@ function renderDynamicSurveyFields() {
 
   let fieldsHtml = '';
 
-  const headerHtml = `
-    <label style="grid-column: 1 / -1;">
-      Cabeçalho (Espaço livre)
-      <input type="text" name="cabecalho" placeholder="Digite informações do cabeçalho" />
-    </label>
-  `;
-
   const commonChecklistHtml = `
     <div class="form-toggle-field">
       <span class="status-label">Rebocado?</span>
@@ -1144,13 +1159,13 @@ function renderDynamicSurveyFields() {
   `;
 
   if (selectedType === 'Inicial') {
-    fieldsHtml = headerHtml + commonChecklistHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
+    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Moto') {
-    fieldsHtml = headerHtml + commonChecklistHtml + extraFieldsHtml;
+    fieldsHtml = commonChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Roubo Recuperado') {
-    fieldsHtml = headerHtml + commonChecklistHtml + extraFieldsHtml;
+    fieldsHtml = commonChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Incêndio') {
-    fieldsHtml = headerHtml + commonChecklistHtml + vehicleExtraChecklistHtml + `
+    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + `
       <label>
         Ponto de Origem do Incêndio
         <input type="text" name="origemIncendio" placeholder="Ex: Compartimento do motor" />
@@ -1195,7 +1210,7 @@ function renderDynamicSurveyFields() {
       </div>
     ` + extraFieldsHtml;
   } else if (selectedType === 'Enchente') {
-    fieldsHtml = headerHtml + commonChecklistHtml + vehicleExtraChecklistHtml + `
+    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + `
       <div class="form-toggle-field">
         <span class="status-label">Vestígios de água no óleo do motor?</span>
         <div class="type-buttons-container" data-input-id="input_oleo">
@@ -1256,7 +1271,7 @@ function renderDynamicSurveyFields() {
       </label>
     ` + extraFieldsHtml;
   } else if (selectedType === 'Complemento' || selectedType === 'Pós entrega') {
-    fieldsHtml = headerHtml + `
+    fieldsHtml = `
       <label style="grid-column: 1 / -1;">
         Conteúdo do Relatório
         <textarea name="conteudoLivre" rows="5" required placeholder="Digite o conteúdo livre para o relatório..."></textarea>
