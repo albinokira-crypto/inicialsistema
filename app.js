@@ -208,6 +208,7 @@ if (vistoriaTypeTabs) {
       formTitle.textContent = `Novo registro - ${selectedType}`;
     }
     
+    renderDynamicSurveyFields();
     render();
   });
 }
@@ -289,7 +290,7 @@ function cancelEdit() {
   editingId = null;
   form.reset();
   if (providerSelect) providerSelect.value = '';
-  if (typeInput) typeInput.value = 'Inicial';
+  if (typeInput) typeInput.value = selectedType || 'Inicial';
   updateTypeButtonsHighlight();
   updateInsurerButtonsHighlight();
   updateFormState();
@@ -432,7 +433,7 @@ function saveItem(event) {
   saveItems();
   form.reset();
   if (providerSelect) providerSelect.value = '';
-  if (typeInput) typeInput.value = 'Inicial';
+  if (typeInput) typeInput.value = selectedType || 'Inicial';
   updateTypeButtonsHighlight();
   updateInsurerButtonsHighlight();
   editingId = null;
@@ -744,7 +745,20 @@ function handleAction(action, id) {
   plateInput.value = item.plate || '';
   providerSelect.value = item.providerId || '';
   valueInput.value = item.value || '';
-  if (typeInput) typeInput.value = item.type || 'Inicial';
+  
+  selectedType = item.type || 'Inicial';
+  if (typeInput) typeInput.value = selectedType;
+  
+  if (vistoriaTypeTabs) {
+    vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.type === selectedType);
+    });
+  }
+  
+  const formTitle = document.getElementById('formTitle');
+  if (formTitle) {
+    formTitle.textContent = `Editar registro - ${selectedType}`;
+  }
   
   // Render dynamic fields before populating them
   renderDynamicSurveyFields();
