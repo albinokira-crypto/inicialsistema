@@ -620,7 +620,8 @@ function render() {
               </div>
             </div>
             <div class="actions vertical-actions">
-              <button class="action-btn" type="button" data-action="share-text" data-id="${entry.id}">Compartilhar</button>
+              <button class="action-btn" type="button" data-action="share-text" data-id="${entry.id}">📱 Compartilhar</button>
+              <button class="action-btn" type="button" data-action="copy-text" data-id="${entry.id}">📋 Copiar</button>
               <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
               <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
             </div>
@@ -718,7 +719,8 @@ function render() {
           </div>
         </div>
         <div class="actions vertical-actions">
-          <button class="action-btn" type="button" data-action="share-text" data-id="${item.id}">Compartilhar</button>
+          <button class="action-btn" type="button" data-action="share-text" data-id="${item.id}">📱 Compartilhar</button>
+          <button class="action-btn" type="button" data-action="copy-text" data-id="${item.id}">📋 Copiar</button>
           <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
           <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
         </div>
@@ -761,9 +763,9 @@ function renderReport(filteredItems) {
   weeklyValue.textContent = `R$ ${totalValue.toFixed(2).replace('.', ',')}`;
 }
 
-function shareSurveyText(id) {
+function getSurveyText(id) {
   const item = items.find(entry => entry.id === id);
-  if (!item) return;
+  if (!item) return '';
 
   const dateParts = item.date ? item.date.split('-') : [];
   const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : item.date;
@@ -862,12 +864,19 @@ function shareSurveyText(id) {
     text += `\nReparos\n`;
   }
 
-  // Try sharing via Web Share API, fallback to clipboard
+  return text;
+}
+
+function shareSurveyText(id) {
+  const text = getSurveyText(id);
+  if (!text) return;
+
   if (navigator.share) {
     navigator.share({
       title: 'Compartilhamento de Vistoria',
       text: text
     }).catch(err => {
+      if (err.name === 'AbortError') return;
       console.warn('Erro ao compartilhar pelo Web Share API, copiando para a área de transferência...', err);
       copyTextToClipboard(text);
     });
@@ -876,18 +885,29 @@ function shareSurveyText(id) {
   }
 }
 
+function copySurveyText(id) {
+  const text = getSurveyText(id);
+  if (!text) return;
+  copyTextToClipboard(text);
+}
+
 function copyTextToClipboard(text) {
-  navigator.clipboard.writeText(text).then(() => {
-    alert('Texto de vistoria copiado para a área de transferência com sucesso!');
-  }).catch(err => {
-    console.error('Falha ao copiar texto:', err);
-    alert('Não foi possível copiar o texto automaticamente. Copie manualmente.');
-  });
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {
+      fallbackCopyText(text);
+    });
+  } else {
+    fallbackCopyText(text);
+  }
 }
 
 function handleAction(action, id) {
   if (action === 'share-text') {
     shareSurveyText(id);
+    return;
+  }
+  if (action === 'copy-text') {
+    copySurveyText(id);
     return;
   }
   if (action === 'delete') {
