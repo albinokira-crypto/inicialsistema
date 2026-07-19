@@ -15,7 +15,8 @@ const itemList = document.getElementById('itemList');
 const reportBody = document.getElementById('reportBody');
 const weeklyVisits = document.getElementById('weeklyVisits');
 const weeklyValue = document.getElementById('weeklyValue');
-const clearButton = document.getElementById('clearButton');
+const clearWeekButton = document.getElementById('clearWeekButton');
+const clearMonthButton = document.getElementById('clearMonthButton');
 const installButton = document.getElementById('installButton');
 const currentDateLabel = document.getElementById('currentDateLabel');
 const currentDayLabel = document.getElementById('currentDayLabel');
@@ -185,13 +186,29 @@ if (oficinaForm) {
 if (cancelOficinaEditButton) {
   cancelOficinaEditButton.addEventListener('click', cancelOficinaEdit);
 }
-clearButton.addEventListener('click', () => {
-  if (window.confirm('Deseja apagar todos os registros salvos?')) {
-    items = [];
-    saveItems();
-    render();
-  }
-});
+if (clearWeekButton) {
+  clearWeekButton.addEventListener('click', () => {
+    if (window.confirm('Deseja apagar os registros da semana atual? Eles continuarão no relatório mensal.')) {
+      items.forEach((item) => {
+        item.clearedFromWeek = true;
+      });
+      saveItems();
+      render();
+    }
+  });
+}
+
+if (clearMonthButton) {
+  clearMonthButton.addEventListener('click', () => {
+    if (window.confirm('Deseja apagar permanentemente todos os registros do mês vigente?')) {
+      const now = new Date();
+      const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      items = items.filter((item) => !item.date.startsWith(currentYearMonth));
+      saveItems();
+      render();
+    }
+  });
+}
 
 if (vistoriaTypeTabs) {
   vistoriaTypeTabs.addEventListener('click', (event) => {
@@ -484,28 +501,45 @@ function render() {
   const query = searchInput.value.toLowerCase();
   const filtered = items.filter((item) => {
     const isTotalWeek = selectedDay === 'Total da semana';
+    const isTotalMonth = selectedDay === 'Mês vigente';
     const matchesQuery = `${item.date} ${item.day} ${item.plate} ${item.provider}`.toLowerCase().includes(query);
     if (!matchesQuery) return false;
 
+    if (isTotalMonth) {
+      const now = new Date();
+      const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      return item.date.startsWith(currentYearMonth);
+    }
+
     if (isTotalWeek) {
-      return true;
+      return item.clearedFromWeek !== true;
     }
     
     // Filter by day and the active sub-tab type
     const sameDay = item.day === selectedDay;
     const sameType = (item.type || 'Inicial') === selectedType;
-    return sameDay && sameType;
+    return sameDay && sameType && item.clearedFromWeek !== true;
   });
 
   clearSearchButton.hidden = !query;
   installButton.hidden = !deferredPrompt;
 
-  const totalValue = items.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
-  const uniqueDays = new Set(items.map((item) => item.day)).size;
+  const isTotalMonth = selectedDay === 'Mês vigente';
+  let statsItems = [];
+  if (isTotalMonth) {
+    const now = new Date();
+    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    statsItems = items.filter(item => item.date.startsWith(currentYearMonth));
+  } else {
+    statsItems = items.filter(item => item.clearedFromWeek !== true);
+  }
+
+  const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+  const uniqueDays = new Set(statsItems.map((item) => item.day)).size;
 
   summaryGrid.innerHTML = `
     <article class="summary-item">
-      <strong>${items.length}</strong>
+      <strong>${statsItems.length}</strong>
       <span>vistorias</span>
     </article>
     <article class="summary-item">
@@ -517,7 +551,7 @@ function render() {
       <span>dias preenchidos</span>
     </article>
     <article class="summary-item">
-      <strong>${items.length ? escapeHtml(items[0].createdAt) : '—'}</strong>
+      <strong>${statsItems.length ? escapeHtml(statsItems[0].createdAt) : '—'}</strong>
       <span>último registro</span>
     </article>
   `;
@@ -575,7 +609,7 @@ function render() {
 function renderReport(filteredItems) {
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
   const totals = days.map((day) => {
-    const itemsForDay = items.filter((item) => item.day === day);
+    const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
     const plates = itemsForDay.map((item) => item.plate).join(', ');
     return {
       day,
@@ -832,6 +866,8 @@ function updateFormDisplay() {
       currentPageTitle.textContent = 'Oficinas';
     } else if (selectedDay === 'Total da semana') {
       currentPageTitle.textContent = 'Total da Semana';
+    } else if (selectedDay === 'Mês vigente') {
+      currentPageTitle.textContent = 'Mês Vigente';
     } else if (selectedDay === 'Inicial') {
       currentPageTitle.textContent = 'Vistorias Iniciais';
     } else if (selectedDay === 'Supervisão') {
@@ -860,7 +896,7 @@ function updateFormDisplay() {
 
   const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
   if (formCard) formCard.hidden = !isWeekday;
-  if (recordsCard) recordsCard.hidden = !isWeekday && selectedDay !== 'Inicial';
+  if (recordsCard) recordsCard.hidden = !isWeekday && selectedDay !== 'Inicial' && selectedDay !== 'Mês vigente';
   if (reportCard) reportCard.hidden = selectedDay !== 'Total da semana';
   
   if (vistoriaTypeTabsCard) {
@@ -869,6 +905,19 @@ function updateFormDisplay() {
   
   if (supervisaoFormCard) supervisaoFormCard.hidden = selectedDay !== 'Supervisão';
   if (supervisaoRecordsCard) supervisaoRecordsCard.hidden = selectedDay !== 'Supervisão';
+
+  if (clearWeekButton && clearMonthButton) {
+    if (selectedDay === 'Mês vigente') {
+      clearWeekButton.style.display = 'none';
+      clearMonthButton.style.display = 'inline-block';
+    } else if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Total da semana'].includes(selectedDay)) {
+      clearWeekButton.style.display = 'inline-block';
+      clearMonthButton.style.display = 'none';
+    } else {
+      clearWeekButton.style.display = 'none';
+      clearMonthButton.style.display = 'none';
+    }
+  }
 
   if (isWeekday) {
     renderDynamicSurveyFields();
@@ -1182,7 +1231,7 @@ function renderDynamicSurveyFields() {
   } else if (selectedType === 'Moto') {
     fieldsHtml = commonChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Roubo Recuperado') {
-    fieldsHtml = commonChecklistHtml + extraFieldsHtml;
+    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Incêndio') {
     fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + obsHtml + `
       <label style="grid-column: 1 / -1;">
@@ -1371,8 +1420,9 @@ function generateWeeklyReportPDF() {
   doc.line(14, 34, pageWidth - 14, 34);
 
   // Statistics
-  const totalVisitsCount = items.length;
-  const totalValueSum = items.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+  const activeWeeklyItems = items.filter(item => item.clearedFromWeek !== true);
+  const totalVisitsCount = activeWeeklyItems.length;
+  const totalValueSum = activeWeeklyItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
@@ -1383,7 +1433,7 @@ function generateWeeklyReportPDF() {
   // Prepare table data
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
   const tableRows = days.map((day) => {
-    const itemsForDay = items.filter((item) => item.day === day);
+    const itemsForDay = activeWeeklyItems.filter((item) => item.day === day);
     const visits = itemsForDay.length;
     const plates = itemsForDay.map((item) => item.plate).join(', ');
     const value = itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
@@ -1395,8 +1445,8 @@ function generateWeeklyReportPDF() {
     ];
   });
 
-  const displayedVisits = items.filter(item => days.includes(item.day)).length;
-  const displayedValue = items.filter(item => days.includes(item.day)).reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+  const displayedVisits = activeWeeklyItems.filter(item => days.includes(item.day)).length;
+  const displayedValue = activeWeeklyItems.filter(item => days.includes(item.day)).reduce((sum, item) => sum + (Number(item.value) || 0), 0);
 
   // Add Totals row
   tableRows.push([
