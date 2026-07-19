@@ -868,8 +868,6 @@ function updateFormDisplay() {
       currentPageTitle.textContent = 'Total da Semana';
     } else if (selectedDay === 'Mês vigente') {
       currentPageTitle.textContent = 'Mês Vigente';
-    } else if (selectedDay === 'Inicial') {
-      currentPageTitle.textContent = 'Vistorias Iniciais';
     } else if (selectedDay === 'Supervisão') {
       currentPageTitle.textContent = 'Supervisão';
     } else {
@@ -896,7 +894,7 @@ function updateFormDisplay() {
 
   const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
   if (formCard) formCard.hidden = !isWeekday;
-  if (recordsCard) recordsCard.hidden = !isWeekday && selectedDay !== 'Inicial' && selectedDay !== 'Mês vigente';
+  if (recordsCard) recordsCard.hidden = !isWeekday && selectedDay !== 'Mês vigente';
   if (reportCard) reportCard.hidden = selectedDay !== 'Total da semana';
   
   if (vistoriaTypeTabsCard) {
