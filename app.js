@@ -1143,11 +1143,14 @@ function renderDynamicSurveyFields() {
     </label>
   `;
 
-  const extraFieldsHtml = `
+  const obsHtml = `
     <label style="grid-column: 1 / -1;">
       Observações (Obs.)
       <input type="text" name="obs" placeholder="Ex: tinta tricoat" />
     </label>
+  `;
+
+  const trocasReparosHtml = `
     <label style="grid-column: 1 / -1;">
       Trocas (uma peça por linha)
       <textarea name="trocas" rows="3" placeholder="Ex:&#10;Lateral LE&#10;Porta traseira LE"></textarea>
@@ -1158,6 +1161,8 @@ function renderDynamicSurveyFields() {
     </label>
   `;
 
+  const extraFieldsHtml = obsHtml + trocasReparosHtml;
+
   if (selectedType === 'Inicial') {
     fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Moto') {
@@ -1165,8 +1170,8 @@ function renderDynamicSurveyFields() {
   } else if (selectedType === 'Roubo Recuperado') {
     fieldsHtml = commonChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Incêndio') {
-    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + `
-      <label>
+    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + obsHtml + `
+      <label style="grid-column: 1 / -1;">
         Ponto de Origem do Incêndio
         <input type="text" name="origemIncendio" placeholder="Ex: Compartimento do motor" />
       </label>
@@ -1208,7 +1213,7 @@ function renderDynamicSurveyFields() {
         </div>
         <input type="hidden" id="input_tanque" name="tanqueAfetado" value="Não" />
       </div>
-    ` + extraFieldsHtml;
+    ` + trocasReparosHtml;
   } else if (selectedType === 'Enchente') {
     fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + `
       <div class="form-toggle-field">
