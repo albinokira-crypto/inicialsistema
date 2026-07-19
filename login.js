@@ -19,10 +19,10 @@ const USERS_STORAGE_KEY = 'web-system-users-v1';
 // Toggle views
 showRegisterLink.addEventListener('click', (e) => {
   e.preventDefault();
-  loginForm.hidden = true;
-  registerForm.hidden = false;
-  toggleLoginView.hidden = true;
-  toggleRegisterView.hidden = false;
+  loginForm.style.display = 'none';
+  registerForm.style.display = 'grid';
+  toggleLoginView.style.display = 'none';
+  toggleRegisterView.style.display = 'block';
   registerError.hidden = true;
   registerSuccess.hidden = true;
   registerForm.reset();
@@ -30,10 +30,10 @@ showRegisterLink.addEventListener('click', (e) => {
 
 showLoginLink.addEventListener('click', (e) => {
   e.preventDefault();
-  loginForm.hidden = false;
-  registerForm.hidden = true;
-  toggleLoginView.hidden = false;
-  toggleRegisterView.hidden = true;
+  loginForm.style.display = 'grid';
+  registerForm.style.display = 'none';
+  toggleLoginView.style.display = 'block';
+  toggleRegisterView.style.display = 'none';
   loginError.hidden = true;
   loginForm.reset();
 });
@@ -96,7 +96,7 @@ loginForm.addEventListener('submit', (event) => {
   const users = getRegisteredUsers();
   if (users[username] && users[username] === password) {
     sessionStorage.setItem('authenticated', 'true');
-    window.location.href = 'index.html';
+    window.location.href = 'dashboard.html';
     return;
   }
 
@@ -104,6 +104,22 @@ loginForm.addEventListener('submit', (event) => {
   loginError.textContent = 'Usuário ou senha incorretos. Tente novamente.';
 });
 
-if (sessionStorage.getItem('authenticated') === 'true' && window.location.pathname.endsWith('login.html')) {
-  window.location.href = 'index.html';
+if (sessionStorage.getItem('authenticated') === 'true') {
+  window.location.href = 'dashboard.html';
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+    .then((registration) => {
+      // Force checking for updates immediately on load
+      registration.update();
+    })
+    .catch((error) => {
+      console.warn('Registro do service worker falhou', error);
+    });
+
+  // Auto-reload when service worker updates to apply changes in real-time
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
 }

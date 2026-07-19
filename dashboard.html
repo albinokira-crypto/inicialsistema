@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#2563eb" />
+    <title>Gestão de Vistoria Inicial</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- jsPDF and jsPDF-AutoTable CDNs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  </head>
+  <body>
+    <main class="app">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Gestão de Vistoria Inicial</p>
+          <h1>Controle de Vistoria Inicial</h1>
+          <p>Registre e acompanhe informações de vistorias iniciais com acesso seguro pelo celular ou desktop.</p>
+        </div>
+        <div class="hero-actions">
+          <button id="installButton" class="primary-btn" type="button" hidden>Instalar atalho</button>
+          <button id="logoutButton" class="ghost-btn" type="button">Sair</button>
+          <button id="clearButton" class="ghost-btn" type="button">Limpar dados</button>
+        </div>
+      </header>
+
+      <section class="card" id="welcomeScreen">
+        <h2>Painel de Controle</h2>
+        <p>Selecione uma opção abaixo para cadastrar vistorias, gerenciar seguradoras ou visualizar o relatório semanal:</p>
+        <div class="menu-grid">
+          <button class="menu-btn" type="button" data-day="Segunda">Segunda-feira</button>
+          <button class="menu-btn" type="button" data-day="Terça">Terça-feira</button>
+          <button class="menu-btn" type="button" data-day="Quarta">Quarta-feira</button>
+          <button class="menu-btn" type="button" data-day="Quinta">Quinta-feira</button>
+          <button class="menu-btn" type="button" data-day="Sexta">Sexta-feira</button>
+          <button class="menu-btn special-btn" type="button" data-day="Inicial">Inicial</button>
+          <button class="menu-btn special-btn" type="button" data-day="Supervisão">Supervisão</button>
+          <button class="menu-btn special-btn" type="button" data-day="Seguradoras">Seguradoras</button>
+          <button class="menu-btn special-btn" type="button" data-day="Oficinas">Oficinas</button>
+          <button class="menu-btn special-btn-total" type="button" data-day="Total da semana">Total da Semana</button>
+        </div>
+      </section>
+
+      <div id="appContent" hidden>
+        <div class="view-header">
+          <button id="backToMenuButton" class="ghost-btn" type="button">
+            ← Voltar ao Menu
+          </button>
+          <h2 id="currentPageTitle">Página</h2>
+        </div>
+
+        <section class="summary-grid" id="summaryGrid"></section>
+
+        <section class="card tabs-card" style="display: none;">
+          <div id="dayTabs" class="tabs">
+            <button class="tab-btn" type="button" data-day="Segunda">Segunda</button>
+            <button class="tab-btn" type="button" data-day="Terça">Terça</button>
+            <button class="tab-btn" type="button" data-day="Quarta">Quarta</button>
+            <button class="tab-btn" type="button" data-day="Quinta">Quinta</button>
+            <button class="tab-btn" type="button" data-day="Sexta">Sexta</button>
+            <button class="tab-btn" type="button" data-day="Inicial">Inicial</button>
+            <button class="tab-btn" type="button" data-day="Supervisão">Supervisão</button>
+            <button class="tab-btn active" type="button" data-day="Seguradoras">Seguradoras</button>
+            <button class="tab-btn" type="button" data-day="Oficinas">Oficinas</button>
+            <button class="tab-btn" type="button" data-day="Total da semana">Total da semana</button>
+          </div>
+        </section>
+
+        <section class="card tabs-card" id="vistoriaTypeTabsCard" style="display: none; margin-top: 10px;">
+          <div id="vistoriaTypeTabs" class="tabs">
+            <button class="tab-btn active" type="button" data-type="Inicial">Inicial</button>
+            <button class="tab-btn" type="button" data-type="Roubo Recuperado">Roubo Recuperado</button>
+            <button class="tab-btn" type="button" data-type="Incêndio">Incêndio</button>
+            <button class="tab-btn" type="button" data-type="Enchente">Enchente</button>
+            <button class="tab-btn" type="button" data-type="Moto">Moto</button>
+            <button class="tab-btn" type="button" data-type="Complemento">Complemento</button>
+            <button class="tab-btn" type="button" data-type="Pós entrega">Pós entrega</button>
+          </div>
+        </section>
+
+      <section class="card" id="formCard">
+        <h2 id="formTitle">Novo registro</h2>
+
+        <form id="itemForm" class="form-grid">
+          <div class="form-status-grid">
+            <div>
+              <span class="status-label">Data do registro</span>
+              <div class="display-field" id="currentDateLabel"></div>
+            </div>
+            <div>
+              <span class="status-label">Dia da semana</span>
+              <div class="display-field" id="currentDayLabel"></div>
+            </div>
+          </div>
+          <input id="dateInput" name="date" type="hidden" />
+          <input id="dayInput" name="day" type="hidden" />
+          <label>
+            Veículo (Modelo e Placa)
+            <input id="plateInput" name="plate" type="text" required placeholder="Ex: TIGGO 7 HYBRID PRO MAX DRIVE 1.5 TURBO HÍBRIDO 2025 SRR-4G96" />
+          </label>
+          <input type="hidden" id="typeInput" name="type" value="Inicial" />
+          <label>
+            Seguradora
+            <div id="insurerButtonsContainer" class="insurer-buttons-container"></div>
+            <input type="hidden" id="providerSelect" name="provider" required />
+          </label>
+          <label>
+            Valor da vistoria
+            <input id="valueInput" name="value" type="number" step="0.01" min="0" readonly />
+          </label>
+          <div id="dynamicFieldsContainer" style="grid-column: 1 / -1; display: contents;"></div>
+          <div class="form-actions">
+            <button id="saveVisitButton" class="primary-btn" type="submit">Salvar</button>
+            <button id="cancelEditButton" class="ghost-btn" type="button" hidden>Cancelar</button>
+          </div>
+          <p class="field-note" id="noInsurersNote" hidden>Cadastre uma seguradora na aba de seguradoras antes de registrar o vistoria.</p>
+        </form>
+
+        <!-- insurer form moved to its own card (see below) -->
+      </section>
+
+      <section class="card" id="recordsCard">
+        <div class="toolbar">
+          <h2>Registros</h2>
+          <div class="search-actions">
+            <input id="searchInput" type="search" placeholder="Pesquisar por placa, seguradora ou dia" />
+            <button id="clearSearchButton" class="ghost-btn" type="button" hidden>Limpar</button>
+          </div>
+        </div>
+        <ul id="itemList" class="item-list"></ul>
+      </section>
+
+      <section class="card" id="insurerCard">
+        <h2>Seguradoras</h2>
+        <p style="margin-bottom:12px; color:#4b5563;">Cadastre a seguradora abaixo para usar no registro de vistoria.</p>
+        <form id="insurerForm" class="form-grid" hidden>
+          <label>
+            Seguradora
+            <input id="insurerNameInput" type="text" required placeholder="Ex.: Porto Seguro" />
+          </label>
+          <label>
+            Valor por vistoria
+            <input id="insurerValueInput" type="number" step="0.01" min="0" placeholder="0,00" />
+          </label>
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">Salvar seguradora</button>
+            <button id="cancelInsurerEditButton" class="ghost-btn" type="button" hidden>Cancelar</button>
+          </div>
+        </form>
+
+        <h3 style="margin-top:12px">Seguradoras cadastradas</h3>
+        <ul id="insurerList" class="item-list"></ul>
+      </section>
+
+      <section class="card" id="oficinaCard" hidden>
+        <h2>Oficinas</h2>
+        <p style="margin-bottom:12px; color:#4b5563;">Cadastre a oficina abaixo para usar no registro de vistoria e supervisão.</p>
+        <form id="oficinaForm" class="form-grid" hidden>
+          <label>
+            Nome da Oficina
+            <input id="oficinaNameInput" type="text" required placeholder="Ex.: Oficina Centro" />
+          </label>
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">Salvar oficina</button>
+            <button id="cancelOficinaEditButton" class="ghost-btn" type="button" hidden>Cancelar</button>
+          </div>
+        </form>
+
+        <h3 style="margin-top:12px">Oficinas cadastradas</h3>
+        <ul id="oficinaList" class="item-list"></ul>
+      </section>
+
+      <section class="card" id="reportCard">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <h2>Relatório semanal</h2>
+          <button id="sharePdfButton" class="primary-btn" type="button">Compartilhar Relatório (PDF)</button>
+        </div>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Dia</th>
+              <th>Vistorias</th>
+              <th>Placas</th>
+              <th>Total valor</th>
+            </tr>
+          </thead>
+          <tbody id="reportBody"></tbody>
+          <tfoot>
+            <tr>
+              <th>Totais:</th>
+              <th id="weeklyVisits">0</th>
+              <th>—</th>
+              <th id="weeklyValue">0</th>
+            </tr>
+          </tfoot>
+        </table>
+      </section>
+
+      <section class="card" id="supervisaoFormCard" hidden>
+        <h2 id="supervisaoFormTitle">Novo Registro de Supervisão</h2>
+        <form id="supervisaoForm" class="form-grid">
+          <label>
+            Veículo (Modelo e Placa)
+            <input id="supervisaoVehicleInput" name="vehicle" type="text" required placeholder="Ex: TIGGO 7 HYBRID PRO MAX DRIVE 1.5 TURBO HÍBRIDO 2025 SRR-4G96" />
+          </label>
+          <label>
+            Oficina
+            <select id="supervisaoOficinaSelect" name="oficinaId" required>
+              <option value="" disabled selected>Selecione a oficina...</option>
+              <!-- Dynamically populated -->
+            </select>
+          </label>
+          <label>
+            Atendido por
+            <input id="supervisaoAttendedInput" name="attended" type="text" required placeholder="Ex: Alexandre" />
+          </label>
+          
+          <label>
+            Em que parte do serviço está?
+            <select id="supervisaoStageInput" name="stage" required>
+              <option value="" disabled selected>Selecione a etapa...</option>
+              <option value="Aguardando peças fora de serviço">Aguardando peças fora de serviço</option>
+              <option value="Em posse do proprietário">Em posse do proprietário</option>
+              <option value="Em lanternagem">Em lanternagem</option>
+              <option value="Em funilaria">Em funilaria</option>
+              <option value="Em preparação de pintura">Em preparação de pintura</option>
+              <option value="Em pintura">Em pintura</option>
+              <option value="Em montagem">Em montagem</option>
+              <option value="Testes finais">Testes finais</option>
+              <option value="Finalizado e entregue">Finalizado e entregue</option>
+              <option value="Finalizado">Finalizado</option>
+            </select>
+          </label>
+
+          <label>
+            Pendências de peças?
+            <div id="supervisaoPartsPendingButtons" class="type-buttons-container">
+              <button type="button" class="type-btn" data-value="Sim">Sim</button>
+              <button type="button" class="type-btn active" data-value="Não">Não</button>
+            </div>
+            <input type="hidden" id="supervisaoPartsPendingInput" name="partsPending" value="Não" />
+          </label>
+
+          <div id="supervisaoPartsDetailsContainer" style="display: none;">
+            <label>
+              Quais peças pendentes?
+              <input id="supervisaoPartsInput" name="parts" type="text" placeholder="Ex: guia LD" />
+            </label>
+            <label>
+              Previsão de chegada (dias úteis)
+              <input id="supervisaoArrivalInput" name="arrival" type="text" placeholder="Ex: chega até amanhã" />
+            </label>
+          </div>
+
+          <label>
+            Alguma outra pendência?
+            <input id="supervisaoOtherInput" name="other" type="text" placeholder="Descreva outra pendência se houver" />
+          </label>
+
+          <label>
+            Estimativa de finalização do veículo (dias úteis)
+            <input id="supervisaoFinishInput" name="finish" type="text" placeholder="Ex: 10 dias úteis" />
+          </label>
+
+          <div class="form-actions">
+            <button id="saveSupervisaoButton" class="primary-btn" type="submit">Salvar</button>
+            <button id="cancelSupervisaoEditButton" class="ghost-btn" type="button" hidden>Cancelar</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" id="supervisaoRecordsCard" hidden>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <h2>Registros de Supervisão</h2>
+          <button id="shareSupervisaoPdfButton" class="primary-btn" type="button">Compartilhar Relatório (PDF)</button>
+        </div>
+        
+        <div class="filter-group" style="margin-bottom: 16px;">
+          <span class="status-label" style="margin-bottom: 6px;">Filtrar por Status do Serviço</span>
+          <div id="supervisaoStageFilterContainer" class="type-buttons-container" style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <button type="button" class="type-btn active" data-filter-stage="Todos">Todos</button>
+            <button type="button" class="type-btn" data-filter-stage="Aguardando peças fora de serviço">Aguardando Peças</button>
+            <button type="button" class="type-btn" data-filter-stage="Em posse do proprietário">Com Proprietário</button>
+            <button type="button" class="type-btn" data-filter-stage="Em lanternagem">Lanternagem</button>
+            <button type="button" class="type-btn" data-filter-stage="Em funilaria">Funilaria</button>
+            <button type="button" class="type-btn" data-filter-stage="Em preparação de pintura">Prep. Pintura</button>
+            <button type="button" class="type-btn" data-filter-stage="Em pintura">Pintura</button>
+            <button type="button" class="type-btn" data-filter-stage="Em montagem">Montagem</button>
+            <button type="button" class="type-btn" data-filter-stage="Testes finais">Testes Finais</button>
+            <button type="button" class="type-btn" data-filter-stage="Finalizado e entregue">Entregue</button>
+            <button type="button" class="type-btn" data-filter-stage="Finalizado">Finalizado</button>
+          </div>
+        </div>
+
+        <div class="filter-group" style="margin-bottom: 20px;">
+          <span class="status-label" style="margin-bottom: 6px;">Filtrar por Oficina</span>
+          <div id="supervisaoOficinaFilterContainer" class="type-buttons-container" style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Veículo (Modelo e Placa)</th>
+                <th>Oficina</th>
+                <th>Atendido por</th>
+                <th>Status</th>
+                <th>Pendência Peças?</th>
+                <th>Previsão/Estimativa</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="supervisaoReportContent">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+      </div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -6,6 +6,9 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] {
+  display: none !important;
+}
 body {
   margin: 0;
   background: linear-gradient(135deg, #eef4ff 0%, #f8fbff 100%);
@@ -427,8 +430,8 @@ input, textarea {
   padding: 8px 14px;
 }
 
-/* Insurer Selection Buttons */
-.insurer-buttons-container {
+/* Insurer & Type Selection Buttons */
+.insurer-buttons-container, .type-buttons-container {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -436,7 +439,7 @@ input, textarea {
   margin-bottom: 6px;
 }
 
-.insurer-btn {
+.insurer-btn, .type-btn {
   border: 1px solid #d7e2f0;
   border-radius: 12px;
   padding: 8px 14px;
@@ -447,16 +450,104 @@ input, textarea {
   transition: all 0.2s ease;
 }
 
-.insurer-btn:hover {
+.insurer-btn:hover, .type-btn:hover {
   background: #eef4ff;
   border-color: #2563eb;
 }
 
-.insurer-btn.active {
+.insurer-btn.active, .type-btn.active {
   background: #2563eb;
   color: white;
   border-color: #2563eb;
   box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+}
+
+.badge-inicial {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-supervisao {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-roubo {
+  background: #fecaca;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-incendio {
+  background: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-enchente {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-moto {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #e9d5ff;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-complemento {
+  background: #e2e8f0;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-pos {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* Compact Survey Card Layout */
@@ -477,44 +568,53 @@ input, textarea {
 }
 
 .compact-plate-badge {
-  min-width: 105px !important;
-  padding: 4px 6px !important;
-  border-radius: 10px !important;
-  gap: 4px !important;
+  min-width: 72px !important;
+  padding: 3px 6px !important;
+  border-radius: 6px !important;
   box-shadow: none !important;
   border-width: 1px !important;
-}
-
-.compact-plate-badge .plate-badge-code {
-  width: 22px !important;
-  height: 22px !important;
-  font-size: 0.55rem !important;
-  border-radius: 6px !important;
+  flex-shrink: 0 !important;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .compact-plate-badge .plate-badge-text {
-  font-size: 0.8rem !important;
-  letter-spacing: 0.1em !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.02em !important;
+  white-space: nowrap !important;
+  font-weight: 800;
 }
 
 .item-details {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
   min-width: 0;
+  flex: 1;
 }
 
-.item-details strong {
-  font-size: 0.85rem;
+.item-details .item-provider {
+  font-size: 0.72rem;
   color: #102542;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 80px;
 }
 
-.item-details .meta {
-  font-size: 0.75rem;
+.item-details .item-meta {
+  font-size: 0.68rem;
   color: #5b6e84;
+  white-space: nowrap;
+}
+
+.item-details .item-value {
+  font-size: 0.72rem;
+  color: #2563eb;
+  white-space: nowrap;
+  font-weight: 700;
 }
 
 .vertical-actions {
