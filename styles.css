@@ -629,10 +629,29 @@ input, textarea {
   padding: 3px 8px !important;
 }
 
-@media (max-width: 720px) {
-  .summary-grid { grid-template-columns: 1fr; }
-  .toolbar { flex-direction: column; align-items: stretch; }
-  .hero { flex-direction: column; }
+/* Responsive Mobile Fixes for Supervisão and Mês Vigente */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+.app {
+  width: 100%;
+  max-width: 920px;
+  box-sizing: border-box;
+}
+
+.card, .hero, .tabs-card, .menu-card {
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.table-responsive {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .actions {
@@ -658,4 +677,184 @@ input, textarea {
   background: #e2e8f0;
   border-color: #94a3b8;
 }
+
+@media (max-width: 720px) {
+  .app {
+    padding: 10px 8px 24px;
+    gap: 10px;
+  }
+
+  .hero, .card, .tabs-card {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .summary-item {
+    padding: 10px;
+  }
+
+  .summary-item strong {
+    font-size: 1rem;
+  }
+
+  .summary-item span {
+    font-size: 0.8rem;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .hero {
+    flex-direction: column;
+  }
+
+  .search-actions {
+    width: 100%;
+  }
+
+  .search-actions input {
+    flex: 1;
+    width: 100%;
+  }
+
+  /* Compact Item Card Layout for Mobile (Mês vigente & Regular Vistorias) */
+  .compact-item-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+
+  .item-main-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .compact-plate-badge {
+    min-width: unset !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    justify-content: flex-start !important;
+    padding: 5px 8px !important;
+    box-sizing: border-box;
+  }
+
+  .compact-plate-badge .plate-badge-text {
+    font-size: 0.82rem !important;
+    white-space: normal !important;
+    word-break: break-word;
+    letter-spacing: 0.05em !important;
+    text-align: left;
+  }
+
+  .item-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+    white-space: normal;
+  }
+
+  .item-details .item-provider {
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
+    font-size: 0.82rem;
+  }
+
+  .item-details .item-meta,
+  .item-details .item-value {
+    white-space: normal;
+    word-break: break-word;
+    font-size: 0.78rem;
+  }
+
+  .vertical-actions {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    gap: 6px !important;
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 1px dashed #e2e8f0;
+  }
+
+  .vertical-actions .action-btn {
+    font-size: 0.75rem !important;
+    padding: 5px 10px !important;
+    flex: 1 1 auto;
+    text-align: center;
+  }
+
+  /* Supervisão Table responsiveness */
+  .report-table {
+    font-size: 0.8rem;
+    min-width: 600px;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 8px 6px;
+  }
+
+  .report-table td .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .report-table td .actions .action-btn {
+    width: 100%;
+    font-size: 0.72rem;
+    padding: 4px 6px;
+    text-align: center;
+  }
+
+  /* Form & Buttons */
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .type-buttons-container {
+    gap: 4px;
+  }
+
+  .type-btn, .insurer-btn {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+
+  .ghost-btn, .primary-btn {
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 
