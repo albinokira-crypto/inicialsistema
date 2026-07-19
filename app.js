@@ -1260,7 +1260,7 @@ function renderDynamicSurveyFields() {
 
   const officeOptions = oficinas.map(o => `<option value="${o.id}">${escapeHtml(o.name)}</option>`).join('');
   const officeDropdownHtml = `
-    <label style="grid-column: 1 / -1;">
+    <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
       Oficina
       <select id="itemOficinaSelect" name="oficinaId" required>
         <option value="" disabled selected>${oficinas.length ? 'Selecione a oficina...' : 'Nenhuma oficina cadastrada'}</option>
