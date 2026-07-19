@@ -424,36 +424,41 @@ input, select, textarea {
 }
 
 .view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px dashed #d7e2f0;
-  padding-bottom: 12px;
-  margin-bottom: 14px;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 8px !important;
+  border-bottom: 1px dashed #d7e2f0 !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 12px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
-.view-header h2 {
-  margin: 0;
+.view-header h2, #currentPageTitle {
+  margin: 0 !important;
+  padding: 0 !important;
   color: #2563eb !important;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
   white-space: nowrap !important;
   word-break: keep-all !important;
-  text-align: right;
-  display: block !important;
+  overflow-wrap: normal !important;
+  text-align: right !important;
+  flex: 0 0 auto !important;
+  display: inline-block !important;
   visibility: visible !important;
   opacity: 1 !important;
 }
 
 #backToMenuButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.8rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 0.75rem !important;
   padding: 6px 10px !important;
   white-space: nowrap !important;
-  flex-shrink: 0 !important;
+  flex: 0 0 auto !important;
 }
 
 /* Insurer & Type Selection Buttons */
