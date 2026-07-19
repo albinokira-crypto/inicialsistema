@@ -751,10 +751,10 @@ function renderReport(filteredItems) {
 
   reportBody.innerHTML = totals.map(({ day, visits, platesHtml, value }) => `
     <tr>
-      <td style="font-weight: 600;">${escapeHtml(day)}</td>
-      <td style="font-weight: 600;">${visits}</td>
-      <td style="word-break: break-word;">${platesHtml}</td>
-      <td style="font-weight: 600; white-space: nowrap;">R$ ${value.toFixed(2).replace('.', ',')}</td>
+      <td data-label="Dia" style="font-weight: 600;">${escapeHtml(day)}</td>
+      <td data-label="Nº Vistorias" style="font-weight: 600;">${visits}</td>
+      <td data-label="Vistorias (Placas)" style="word-break: break-word;">${platesHtml}</td>
+      <td data-label="Valor Total" style="font-weight: 600; white-space: nowrap;">R$ ${value.toFixed(2).replace('.', ',')}</td>
     </tr>
   `).join('');
 
@@ -790,82 +790,82 @@ function getSurveyText(id) {
 
   const radioVal = details.radio === 'Original' ? 'original' : (details.radioBrand || 'Outra');
 
-  let text = '';
+  let lines = [];
 
   if (item.type === 'Incêndio') {
-    text += `Incêndio\n\n`;
-    text += `${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}\n\n`;
-    text += `VISTORIA REALIZADA EM: ${formattedDate}\n`;
-    text += `REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}\n`;
-    text += `MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}\n`;
-    text += `VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}\n`;
-    text += `MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}\n`;
-    text += `TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}\n`;
-    text += `CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}\n`;
-    text += `RÁDIO / MARCA:${radioVal}\n`;
-    text += `PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}\n`;
-    text += `BATERIA / MARCA: ${details.bateria || ''}\n\n`;
+    lines.push(`Incêndio`);
+    lines.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
+    lines.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
+    lines.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
+    lines.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
+    lines.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
+    lines.push(`MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}`);
+    lines.push(`TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}`);
+    lines.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}`);
+    lines.push(`RÁDIO / MARCA:${radioVal}`);
+    lines.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
+    lines.push(`BATERIA / MARCA: ${details.bateria || ''}`);
 
-    text += ` Ponto de Origem do Incêndio : ${details.origemIncendio || ''}\n`;
-    text += `Avaliação do Sistema de Combustível e Fluidos : ${details.sistemaCombustivel || 'Ok'}\n`;
-    text += `Avaliação do Sistema Elétrico : ${details.sistemaEletrico || 'Ok'}\n`;
-    text += `Resíduos de Extinção do Incêndio : ${getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao')}\n`;
-    text += `Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}\n`;
-    text += `Observações Complementares : ${details.obs || ''}\n`;
+    if (details.origemIncendio) lines.push(`Ponto de Origem do Incêndio : ${details.origemIncendio}`);
+    if (details.sistemaCombustivel) lines.push(`Avaliação do Sistema de Combustível e Fluidos : ${details.sistemaCombustivel}`);
+    if (details.sistemaEletrico) lines.push(`Avaliação do Sistema Elétrico : ${details.sistemaEletrico}`);
+    if (details.residuosExtincao) lines.push(`Resíduos de Extinção do Incêndio : ${getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao')}`);
+    if (details.tanqueAfetado) lines.push(`Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}`);
+    if (details.obs) lines.push(`Observações Complementares : ${details.obs}`);
   } else {
     // Other survey types
-    text += `${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}\n\n`;
-    text += `VISTORIA REALIZADA EM: ${formattedDate}\n`;
-    text += `REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}\n`;
-    text += `MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}\n`;
+    lines.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
+    lines.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
+    lines.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
+    lines.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
     
     if ('estepe' in details) {
-      text += `VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}\n`;
-      text += `MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}\n`;
-      text += `TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}\n`;
-      text += `CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}\n`;
-      text += `RÁDIO / MARCA:${radioVal}\n`;
-      text += `PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}\n`;
-      text += `BATERIA / MARCA: ${details.bateria || ''}\n`;
+      lines.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
+      lines.push(`MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}`);
+      lines.push(`TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}`);
+      lines.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}`);
+      lines.push(`RÁDIO / MARCA:${radioVal}`);
+      lines.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
+      lines.push(`BATERIA / MARCA: ${details.bateria || ''}`);
     }
 
     if (item.type === 'Roubo Recuperado' && details.obsRoubo) {
-      text += `Observações Roubo: ${details.obsRoubo}\n`;
+      lines.push(`Observações Roubo: ${details.obsRoubo}`);
     }
     if (item.type === 'Enchente') {
       const yesNo = (val) => val === 'Sim' ? 'Sim' : 'Não';
-      if (details.aguaOleo) text += `Vestígios de água no óleo: ${yesNo(details.aguaOleo)}\n`;
-      if (details.aguaVelas) text += `Vestígios de água nas velas: ${yesNo(details.aguaVelas)}\n`;
-      if (details.aguaFarois) text += `Vestígios de água nos faróis: ${yesNo(details.aguaFarois)}\n`;
-      if (details.aguaLanternas) text += `Vestígios de água nas lanternas: ${yesNo(details.aguaLanternas)}\n`;
-      if (details.aguaFiltro) text += `Vestígios de água no filtro: ${yesNo(details.aguaFiltro)}\n`;
-      if (details.motorTravado) text += `Motor travado: ${yesNo(details.motorTravado)}\n`;
-      if (details.alturaAgua) text += `Altura da água: ${details.alturaAgua}\n`;
+      if (details.aguaOleo) lines.push(`Vestígios de água no óleo: ${yesNo(details.aguaOleo)}`);
+      if (details.aguaVelas) lines.push(`Vestígios de água nas velas: ${yesNo(details.aguaVelas)}`);
+      if (details.aguaFarois) lines.push(`Vestígios de água nos faróis: ${yesNo(details.aguaFarois)}`);
+      if (details.aguaLanternas) lines.push(`Vestígios de água nas lanternas: ${yesNo(details.aguaLanternas)}`);
+      if (details.aguaFiltro) lines.push(`Vestígios de água no filtro: ${yesNo(details.aguaFiltro)}`);
+      if (details.motorTravado) lines.push(`Motor travado: ${yesNo(details.motorTravado)}`);
+      if (details.alturaAgua) lines.push(`Altura da água: ${details.alturaAgua}`);
     }
     if ((item.type === 'Complemento' || item.type === 'Pós entrega') && details.conteudoLivre) {
-      text += `Conteúdo: ${details.conteudoLivre}\n`;
+      lines.push(`Conteúdo: ${details.conteudoLivre}`);
     }
 
     const obsVal = details.obs || details.obsRoubo || details.obsIncendio || details.obsEnchente || '';
     if (obsVal) {
-      text += `\nObs.: ${obsVal}\n`;
+      lines.push(`Obs.: ${obsVal}`);
     }
   }
 
   // Universal fields (Trocas & Reparos)
   if (details.trocas) {
-    text += `\nTrocas\n${details.trocas}\n`;
+    lines.push(`Trocas\n${details.trocas}`);
   } else if (item.type === 'Incêndio') {
-    text += `\nTrocas\n`;
+    lines.push(`Trocas`);
   }
 
   if (details.reparos) {
-    text += `\nReparos\n${details.reparos}\n`;
+    lines.push(`Reparos\n${details.reparos}`);
   } else if (item.type === 'Incêndio') {
-    text += `\nReparos\n`;
+    lines.push(`Reparos`);
   }
 
-  return text;
+  return lines.join('\n\n');
 }
 
 function shareSurveyText(id) {
@@ -1954,7 +1954,7 @@ function handleSupervisaoAction(action, id) {
 }
 
 function formatSingleSupervisaoText(s) {
-  const lines = ['Supervisão \n'];
+  const lines = ['Supervisão'];
 
   if (s.vehicle && s.vehicle.trim()) {
     lines.push(`Veículo: ${s.vehicle.trim()}`);
@@ -1962,7 +1962,7 @@ function formatSingleSupervisaoText(s) {
 
   const dateVal = s.date || getTodayDateValue();
   if (dateVal && dateVal.trim()) {
-    lines.push(`Data: ${dateVal.trim()}`);
+    lines.push(`Data: ${formatDateString(dateVal.trim())}`);
   }
 
   if (s.oficinaName && s.oficinaName.trim()) {
@@ -2000,7 +2000,7 @@ function formatSingleSupervisaoText(s) {
     lines.push(`Estimativa de finalização do veículo?: ${s.finish.trim()}`);
   }
 
-  return lines.join('\n');
+  return lines.join('\n\n');
 }
 
 function getFilteredSupervisoes() {
