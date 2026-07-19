@@ -427,6 +427,7 @@ input, select, textarea {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   border-bottom: 1px dashed #d7e2f0;
   padding-bottom: 12px;
   margin-bottom: 14px;
@@ -436,14 +437,19 @@ input, select, textarea {
   margin: 0;
   color: #2563eb;
   font-size: 1.25rem;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  hyphens: manual !important;
 }
 
 #backToMenuButton {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  padding: 8px 14px;
+  gap: 6px;
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 /* Insurer & Type Selection Buttons */
@@ -716,6 +722,34 @@ html, body {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
+  }
+
+  .view-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  #backToMenuButton {
+    font-size: 0.72rem !important;
+    padding: 5px 8px !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .view-header h2 {
+    font-size: clamp(0.8rem, 3.8vw, 1.05rem) !important;
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    hyphens: manual !important;
+    text-align: right !important;
+    flex-shrink: 0 !important;
   }
 
   /* Responsive Wrap for Tabs in Mobile */
