@@ -556,6 +556,7 @@ function render() {
           </div>
         </div>
         <div class="actions vertical-actions">
+          <button class="action-btn" type="button" data-action="share-text" data-id="${item.id}">Compartilhar</button>
           <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
           <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
         </div>
@@ -598,7 +599,113 @@ function renderReport(filteredItems) {
   weeklyValue.textContent = `R$ ${totalValue.toFixed(2).replace('.', ',')}`;
 }
 
+function shareSurveyText(id) {
+  const item = items.find(entry => entry.id === id);
+  if (!item) return;
+
+  const dateParts = item.date ? item.date.split('-') : [];
+  const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : item.date;
+
+  const details = item.details || {};
+
+  // Header format: [VEHICLE/PLATE] - [INSURER] - [WORKSHOP]
+  let text = `${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}\n\n`;
+  text += `VISTORIA REALIZADA EM: ${formattedDate}\n`;
+
+  // Checklist helper
+  const getCheckmark = (val, field) => {
+    const isSim = (val || '').toLowerCase() === 'sim';
+    if (field === 'motorFunciona') {
+      return isSim ? 'Sim(x ) Não(   )' : 'Sim(  ) Não(x   )';
+    }
+    if (field === 'estepe') {
+      return isSim ? 'Sim ( x) Não ( )' : 'Sim ( ) Não ( x)';
+    }
+    if (field === 'triangulo') {
+      return isSim ? 'Sim (x ) Não (   )' : 'Sim ( ) Não ( x )';
+    }
+    return isSim ? 'Sim (x ) Não ( )' : 'Sim ( ) Não (x )';
+  };
+
+  text += `REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}\n`;
+  text += `MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}\n`;
+  text += `VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}\n`;
+  text += `MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}\n`;
+  text += `TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}\n`;
+  text += `CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}\n`;
+
+  const radioVal = details.radio === 'Original' ? 'original' : (details.radioBrand || 'Outra');
+  text += `RÁDIO / MARCA:${radioVal}\n`;
+  text += `PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}\n`;
+  text += `BATERIA / MARCA: ${details.bateria || ''}\n`;
+
+  // Type specific notes
+  if (item.type === 'Roubo Recuperado' && details.obsRoubo) {
+    text += `Observações Roubo: ${details.obsRoubo}\n`;
+  }
+  if (item.type === 'Incêndio') {
+    if (details.origemIncendio) text += `Ponto de Origem do Incêndio: ${details.origemIncendio}\n`;
+    if (details.sistemaCombustivel) text += `Sistema de Combustível: ${details.sistemaCombustivel}\n`;
+    if (details.sistemaEletrico) text += `Sistema Elétrico: ${details.sistemaEletrico}\n`;
+    if (details.residuosExtincao) text += `Resíduos de Extinção: ${details.residuosExtincao}\n`;
+    if (details.tanqueAfetado) text += `Tanque Afetado: ${details.tanqueAfetado}\n`;
+  }
+  if (item.type === 'Enchente') {
+    const yesNo = (val) => val === 'Sim' ? 'Sim' : 'Não';
+    if (details.aguaOleo) text += `Vestígios de água no óleo: ${yesNo(details.aguaOleo)}\n`;
+    if (details.aguaVelas) text += `Vestígios de água nas velas: ${yesNo(details.aguaVelas)}\n`;
+    if (details.aguaFarois) text += `Vestígios de água nos faróis: ${yesNo(details.aguaFarois)}\n`;
+    if (details.aguaLanternas) text += `Vestígios de água nas lanternas: ${yesNo(details.aguaLanternas)}\n`;
+    if (details.aguaFiltro) text += `Vestígios de água no filtro: ${yesNo(details.aguaFiltro)}\n`;
+    if (details.motorTravado) text += `Motor travado: ${yesNo(details.motorTravado)}\n`;
+    if (details.alturaAgua) text += `Altura da água: ${details.alturaAgua}\n`;
+  }
+  if ((item.type === 'Complemento' || item.type === 'Pós entrega') && details.conteudoLivre) {
+    text += `Conteúdo: ${details.conteudoLivre}\n`;
+  }
+
+  // Obs, Trocas, Reparos (universal fields)
+  const obsVal = details.obs || details.obsRoubo || details.obsIncendio || details.obsEnchente || '';
+  if (obsVal) {
+    text += `\nObs.: ${obsVal}\n`;
+  }
+
+  if (details.trocas) {
+    text += `\nTrocas\n${details.trocas}\n`;
+  }
+
+  if (details.reparos) {
+    text += `\nReparos\n${details.reparos}\n`;
+  }
+
+  // Try sharing via Web Share API, fallback to clipboard
+  if (navigator.share) {
+    navigator.share({
+      title: 'Compartilhamento de Vistoria',
+      text: text
+    }).catch(err => {
+      console.warn('Erro ao compartilhar pelo Web Share API, copiando para a área de transferência...', err);
+      copyTextToClipboard(text);
+    });
+  } else {
+    copyTextToClipboard(text);
+  }
+}
+
+function copyTextToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Texto de vistoria copiado para a área de transferência com sucesso!');
+  }).catch(err => {
+    console.error('Falha ao copiar texto:', err);
+    alert('Não foi possível copiar o texto automaticamente. Copie manualmente.');
+  });
+}
+
 function handleAction(action, id) {
+  if (action === 'share-text') {
+    shareSurveyText(id);
+    return;
+  }
   if (action === 'delete') {
     if (window.confirm('Deseja excluir este registro de vistoria?')) {
       items = items.filter((item) => item.id !== id);
@@ -1021,17 +1128,27 @@ function renderDynamicSurveyFields() {
     </label>
   `;
 
+  const extraFieldsHtml = `
+    <label style="grid-column: 1 / -1;">
+      Observações (Obs.)
+      <input type="text" name="obs" placeholder="Ex: tinta tricoat" />
+    </label>
+    <label style="grid-column: 1 / -1;">
+      Trocas (uma peça por linha)
+      <textarea name="trocas" rows="3" placeholder="Ex:&#10;Lateral LE&#10;Porta traseira LE"></textarea>
+    </label>
+    <label style="grid-column: 1 / -1;">
+      Reparos (uma peça por linha)
+      <textarea name="reparos" rows="3" placeholder="Ex:&#10;Coluna LE do teto&#10;Caixa de ar LE"></textarea>
+    </label>
+  `;
+
   if (selectedType === 'Inicial') {
-    fieldsHtml = headerHtml + commonChecklistHtml + vehicleExtraChecklistHtml;
+    fieldsHtml = headerHtml + commonChecklistHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Moto') {
-    fieldsHtml = headerHtml + commonChecklistHtml;
+    fieldsHtml = headerHtml + commonChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Roubo Recuperado') {
-    fieldsHtml = headerHtml + commonChecklistHtml + `
-      <label style="grid-column: 1 / -1;">
-        Observações
-        <input type="text" name="obsRoubo" placeholder="Digite observações..." />
-      </label>
-    `;
+    fieldsHtml = headerHtml + commonChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Incêndio') {
     fieldsHtml = headerHtml + commonChecklistHtml + vehicleExtraChecklistHtml + `
       <label>
@@ -1076,12 +1193,7 @@ function renderDynamicSurveyFields() {
         </div>
         <input type="hidden" id="input_tanque" name="tanqueAfetado" value="Não" />
       </div>
-
-      <label style="grid-column: 1 / -1;">
-        Observações Complementares
-        <input type="text" name="obsIncendio" placeholder="Observações..." />
-      </label>
-    `;
+    ` + extraFieldsHtml;
   } else if (selectedType === 'Enchente') {
     fieldsHtml = headerHtml + commonChecklistHtml + vehicleExtraChecklistHtml + `
       <div class="form-toggle-field">
@@ -1142,19 +1254,14 @@ function renderDynamicSurveyFields() {
         Altura da água
         <input type="text" name="alturaAgua" placeholder="Ex: Acima dos bancos" />
       </label>
-
-      <label style="grid-column: 1 / -1;">
-        Obs.
-        <input type="text" name="obsEnchente" placeholder="Observações..." />
-      </label>
-    `;
+    ` + extraFieldsHtml;
   } else if (selectedType === 'Complemento' || selectedType === 'Pós entrega') {
     fieldsHtml = headerHtml + `
       <label style="grid-column: 1 / -1;">
         Conteúdo do Relatório
         <textarea name="conteudoLivre" rows="5" required placeholder="Digite o conteúdo livre para o relatório..."></textarea>
       </label>
-    `;
+    ` + extraFieldsHtml;
   }
 
   dynamicFieldsContainer.innerHTML = officeDropdownHtml + fieldsHtml;
