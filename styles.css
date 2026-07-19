@@ -210,51 +210,6 @@ input, textarea {
   border-top: 2px solid #d7e2f0;
 }
 
-.view-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px dashed #d7e2f0;
-  padding-bottom: 12px;
-  margin-bottom: 14px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.view-header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.header-tabs-container {
-  display: flex;
-  align-items: center;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  flex: 1;
-  justify-content: flex-end;
-}
-
-.single-line-tabs {
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  gap: 6px !important;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 2px;
-}
-
-.single-line-tabs .tab-btn {
-  white-space: nowrap !important;
-  flex-shrink: 0 !important;
-  font-size: 0.82rem;
-  padding: 6px 12px;
-}
-
 .tabs-card {
   background: white;
   border-radius: 20px;
@@ -275,6 +230,7 @@ input, textarea {
   background: #eef4ff;
   color: #174077;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .tab-btn.active {
@@ -423,6 +379,7 @@ input, textarea {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  white-space: nowrap;
 }
 
 .menu-btn:hover {
@@ -435,6 +392,7 @@ input, textarea {
   background: #f0fdf4;
   color: #166534;
   border: 1px solid #bbf7d0;
+  white-space: nowrap;
 }
 
 .menu-btn.special-btn:hover {
@@ -446,6 +404,7 @@ input, textarea {
   color: #1e40af;
   border: 1px solid #bfdbfe;
   grid-column: 1 / -1;
+  white-space: nowrap;
 }
 
 .menu-btn.special-btn-total:hover {
@@ -493,6 +452,7 @@ input, textarea {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .insurer-btn:hover, .type-btn:hover {
