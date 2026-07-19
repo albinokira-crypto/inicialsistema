@@ -435,7 +435,7 @@ input, select, textarea {
   box-sizing: border-box !important;
 }
 
-.view-header h2, #currentPageTitle {
+.view-header h2, .page-title, #currentPageTitle {
   margin: 0 !important;
   padding: 0 !important;
   color: #2563eb !important;
@@ -446,7 +446,7 @@ input, select, textarea {
   overflow-wrap: normal !important;
   text-align: right !important;
   flex: 0 0 auto !important;
-  display: inline-block !important;
+  display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
 }
@@ -752,13 +752,15 @@ html, body {
     flex-shrink: 0 !important;
   }
 
-  .view-header h2 {
-    font-size: 0.9rem !important;
+  .view-header h2, .page-title, #currentPageTitle {
+    font-size: 0.88rem !important;
     font-weight: 700 !important;
     color: #2563eb !important;
     white-space: nowrap !important;
     word-break: keep-all !important;
+    overflow-wrap: normal !important;
     text-align: right !important;
+    flex: 0 0 auto !important;
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
