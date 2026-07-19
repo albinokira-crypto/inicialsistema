@@ -436,14 +436,14 @@ input, select, textarea {
 .view-header h2 {
   margin: 0;
   color: #2563eb !important;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   white-space: nowrap !important;
   word-break: keep-all !important;
-  margin-left: auto;
   text-align: right;
-  flex: 0 1 auto;
-  min-width: 0;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 #backToMenuButton {
@@ -748,15 +748,15 @@ html, body {
   }
 
   .view-header h2 {
-    font-size: 0.92rem !important;
+    font-size: 0.9rem !important;
     font-weight: 700 !important;
     color: #2563eb !important;
     white-space: nowrap !important;
     word-break: keep-all !important;
-    margin-left: auto !important;
     text-align: right !important;
-    flex: 0 1 auto !important;
-    min-width: 0 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   /* Responsive Wrap for Tabs in Mobile */
