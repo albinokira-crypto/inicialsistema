@@ -652,10 +652,9 @@ function render() {
       return item.clearedFromWeek !== true;
     }
     
-    // Filter by day and the active sub-tab type
+    // Filter by day (showing all vistorias done on that day)
     const sameDay = item.day === selectedDay;
-    const sameType = (item.type || 'Inicial') === selectedType;
-    return sameDay && sameType && item.clearedFromWeek !== true;
+    return sameDay && item.clearedFromWeek !== true;
   });
 
   clearSearchButton.hidden = !query;
