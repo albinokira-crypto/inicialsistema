@@ -1897,9 +1897,7 @@ async function shareSupervisaoText(text, title = 'Relatório de Supervisão') {
 
 function copySupervisaoTextToClipboard(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-      alert('Relatório em texto copiado para a área de transferência!');
-    }).catch(() => {
+    navigator.clipboard.writeText(text).catch(() => {
       fallbackCopyText(text);
     });
   } else {
@@ -1916,9 +1914,8 @@ function fallbackCopyText(text) {
   textarea.select();
   try {
     document.execCommand('copy');
-    alert('Relatório em texto copiado para a área de transferência!');
   } catch (e) {
-    alert('Não foi possível copiar o texto automaticamente.');
+    console.warn('Não foi possível copiar o texto:', e);
   }
   document.body.removeChild(textarea);
 }
