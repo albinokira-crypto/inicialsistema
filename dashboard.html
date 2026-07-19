@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#2563eb" />
     <title>Gestão de Vistoria Inicial</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=18" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -30,29 +30,29 @@
         </div>
       </header>
 
-      <section class="card" id="welcomeScreen">
-        <h2>Painel de Controle</h2>
-        <p>Selecione uma opção abaixo para cadastrar vistorias, gerenciar seguradoras ou visualizar o relatório semanal:</p>
+      <!-- MENU PRINCIPAL CARD -->
+      <section class="card menu-card" id="welcomeScreen">
+        <h2>Selecione o dia ou opção</h2>
         <div class="menu-grid">
           <button class="menu-btn" type="button" data-day="Segunda">Segunda-feira</button>
           <button class="menu-btn" type="button" data-day="Terça">Terça-feira</button>
           <button class="menu-btn" type="button" data-day="Quarta">Quarta-feira</button>
           <button class="menu-btn" type="button" data-day="Quinta">Quinta-feira</button>
           <button class="menu-btn" type="button" data-day="Sexta">Sexta-feira</button>
-          <button class="menu-btn special-btn" type="button" data-day="Supervisão">Supervisão</button>
-          <button class="menu-btn special-btn" type="button" data-day="Seguradoras">Seguradoras</button>
-          <button class="menu-btn special-btn" type="button" data-day="Oficinas">Oficinas</button>
+          <button class="menu-btn special-btn-supervisao" type="button" data-day="Supervisão">Supervisão</button>
+          <button class="menu-btn special-btn-seguradora" type="button" data-day="Seguradoras">Seguradoras</button>
+          <button class="menu-btn special-btn-seguradora" type="button" data-day="Oficinas">Oficinas</button>
           <button class="menu-btn special-btn-total" type="button" data-day="Total da semana">Total da Semana</button>
           <button class="menu-btn special-btn-total" type="button" data-day="Mês vigente">Mês Vigente</button>
         </div>
       </section>
 
       <div id="appContent" hidden>
-        <div class="view-header">
-          <button id="backToMenuButton" class="ghost-btn" type="button">
+        <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 1px dashed #d7e2f0; padding-bottom: 10px; margin-bottom: 12px; box-sizing: border-box;">
+          <button id="backToMenuButton" class="ghost-btn" type="button" style="font-size: 0.75rem; padding: 6px 10px; flex-shrink: 0;">
             ← Voltar ao Menu
           </button>
-          <h2 id="currentPageTitle" style="margin: 0; color: #2563eb; font-size: 0.95rem; font-weight: 700; white-space: nowrap; text-align: right; display: block; visibility: visible; opacity: 1;">Segunda-feira</h2>
+          <span id="currentPageTitle" style="color: #2563eb; font-size: 0.95rem; font-weight: 700; white-space: nowrap; text-align: right; display: inline-block; visibility: visible; opacity: 1;">Segunda-feira</span>
         </div>
 
         <section class="summary-grid" id="summaryGrid"></section>
@@ -330,6 +330,6 @@
       </div>
     </main>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=18"></script>
   </body>
 </html>

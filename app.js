@@ -1010,19 +1010,24 @@ function updateFormDisplay() {
   }
 
   if (currentPageTitle) {
+    let titleText = `${selectedDay}-feira`;
     if (selectedDay === 'Seguradoras') {
-      currentPageTitle.textContent = 'Seguradoras';
+      titleText = 'Seguradoras';
     } else if (selectedDay === 'Oficinas') {
-      currentPageTitle.textContent = 'Oficinas';
+      titleText = 'Oficinas';
     } else if (selectedDay === 'Total da semana') {
-      currentPageTitle.textContent = 'Total da Semana';
+      titleText = 'Total da Semana';
     } else if (selectedDay === 'Mês vigente') {
-      currentPageTitle.textContent = 'Mês Vigente';
+      titleText = 'Mês Vigente';
     } else if (selectedDay === 'Supervisão') {
-      currentPageTitle.textContent = 'Supervisão';
-    } else {
-      currentPageTitle.textContent = `${selectedDay}-feira`;
+      titleText = 'Supervisão';
     }
+    currentPageTitle.textContent = titleText;
+    currentPageTitle.style.display = 'inline-block';
+    currentPageTitle.style.visibility = 'visible';
+    currentPageTitle.style.opacity = '1';
+    currentPageTitle.style.color = '#2563eb';
+    currentPageTitle.style.fontWeight = '700';
   }
 
   if (formTitle) {
