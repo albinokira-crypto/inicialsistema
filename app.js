@@ -205,8 +205,11 @@ if (clearMonthButton) {
       const now = new Date();
       const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       items = items.filter((item) => !item.date.startsWith(currentYearMonth));
+      supervisoes = supervisoes.filter((s) => !s.date.startsWith(currentYearMonth));
       saveItems();
+      saveSupervisoes();
       render();
+      renderSupervisaoReport();
     }
   });
 }
@@ -510,17 +513,139 @@ function saveInsurer(event) {
 
 function render() {
   const query = searchInput.value.toLowerCase();
+  const isTotalMonth = selectedDay === 'Mês vigente';
+
+  if (isTotalMonth) {
+    const now = new Date();
+    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    const monthItems = items.filter((item) => {
+      if (!item.date || !item.date.startsWith(currentYearMonth)) return false;
+      const match = `${item.date} ${item.day} ${item.plate} ${item.provider} ${item.oficinaName || ''} ${item.type || ''}`.toLowerCase().includes(query);
+      return match;
+    }).map(i => ({ ...i, isSupervisao: false }));
+
+    const monthSupervisoes = supervisoes.filter((s) => {
+      if (!s.date || !s.date.startsWith(currentYearMonth)) return false;
+      const match = `${s.date} ${s.day} ${s.vehicle} ${s.attended} ${s.stage} ${s.oficinaName || ''}`.toLowerCase().includes(query);
+      return match;
+    }).map(s => ({ ...s, isSupervisao: true }));
+
+    const combined = [...monthItems, ...monthSupervisoes];
+    combined.sort((a, b) => b.id.localeCompare(a.id));
+
+    clearSearchButton.hidden = !query;
+    installButton.hidden = !deferredPrompt;
+
+    const totalValue = monthItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+    const allDates = [...monthItems.map(i => i.day), ...monthSupervisoes.map(s => s.day)];
+    const uniqueDays = new Set(allDates).size;
+
+    summaryGrid.innerHTML = `
+      <article class="summary-item">
+        <strong>${combined.length}</strong>
+        <span>registros no mês</span>
+      </article>
+      <article class="summary-item">
+        <strong>R$ ${totalValue.toFixed(2).replace('.', ',')}</strong>
+        <span>valor total vistorias</span>
+      </article>
+      <article class="summary-item">
+        <strong>${uniqueDays}</strong>
+        <span>dias com registros</span>
+      </article>
+      <article class="summary-item">
+        <strong>${combined.length ? escapeHtml(combined[0].createdAt || combined[0].date) : '—'}</strong>
+        <span>último registro</span>
+      </article>
+    `;
+
+    if (!combined.length) {
+      itemList.innerHTML = '<li class="empty">Nenhum registro encontrado no mês vigente.</li>';
+      renderReport([]);
+      return;
+    }
+
+    const badgeClasses = {
+      'Inicial': 'badge-inicial',
+      'Roubo Recuperado': 'badge-roubo',
+      'Incêndio': 'badge-incendio',
+      'Enchente': 'badge-enchente',
+      'Moto': 'badge-moto',
+      'Complemento': 'badge-complemento',
+      'Pós entrega': 'badge-pos'
+    };
+
+    itemList.innerHTML = combined.map((entry) => {
+      if (entry.isSupervisao) {
+        return `
+          <li class="item-card compact-item-card">
+            <div class="item-main-info">
+              <div class="plate-badge compact-plate-badge">
+                <span class="plate-badge-text">${escapeHtml(entry.vehicle || 'Supervisão')}</span>
+              </div>
+              <div class="item-details">
+                <strong class="item-provider">Atendido: ${escapeHtml(entry.attended || '—')}</strong>
+                <span class="item-meta">· ${escapeHtml(formatDateString(entry.date))}</span>
+                <span class="badge-supervisao" style="margin-left: 6px;">
+                  Supervisão: ${escapeHtml(entry.stage || '')}
+                </span>
+                ${entry.oficinaName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(entry.oficinaName)}</strong></div>` : ''}
+              </div>
+            </div>
+            <div class="actions vertical-actions">
+              <button class="action-btn" type="button" data-super-action="share-text" data-id="${entry.id}">📱 Compartilhar</button>
+              <button class="action-btn" type="button" data-super-action="copy-text" data-id="${entry.id}">📋 Copiar</button>
+              <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
+              <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
+            </div>
+          </li>
+        `;
+      } else {
+        const badgeClass = badgeClasses[entry.type || 'Inicial'] || 'badge-inicial';
+        return `
+          <li class="item-card compact-item-card">
+            <div class="item-main-info">
+              <div class="plate-badge compact-plate-badge">
+                <span class="plate-badge-text">${escapeHtml(entry.plate)}</span>
+              </div>
+              <div class="item-details">
+                <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
+                <span class="item-meta">· ${escapeHtml(formatDateString(entry.date))}</span>
+                <strong class="item-value">· R$ ${escapeHtml(Number(entry.value).toFixed(2).replace('.', ','))}</strong>
+                <span class="${badgeClass}" style="margin-left: 6px;">
+                  ${escapeHtml(entry.type || 'Inicial')}
+                </span>
+                ${entry.oficinaName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(entry.oficinaName)}</strong></div>` : ''}
+              </div>
+            </div>
+            <div class="actions vertical-actions">
+              <button class="action-btn" type="button" data-action="share-text" data-id="${entry.id}">Compartilhar</button>
+              <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
+              <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
+            </div>
+          </li>
+        `;
+      }
+    }).join('');
+
+    itemList.querySelectorAll('[data-action]').forEach((button) => {
+      button.addEventListener('click', () => handleAction(button.dataset.action, button.dataset.id));
+    });
+
+    itemList.querySelectorAll('[data-super-action]').forEach((button) => {
+      button.addEventListener('click', () => handleSupervisaoAction(button.dataset.superAction, button.dataset.id));
+    });
+
+    renderReport(monthItems);
+    return;
+  }
+
+  // Normal day filtering for regular vistorias
   const filtered = items.filter((item) => {
     const isTotalWeek = selectedDay === 'Total da semana';
-    const isTotalMonth = selectedDay === 'Mês vigente';
     const matchesQuery = `${item.date} ${item.day} ${item.plate} ${item.provider}`.toLowerCase().includes(query);
     if (!matchesQuery) return false;
-
-    if (isTotalMonth) {
-      const now = new Date();
-      const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      return item.date.startsWith(currentYearMonth);
-    }
 
     if (isTotalWeek) {
       return item.clearedFromWeek !== true;
@@ -535,16 +660,7 @@ function render() {
   clearSearchButton.hidden = !query;
   installButton.hidden = !deferredPrompt;
 
-  const isTotalMonth = selectedDay === 'Mês vigente';
-  let statsItems = [];
-  if (isTotalMonth) {
-    const now = new Date();
-    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    statsItems = items.filter(item => item.date.startsWith(currentYearMonth));
-  } else {
-    statsItems = items.filter(item => item.clearedFromWeek !== true);
-  }
-
+  const statsItems = items.filter(item => item.clearedFromWeek !== true);
   const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
   const uniqueDays = new Set(statsItems.map((item) => item.day)).size;
 
@@ -1674,6 +1790,7 @@ function saveSupervisao(event) {
   if (saveSupervisaoButton) saveSupervisaoButton.textContent = 'Salvar';
   
   renderSupervisaoReport();
+  render();
 }
 
 function cancelSupervisaoEdit() {
@@ -1767,6 +1884,7 @@ function handleSupervisaoAction(action, id) {
       supervisoes = supervisoes.filter((s) => s.id !== id);
       saveSupervisoes();
       renderSupervisaoReport();
+      render();
     }
     return;
   }
