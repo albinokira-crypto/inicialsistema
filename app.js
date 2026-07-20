@@ -360,10 +360,24 @@ function attachMenuListeners() {
         }
       }
       
-      updateDayTabs();
-      render();
       if (welcomeScreen) welcomeScreen.hidden = true;
       if (appContent) appContent.hidden = false;
+
+      updateDayTabs();
+      render();
+
+      const titleElem = document.getElementById('currentPageTitle');
+      if (titleElem) {
+        let titleText = `${selectedDay}-feira`;
+        if (selectedDay === 'Seguradoras') titleText = 'Seguradoras';
+        else if (selectedDay === 'Oficinas') titleText = 'Oficinas';
+        else if (selectedDay === 'Total da semana') titleText = 'Total da Semana';
+        else if (selectedDay === 'Mês vigente') titleText = 'Mês Vigente';
+        else if (selectedDay === 'Supervisão') titleText = 'Supervisão';
+
+        titleElem.textContent = titleText;
+        titleElem.innerText = titleText;
+      }
     });
   });
 

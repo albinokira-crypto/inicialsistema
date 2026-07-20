@@ -400,15 +400,19 @@ input, select, textarea {
   box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08);
 }
 
-.menu-btn.special-btn {
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+.menu-btn.special-btn,
+.menu-btn.special-btn-supervisao,
+.menu-btn.special-btn-seguradora {
+  background: #f0fdf4 !important;
+  color: #166534 !important;
+  border: 1px solid #bbf7d0 !important;
   white-space: nowrap;
 }
 
-.menu-btn.special-btn:hover {
-  background: #dcfce7;
+.menu-btn.special-btn:hover,
+.menu-btn.special-btn-supervisao:hover,
+.menu-btn.special-btn-seguradora:hover {
+  background: #dcfce7 !important;
 }
 
 .menu-btn.special-btn-total {
