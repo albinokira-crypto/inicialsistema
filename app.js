@@ -366,18 +366,7 @@ function attachMenuListeners() {
       updateDayTabs();
       render();
 
-      const titleElem = document.getElementById('currentPageTitle');
-      if (titleElem) {
-        let titleText = `${selectedDay}-feira`;
-        if (selectedDay === 'Seguradoras') titleText = 'Seguradoras';
-        else if (selectedDay === 'Oficinas') titleText = 'Oficinas';
-        else if (selectedDay === 'Total da semana') titleText = 'Total da Semana';
-        else if (selectedDay === 'Mês vigente') titleText = 'Mês Vigente';
-        else if (selectedDay === 'Supervisão') titleText = 'Supervisão';
-
-        titleElem.textContent = titleText;
-        titleElem.innerText = titleText;
-      }
+      updatePageTitleHeader();
     });
   });
 
@@ -1003,6 +992,20 @@ function updateDayTabs() {
   updateFormDisplay();
 }
 
+function updatePageTitleHeader() {
+  const elem = document.getElementById('currentPageTitle');
+  if (!elem) return;
+  let titleText = `${selectedDay}-feira`;
+  if (selectedDay === 'Seguradoras') titleText = 'Seguradoras';
+  else if (selectedDay === 'Oficinas') titleText = 'Oficinas';
+  else if (selectedDay === 'Total da semana') titleText = 'Total da Semana';
+  else if (selectedDay === 'Mês vigente') titleText = 'Mês Vigente';
+  else if (selectedDay === 'Supervisão') titleText = 'Supervisão';
+
+  elem.innerHTML = titleText;
+  elem.textContent = titleText;
+}
+
 function updateFormDisplay() {
   const currentDate = new Date();
   const dateValue = getTodayDateValue();
@@ -1023,26 +1026,7 @@ function updateFormDisplay() {
     dayInput.value = currentDay;
   }
 
-  if (currentPageTitle) {
-    let titleText = `${selectedDay}-feira`;
-    if (selectedDay === 'Seguradoras') {
-      titleText = 'Seguradoras';
-    } else if (selectedDay === 'Oficinas') {
-      titleText = 'Oficinas';
-    } else if (selectedDay === 'Total da semana') {
-      titleText = 'Total da Semana';
-    } else if (selectedDay === 'Mês vigente') {
-      titleText = 'Mês Vigente';
-    } else if (selectedDay === 'Supervisão') {
-      titleText = 'Supervisão';
-    }
-    currentPageTitle.textContent = titleText;
-    currentPageTitle.style.display = 'inline-block';
-    currentPageTitle.style.visibility = 'visible';
-    currentPageTitle.style.opacity = '1';
-    currentPageTitle.style.color = '#2563eb';
-    currentPageTitle.style.fontWeight = '700';
-  }
+  updatePageTitleHeader();
 
   if (formTitle) {
     if (isInsurerPane) {
