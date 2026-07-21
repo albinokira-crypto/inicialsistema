@@ -7,7 +7,7 @@
     <title>Gestão de Vistoria Inicial</title>
     <script>
       (function() {
-        const APP_VERSION = 'v36_safety_confirm_and_long_name_layout';
+        const APP_VERSION = 'v37_remove_status_stage_filter';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           localStorage.setItem('app_version', APP_VERSION);
           if ('serviceWorker' in navigator) {
@@ -23,7 +23,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=36" />
+    <link rel="stylesheet" href="styles.css?v=37" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -310,13 +310,6 @@
           </div>
         </div>
         
-        <div class="filter-group" style="margin-bottom: 16px;">
-          <span class="status-label" style="margin-bottom: 6px;">Filtrar por Status do Serviço</span>
-          <div id="supervisaoStageFilterContainer" class="type-buttons-container" style="display: flex; flex-wrap: wrap; gap: 6px;">
-            <!-- Dynamically populated -->
-          </div>
-        </div>
-
         <div class="filter-group" style="margin-bottom: 20px;">
           <span class="status-label" style="margin-bottom: 6px;">Filtrar por Oficina</span>
           <div id="supervisaoOficinaFilterContainer" class="type-buttons-container" style="display: flex; flex-wrap: wrap; gap: 6px;">
@@ -346,6 +339,6 @@
       </div>
     </main>
 
-    <script src="app.js?v=36"></script>
+    <script src="app.js?v=37"></script>
   </body>
 </html>

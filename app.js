@@ -213,7 +213,6 @@ function attachGlobalEventListeners() {
         saveStages();
         
         populateSupervisaoStageSelect();
-        populateSupervisaoStageFilter();
         if (supervisaoStageInput) {
           supervisaoStageInput.value = cleanedName;
         }
@@ -372,17 +371,7 @@ if (supervisaoPartsPendingButtons) {
   });
 }
 
-if (supervisaoStageFilterContainer) {
-  supervisaoStageFilterContainer.addEventListener('click', (event) => {
-    const btn = event.target;
-    if (!btn.matches('.type-btn')) return;
-    selectedSupervisaoStage = btn.dataset.filterStage;
-    supervisaoStageFilterContainer.querySelectorAll('.type-btn').forEach((b) => {
-      b.classList.toggle('active', b.dataset.filterStage === selectedSupervisaoStage);
-    });
-    renderSupervisaoReport();
-  });
-}
+
 
 if (supervisaoOficinaFilterContainer) {
   supervisaoOficinaFilterContainer.addEventListener('click', (event) => {
@@ -1321,7 +1310,6 @@ function updateFormDisplay() {
     populateSupervisaoOficinaSelect();
     populateSupervisaoOficinaFilter();
     populateSupervisaoStageSelect();
-    populateSupervisaoStageFilter();
     renderSupervisaoReport();
   }
 
@@ -1835,16 +1823,7 @@ function populateSupervisaoStageSelect() {
   }
 }
 
-function populateSupervisaoStageFilter() {
-  if (!supervisaoStageFilterContainer) return;
-  
-  let buttonsHtml = `<button type="button" class="type-btn${selectedSupervisaoStage === 'Todos' ? ' active' : ''}" data-filter-stage="Todos">Todos</button>`;
-  stages.forEach((st) => {
-    buttonsHtml += `<button type="button" class="type-btn${selectedSupervisaoStage === st ? ' active' : ''}" data-filter-stage="${st}">${escapeHtml(st)}</button>`;
-  });
-  
-  supervisaoStageFilterContainer.innerHTML = buttonsHtml;
-}
+
 
 function generateWeeklyReportPDF() {
   const { jsPDF } = window.jspdf;
@@ -2137,7 +2116,6 @@ function renderSupervisaoReport() {
   if (!supervisaoReportContent) return;
 
   const filtered = supervisoes.filter((s) => {
-    if (selectedSupervisaoStage !== 'Todos' && s.stage !== selectedSupervisaoStage) return false;
     if (selectedSupervisaoOficina !== 'Todas' && s.oficinaId !== selectedSupervisaoOficina) return false;
     return true;
   });
