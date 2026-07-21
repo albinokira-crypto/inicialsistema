@@ -7,7 +7,7 @@
     <title>Gestão de Vistoria Inicial</title>
     <script>
       (function() {
-        const APP_VERSION = 'v34_fix_dashboard_initialization';
+        const APP_VERSION = 'v35_dynamic_supervisao_stages';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           localStorage.setItem('app_version', APP_VERSION);
           if ('serviceWorker' in navigator) {
@@ -23,7 +23,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=34" />
+    <link rel="stylesheet" href="styles.css?v=35" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -253,20 +253,14 @@
             <input id="supervisaoAttendedInput" name="attended" type="text" required placeholder="Ex: Alexandre" />
           </label>
           
-          <label>
-            Em que parte do serviço esta?:
+          <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+              <span>Em que parte do serviço esta?:</span>
+              <a href="#" id="supervisaoQuickAddStage" style="color: #2563eb; font-size: 0.8rem; font-weight: 700; text-decoration: none;">+ Cadastrar Nova</a>
+            </div>
             <select id="supervisaoStageInput" name="stage" required>
               <option value="" disabled selected>Selecione a etapa...</option>
-              <option value="Aguardando peças fora de serviço">Aguardando peças fora de serviço</option>
-              <option value="Em posse do proprietário">Em posse do proprietário</option>
-              <option value="Em lanternagem">Em lanternagem</option>
-              <option value="Em funilaria">Em funilaria</option>
-              <option value="Em preparação de pintura">Em preparação de pintura</option>
-              <option value="Em pintura">Em pintura</option>
-              <option value="Em montagem">Em montagem</option>
-              <option value="Testes finais">Testes finais</option>
-              <option value="Finalizado e entregue">Finalizado e entregue</option>
-              <option value="Finalizado">Finalizado</option>
+              <!-- Dynamically populated -->
             </select>
           </label>
 
@@ -319,17 +313,7 @@
         <div class="filter-group" style="margin-bottom: 16px;">
           <span class="status-label" style="margin-bottom: 6px;">Filtrar por Status do Serviço</span>
           <div id="supervisaoStageFilterContainer" class="type-buttons-container" style="display: flex; flex-wrap: wrap; gap: 6px;">
-            <button type="button" class="type-btn active" data-filter-stage="Todos">Todos</button>
-            <button type="button" class="type-btn" data-filter-stage="Aguardando peças fora de serviço">Aguardando Peças</button>
-            <button type="button" class="type-btn" data-filter-stage="Em posse do proprietário">Com Proprietário</button>
-            <button type="button" class="type-btn" data-filter-stage="Em lanternagem">Lanternagem</button>
-            <button type="button" class="type-btn" data-filter-stage="Em funilaria">Funilaria</button>
-            <button type="button" class="type-btn" data-filter-stage="Em preparação de pintura">Prep. Pintura</button>
-            <button type="button" class="type-btn" data-filter-stage="Em pintura">Pintura</button>
-            <button type="button" class="type-btn" data-filter-stage="Em montagem">Montagem</button>
-            <button type="button" class="type-btn" data-filter-stage="Testes finais">Testes Finais</button>
-            <button type="button" class="type-btn" data-filter-stage="Finalizado e entregue">Entregue</button>
-            <button type="button" class="type-btn" data-filter-stage="Finalizado">Finalizado</button>
+            <!-- Dynamically populated -->
           </div>
         </div>
 
@@ -362,6 +346,6 @@
       </div>
     </main>
 
-    <script src="app.js?v=34"></script>
+    <script src="app.js?v=35"></script>
   </body>
 </html>

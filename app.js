@@ -81,11 +81,40 @@ const supervisaoStageFilterContainer = document.getElementById('supervisaoStageF
 const supervisaoOficinaFilterContainer = document.getElementById('supervisaoOficinaFilterContainer');
 const supervisaoReportContent = document.getElementById('supervisaoReportContent');
 
+const STAGES_STORAGE_KEY = 'web-system-stages-v1';
+const DEFAULT_STAGES = [
+  "Aguardando peças fora de serviço",
+  "Em posse do proprietário",
+  "Em lanternagem",
+  "Em funilaria",
+  "Em preparação de pintura",
+  "Em pintura",
+  "Em montagem",
+  "Testes finais",
+  "Finalizado e entregue",
+  "Finalizado"
+];
+
+function loadStages() {
+  const raw = localStorage.getItem(STAGES_STORAGE_KEY);
+  if (!raw) return DEFAULT_STAGES;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return DEFAULT_STAGES;
+  }
+}
+
+function saveStages() {
+  localStorage.setItem(STAGES_STORAGE_KEY, JSON.stringify(stages));
+}
+
 let deferredPrompt = null;
 let items = loadItems();
 let insurers = loadInsurers();
 let oficinas = loadOficinas();
 let supervisoes = loadSupervisoes();
+let stages = loadStages();
 let editingId = null;
 let editingInsurerId = null;
 let editingOficinaId = null;
@@ -163,6 +192,30 @@ function attachGlobalEventListeners() {
         populateSupervisaoOficinaSelect();
         if (supervisaoOficinaSelect) {
           supervisaoOficinaSelect.value = newOficina.id;
+        }
+      }
+    });
+  }
+
+  const supervisaoQuickAddStage = document.getElementById('supervisaoQuickAddStage');
+  if (supervisaoQuickAddStage) {
+    supervisaoQuickAddStage.addEventListener('click', (e) => {
+      e.preventDefault();
+      const name = window.prompt('Digite o nome da nova etapa:');
+      if (name && name.trim()) {
+        const cleanedName = name.trim();
+        const exists = stages.some(st => st.toLowerCase() === cleanedName.toLowerCase());
+        if (exists) {
+          alert('Esta etapa já está cadastrada!');
+          return;
+        }
+        stages.push(cleanedName);
+        saveStages();
+        
+        populateSupervisaoStageSelect();
+        populateSupervisaoStageFilter();
+        if (supervisaoStageInput) {
+          supervisaoStageInput.value = cleanedName;
         }
       }
     });
@@ -1251,6 +1304,8 @@ function updateFormDisplay() {
   if (selectedDay === 'Supervisão') {
     populateSupervisaoOficinaSelect();
     populateSupervisaoOficinaFilter();
+    populateSupervisaoStageSelect();
+    populateSupervisaoStageFilter();
     renderSupervisaoReport();
   }
 
@@ -1346,10 +1401,12 @@ function handleInsurerAction(action, id) {
 
 function loadOficinas() {
   const raw = localStorage.getItem('web-system-oficinas-v1');
-  return raw ? safeParseJson(raw, []) : [];
+  const arr = raw ? safeParseJson(raw, []) : [];
+  return arr.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
 }
 
 function saveOficinas() {
+  oficinas.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
   localStorage.setItem('web-system-oficinas-v1', JSON.stringify(oficinas));
 }
 
@@ -1750,6 +1807,27 @@ function populateSupervisaoOficinaFilter() {
   });
   
   supervisaoOficinaFilterContainer.innerHTML = buttonsHtml;
+}
+
+function populateSupervisaoStageSelect() {
+  if (!supervisaoStageInput) return;
+  const currentVal = supervisaoStageInput.value;
+  const options = stages.map(st => `<option value="${st}">${escapeHtml(st)}</option>`).join('');
+  supervisaoStageInput.innerHTML = `<option value="" disabled selected>Selecione a etapa...</option>` + options;
+  if (currentVal && stages.includes(currentVal)) {
+    supervisaoStageInput.value = currentVal;
+  }
+}
+
+function populateSupervisaoStageFilter() {
+  if (!supervisaoStageFilterContainer) return;
+  
+  let buttonsHtml = `<button type="button" class="type-btn${selectedSupervisaoStage === 'Todos' ? ' active' : ''}" data-filter-stage="Todos">Todos</button>`;
+  stages.forEach((st) => {
+    buttonsHtml += `<button type="button" class="type-btn${selectedSupervisaoStage === st ? ' active' : ''}" data-filter-stage="${st}">${escapeHtml(st)}</button>`;
+  });
+  
+  supervisaoStageFilterContainer.innerHTML = buttonsHtml;
 }
 
 function generateWeeklyReportPDF() {
