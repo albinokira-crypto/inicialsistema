@@ -2019,12 +2019,12 @@ function formatSingleSupervisaoText(s) {
     details.push(`Alguma outra pendência?: ${s.other.trim()}`);
   }
 
-  if (s.finish && s.finish.trim()) {
-    details.push(`Estimativa de finalização do veículo?: ${s.finish.trim()}`);
-  }
-
   if (details.length > 0) {
     sections.push(details.join('\n'));
+  }
+
+  if (s.finish && s.finish.trim()) {
+    sections.push(`Estimativa de finalização do veículo?: ${s.finish.trim()}`);
   }
 
   return sections.join('\n\n');
