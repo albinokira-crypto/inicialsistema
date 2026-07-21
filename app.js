@@ -795,82 +795,93 @@ function getSurveyText(id) {
 
   const radioVal = details.radio === 'Original' ? 'original' : (details.radioBrand || 'Outra');
 
-  let lines = [];
+  let sections = [];
 
   if (item.type === 'Incêndio') {
-    lines.push(`Incêndio`);
-    lines.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
-    lines.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
-    lines.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
-    lines.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
-    lines.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
-    lines.push(`MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}`);
-    lines.push(`TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}`);
-    lines.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}`);
-    lines.push(`RÁDIO / MARCA:${radioVal}`);
-    lines.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
-    lines.push(`BATERIA / MARCA: ${details.bateria || ''}`);
+    sections.push(`Incêndio`);
+    sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
+    
+    let checklist = [];
+    checklist.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
+    checklist.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
+    checklist.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
+    checklist.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
+    checklist.push(`MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}`);
+    checklist.push(`TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}`);
+    checklist.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}`);
+    checklist.push(`RÁDIO / MARCA:${radioVal}`);
+    checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
+    checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
 
-    if (details.origemIncendio) lines.push(`Ponto de Origem do Incêndio : ${details.origemIncendio}`);
-    if (details.sistemaCombustivel) lines.push(`Avaliação do Sistema de Combustível e Fluidos : ${details.sistemaCombustivel}`);
-    if (details.sistemaEletrico) lines.push(`Avaliação do Sistema Elétrico : ${details.sistemaEletrico}`);
-    if (details.residuosExtincao) lines.push(`Resíduos de Extinção do Incêndio : ${getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao')}`);
-    if (details.tanqueAfetado) lines.push(`Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}`);
-    if (details.obs) lines.push(`Observações Complementares : ${details.obs}`);
+    if (details.origemIncendio) checklist.push(`Ponto de Origem do Incêndio : ${details.origemIncendio}`);
+    if (details.sistemaCombustivel) checklist.push(`Avaliação do Sistema de Combustível e Fluidos : ${details.sistemaCombustivel}`);
+    if (details.sistemaEletrico) checklist.push(`Avaliação do Sistema Elétrico : ${details.sistemaEletrico}`);
+    if (details.residuosExtincao) checklist.push(`Resíduos de Extinção do Incêndio : ${getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao')}`);
+    if (details.tanqueAfetado) checklist.push(`Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}`);
+    
+    sections.push(checklist.join('\n'));
+
+    if (details.obs) {
+      sections.push(`Observações Complementares : ${details.obs}`);
+    }
   } else {
     // Other survey types
-    lines.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
-    lines.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
-    lines.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
-    lines.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
+    sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
+    
+    let checklist = [];
+    checklist.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
+    checklist.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
+    checklist.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
     
     if ('estepe' in details) {
-      lines.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
-      lines.push(`MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}`);
-      lines.push(`TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}`);
-      lines.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}`);
-      lines.push(`RÁDIO / MARCA:${radioVal}`);
-      lines.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
-      lines.push(`BATERIA / MARCA: ${details.bateria || ''}`);
+      checklist.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
+      checklist.push(`MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}`);
+      checklist.push(`TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}`);
+      checklist.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}`);
+      checklist.push(`RÁDIO / MARCA:${radioVal}`);
+      checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
+      checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
     }
 
     if (item.type === 'Roubo Recuperado' && details.obsRoubo) {
-      lines.push(`Observações Roubo: ${details.obsRoubo}`);
+      checklist.push(`Observações Roubo: ${details.obsRoubo}`);
     }
     if (item.type === 'Enchente') {
       const yesNo = (val) => val === 'Sim' ? 'Sim' : 'Não';
-      if (details.aguaOleo) lines.push(`Vestígios de água no óleo: ${yesNo(details.aguaOleo)}`);
-      if (details.aguaVelas) lines.push(`Vestígios de água nas velas: ${yesNo(details.aguaVelas)}`);
-      if (details.aguaFarois) lines.push(`Vestígios de água nos faróis: ${yesNo(details.aguaFarois)}`);
-      if (details.aguaLanternas) lines.push(`Vestígios de água nas lanternas: ${yesNo(details.aguaLanternas)}`);
-      if (details.aguaFiltro) lines.push(`Vestígios de água no filtro: ${yesNo(details.aguaFiltro)}`);
-      if (details.motorTravado) lines.push(`Motor travado: ${yesNo(details.motorTravado)}`);
-      if (details.alturaAgua) lines.push(`Altura da água: ${details.alturaAgua}`);
+      if (details.aguaOleo) checklist.push(`Vestígios de água no óleo: ${yesNo(details.aguaOleo)}`);
+      if (details.aguaVelas) checklist.push(`Vestígios de água nas velas: ${yesNo(details.aguaVelas)}`);
+      if (details.aguaFarois) checklist.push(`Vestígios de água nos faróis: ${yesNo(details.aguaFarois)}`);
+      if (details.aguaLanternas) checklist.push(`Vestígios de água nas lanternas: ${yesNo(details.aguaLanternas)}`);
+      if (details.aguaFiltro) checklist.push(`Vestígios de água no filtro: ${yesNo(details.aguaFiltro)}`);
+      if (details.motorTravado) checklist.push(`Motor travado: ${yesNo(details.motorTravado)}`);
+      if (details.alturaAgua) checklist.push(`Altura da água: ${details.alturaAgua}`);
     }
     if ((item.type === 'Complemento' || item.type === 'Pós entrega') && details.conteudoLivre) {
-      lines.push(`Conteúdo: ${details.conteudoLivre}`);
+      checklist.push(`Conteúdo: ${details.conteudoLivre}`);
     }
+    
+    sections.push(checklist.join('\n'));
 
     const obsVal = details.obs || details.obsRoubo || details.obsIncendio || details.obsEnchente || '';
     if (obsVal) {
-      lines.push(`Obs.: ${obsVal}`);
+      sections.push(`Obs.: ${obsVal}`);
     }
   }
 
   // Universal fields (Trocas & Reparos)
   if (details.trocas) {
-    lines.push(`Trocas\n${details.trocas}`);
+    sections.push(`Trocas\n${details.trocas}`);
   } else if (item.type === 'Incêndio') {
-    lines.push(`Trocas`);
+    sections.push(`Trocas`);
   }
 
   if (details.reparos) {
-    lines.push(`Reparos\n${details.reparos}`);
+    sections.push(`Reparos\n${details.reparos}`);
   } else if (item.type === 'Incêndio') {
-    lines.push(`Reparos`);
+    sections.push(`Reparos`);
   }
 
-  return lines.join('\n\n');
+  return sections.join('\n\n');
 }
 
 function shareSurveyText(id) {
