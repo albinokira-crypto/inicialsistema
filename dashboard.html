@@ -7,7 +7,7 @@
     <title>Gestão de Vistoria Inicial</title>
     <script>
       (function() {
-        const APP_VERSION = 'v30_home_summary_custom_layout';
+        const APP_VERSION = 'v31_workshop_reports_filter_quick_add';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           localStorage.setItem('app_version', APP_VERSION);
           if ('serviceWorker' in navigator) {
@@ -23,7 +23,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=30" />
+    <link rel="stylesheet" href="styles.css?v=31" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -44,7 +44,7 @@
           <button id="installButton" class="primary-btn" type="button" hidden>Instalar atalho</button>
           <button id="logoutButton" class="ghost-btn" type="button">Sair</button>
           <button id="clearWeekButton" class="ghost-btn" type="button" style="display: none;">Limpar Semana</button>
-          <button id="clearMonthButton" class="ghost-btn" type="button" style="display: none;">Limpar Mês</button>
+          <button id="clearMonthButton" class="ghost-btn" type="button" style="display: none;">Limpar Tudo</button>
         </div>
       </header>
 
@@ -61,7 +61,7 @@
           <button class="menu-btn special-btn-seguradora" type="button" data-day="Seguradoras">Seguradoras</button>
           <button class="menu-btn special-btn-seguradora" type="button" data-day="Oficinas">Oficinas</button>
           <button class="menu-btn special-btn-total" type="button" data-day="Total da semana">Total da Semana</button>
-          <button class="menu-btn special-btn-total" type="button" data-day="Mês vigente">Mês Vigente</button>
+          <button class="menu-btn special-btn-total" type="button" data-day="Todas as vistorias">Todas as Vistorias</button>
         </div>
       </section>
 
@@ -92,7 +92,7 @@
             <button class="tab-btn active" type="button" data-day="Seguradoras">Seguradoras</button>
             <button class="tab-btn" type="button" data-day="Oficinas">Oficinas</button>
             <button class="tab-btn" type="button" data-day="Total da semana">Total da semana</button>
-            <button class="tab-btn" type="button" data-day="Mês vigente">Mês vigente</button>
+            <button class="tab-btn" type="button" data-day="Todas as vistorias">Todas as vistorias</button>
           </div>
         </section>
 
@@ -131,6 +131,7 @@
           <input type="hidden" id="typeInput" name="type" value="Inicial" />
           <label>
             Seguradora
+            <input id="insurerFilterInput" type="text" placeholder="🔍 Digite para filtrar seguradora..." style="margin-bottom: 8px;" autocomplete="off" />
             <div id="insurerButtonsContainer" class="insurer-buttons-container"></div>
             <input type="hidden" id="providerSelect" name="provider" required />
           </label>
@@ -233,8 +234,11 @@
             Veículo (Modelo e Placa)
             <input id="supervisaoVehicleInput" name="vehicle" type="text" required placeholder="Ex: TIGGO 7 HYBRID PRO MAX DRIVE 1.5 TURBO HÍBRIDO 2025 SRR-4G96" />
           </label>
-          <label>
-            Oficina
+          <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+              <span>Oficina</span>
+              <a href="#" id="supervisaoQuickAddOficina" style="color: #2563eb; font-size: 0.8rem; font-weight: 700; text-decoration: none;">+ Cadastrar Nova</a>
+            </div>
             <select id="supervisaoOficinaSelect" name="oficinaId" required>
               <option value="" disabled selected>Selecione a oficina...</option>
               <!-- Dynamically populated -->
@@ -354,6 +358,6 @@
       </div>
     </main>
 
-    <script src="app.js?v=30"></script>
+    <script src="app.js?v=31"></script>
   </body>
 </html>

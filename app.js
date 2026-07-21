@@ -35,6 +35,7 @@ const noInsurersNote = document.getElementById('noInsurersNote');
 const welcomeScreen = document.getElementById('welcomeScreen');
 const homeSummaryCard = document.getElementById('homeSummaryCard');
 const homeSummaryGrid = document.getElementById('homeSummaryGrid');
+const insurerFilterInput = document.getElementById('insurerFilterInput');
 const appContent = document.getElementById('appContent');
 const backToMenuButton = document.getElementById('backToMenuButton');
 const currentPageTitle = document.getElementById('currentPageTitle');
@@ -92,6 +93,7 @@ let selectedType = 'Inicial';
 let appInitialized = false;
 let selectedSupervisaoStage = 'Todos';
 let selectedSupervisaoOficina = 'Todas';
+let selectedOficinaForTodasVistorias = null;
 
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
@@ -133,6 +135,40 @@ function attachGlobalEventListeners() {
   if (sharePdfButton) {
     sharePdfButton.addEventListener('click', () => {
       generateWeeklyReportPDF();
+    });
+  }
+  
+  if (insurerFilterInput) {
+    insurerFilterInput.addEventListener('input', () => {
+      populateProviderSelect();
+    });
+  }
+
+  const supervisaoQuickAdd = document.getElementById('supervisaoQuickAddOficina');
+  if (supervisaoQuickAdd) {
+    supervisaoQuickAdd.addEventListener('click', (e) => {
+      e.preventDefault();
+      const name = window.prompt('Digite o nome da nova oficina:');
+      if (name && name.trim()) {
+        const cleanedName = name.trim();
+        const exists = oficinas.some(o => o.name.toLowerCase() === cleanedName.toLowerCase());
+        if (exists) {
+          alert('Esta oficina já está cadastrada!');
+          return;
+        }
+        const newOficina = {
+          id: Date.now().toString(),
+          name: cleanedName
+        };
+        oficinas.push(newOficina);
+        saveOficinas();
+        renderOficinas();
+        
+        populateSupervisaoOficinaSelect();
+        if (supervisaoOficinaSelect) {
+          supervisaoOficinaSelect.value = newOficina.id;
+        }
+      }
     });
   }
 }
@@ -203,11 +239,9 @@ if (clearWeekButton) {
 
 if (clearMonthButton) {
   clearMonthButton.addEventListener('click', () => {
-    if (window.confirm('Deseja apagar permanentemente todos os registros do mês vigente?')) {
-      const now = new Date();
-      const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      items = items.filter((item) => !item.date.startsWith(currentYearMonth));
-      supervisoes = supervisoes.filter((s) => !s.date.startsWith(currentYearMonth));
+    if (window.confirm('Deseja apagar permanentemente todos os registros de todas as vistorias e supervisões?')) {
+      items = [];
+      supervisoes = [];
       saveItems();
       saveSupervisoes();
       render();
@@ -403,6 +437,7 @@ function attachMenuListeners() {
 
   if (backToMenuButton) {
     backToMenuButton.addEventListener('click', () => {
+      selectedOficinaForTodasVistorias = null;
       showWelcomeScreen();
     });
   }
@@ -547,137 +582,176 @@ function saveInsurer(event) {
 
 function render() {
   const query = searchInput.value.toLowerCase();
-  const isTotalMonth = selectedDay === 'Mês vigente';
+  const isTodasVistorias = selectedDay === 'Todas as vistorias';
 
   if (summaryGrid) {
-    summaryGrid.style.display = isTotalMonth ? 'grid' : 'none';
+    // Show summaryGrid only on "Mês vigente" (which is now replaced, but keep compatibility or hide it)
+    summaryGrid.style.display = 'none';
   }
 
-  if (isTotalMonth) {
-    const now = new Date();
-    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-    const monthItems = items.filter((item) => {
-      if (!item.date || !item.date.startsWith(currentYearMonth)) return false;
-      const match = `${item.date} ${item.day} ${item.plate} ${item.provider} ${item.oficinaName || ''} ${item.type || ''}`.toLowerCase().includes(query);
-      return match;
-    }).map(i => ({ ...i, isSupervisao: false }));
-
-    const monthSupervisoes = supervisoes.filter((s) => {
-      if (!s.date || !s.date.startsWith(currentYearMonth)) return false;
-      const match = `${s.date} ${s.day} ${s.vehicle} ${s.attended} ${s.stage} ${s.oficinaName || ''}`.toLowerCase().includes(query);
-      return match;
-    }).map(s => ({ ...s, isSupervisao: true }));
-
-    const combined = [...monthItems, ...monthSupervisoes];
-    combined.sort((a, b) => b.id.localeCompare(a.id));
-
+  if (isTodasVistorias) {
     clearSearchButton.hidden = !query;
     installButton.hidden = !deferredPrompt;
 
-    const totalValue = monthItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
-    const allDates = [...monthItems.map(i => i.day), ...monthSupervisoes.map(s => s.day)];
-    const uniqueDays = new Set(allDates).size;
+    if (selectedOficinaForTodasVistorias === null) {
+      if (reportCard) reportCard.hidden = true;
+      if (formCard) formCard.hidden = true;
+      if (recordsCard) recordsCard.hidden = false;
+      
+      const filteredOficinas = oficinas.filter(o => 
+        o.name.toLowerCase().includes(query)
+      );
 
-    summaryGrid.innerHTML = `
-      <article class="summary-item">
-        <strong>${combined.length}</strong>
-        <span>registros no mês</span>
-      </article>
-      <article class="summary-item">
-        <strong>R$ ${totalValue.toFixed(2).replace('.', ',')}</strong>
-        <span>valor total vistorias</span>
-      </article>
-      <article class="summary-item">
-        <strong>${uniqueDays}</strong>
-        <span>dias com registros</span>
-      </article>
-      <article class="summary-item">
-        <strong>${combined.length ? escapeHtml(combined[0].createdAt || combined[0].date) : '—'}</strong>
-        <span>último registro</span>
-      </article>
-    `;
+      if (!filteredOficinas.length) {
+        itemList.innerHTML = '<li class="empty">Nenhuma oficina cadastrada ou encontrada.</li>';
+        return;
+      }
+      
+      itemList.innerHTML = `
+        <li style="list-style: none; grid-column: 1 / -1; margin-bottom: 8px; text-align: center; width: 100%;">
+          <h3 style="margin: 0; color: #1e40af; font-size: 1rem; font-weight: 700;">Selecione uma oficina para ver os registros:</h3>
+        </li>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; width: 100%;">
+          ${filteredOficinas.map(o => `
+            <button class="menu-btn" type="button" data-oficina-btn-id="${o.id}" style="width: 100%; text-align: center; padding: 14px 12px; font-weight: 700; border-radius: 14px; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; cursor: pointer; transition: all 0.2s;">
+              🏢 ${escapeHtml(o.name)}
+            </button>
+          `).join('')}
+        </div>
+      `;
+      
+      itemList.querySelectorAll('[data-oficina-btn-id]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedOficinaForTodasVistorias = btn.dataset.oficinaBtnId;
+          render();
+        });
+      });
+      return;
+    } else {
+      const o = oficinas.find(oficina => oficina.id === selectedOficinaForTodasVistorias) || { name: 'Sem oficina' };
+      
+      const filteredVistorias = items.filter(item => {
+        if (item.oficinaId !== selectedOficinaForTodasVistorias) return false;
+        if (query) {
+          return `${item.date} ${item.day} ${item.plate} ${item.provider} ${item.type || ''}`.toLowerCase().includes(query);
+        }
+        return true;
+      });
+      
+      const filteredSupervisoes = supervisoes.filter(s => {
+        if (s.oficinaId !== selectedOficinaForTodasVistorias) return false;
+        if (query) {
+          return `${s.date} ${s.day} ${s.vehicle} ${s.attended} ${s.stage}`.toLowerCase().includes(query);
+        }
+        return true;
+      });
+      
+      const combined = [
+        ...filteredVistorias.map(i => ({ ...i, isSupervisao: false })),
+        ...filteredSupervisoes.map(s => ({ ...s, isSupervisao: true }))
+      ];
+      combined.sort((a, b) => b.id.localeCompare(a.id));
+      
+      let headerHtml = `
+        <li style="list-style: none; grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 8px 12px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0; width: 100%; box-sizing: border-box;">
+          <strong style="color: #15803d; font-size: 0.95rem;">Oficina: ${escapeHtml(o.name)}</strong>
+          <button id="backToOficinasList" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 999px; cursor: pointer;">
+            ← Voltar
+          </button>
+        </li>
+      `;
+      
+      if (!combined.length) {
+        itemList.innerHTML = headerHtml + '<li class="empty">Nenhum registro encontrado para esta oficina.</li>';
+        
+        const backBtn = itemList.querySelector('#backToOficinasList');
+        if (backBtn) {
+          backBtn.addEventListener('click', () => {
+            selectedOficinaForTodasVistorias = null;
+            render();
+          });
+        }
+        return;
+      }
+      
+      const badgeClasses = {
+        'Inicial': 'badge-inicial',
+        'Roubo Recuperado': 'badge-roubo',
+        'Incêndio': 'badge-incendio',
+        'Enchente': 'badge-enchente',
+        'Moto': 'badge-moto',
+        'Complemento': 'badge-complemento',
+        'Pós entrega': 'badge-pos'
+      };
 
-    if (!combined.length) {
-      itemList.innerHTML = '<li class="empty">Nenhum registro encontrado no mês vigente.</li>';
-      renderReport([]);
+      const itemsHtml = combined.map((entry) => {
+        if (entry.isSupervisao) {
+          return `
+            <li class="item-card compact-item-card">
+              <div class="item-main-info">
+                <div class="plate-badge compact-plate-badge">
+                  <span class="plate-badge-text">${escapeHtml(entry.vehicle || 'Supervisão')}</span>
+                </div>
+                <div class="item-details">
+                  <strong class="item-provider">Atendido: ${escapeHtml(entry.attended || '—')}</strong>
+                  <span class="item-meta">· ${escapeHtml(formatDateString(entry.date))}</span>
+                  <span class="badge-supervisao" style="margin-left: 6px;">
+                    Supervisão: ${escapeHtml(entry.stage || '')}
+                  </span>
+                </div>
+              </div>
+              <div class="actions vertical-actions">
+                <button class="action-btn" type="button" data-super-action="share-text" data-id="${entry.id}">📱 Visualizar</button>
+                <button class="action-btn" type="button" data-super-action="copy-text" data-id="${entry.id}">📋 Copiar</button>
+                <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
+                <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
+              </div>
+            </li>
+          `;
+        } else {
+          const badgeClass = badgeClasses[entry.type || 'Inicial'] || 'badge-inicial';
+          return `
+            <li class="item-card compact-item-card">
+              <div class="item-main-info">
+                <div class="plate-badge compact-plate-badge">
+                  <span class="plate-badge-text">${escapeHtml(entry.plate)}</span>
+                </div>
+                <div class="item-details">
+                  <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
+                  <span class="item-meta">· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
+                  <span class="item-meta">· ${escapeHtml(entry.day)}</span>
+                  <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
+                </div>
+              </div>
+              <div class="actions vertical-actions">
+                <button class="action-btn" type="button" data-action="share-text" data-id="${entry.id}">📱 Visualizar</button>
+                <button class="action-btn" type="button" data-action="copy-text" data-id="${entry.id}">📋 Copiar</button>
+                <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
+                <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
+              </div>
+            </li>
+          `;
+        }
+      }).join('');
+      
+      itemList.innerHTML = headerHtml + itemsHtml;
+      
+      const backBtn = itemList.querySelector('#backToOficinasList');
+      if (backBtn) {
+        backBtn.addEventListener('click', () => {
+          selectedOficinaForTodasVistorias = null;
+          render();
+        });
+      }
+      
+      itemList.querySelectorAll('[data-action]').forEach((button) => {
+        button.addEventListener('click', () => handleAction(button.dataset.action, button.dataset.id));
+      });
+      itemList.querySelectorAll('[data-super-action]').forEach((button) => {
+        button.addEventListener('click', () => handleSupervisaoAction(button.dataset.superAction, button.dataset.id));
+      });
       return;
     }
-
-    const badgeClasses = {
-      'Inicial': 'badge-inicial',
-      'Roubo Recuperado': 'badge-roubo',
-      'Incêndio': 'badge-incendio',
-      'Enchente': 'badge-enchente',
-      'Moto': 'badge-moto',
-      'Complemento': 'badge-complemento',
-      'Pós entrega': 'badge-pos'
-    };
-
-    itemList.innerHTML = combined.map((entry) => {
-      if (entry.isSupervisao) {
-        return `
-          <li class="item-card compact-item-card">
-            <div class="item-main-info">
-              <div class="plate-badge compact-plate-badge">
-                <span class="plate-badge-text">${escapeHtml(entry.vehicle || 'Supervisão')}</span>
-              </div>
-              <div class="item-details">
-                <strong class="item-provider">Atendido: ${escapeHtml(entry.attended || '—')}</strong>
-                <span class="item-meta">· ${escapeHtml(formatDateString(entry.date))}</span>
-                <span class="badge-supervisao" style="margin-left: 6px;">
-                  Supervisão: ${escapeHtml(entry.stage || '')}
-                </span>
-                ${entry.oficinaName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(entry.oficinaName)}</strong></div>` : ''}
-              </div>
-            </div>
-            <div class="actions vertical-actions">
-              <button class="action-btn" type="button" data-super-action="share-text" data-id="${entry.id}">📱 Compartilhar</button>
-              <button class="action-btn" type="button" data-super-action="copy-text" data-id="${entry.id}">📋 Copiar</button>
-              <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
-              <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
-            </div>
-          </li>
-        `;
-      } else {
-        const badgeClass = badgeClasses[entry.type || 'Inicial'] || 'badge-inicial';
-        return `
-          <li class="item-card compact-item-card">
-            <div class="item-main-info">
-              <div class="plate-badge compact-plate-badge">
-                <span class="plate-badge-text">${escapeHtml(entry.plate)}</span>
-              </div>
-              <div class="item-details">
-                <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
-                <span class="item-meta">· ${escapeHtml(formatDateString(entry.date))}</span>
-                <strong class="item-value">· R$ ${escapeHtml(Number(entry.value).toFixed(2).replace('.', ','))}</strong>
-                <span class="${badgeClass}" style="margin-left: 6px;">
-                  ${escapeHtml(entry.type || 'Inicial')}
-                </span>
-                ${entry.oficinaName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(entry.oficinaName)}</strong></div>` : ''}
-              </div>
-            </div>
-            <div class="actions vertical-actions">
-              <button class="action-btn" type="button" data-action="share-text" data-id="${entry.id}">📱 Compartilhar</button>
-              <button class="action-btn" type="button" data-action="copy-text" data-id="${entry.id}">📋 Copiar</button>
-              <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
-              <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
-            </div>
-          </li>
-        `;
-      }
-    }).join('');
-
-    itemList.querySelectorAll('[data-action]').forEach((button) => {
-      button.addEventListener('click', () => handleAction(button.dataset.action, button.dataset.id));
-    });
-
-    itemList.querySelectorAll('[data-super-action]').forEach((button) => {
-      button.addEventListener('click', () => handleSupervisaoAction(button.dataset.superAction, button.dataset.id));
-    });
-
-    renderReport(monthItems);
-    return;
   }
 
   // Normal day filtering for regular vistorias
@@ -1033,6 +1107,16 @@ function handleAction(action, id) {
   updateTypeButtonsHighlight();
   updateInsurerButtonsHighlight();
   updateFormState();
+
+  const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
+  if (!isWeekday) {
+    selectedDay = item.day || 'Segunda';
+    updateDayTabs();
+    if (welcomeScreen) welcomeScreen.hidden = true;
+    if (homeSummaryCard) homeSummaryCard.hidden = true;
+    if (appContent) appContent.hidden = false;
+  }
+
   plateInput.focus();
 }
 
@@ -1050,7 +1134,7 @@ function updatePageTitleHeader() {
   if (selectedDay === 'Seguradoras') titleText = 'Seguradoras';
   else if (selectedDay === 'Oficinas') titleText = 'Oficinas';
   else if (selectedDay === 'Total da semana') titleText = 'Total da Semana';
-  else if (selectedDay === 'Mês vigente') titleText = 'Mês Vigente';
+  else if (selectedDay === 'Todas as vistorias') titleText = 'Todas as Vistorias';
   else if (selectedDay === 'Supervisão') titleText = 'Supervisão';
 
   elem.innerHTML = titleText;
@@ -1098,7 +1182,7 @@ function updateFormDisplay() {
 
   const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
   if (formCard) formCard.hidden = !isWeekday;
-  if (recordsCard) recordsCard.hidden = !isWeekday && selectedDay !== 'Mês vigente';
+  if (recordsCard) recordsCard.hidden = !isWeekday && selectedDay !== 'Todas as vistorias';
   if (reportCard) reportCard.hidden = selectedDay !== 'Total da semana';
   
   if (vistoriaTypeTabsCard) {
@@ -1109,7 +1193,7 @@ function updateFormDisplay() {
   if (supervisaoRecordsCard) supervisaoRecordsCard.hidden = selectedDay !== 'Supervisão';
 
   if (clearWeekButton && clearMonthButton) {
-    if (selectedDay === 'Mês vigente') {
+    if (selectedDay === 'Todas as vistorias') {
       clearWeekButton.style.display = 'none';
       clearMonthButton.style.display = 'inline-block';
     } else if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Total da semana'].includes(selectedDay)) {
@@ -1147,7 +1231,15 @@ function populateProviderSelect() {
 
   noInsurersNote.hidden = true;
 
-  insurers.forEach((insurer) => {
+  const query = insurerFilterInput ? insurerFilterInput.value.toLowerCase().trim() : '';
+  const filtered = insurers.filter(ins => ins.name.toLowerCase().includes(query));
+
+  if (!filtered.length) {
+    insurerButtonsContainer.innerHTML = '<span style="color:#6b7280; font-size:0.85rem; padding: 6px 0; display:block;">Nenhuma seguradora corresponde ao filtro.</span>';
+    return;
+  }
+
+  filtered.forEach((insurer) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'insurer-btn';
@@ -1315,7 +1407,10 @@ function renderDynamicSurveyFields() {
   const officeOptions = oficinas.map(o => `<option value="${o.id}">${escapeHtml(o.name)}</option>`).join('');
   const officeDropdownHtml = `
     <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
-      Oficina
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+        <span>Oficina</span>
+        <a href="#" id="quickAddOficina" style="color: #2563eb; font-size: 0.8rem; font-weight: 700; text-decoration: none;">+ Cadastrar Nova</a>
+      </div>
       <select id="itemOficinaSelect" name="oficinaId" required>
         <option value="" disabled selected>${oficinas.length ? 'Selecione a oficina...' : 'Nenhuma oficina cadastrada'}</option>
         ${officeOptions}
@@ -1550,6 +1645,35 @@ function renderDynamicSurveyFields() {
   }
 
   dynamicFieldsContainer.innerHTML = officeDropdownHtml + fieldsHtml;
+
+  const quickAdd = dynamicFieldsContainer.querySelector('#quickAddOficina');
+  if (quickAdd) {
+    quickAdd.addEventListener('click', (e) => {
+      e.preventDefault();
+      const name = window.prompt('Digite o nome da nova oficina:');
+      if (name && name.trim()) {
+        const cleanedName = name.trim();
+        const exists = oficinas.some(o => o.name.toLowerCase() === cleanedName.toLowerCase());
+        if (exists) {
+          alert('Esta oficina já está cadastrada!');
+          return;
+        }
+        const newOficina = {
+          id: Date.now().toString(),
+          name: cleanedName
+        };
+        oficinas.push(newOficina);
+        saveOficinas();
+        renderOficinas();
+        
+        renderDynamicSurveyFields();
+        const selectEl = document.getElementById('itemOficinaSelect');
+        if (selectEl) {
+          selectEl.value = newOficina.id;
+        }
+      }
+    });
+  }
 
   // Bind events for dynamic elements
   dynamicFieldsContainer.querySelectorAll('.type-buttons-container .type-btn').forEach((btn) => {
@@ -2006,6 +2130,14 @@ function handleSupervisaoAction(action, id) {
   if (cancelSupervisaoEditButton) cancelSupervisaoEditButton.hidden = false;
   if (saveSupervisaoButton) saveSupervisaoButton.textContent = 'Atualizar';
   
+  if (selectedDay !== 'Supervisão') {
+    selectedDay = 'Supervisão';
+    updateDayTabs();
+    if (welcomeScreen) welcomeScreen.hidden = true;
+    if (homeSummaryCard) homeSummaryCard.hidden = true;
+    if (appContent) appContent.hidden = false;
+  }
+
   supervisaoVehicleInput.focus();
 }
 
