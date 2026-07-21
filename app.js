@@ -812,14 +812,17 @@ function getSurveyText(id) {
     checklist.push(`RÁDIO / MARCA:${radioVal}`);
     checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
     checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
-
-    if (details.origemIncendio) checklist.push(`Ponto de Origem do Incêndio : ${details.origemIncendio}`);
-    if (details.sistemaCombustivel) checklist.push(`Avaliação do Sistema de Combustível e Fluidos : ${details.sistemaCombustivel}`);
-    if (details.sistemaEletrico) checklist.push(`Avaliação do Sistema Elétrico : ${details.sistemaEletrico}`);
-    if (details.residuosExtincao) checklist.push(`Resíduos de Extinção do Incêndio : ${getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao')}`);
-    if (details.tanqueAfetado) checklist.push(`Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}`);
-    
     sections.push(checklist.join('\n'));
+
+    let fireDetails = [];
+    if (details.origemIncendio) fireDetails.push(`Ponto de Origem do Incêndio : ${details.origemIncendio}`);
+    if (details.sistemaCombustivel) fireDetails.push(`Avaliação do Sistema de Combustível e Fluidos : ${details.sistemaCombustivel}`);
+    if (details.sistemaEletrico) fireDetails.push(`Avaliação do Sistema Elétrico : ${details.sistemaEletrico}`);
+    if (details.residuosExtincao) fireDetails.push(`Resíduos de Extinção do Incêndio : ${getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao')}`);
+    if (details.tanqueAfetado) fireDetails.push(`Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}`);
+    if (fireDetails.length > 0) {
+      sections.push(fireDetails.join('\n'));
+    }
 
     if (details.obs) {
       sections.push(`Observações Complementares : ${details.obs}`);
@@ -842,9 +845,11 @@ function getSurveyText(id) {
       checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
       checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
     }
+    sections.push(checklist.join('\n'));
 
+    let typeSpecificDetails = [];
     if (item.type === 'Roubo Recuperado' && details.obsRoubo) {
-      checklist.push(`Observações Roubo: ${details.obsRoubo}`);
+      typeSpecificDetails.push(`Observações Roubo: ${details.obsRoubo}`);
     }
     if (item.type === 'Enchente') {
       const yesNo = (val) => val === 'Sim' ? 'Sim' : 'Não';
@@ -2016,7 +2021,7 @@ function formatSingleSupervisaoText(s) {
     lines.push(`Estimativa de finalização do veículo?: ${s.finish.trim()}`);
   }
 
-  return lines.join('\n\n');
+  return lines.join('\n');
 }
 
 function getFilteredSupervisoes() {
