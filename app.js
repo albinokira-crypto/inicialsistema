@@ -679,10 +679,10 @@ function render() {
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; width: 100%;">
           ${filteredOficinas.map(o => {
             const isLongName = o.name && o.name.length > 20;
-            const extraStyle = isLongName ? 'grid-column: 1 / -1;' : '';
+            const extraStyle = isLongName ? 'font-size: 0.7rem; padding: 14px 6px; white-space: normal; word-break: break-word;' : '';
             return `
               <button class="menu-btn" type="button" data-oficina-btn-id="${o.id}" style="width: 100%; text-align: center; padding: 14px 12px; font-weight: 700; border-radius: 14px; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; cursor: pointer; transition: all 0.2s; ${extraStyle}">
-                🏢 ${escapeHtml(o.name)}
+                ${escapeHtml(o.name)}
               </button>
             `;
           }).join('')}
