@@ -36,6 +36,8 @@ const welcomeScreen = document.getElementById('welcomeScreen');
 const appHeader = document.getElementById('appHeader');
 const homeSummaryCard = document.getElementById('homeSummaryCard');
 const homeSummaryGrid = document.getElementById('homeSummaryGrid');
+const homeClearWeekButton = document.getElementById('homeClearWeekButton');
+const homeLogoutButton = document.getElementById('homeLogoutButton');
 const insurerFilterInput = document.getElementById('insurerFilterInput');
 const appContent = document.getElementById('appContent');
 const backToMenuButton = document.getElementById('backToMenuButton');
@@ -170,6 +172,26 @@ function attachGlobalEventListeners() {
           supervisaoOficinaSelect.value = newOficina.id;
         }
       }
+    });
+  }
+
+  if (homeClearWeekButton) {
+    homeClearWeekButton.addEventListener('click', () => {
+      if (window.confirm('Deseja apagar os registros da semana atual? Eles continuarão no relatório de todas as vistorias.')) {
+        items.forEach((item) => {
+          item.clearedFromWeek = true;
+        });
+        saveItems();
+        updateHomeSummary();
+        render();
+      }
+    });
+  }
+
+  if (homeLogoutButton) {
+    homeLogoutButton.addEventListener('click', () => {
+      sessionStorage.removeItem('authenticated');
+      window.location.href = 'index.html';
     });
   }
 }
@@ -611,8 +633,11 @@ function render() {
       }
       
       itemList.innerHTML = `
-        <li style="list-style: none; grid-column: 1 / -1; margin-bottom: 8px; text-align: center; width: 100%;">
-          <h3 style="margin: 0; color: #1e40af; font-size: 1rem; font-weight: 700;">Selecione uma oficina para ver os registros:</h3>
+        <li style="list-style: none; grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
+          <h3 style="margin: 0; color: #1e40af; font-size: 1rem; font-weight: 700;">Selecione uma oficina:</h3>
+          <button id="tabClearAllButton" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 999px; cursor: pointer;">
+            🧹 Limpar Tudo
+          </button>
         </li>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; width: 100%;">
           ${filteredOficinas.map(o => `
@@ -622,6 +647,21 @@ function render() {
           `).join('')}
         </div>
       `;
+      
+      const clearAllBtn = itemList.querySelector('#tabClearAllButton');
+      if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', () => {
+          if (window.confirm('Deseja apagar permanentemente todos os registros de todas as vistorias e supervisões?')) {
+            items = [];
+            supervisoes = [];
+            saveItems();
+            saveSupervisoes();
+            selectedOficinaForTodasVistorias = null;
+            render();
+            renderSupervisaoReport();
+          }
+        });
+      }
       
       itemList.querySelectorAll('[data-oficina-btn-id]').forEach(btn => {
         btn.addEventListener('click', () => {

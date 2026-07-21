@@ -7,7 +7,7 @@
     <title>Gestão de Vistoria Inicial</title>
     <script>
       (function() {
-        const APP_VERSION = 'v32_hero_hidden_in_tabs';
+        const APP_VERSION = 'v33_clear_actions_refactored';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           localStorage.setItem('app_version', APP_VERSION);
           if ('serviceWorker' in navigator) {
@@ -23,7 +23,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=32" />
+    <link rel="stylesheet" href="styles.css?v=33" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -42,9 +42,6 @@
         </div>
         <div class="hero-actions">
           <button id="installButton" class="primary-btn" type="button" hidden>Instalar atalho</button>
-          <button id="logoutButton" class="ghost-btn" type="button">Sair</button>
-          <button id="clearWeekButton" class="ghost-btn" type="button" style="display: none;">Limpar Semana</button>
-          <button id="clearMonthButton" class="ghost-btn" type="button" style="display: none;">Limpar Tudo</button>
         </div>
       </header>
 
@@ -62,6 +59,14 @@
           <button class="menu-btn special-btn-seguradora" type="button" data-day="Oficinas">Oficinas</button>
           <button class="menu-btn special-btn-total" type="button" data-day="Total da semana">Total da Semana</button>
           <button class="menu-btn special-btn-total" type="button" data-day="Todas as vistorias">Todas as Vistorias</button>
+        </div>
+        <div style="margin-top: 18px; display: flex; gap: 8px; width: 100%;">
+          <button id="homeClearWeekButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #b91c1c; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; cursor: pointer;">
+            🧹 Limpar Semana
+          </button>
+          <button id="homeLogoutButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #4b5d76; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 12px; cursor: pointer;">
+            Sair
+          </button>
         </div>
       </section>
 
@@ -358,6 +363,6 @@
       </div>
     </main>
 
-    <script src="app.js?v=32"></script>
+    <script src="app.js?v=33"></script>
   </body>
 </html>
