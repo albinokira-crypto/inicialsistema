@@ -1065,4 +1065,51 @@ html, body {
   }
 }
 
+/* Home Page Summary Grid Layout (3 items on top line, last item on next line) */
+#homeSummaryGrid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  text-align: center !important;
+  width: 100% !important;
+}
+
+#homeSummaryGrid .summary-item {
+  padding: 10px 6px !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+}
+
+#homeSummaryGrid .summary-item strong {
+  font-size: 1.02rem !important;
+  word-break: break-word !important;
+  margin-bottom: 2px !important;
+}
+
+#homeSummaryGrid .summary-item span {
+  font-size: 0.74rem !important;
+  line-height: 1.1 !important;
+}
+
+#homeSummaryGrid .summary-item:nth-child(4) {
+  grid-column: 1 / -1 !important;
+  justify-self: center !important;
+  width: 100% !important;
+  max-width: 260px !important; /* Centered card with clean width */
+  margin: 6px auto 0 !important;
+  padding: 10px 14px !important;
+}
+
+#homeSummaryGrid .summary-item:nth-child(4) strong {
+  font-size: 1.08rem !important;
+}
+
+#homeSummaryGrid .summary-item:nth-child(4) span {
+  font-size: 0.8rem !important;
+}
+
 
