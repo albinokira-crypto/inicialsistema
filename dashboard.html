@@ -7,7 +7,7 @@
     <title>Gestão de Vistoria Inicial</title>
     <script>
       (function() {
-        const APP_VERSION = 'v33_clear_actions_refactored';
+        const APP_VERSION = 'v34_fix_dashboard_initialization';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           localStorage.setItem('app_version', APP_VERSION);
           if ('serviceWorker' in navigator) {
@@ -23,7 +23,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=33" />
+    <link rel="stylesheet" href="styles.css?v=34" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -136,7 +136,6 @@
           <input type="hidden" id="typeInput" name="type" value="Inicial" />
           <label>
             Seguradora
-            <input id="insurerFilterInput" type="text" placeholder="🔍 Digite para filtrar seguradora..." style="margin-bottom: 8px;" autocomplete="off" />
             <div id="insurerButtonsContainer" class="insurer-buttons-container"></div>
             <input type="hidden" id="providerSelect" name="provider" required />
           </label>
@@ -363,6 +362,6 @@
       </div>
     </main>
 
-    <script src="app.js?v=33"></script>
+    <script src="app.js?v=34"></script>
   </body>
 </html>

@@ -38,7 +38,6 @@ const homeSummaryCard = document.getElementById('homeSummaryCard');
 const homeSummaryGrid = document.getElementById('homeSummaryGrid');
 const homeClearWeekButton = document.getElementById('homeClearWeekButton');
 const homeLogoutButton = document.getElementById('homeLogoutButton');
-const insurerFilterInput = document.getElementById('insurerFilterInput');
 const appContent = document.getElementById('appContent');
 const backToMenuButton = document.getElementById('backToMenuButton');
 const currentPageTitle = document.getElementById('currentPageTitle');
@@ -140,12 +139,6 @@ function attachGlobalEventListeners() {
       generateWeeklyReportPDF();
     });
   }
-  
-  if (insurerFilterInput) {
-    insurerFilterInput.addEventListener('input', () => {
-      populateProviderSelect();
-    });
-  }
 
   const supervisaoQuickAdd = document.getElementById('supervisaoQuickAddOficina');
   if (supervisaoQuickAdd) {
@@ -225,10 +218,12 @@ dayTabs.addEventListener('click', (event) => {
   render();
 });
 cancelEditButton.addEventListener('click', cancelEdit);
-logoutButton.addEventListener('click', () => {
-  sessionStorage.removeItem('authenticated');
-  window.location.href = 'index.html';
-});
+if (logoutButton) {
+  logoutButton.addEventListener('click', () => {
+    sessionStorage.removeItem('authenticated');
+    window.location.href = 'index.html';
+  });
+}
 installButton.addEventListener('click', async () => {
   if (!deferredPrompt) return;
   deferredPrompt.prompt();
@@ -1275,15 +1270,7 @@ function populateProviderSelect() {
 
   noInsurersNote.hidden = true;
 
-  const query = insurerFilterInput ? insurerFilterInput.value.toLowerCase().trim() : '';
-  const filtered = insurers.filter(ins => ins.name.toLowerCase().includes(query));
-
-  if (!filtered.length) {
-    insurerButtonsContainer.innerHTML = '<span style="color:#6b7280; font-size:0.85rem; padding: 6px 0; display:block;">Nenhuma seguradora corresponde ao filtro.</span>';
-    return;
-  }
-
-  filtered.forEach((insurer) => {
+  insurers.forEach((insurer) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'insurer-btn';
