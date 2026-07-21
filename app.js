@@ -33,6 +33,8 @@ const reportCard = document.getElementById('reportCard');
 const sharePdfButton = document.getElementById('sharePdfButton');
 const noInsurersNote = document.getElementById('noInsurersNote');
 const welcomeScreen = document.getElementById('welcomeScreen');
+const homeSummaryCard = document.getElementById('homeSummaryCard');
+const homeSummaryGrid = document.getElementById('homeSummaryGrid');
 const appContent = document.getElementById('appContent');
 const backToMenuButton = document.getElementById('backToMenuButton');
 const currentPageTitle = document.getElementById('currentPageTitle');
@@ -334,9 +336,37 @@ function cancelInsurerEdit() {
   cancelInsurerEditButton.hidden = true;
 }
 
+function updateHomeSummary() {
+  if (!homeSummaryGrid) return;
+  const statsItems = items.filter(item => item.clearedFromWeek !== true);
+  const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+  const uniqueDays = new Set(statsItems.map((item) => item.day)).size;
+
+  homeSummaryGrid.innerHTML = `
+    <article class="summary-item">
+      <strong>${statsItems.length}</strong>
+      <span>vistorias</span>
+    </article>
+    <article class="summary-item">
+      <strong>R$ ${totalValue.toFixed(2).replace('.', ',')}</strong>
+      <span>valor total</span>
+    </article>
+    <article class="summary-item">
+      <strong>${uniqueDays}</strong>
+      <span>dias preenchidos</span>
+    </article>
+    <article class="summary-item">
+      <strong>${statsItems.length ? escapeHtml(statsItems[0].createdAt) : '—'}</strong>
+      <span>último registro</span>
+    </article>
+  `;
+}
+
 function showWelcomeScreen() {
   if (welcomeScreen) welcomeScreen.hidden = false;
+  if (homeSummaryCard) homeSummaryCard.hidden = false;
   if (appContent) appContent.hidden = true;
+  updateHomeSummary();
 }
 
 function attachMenuListeners() {
@@ -361,6 +391,7 @@ function attachMenuListeners() {
       }
       
       if (welcomeScreen) welcomeScreen.hidden = true;
+      if (homeSummaryCard) homeSummaryCard.hidden = true;
       if (appContent) appContent.hidden = false;
 
       updateDayTabs();
@@ -517,6 +548,10 @@ function saveInsurer(event) {
 function render() {
   const query = searchInput.value.toLowerCase();
   const isTotalMonth = selectedDay === 'Mês vigente';
+
+  if (summaryGrid) {
+    summaryGrid.style.display = isTotalMonth ? 'grid' : 'none';
+  }
 
   if (isTotalMonth) {
     const now = new Date();
