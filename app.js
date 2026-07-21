@@ -33,6 +33,7 @@ const reportCard = document.getElementById('reportCard');
 const sharePdfButton = document.getElementById('sharePdfButton');
 const noInsurersNote = document.getElementById('noInsurersNote');
 const welcomeScreen = document.getElementById('welcomeScreen');
+const appHeader = document.getElementById('appHeader');
 const homeSummaryCard = document.getElementById('homeSummaryCard');
 const homeSummaryGrid = document.getElementById('homeSummaryGrid');
 const insurerFilterInput = document.getElementById('insurerFilterInput');
@@ -399,6 +400,7 @@ function updateHomeSummary() {
 function showWelcomeScreen() {
   if (welcomeScreen) welcomeScreen.hidden = false;
   if (homeSummaryCard) homeSummaryCard.hidden = false;
+  if (appHeader) appHeader.style.display = 'flex';
   if (appContent) appContent.hidden = true;
   updateHomeSummary();
 }
@@ -426,6 +428,7 @@ function attachMenuListeners() {
       
       if (welcomeScreen) welcomeScreen.hidden = true;
       if (homeSummaryCard) homeSummaryCard.hidden = true;
+      if (appHeader) appHeader.style.display = 'none';
       if (appContent) appContent.hidden = false;
 
       updateDayTabs();
@@ -1114,6 +1117,7 @@ function handleAction(action, id) {
     updateDayTabs();
     if (welcomeScreen) welcomeScreen.hidden = true;
     if (homeSummaryCard) homeSummaryCard.hidden = true;
+    if (appHeader) appHeader.style.display = 'none';
     if (appContent) appContent.hidden = false;
   }
 

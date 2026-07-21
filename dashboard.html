@@ -7,7 +7,7 @@
     <title>Gestão de Vistoria Inicial</title>
     <script>
       (function() {
-        const APP_VERSION = 'v31_workshop_reports_filter_quick_add';
+        const APP_VERSION = 'v32_hero_hidden_in_tabs';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           localStorage.setItem('app_version', APP_VERSION);
           if ('serviceWorker' in navigator) {
@@ -23,7 +23,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=31" />
+    <link rel="stylesheet" href="styles.css?v=32" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -34,7 +34,7 @@
   </head>
   <body>
     <main class="app">
-      <header class="hero">
+      <header class="hero" id="appHeader">
         <div>
           <p class="eyebrow">Gestão de Vistoria Inicial</p>
           <h1>Controle de Vistoria Inicial</h1>
@@ -358,6 +358,6 @@
       </div>
     </main>
 
-    <script src="app.js?v=31"></script>
+    <script src="app.js?v=32"></script>
   </body>
 </html>
