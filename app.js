@@ -699,7 +699,13 @@ function render() {
       const clearAllBtn = itemList.querySelector('#tabClearAllButton');
       if (clearAllBtn) {
         clearAllBtn.addEventListener('click', () => {
-          if (window.confirm('Deseja apagar permanentemente todos os registros de todas as vistorias e supervisões?')) {
+          const verification = window.prompt(
+            '⚠️ AVISO DE SEGURANÇA:\n\n' +
+            'Esta ação irá apagar PERMANENTEMENTE todos os registros cadastrados (vistorias e supervisões) de todas as oficinas.\n' +
+            'Esta ação não poderá ser desfeita.\n\n' +
+            'Para confirmar que deseja prosseguir, digite a palavra APAGAR no campo abaixo:'
+          );
+          if (verification && verification.trim().toUpperCase() === 'APAGAR') {
             items = [];
             supervisoes = [];
             saveItems();
@@ -777,11 +783,16 @@ function render() {
 
       const itemsHtml = combined.map((entry) => {
         if (entry.isSupervisao) {
+          const isLongVehicle = entry.vehicle && entry.vehicle.length > 20;
+          const mainInfoStyle = isLongVehicle ? 'style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;"' : '';
+          const badgeStyle = isLongVehicle ? 'style="width: 100% !important; max-width: 100% !important; min-width: 100% !important; justify-content: flex-start !important; padding: 5px 8px !important; box-sizing: border-box;"' : '';
+          const badgeTextStyle = isLongVehicle ? 'style="white-space: normal !important; word-break: break-word;"' : '';
+
           return `
             <li class="item-card compact-item-card">
-              <div class="item-main-info">
-                <div class="plate-badge compact-plate-badge">
-                  <span class="plate-badge-text">${escapeHtml(entry.vehicle || 'Supervisão')}</span>
+              <div class="item-main-info" ${mainInfoStyle}>
+                <div class="plate-badge compact-plate-badge" ${badgeStyle}>
+                  <span class="plate-badge-text" ${badgeTextStyle}>${escapeHtml(entry.vehicle || 'Supervisão')}</span>
                 </div>
                 <div class="item-details">
                   <strong class="item-provider">Atendido: ${escapeHtml(entry.attended || '—')}</strong>
@@ -801,11 +812,16 @@ function render() {
           `;
         } else {
           const badgeClass = badgeClasses[entry.type || 'Inicial'] || 'badge-inicial';
+          const isLongPlate = entry.plate && entry.plate.length > 20;
+          const mainInfoStyle = isLongPlate ? 'style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;"' : '';
+          const badgeStyle = isLongPlate ? 'style="width: 100% !important; max-width: 100% !important; min-width: 100% !important; justify-content: flex-start !important; padding: 5px 8px !important; box-sizing: border-box;"' : '';
+          const badgeTextStyle = isLongPlate ? 'style="white-space: normal !important; word-break: break-word;"' : '';
+
           return `
             <li class="item-card compact-item-card">
-              <div class="item-main-info">
-                <div class="plate-badge compact-plate-badge">
-                  <span class="plate-badge-text">${escapeHtml(entry.plate)}</span>
+              <div class="item-main-info" ${mainInfoStyle}>
+                <div class="plate-badge compact-plate-badge" ${badgeStyle}>
+                  <span class="plate-badge-text" ${badgeTextStyle}>${escapeHtml(entry.plate)}</span>
                 </div>
                 <div class="item-details">
                   <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
