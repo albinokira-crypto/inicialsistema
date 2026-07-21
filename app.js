@@ -1975,53 +1975,59 @@ function handleSupervisaoAction(action, id) {
 }
 
 function formatSingleSupervisaoText(s) {
-  const lines = ['Supervisão'];
+  let sections = ['Supervisão'];
 
   if (s.vehicle && s.vehicle.trim()) {
-    lines.push(`Veículo: ${s.vehicle.trim()}`);
+    sections.push(`Veículo: ${s.vehicle.trim()}`);
   }
+
+  let details = [];
 
   const dateVal = s.date || getTodayDateValue();
   if (dateVal && dateVal.trim()) {
-    lines.push(`Data: ${formatDateString(dateVal.trim())}`);
+    details.push(`Data: ${formatDateString(dateVal.trim())}`);
   }
 
   if (s.oficinaName && s.oficinaName.trim()) {
-    lines.push(`Oficina: ${s.oficinaName.trim()}`);
+    details.push(`Oficina: ${s.oficinaName.trim()}`);
   }
 
   if (s.attended && s.attended.trim()) {
-    lines.push(`Atendido por : ${s.attended.trim()}`);
+    details.push(`Atendido por : ${s.attended.trim()}`);
   }
 
   if (s.stage && s.stage.trim()) {
-    lines.push(`Em que parte do serviço esta?: ${s.stage.trim()}`);
+    details.push(`Em que parte do serviço esta?: ${s.stage.trim()}`);
   }
 
   if (s.partsPending && s.partsPending.trim()) {
     const isPending = s.partsPending === 'Sim';
     const partsPendingText = isPending ? '( X ) sim  (   ) não' : '(   ) sim  ( X ) não';
-    lines.push(`Pendências de peças?: ${partsPendingText}`);
+    details.push(`Pendências de peças?: ${partsPendingText}`);
 
     if (isPending) {
       if (s.parts && s.parts.trim()) {
-        lines.push(`Quais?: ${s.parts.trim()}`);
+        details.push(`Quais?: ${s.parts.trim()}`);
       }
       if (s.arrival && s.arrival.trim()) {
-        lines.push(`Previsão de chegada?: ${s.arrival.trim()}`);
+        details.push(`Previsão de chegada?: ${s.arrival.trim()}`);
       }
     }
   }
 
   if (s.other && s.other.trim()) {
-    lines.push(`Alguma outra pendência?: ${s.other.trim()}`);
+    details.push(`Alguma outra pendência?: ${s.other.trim()}`);
   }
 
   if (s.finish && s.finish.trim()) {
-    lines.push(`Estimativa de finalização do veículo?: ${s.finish.trim()}`);
+    details.push(`Estimativa de finalização do veículo?: ${s.finish.trim()}`);
   }
 
-  return lines.join('\n');
+  if (details.length > 0) {
+    sections.push(details.join('\n'));
+  }
+
+  return sections.join('\n\n');
 }
 
 function getFilteredSupervisoes() {
