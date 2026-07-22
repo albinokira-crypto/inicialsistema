@@ -222,7 +222,12 @@ function attachGlobalEventListeners() {
 
   if (homeClearWeekButton) {
     homeClearWeekButton.addEventListener('click', () => {
-      if (window.confirm('Deseja apagar os registros da semana atual? Eles continuarão no relatório de todas as vistorias.')) {
+      const verification = window.prompt(
+        '⚠️ CONFIRMAÇÃO:\n\n' +
+        'Deseja limpar os registros da semana atual? Eles continuarão no relatório de "Todas as Vistorias".\n\n' +
+        'Para confirmar, digite a palavra LIMPAR abaixo:'
+      );
+      if (verification && verification.trim().toUpperCase() === 'LIMPAR') {
         items.forEach((item) => {
           item.clearedFromWeek = true;
         });
