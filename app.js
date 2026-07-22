@@ -965,7 +965,7 @@ function renderReport(filteredItems) {
       platesHtml,
       value: itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0)
     };
-  });
+  }).filter(t => t.visits > 0);
 
   reportBody.innerHTML = totals.map(({ day, visits, platesHtml, value }) => `
     <tr>
@@ -1830,126 +1830,6 @@ function populateSupervisaoStageSelect() {
 }
 
 
-
-function generateWeeklyReportPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
-
-  // Title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(37, 99, 235); // #2563eb
-  doc.text("Gestão de Vistoria Inicial", pageWidth / 2, 20, { align: "center" });
-
-  // Subtitle
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.setTextColor(75, 93, 118); // #4b5d76
-  const todayStr = new Date().toLocaleDateString('pt-BR');
-  doc.text(`Relatório Semanal - Gerado em ${todayStr}`, pageWidth / 2, 28, { align: "center" });
-
-  // Draw line
-  doc.setDrawColor(215, 226, 240);
-  doc.setLineWidth(0.5);
-  doc.line(14, 34, pageWidth - 14, 34);
-
-  // Statistics
-  const activeWeeklyItems = items.filter(item => item.clearedFromWeek !== true);
-  const totalVisitsCount = activeWeeklyItems.length;
-  const totalValueSum = activeWeeklyItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(16, 37, 66);
-  doc.text(`Total de Vistorias na Semana: ${totalVisitsCount}`, 14, 42);
-  doc.text(`Valor Total Geral: R$ ${totalValueSum.toFixed(2).replace('.', ',')}`, 14, 48);
-
-  // Prepare table data
-  const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
-  const tableRows = days.map((day) => {
-    const itemsForDay = activeWeeklyItems.filter((item) => item.day === day);
-    const visits = itemsForDay.length;
-    const plates = itemsForDay.map((item) => item.plate).join(', ');
-    const value = itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
-    return [
-      `${day}-feira`,
-      visits.toString(),
-      plates || '—',
-      `R$ ${value.toFixed(2).replace('.', ',')}`
-    ];
-  });
-
-  const displayedVisits = activeWeeklyItems.filter(item => days.includes(item.day)).length;
-  const displayedValue = activeWeeklyItems.filter(item => days.includes(item.day)).reduce((sum, item) => sum + (Number(item.value) || 0), 0);
-
-  // Add Totals row
-  tableRows.push([
-    'Totais',
-    displayedVisits.toString(),
-    '—',
-    `R$ ${displayedValue.toFixed(2).replace('.', ',')}`
-  ]);
-
-  // Generate Table using jsPDF-AutoTable
-  doc.autoTable({
-    startY: 55,
-    head: [['Dia', 'Vistorias', 'Placas Vistoriadas', 'Total Valor']],
-    body: tableRows,
-    theme: 'striped',
-    headStyles: {
-      fillColor: [37, 99, 235],
-      textColor: [255, 255, 255],
-      fontStyle: 'bold'
-    },
-    footStyles: {
-      fillColor: [241, 245, 249],
-      textColor: [16, 37, 66],
-      fontStyle: 'bold'
-    },
-    columnStyles: {
-      0: { cellWidth: 35 },
-      1: { cellWidth: 25, halign: 'center' },
-      2: { cellWidth: 95 },
-      3: { cellWidth: 35, halign: 'right' }
-    },
-    styles: {
-      font: 'helvetica',
-      fontSize: 9,
-      cellPadding: 4
-    },
-    didParseCell: function (data) {
-      if (data.row.index === tableRows.length - 1) {
-        data.cell.styles.fontStyle = 'bold';
-        data.cell.styles.fillColor = [226, 232, 240];
-      }
-    }
-  });
-
-  const filename = `relatorio_semanal_${new Date().toISOString().slice(0, 10)}.pdf`;
-  try {
-    const pdfBlob = doc.output('blob');
-    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({
-        files: [file],
-        title: 'Relatório Semanal de Vistorias',
-        text: 'Segue em anexo o relatório semanal de vistorias.'
-      }).catch(err => {
-        console.warn('Erro ao abrir diálogo de compartilhamento:', err);
-        doc.save(filename);
-      });
-    } else {
-      doc.save(filename);
-    }
-  } catch (error) {
-    console.error('Falha ao compartilhar PDF, executando download direto:', error);
-    doc.save(filename);
-  }
-}
-
 function updateFormState() {
   if (editingId) {
     cancelEditButton.hidden = false;
@@ -2496,9 +2376,12 @@ function generateWeeklyReportPDF() {
   let grandTotalVisits = 0;
   let grandTotalValue = 0;
 
-  const tableRows = days.map((day) => {
+  const tableRows = [];
+  days.forEach((day) => {
     // Get items for this day
     const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
+    
+    if (itemsForDay.length === 0) return;
     
     // Sort in ascending order by id/creation time
     itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
@@ -2513,12 +2396,12 @@ function generateWeeklyReportPDF() {
       numberedPlatesText = itemsForDay.map((item, index) => `${index + 1}. ${item.plate}${item.type ? ` (${item.type})` : ''}`).join('\n');
     }
 
-    return [
+    tableRows.push([
       `${day}-feira`,
       itemsForDay.length.toString(),
       numberedPlatesText,
       `R$ ${dayValue.toFixed(2).replace('.', ',')}`
-    ];
+    ]);
   });
 
   // Add Totals row
