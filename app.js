@@ -809,6 +809,7 @@ function render() {
               <div class="actions vertical-actions">
                 <button class="action-btn" type="button" data-super-action="share-text" data-id="${entry.id}">📱 Visualizar</button>
                 <button class="action-btn" type="button" data-super-action="copy-text" data-id="${entry.id}">📋 Copiar</button>
+                <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">📸 Fotos</button>
                 <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
                 <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
               </div>
@@ -837,6 +838,7 @@ function render() {
               <div class="actions vertical-actions">
                 <button class="action-btn" type="button" data-action="share-text" data-id="${entry.id}">📱 Visualizar</button>
                 <button class="action-btn" type="button" data-action="copy-text" data-id="${entry.id}">📋 Copiar</button>
+                <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">📸 Fotos</button>
                 <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
                 <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
               </div>
@@ -958,6 +960,7 @@ function render() {
         <div class="actions vertical-actions">
           <button class="action-btn" type="button" data-action="share-text" data-id="${item.id}">📱 Compartilhar</button>
           <button class="action-btn" type="button" data-action="copy-text" data-id="${item.id}">📋 Copiar</button>
+          <button class="action-btn" type="button" data-action="photos" data-id="${item.id}">📸 Fotos</button>
           <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
           <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
         </div>
@@ -1157,6 +1160,10 @@ function copyTextToClipboard(text) {
 }
 
 function handleAction(action, id) {
+  if (action === 'photos') {
+    openPhotoManagerForId(id);
+    return;
+  }
   if (action === 'share-text') {
     shareSurveyText(id);
     return;
@@ -2085,6 +2092,7 @@ function renderSupervisaoReport() {
           <div class="actions">
             <button class="action-btn" type="button" data-super-action="share-text" data-id="${s.id}" title="Compartilhar texto">📱 Compartilhar</button>
             <button class="action-btn" type="button" data-super-action="copy-text" data-id="${s.id}" title="Copiar texto">📋 Copiar</button>
+            <button class="action-btn" type="button" data-super-action="photos" data-id="${s.id}">📸 Fotos</button>
             <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
             <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
           </div>
@@ -2099,6 +2107,10 @@ function renderSupervisaoReport() {
 }
 
 function handleSupervisaoAction(action, id) {
+  if (action === 'photos') {
+    openPhotoManagerForId(id);
+    return;
+  }
   if (action === 'delete') {
     if (window.confirm('Deseja excluir este registro de supervisão?')) {
       supervisoes = supervisoes.filter((s) => s.id !== id);
@@ -2480,4 +2492,354 @@ function generateWeeklyReportPDF() {
     console.error('Falha ao gerar/compartilhar PDF, salvando diretamente:', error);
     doc.save(filename);
   }
+}
+
+
+// ==========================================
+// PHOTO SYSTEM IMPLEMENTATION
+// ==========================================
+
+let activePhotoVehicleName = ''; 
+let activePhotoId = '';          
+let directoryHandle = null;      
+
+function getPhotoConfig() {
+  return {
+    cameraApp: localStorage.getItem('photo_camera_app') || null,
+    folderName: localStorage.getItem('photo_folder_name') || null
+  };
+}
+
+function savePhotoConfig(cameraApp, folderName) {
+  localStorage.setItem('photo_camera_app', cameraApp);
+  localStorage.setItem('photo_folder_name', folderName);
+}
+
+let db = null;
+const dbRequest = indexedDB.open('PhotoSystemDB', 1);
+dbRequest.onupgradeneeded = function(e) {
+  const localDb = e.target.result;
+  if (!localDb.objectStoreNames.contains('directories')) {
+    localDb.createObjectStore('directories');
+  }
+  if (!localDb.objectStoreNames.contains('photos')) {
+    localDb.createObjectStore('photos', { keyPath: 'id' });
+  }
+};
+dbRequest.onsuccess = function(e) {
+  db = e.target.result;
+  loadStoredDirectoryHandle();
+};
+
+async function loadStoredDirectoryHandle() {
+  if (!db) return;
+  const tx = db.transaction('directories', 'readonly');
+  const store = tx.objectStore('directories');
+  const getReq = store.get('root_handle');
+  getReq.onsuccess = async function() {
+    if (getReq.result) {
+      directoryHandle = getReq.result;
+      console.log('Restored directory handle from IndexedDB');
+      updateDesktopPathUI();
+    }
+  };
+}
+
+function saveDirectoryHandle(handle) {
+  if (!db) return;
+  const tx = db.transaction('directories', 'readwrite');
+  const store = tx.objectStore('directories');
+  store.put(handle, 'root_handle');
+}
+
+const photoSettingsModal = document.getElementById('photoSettingsModal');
+const photoManagerModal = document.getElementById('photoManagerModal');
+const cameraAppSelect = document.getElementById('cameraAppSelect');
+const storageFolderInput = document.getElementById('storageFolderInput');
+const selectDesktopDirButton = document.getElementById('selectDesktopDirButton');
+const selectedDesktopPathLabel = document.getElementById('selectedDesktopPathLabel');
+const savePhotoSettingsButton = document.getElementById('savePhotoSettingsButton');
+const closePhotoSettingsButton = document.getElementById('closePhotoSettingsButton');
+const capturePhotoButton = document.getElementById('capturePhotoButton');
+const exportPhotosZipButton = document.getElementById('exportPhotosZipButton');
+const openPhotoSettingsBtn = document.getElementById('openPhotoSettingsBtn');
+const photoGridContainer = document.getElementById('photoGridContainer');
+const closePhotoManagerButton = document.getElementById('closePhotoManagerButton');
+const photoSystemFileInput = document.getElementById('photoSystemFileInput');
+const photoSystemCameraInput = document.getElementById('photoSystemCameraInput');
+const desktopDirPickerContainer = document.getElementById('desktopDirPickerContainer');
+
+if ('showDirectoryPicker' in window) {
+  if (desktopDirPickerContainer) desktopDirPickerContainer.style.display = 'block';
+}
+
+function updateDesktopPathUI() {
+  if (selectedDesktopPathLabel && directoryHandle) {
+    selectedDesktopPathLabel.textContent = `Pasta vinculada: ${directoryHandle.name}`;
+  }
+}
+
+if (selectDesktopDirButton) {
+  selectDesktopDirButton.addEventListener('click', async () => {
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      directoryHandle = handle;
+      saveDirectoryHandle(handle);
+      updateDesktopPathUI();
+    } catch (err) {
+      console.error('Directory picker cancelled or failed:', err);
+    }
+  });
+}
+
+if (savePhotoSettingsButton) {
+  savePhotoSettingsButton.addEventListener('click', () => {
+    const cameraApp = cameraAppSelect.value;
+    const folderName = storageFolderInput.value.trim() || 'Vistorias';
+    savePhotoConfig(cameraApp, folderName);
+    if (photoSettingsModal) photoSettingsModal.style.display = 'none';
+    
+    if (activePhotoVehicleName) {
+      openPhotoManagerForVehicle(activePhotoId, activePhotoVehicleName);
+    }
+  });
+}
+
+if (closePhotoSettingsButton) {
+  closePhotoSettingsButton.addEventListener('click', () => {
+    if (photoSettingsModal) photoSettingsModal.style.display = 'none';
+  });
+}
+
+if (closePhotoManagerButton) {
+  closePhotoManagerButton.addEventListener('click', () => {
+    if (photoManagerModal) photoManagerModal.style.display = 'none';
+    activePhotoVehicleName = '';
+    activePhotoId = '';
+  });
+}
+
+if (openPhotoSettingsBtn) {
+  openPhotoSettingsBtn.addEventListener('click', () => {
+    openPhotoSettings();
+  });
+}
+
+function openPhotoSettings() {
+  const config = getPhotoConfig();
+  if (config.cameraApp) cameraAppSelect.value = config.cameraApp;
+  if (config.folderName) storageFolderInput.value = config.folderName;
+  if (photoSettingsModal) photoSettingsModal.style.display = 'flex';
+}
+
+function openPhotoManagerForId(id) {
+  const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
+  if (!item) {
+    alert('Erro: Registro não encontrado!');
+    return;
+  }
+  const vehicleName = item.plate || item.vehicle;
+  if (!vehicleName || !vehicleName.trim()) {
+    alert('Por favor, preencha o campo "Veículo (Modelo e Placa)" antes de acessar as fotos.');
+    return;
+  }
+  openPhotoManagerForVehicle(id, vehicleName.trim());
+}
+
+function openPhotoManagerForVehicle(id, vehicleName) {
+  activePhotoId = id;
+  activePhotoVehicleName = vehicleName;
+  
+  const config = getPhotoConfig();
+  if (!config.cameraApp || !config.folderName) {
+    openPhotoSettings();
+    return;
+  }
+  
+  if (photoManagerModal) {
+    document.getElementById('photoManagerTitle').textContent = `Fotos: ${vehicleName}`;
+    photoManagerModal.style.display = 'flex';
+  }
+  
+  loadPhotosForActiveVehicle();
+}
+
+async function loadPhotosForActiveVehicle() {
+  if (photoGridContainer) {
+    photoGridContainer.innerHTML = '<div class="empty-photos">Carregando fotos...</div>';
+  }
+  
+  const photos = await getStoredPhotosForVehicle(activePhotoVehicleName);
+  renderPhotoGrid(photos);
+}
+
+function renderPhotoGrid(photos) {
+  if (!photoGridContainer) return;
+  
+  if (!photos || photos.length === 0) {
+    photoGridContainer.innerHTML = '<div class="empty-photos">Nenhuma foto adicionada para esta vistoria.</div>';
+    return;
+  }
+  
+  photoGridContainer.innerHTML = photos.map(photo => {
+    return `
+      <div class="photo-item">
+        <img src="${photo.url}" alt="Vistoria" onclick="viewFullImage('${photo.url}')" style="cursor: pointer;" />
+        <button class="delete-photo" onclick="deletePhotoEvent('${photo.name}')" type="button">×</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function viewFullImage(url) {
+  const overlay = document.createElement('div');
+  overlay.className = 'photo-modal-overlay';
+  overlay.style.cursor = 'pointer';
+  overlay.onclick = () => document.body.removeChild(overlay);
+  
+  const img = document.createElement('img');
+  img.src = url;
+  img.style.maxWidth = '95%';
+  img.style.maxHeight = '95%';
+  img.style.borderRadius = '16px';
+  img.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.5)';
+  
+  overlay.appendChild(img);
+  document.body.appendChild(overlay);
+}
+
+function getStoredPhotosForVehicle(vehicleName) {
+  return new Promise((resolve) => {
+    if (!db) return resolve([]);
+    const tx = db.transaction('photos', 'readonly');
+    const store = tx.objectStore('photos');
+    const index = store.openCursor();
+    const results = [];
+    index.onsuccess = function(e) {
+      const cursor = e.target.result;
+      if (cursor) {
+        const val = cursor.value;
+        if (val.visitId === vehicleName) {
+          const url = URL.createObjectURL(val.blob);
+          results.push({ name: val.name, url: url, rawBlob: val.blob });
+        }
+        cursor.continue();
+      } else {
+        resolve(results);
+      }
+    };
+  });
+}
+
+function savePhotoToDb(vehicleName, name, blob) {
+  return new Promise((resolve) => {
+    if (!db) return resolve();
+    const tx = db.transaction('photos', 'readwrite');
+    const store = tx.objectStore('photos');
+    const id = `${vehicleName}_${name}`;
+    store.put({ id: id, visitId: vehicleName, name: name, blob: blob }, id);
+    tx.oncomplete = () => resolve();
+  });
+}
+
+function removePhotoFromDb(vehicleName, name) {
+  return new Promise((resolve) => {
+    if (!db) return resolve();
+    const tx = db.transaction('photos', 'readwrite');
+    const store = tx.objectStore('photos');
+    const id = `${vehicleName}_${name}`;
+    store.delete(id);
+    tx.oncomplete = () => resolve();
+  });
+}
+
+if (capturePhotoButton) {
+  capturePhotoButton.addEventListener('click', () => {
+    const config = getPhotoConfig();
+    if (config.cameraApp === 'default') {
+      if (photoSystemCameraInput) photoSystemCameraInput.click();
+    } else {
+      if (photoSystemFileInput) photoSystemFileInput.click();
+    }
+  });
+}
+
+if (photoSystemFileInput) {
+  photoSystemFileInput.addEventListener('change', (e) => handlePhotoFilesSelected(e.target.files));
+}
+if (photoSystemCameraInput) {
+  photoSystemCameraInput.addEventListener('change', (e) => handlePhotoFilesSelected(e.target.files));
+}
+
+async function handlePhotoFilesSelected(files) {
+  if (!files || files.length === 0) return;
+  
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const timestamp = Date.now();
+    const filename = `foto_${timestamp}_${i}.jpg`;
+    
+    await savePhotoToDb(activePhotoVehicleName, filename, file);
+    
+    if (directoryHandle) {
+      try {
+        const config = getPhotoConfig();
+        const baseFolder = await directoryHandle.getDirectoryHandle(config.folderName || 'Vistorias', { create: true });
+        const vehicleFolder = await baseFolder.getDirectoryHandle(activePhotoVehicleName, { create: true });
+        const fileHandle = await vehicleFolder.getFileHandle(filename, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(file);
+        await writable.close();
+        console.log(`Saved ${filename} to local filesystem.`);
+      } catch (err) {
+        console.error('Failed to write to local directory handle:', err);
+      }
+    }
+  }
+  
+  loadPhotosForActiveVehicle();
+}
+
+window.deletePhotoEvent = async function(name) {
+  if (confirm('Deseja realmente excluir esta foto?')) {
+    await removePhotoFromDb(activePhotoVehicleName, name);
+    loadPhotosForActiveVehicle();
+  }
+};
+
+if (exportPhotosZipButton) {
+  exportPhotosZipButton.addEventListener('click', async () => {
+    const photos = await getStoredPhotosForVehicle(activePhotoVehicleName);
+    if (!photos || photos.length === 0) {
+      alert('Não há fotos para exportar.');
+      return;
+    }
+    
+    const zip = new JSZip();
+    const folder = zip.folder(activePhotoVehicleName);
+    
+    photos.forEach(photo => {
+      folder.file(photo.name, photo.rawBlob);
+    });
+    
+    zip.generateAsync({ type: 'blob' }).then(content => {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `${activePhotoVehicleName}.zip`;
+      link.click();
+    });
+  });
+}
+
+// Attach listener to Inclusion Form photos button
+const formPhotosBtn = document.getElementById('formPhotosButton');
+if (formPhotosBtn) {
+  formPhotosBtn.addEventListener('click', () => {
+    const plateValue = plateInput.value.trim();
+    if (!plateValue) {
+      alert('Por favor, preencha o campo "Veículo (Modelo e Placa)" antes de tirar fotos.');
+      return;
+    }
+    openPhotoManagerForVehicle(editingId || 'new_form_item', plateValue);
+  });
 }
