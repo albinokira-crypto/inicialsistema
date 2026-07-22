@@ -740,7 +740,11 @@ function render() {
         ...filteredVistorias.map(i => ({ ...i, isSupervisao: false })),
         ...filteredSupervisoes.map(s => ({ ...s, isSupervisao: true }))
       ];
-      combined.sort((a, b) => b.id.localeCompare(a.id));
+      combined.sort((a, b) => {
+        const timeA = a.isSupervisao ? (a.updatedAtTime || Number(a.id) || 0) : (Number(a.id) || 0);
+        const timeB = b.isSupervisao ? (b.updatedAtTime || Number(b.id) || 0) : (Number(b.id) || 0);
+        return timeB - timeA;
+      });
       
       let headerHtml = `
         <li style="list-style: none; grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 8px 12px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0; width: 100%; box-sizing: border-box;">
@@ -2060,7 +2064,9 @@ function saveSupervisao(event) {
 
   if (editingSupervisaoId) {
     supervisoes = supervisoes.map((s) => s.id === editingSupervisaoId ? { 
-      ...s, vehicle, plate, attended, stage, partsPending, parts, arrival, other, finish, oficinaId, oficinaName 
+      ...s, vehicle, plate, attended, stage, partsPending, parts, arrival, other, finish, oficinaId, oficinaName,
+      updatedAt: new Date().toLocaleString('pt-BR'),
+      updatedAtTime: Date.now()
     } : s);
   } else {
     supervisoes.unshift({
@@ -2078,7 +2084,9 @@ function saveSupervisao(event) {
       finish,
       oficinaId,
       oficinaName,
-      createdAt: new Date().toLocaleString('pt-BR')
+      createdAt: new Date().toLocaleString('pt-BR'),
+      updatedAt: new Date().toLocaleString('pt-BR'),
+      updatedAtTime: Date.now()
     });
   }
 
@@ -2127,8 +2135,12 @@ function renderSupervisaoReport() {
     return;
   }
 
-  // Sort by created time descending
-  filtered.sort((a, b) => b.id.localeCompare(a.id));
+  // Sort by updated time descending
+  filtered.sort((a, b) => {
+    const timeA = a.updatedAtTime || Number(a.id) || 0;
+    const timeB = b.updatedAtTime || Number(b.id) || 0;
+    return timeB - timeA;
+  });
 
   supervisaoReportContent.innerHTML = filtered.map((s) => {
     let partsPendingHtml = '';
@@ -2303,11 +2315,17 @@ function formatSingleSupervisaoText(s) {
 }
 
 function getFilteredSupervisoes() {
-  return supervisoes.filter((s) => {
+  const filtered = supervisoes.filter((s) => {
     if (selectedSupervisaoStage !== 'Todos' && s.stage !== selectedSupervisaoStage) return false;
     if (selectedSupervisaoOficina !== 'Todas' && s.oficinaId !== selectedSupervisaoOficina) return false;
     return true;
   });
+  filtered.sort((a, b) => {
+    const timeA = a.updatedAtTime || Number(a.id) || 0;
+    const timeB = b.updatedAtTime || Number(b.id) || 0;
+    return timeB - timeA;
+  });
+  return filtered;
 }
 
 function formatAllSupervisoesText(filteredList) {
@@ -2382,12 +2400,8 @@ function generateSupervisaoReportPDF() {
   doc.setLineWidth(0.5);
   doc.line(14, 34, pageWidth - 14, 34);
 
-  // Filter items
-  const filtered = supervisoes.filter((s) => {
-    if (selectedSupervisaoStage !== 'Todos' && s.stage !== selectedSupervisaoStage) return false;
-    if (selectedSupervisaoOficina !== 'Todas' && s.oficinaId !== selectedSupervisaoOficina) return false;
-    return true;
-  });
+  // Filter and sort items
+  const filtered = getFilteredSupervisoes();
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
