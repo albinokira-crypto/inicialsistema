@@ -125,6 +125,7 @@ let appInitialized = false;
 let selectedSupervisaoStage = 'Todos';
 let selectedSupervisaoOficina = 'Todas';
 let selectedOficinaForTodasVistorias = null;
+let selectedTodasVistoriasFilter = 'Vistorias';
 
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
@@ -718,6 +719,7 @@ function render() {
       itemList.querySelectorAll('[data-oficina-btn-id]').forEach(btn => {
         btn.addEventListener('click', () => {
           selectedOficinaForTodasVistorias = btn.dataset.oficinaBtnId;
+          selectedTodasVistoriasFilter = 'Vistorias';
           render();
         });
       });
@@ -741,37 +743,37 @@ function render() {
         return true;
       });
       
-      const combined = [
-        ...filteredVistorias.map(i => ({ ...i, isSupervisao: false })),
-        ...filteredSupervisoes.map(s => ({ ...s, isSupervisao: true }))
-      ];
-      combined.sort((a, b) => {
-        const timeA = a.isSupervisao ? (a.updatedAtTime || Number(a.id) || 0) : (Number(a.id) || 0);
-        const timeB = b.isSupervisao ? (b.updatedAtTime || Number(b.id) || 0) : (Number(b.id) || 0);
-        return timeB - timeA;
-      });
+      let listToDisplay = [];
+      if (selectedTodasVistoriasFilter === 'Vistorias') {
+        listToDisplay = filteredVistorias.map(i => ({ ...i, isSupervisao: false }));
+        listToDisplay.sort((a, b) => b.id.localeCompare(a.id));
+      } else {
+        listToDisplay = filteredSupervisoes.map(s => ({ ...s, isSupervisao: true }));
+        listToDisplay.sort((a, b) => {
+          const timeA = a.updatedAtTime || Number(a.id) || 0;
+          const timeB = b.updatedAtTime || Number(b.id) || 0;
+          return timeB - timeA;
+        });
+      }
       
       let headerHtml = `
-        <li style="list-style: none; grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 8px 12px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0; width: 100%; box-sizing: border-box;">
-          <strong style="color: #15803d; font-size: 0.95rem;">Oficina: ${escapeHtml(o.name)}</strong>
-          <button id="backToOficinasList" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 999px; cursor: pointer;">
-            ← Voltar
-          </button>
+        <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
+            <strong style="color: #15803d; font-size: 0.95rem;">Oficina: ${escapeHtml(o.name)}</strong>
+            <button id="backToOficinasList" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 999px; cursor: pointer;">
+              ← Voltar
+            </button>
+          </div>
+          <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+              Vistorias
+            </button>
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+              Supervisões
+            </button>
+          </div>
         </li>
       `;
-      
-      if (!combined.length) {
-        itemList.innerHTML = headerHtml + '<li class="empty">Nenhum registro encontrado para esta oficina.</li>';
-        
-        const backBtn = itemList.querySelector('#backToOficinasList');
-        if (backBtn) {
-          backBtn.addEventListener('click', () => {
-            selectedOficinaForTodasVistorias = null;
-            render();
-          });
-        }
-        return;
-      }
       
       const badgeClasses = {
         'Inicial': 'badge-inicial',
@@ -783,7 +785,7 @@ function render() {
         'Pós entrega': 'badge-pos'
       };
 
-      const itemsHtml = combined.map((entry) => {
+      const itemsHtml = listToDisplay.map((entry) => {
         if (entry.isSupervisao) {
           const isLongVehicle = entry.vehicle && entry.vehicle.length > 20;
           const mainInfoStyle = isLongVehicle ? 'style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;"' : '';
@@ -843,12 +845,27 @@ function render() {
         }
       }).join('');
       
-      itemList.innerHTML = headerHtml + itemsHtml;
+      itemList.innerHTML = headerHtml + (listToDisplay.length ? itemsHtml : `<li class="empty">Nenhum registro de ${selectedTodasVistoriasFilter.toLowerCase()} encontrado para esta oficina.</li>`);
       
       const backBtn = itemList.querySelector('#backToOficinasList');
       if (backBtn) {
         backBtn.addEventListener('click', () => {
           selectedOficinaForTodasVistorias = null;
+          render();
+        });
+      }
+      
+      const toggleVistoriasBtn = itemList.querySelector('#toggleFilterVistorias');
+      const toggleSupervisoesBtn = itemList.querySelector('#toggleFilterSupervisoes');
+      if (toggleVistoriasBtn) {
+        toggleVistoriasBtn.addEventListener('click', () => {
+          selectedTodasVistoriasFilter = 'Vistorias';
+          render();
+        });
+      }
+      if (toggleSupervisoesBtn) {
+        toggleSupervisoesBtn.addEventListener('click', () => {
+          selectedTodasVistoriasFilter = 'Supervisões';
           render();
         });
       }
