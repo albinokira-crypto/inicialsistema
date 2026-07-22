@@ -1054,11 +1054,9 @@ function getSurveyText(id) {
       checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
       checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
     }
-    sections.push(checklist.join('\n'));
 
-    let typeSpecificDetails = [];
     if (item.type === 'Roubo Recuperado' && details.obsRoubo) {
-      typeSpecificDetails.push(`Observações Roubo: ${details.obsRoubo}`);
+      checklist.push(`Observações Roubo: ${details.obsRoubo}`);
     }
     if (item.type === 'Enchente') {
       const yesNo = (val) => val === 'Sim' ? 'Sim' : 'Não';
