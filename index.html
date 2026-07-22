@@ -7,7 +7,7 @@
     <title>Login - Gestão de Vistoria Inicial</title>
     <script>
       (function() {
-        const APP_VERSION = 'v44_photo_system';
+        const APP_VERSION = 'v45_backup_restore';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           localStorage.setItem('app_version', APP_VERSION);
           if ('serviceWorker' in navigator) {
@@ -23,7 +23,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=44" />
+    <link rel="stylesheet" href="styles.css?v=45" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -65,6 +65,13 @@
 
         <div class="login-hint" id="toggleLoginView" style="text-align: center; margin-top: 18px;">
           <a href="#" id="showRegisterLink" style="color: #2563eb; font-weight: 600; text-decoration: none;">Novo cadastro</a>
+        </div>
+
+        <div style="margin-top: 24px; padding-top: 18px; border-top: 1.5px dashed #e2e8f0; text-align: center;">
+          <button id="importBackupButton" class="ghost-btn" style="padding: 10px 14px; font-size: 0.85rem; border: 1px solid #bfdbfe; color: #1d4ed8; background: #eff6ff; font-weight: 700; width: 100%; border-radius: 12px; cursor: pointer;">
+            📥 Importar Backup do Sistema (JSON)
+          </button>
+          <input type="file" id="backupFileInput" accept=".json" style="display: none;" />
         </div>
         <div class="login-hint" id="toggleRegisterView" style="display: none; text-align: center; margin-top: 18px;">
           <a href="#" id="showLoginLink" style="color: #2563eb; font-weight: 600; text-decoration: none;">Entrar</a>

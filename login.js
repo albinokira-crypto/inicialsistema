@@ -123,3 +123,39 @@ if ('serviceWorker' in navigator) {
     window.location.reload();
   });
 }
+
+// Backup Import Logic in login.js
+const importBackupButton = document.getElementById('importBackupButton');
+const backupFileInput = document.getElementById('backupFileInput');
+
+if (importBackupButton && backupFileInput) {
+  importBackupButton.addEventListener('click', () => {
+    backupFileInput.click();
+  });
+
+  backupFileInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data || typeof data !== 'object') {
+          throw new Error('Formato de backup inválido.');
+        }
+
+        // Restore keys to localStorage
+        Object.keys(data).forEach(key => {
+          localStorage.setItem(key, data[key]);
+        });
+
+        alert('Backup importado com sucesso! Agora você já pode fazer login.');
+        window.location.reload();
+      } catch (err) {
+        alert('Erro ao importar backup: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+}

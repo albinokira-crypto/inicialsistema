@@ -7,7 +7,7 @@
     <title>Gestão de Vistoria Inicial</title>
     <script>
       (function() {
-        const APP_VERSION = 'v44_photo_system';
+        const APP_VERSION = 'v45_backup_restore';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           localStorage.setItem('app_version', APP_VERSION);
           if ('serviceWorker' in navigator) {
@@ -23,7 +23,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=44" />
+    <link rel="stylesheet" href="styles.css?v=45" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -60,13 +60,24 @@
           <button class="menu-btn special-btn-total" type="button" data-day="Total da semana">Total da Semana</button>
           <button class="menu-btn special-btn-total" type="button" data-day="Todas as vistorias">Todas as Vistorias</button>
         </div>
-        <div style="margin-top: 18px; display: flex; gap: 8px; width: 100%;">
-          <button id="homeClearWeekButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #b91c1c; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; cursor: pointer;">
-            🧹 Limpar Semana
-          </button>
-          <button id="homeLogoutButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #4b5d76; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 12px; cursor: pointer;">
-            Sair
-          </button>
+        <div style="margin-top: 18px; display: flex; flex-direction: column; gap: 8px; width: 100%;">
+          <div style="display: flex; gap: 8px; width: 100%;">
+            <button id="homeClearWeekButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #b91c1c; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; cursor: pointer;">
+              🧹 Limpar Semana
+            </button>
+            <button id="homeLogoutButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #4b5d76; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 12px; cursor: pointer;">
+              Sair
+            </button>
+          </div>
+          <div style="display: flex; gap: 8px; width: 100%;">
+            <button id="exportBackupBtn" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; cursor: pointer;">
+              📤 Exportar Backup
+            </button>
+            <button id="importBackupBtn" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #10b981; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; cursor: pointer;">
+              📥 Importar Backup
+            </button>
+          </div>
+          <input type="file" id="dashboardBackupFileInput" accept=".json" style="display: none;" />
         </div>
       </section>
 
@@ -410,6 +421,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=44"></script>
+    <script src="app.js?v=45"></script>
   </body>
 </html>

@@ -2781,6 +2781,16 @@ async function handlePhotoFilesSelected(files) {
     
     await savePhotoToDb(activePhotoVehicleName, filename, file);
     
+    // Call Android JavascriptInterface Bridge if active
+    if (window.AndroidInterface && typeof window.AndroidInterface.savePhoto === 'function') {
+      const reader = new FileReader();
+      reader.onload = function() {
+        const base64Data = reader.result.split(',')[1];
+        window.AndroidInterface.savePhoto(activePhotoVehicleName, filename, base64Data);
+      };
+      reader.readAsDataURL(file);
+    }
+    
     if (directoryHandle) {
       try {
         const config = getPhotoConfig();
@@ -2841,5 +2851,70 @@ if (formPhotosBtn) {
       return;
     }
     openPhotoManagerForVehicle(editingId || 'new_form_item', plateValue);
+  });
+}
+
+// ==========================================
+// SYSTEM BACKUP & RESTORE IMPLEMENTATION
+// ==========================================
+
+const exportBackupBtn = document.getElementById('exportBackupBtn');
+const importBackupBtn = document.getElementById('importBackupBtn');
+const dashboardBackupFileInput = document.getElementById('dashboardBackupFileInput');
+
+if (exportBackupBtn) {
+  exportBackupBtn.addEventListener('click', () => {
+    try {
+      const backup = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        backup[key] = localStorage.getItem(key);
+      }
+      
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup_sistema_vistoria_${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Erro ao exportar backup: ' + err.message);
+    }
+  });
+}
+
+if (importBackupBtn && dashboardBackupFileInput) {
+  importBackupBtn.addEventListener('click', () => {
+    dashboardBackupFileInput.click();
+  });
+
+  dashboardBackupFileInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (confirm('Deseja realmente importar o backup? Isso substituirá todas as informações atuais do sistema.')) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || typeof data !== 'object') {
+            throw new Error('Formato de backup inválido.');
+          }
+
+          // Clear local storage and set new values
+          localStorage.clear();
+          Object.keys(data).forEach(key => {
+            localStorage.setItem(key, data[key]);
+          });
+
+          alert('Backup importado com sucesso! O sistema será recarregado.');
+          window.location.reload();
+        } catch (err) {
+          alert('Erro ao importar backup: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
   });
 }
