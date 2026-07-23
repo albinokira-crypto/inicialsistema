@@ -2678,20 +2678,17 @@ window.onStorageFolderSelected = function(folderName) {
 if (closePhotoManagerButton) {
   closePhotoManagerButton.addEventListener('click', async () => {
     const vehicleName = activePhotoVehicleName;
-    const saveToast = document.createElement('div');
-    saveToast.style.position = 'fixed';
-    saveToast.style.bottom = '20px';
-    saveToast.style.left = '50%';
-    saveToast.style.transform = 'translateX(-50%)';
-    saveToast.style.background = '#10b981';
-    saveToast.style.color = 'white';
-    saveToast.style.padding = '12px 24px';
-    saveToast.style.borderRadius = '999px';
-    saveToast.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.1)';
-    saveToast.style.zIndex = '999999';
-    saveToast.textContent = 'Salvando fotos na pasta do celular...';
-    document.body.appendChild(saveToast);
+    
+    // Close the modal immediately for instant feedback
+    if (photoManagerModal) photoManagerModal.style.display = 'none';
+    if (activePhotoVehicleName === vehicleName) {
+      activePhotoVehicleName = '';
+      activePhotoId = '';
+      localStorage.removeItem('active_photo_id');
+      localStorage.removeItem('active_photo_vehicle_name');
+    }
 
+    // Save and clear database in background
     const photos = await getStoredPhotosForVehicle(vehicleName);
     if (photos && photos.length > 0) {
       if (window.AndroidInterface && typeof window.AndroidInterface.savePhoto === 'function') {
@@ -2714,20 +2711,6 @@ if (closePhotoManagerButton) {
         }
       }
     }
-    
-    setTimeout(() => {
-      try {
-        document.body.removeChild(saveToast);
-      } catch (e) {}
-      
-      if (photoManagerModal) photoManagerModal.style.display = 'none';
-      if (activePhotoVehicleName === vehicleName) {
-        activePhotoVehicleName = '';
-        activePhotoId = '';
-        localStorage.removeItem('active_photo_id');
-        localStorage.removeItem('active_photo_vehicle_name');
-      }
-    }, 600);
   });
 }
 
