@@ -95,7 +95,7 @@ loginForm.addEventListener('submit', (event) => {
   // Check registered users
   const users = getRegisteredUsers();
   if (users[username] && users[username] === password) {
-    sessionStorage.setItem('authenticated', 'true');
+    localStorage.setItem('authenticated', 'true');
     window.location.href = 'dashboard.html';
     return;
   }
@@ -104,7 +104,7 @@ loginForm.addEventListener('submit', (event) => {
   loginError.textContent = 'Usuário ou senha incorretos. Tente novamente.';
 });
 
-if (sessionStorage.getItem('authenticated') === 'true') {
+if (localStorage.getItem('authenticated') === 'true') {
   window.location.href = 'dashboard.html';
 }
 

@@ -140,7 +140,7 @@ window.addEventListener('appinstalled', () => {
 });
 
 function ensureAuthentication() {
-  if (sessionStorage.getItem('authenticated') !== 'true') {
+  if (localStorage.getItem('authenticated') !== 'true') {
     window.location.href = 'index.html';
   }
 }
@@ -241,7 +241,7 @@ function attachGlobalEventListeners() {
 
   if (homeLogoutButton) {
     homeLogoutButton.addEventListener('click', () => {
-      sessionStorage.removeItem('authenticated');
+      localStorage.removeItem('authenticated');
       window.location.href = 'index.html';
     });
   }
@@ -278,7 +278,7 @@ dayTabs.addEventListener('click', (event) => {
 cancelEditButton.addEventListener('click', cancelEdit);
 if (logoutButton) {
   logoutButton.addEventListener('click', () => {
-    sessionStorage.removeItem('authenticated');
+    localStorage.removeItem('authenticated');
     window.location.href = 'index.html';
   });
 }
@@ -528,7 +528,7 @@ function initializeApp() {
   }
 }
 
-if (sessionStorage.getItem('authenticated') !== 'true') {
+if (localStorage.getItem('authenticated') !== 'true') {
   window.location.href = 'index.html';
 } else {
   registerServiceWorker();
@@ -2702,6 +2702,15 @@ if (closePhotoManagerButton) {
           } catch (e) {
             console.error("Erro ao salvar foto na saída:", e);
           }
+        }
+      }
+      
+      // Clear photos from IndexedDB to clean the grid and prevent duplicate saving
+      for (const photo of photos) {
+        try {
+          await removePhotoFromDb(vehicleName, photo.name);
+        } catch (e) {
+          console.error("Erro ao remover foto do banco local:", e);
         }
       }
     }
