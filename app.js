@@ -808,7 +808,7 @@ function render() {
               </div>
               <div class="actions vertical-actions">
                 <button class="action-btn" type="button" data-super-action="share-text" data-id="${entry.id}">📱 Visualizar</button>
-                <button class="action-btn" type="button" data-super-action="copy-text" data-id="${entry.id}">📋 Copiar</button>
+                <button class="action-btn" type="button" data-super-action="share-photos" data-id="${entry.id}">🟢 WhatsApp Fotos</button>
                 <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">📸 Fotos</button>
                 <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
                 <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
@@ -837,7 +837,7 @@ function render() {
               </div>
               <div class="actions vertical-actions">
                 <button class="action-btn" type="button" data-action="share-text" data-id="${entry.id}">📱 Visualizar</button>
-                <button class="action-btn" type="button" data-action="copy-text" data-id="${entry.id}">📋 Copiar</button>
+                <button class="action-btn" type="button" data-action="share-photos" data-id="${entry.id}">🟢 WhatsApp Fotos</button>
                 <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">📸 Fotos</button>
                 <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
                 <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
@@ -959,7 +959,7 @@ function render() {
         </div>
         <div class="actions vertical-actions">
           <button class="action-btn" type="button" data-action="share-text" data-id="${item.id}">📱 Compartilhar</button>
-          <button class="action-btn" type="button" data-action="copy-text" data-id="${item.id}">📋 Copiar</button>
+          <button class="action-btn" type="button" data-action="share-photos" data-id="${item.id}">🟢 WhatsApp Fotos</button>
           <button class="action-btn" type="button" data-action="photos" data-id="${item.id}">📸 Fotos</button>
           <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
           <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
@@ -1168,8 +1168,8 @@ function handleAction(action, id) {
     shareSurveyText(id);
     return;
   }
-  if (action === 'copy-text') {
-    copySurveyText(id);
+  if (action === 'share-photos') {
+    sharePhotosForSurvey(id);
     return;
   }
   if (action === 'delete') {
@@ -2091,7 +2091,7 @@ function renderSupervisaoReport() {
         <td data-label="Ações">
           <div class="actions">
             <button class="action-btn" type="button" data-super-action="share-text" data-id="${s.id}" title="Compartilhar texto">📱 Compartilhar</button>
-            <button class="action-btn" type="button" data-super-action="copy-text" data-id="${s.id}" title="Copiar texto">📋 Copiar</button>
+            <button class="action-btn" type="button" data-super-action="share-photos" data-id="${s.id}">🟢 WhatsApp Fotos</button>
             <button class="action-btn" type="button" data-super-action="photos" data-id="${s.id}">📸 Fotos</button>
             <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
             <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
@@ -2130,9 +2130,8 @@ function handleSupervisaoAction(action, id) {
     return;
   }
 
-  if (action === 'copy-text') {
-    const text = formatSingleSupervisaoText(s);
-    copySupervisaoTextToClipboard(text);
+  if (action === 'share-photos') {
+    sharePhotosForSurvey(id);
     return;
   }
 
@@ -2700,6 +2699,78 @@ function openPhotoManagerForId(id) {
   openPhotoManagerForVehicle(id, vehicleName.trim());
 }
 
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result.split(',')[1];
+      resolve(base64String);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function sharePhotosForSurvey(id) {
+  const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
+  if (!item) return;
+  const vehicleName = item.plate || item.vehicle;
+  if (!vehicleName || !vehicleName.trim()) {
+    alert("Nome do veículo ou placa inválido!");
+    return;
+  }
+  
+  const progressToast = document.createElement('div');
+  progressToast.style.position = 'fixed';
+  progressToast.style.bottom = '20px';
+  progressToast.style.left = '50%';
+  progressToast.style.transform = 'translateX(-50%)';
+  progressToast.style.background = '#1e40af';
+  progressToast.style.color = 'white';
+  progressToast.style.padding = '12px 24px';
+  progressToast.style.borderRadius = '999px';
+  progressToast.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.1)';
+  progressToast.style.zIndex = '999999';
+  progressToast.textContent = 'Preparando fotos para compartilhar...';
+  document.body.appendChild(progressToast);
+
+  try {
+    const photos = await getStoredPhotosForVehicle(vehicleName.trim());
+    if (!photos || photos.length === 0) {
+      document.body.removeChild(progressToast);
+      alert("Nenhuma foto disponível para compartilhar nesta vistoria.");
+      return;
+    }
+    
+    if (window.AndroidInterface && typeof window.AndroidInterface.clearTempShare === 'function') {
+      window.AndroidInterface.clearTempShare();
+      
+      for (let i = 0; i < photos.length; i++) {
+        const p = photos[i];
+        progressToast.textContent = `Preparando foto ${i + 1} de ${photos.length}...`;
+        const base64Str = await blobToBase64(p.rawBlob);
+        window.AndroidInterface.addTempShareFile(p.name, base64Str);
+      }
+      
+      progressToast.textContent = 'Enviando para o WhatsApp...';
+      setTimeout(() => {
+        try {
+          document.body.removeChild(progressToast);
+        } catch (e) {}
+        window.AndroidInterface.startShare(vehicleName.trim());
+      }, 500);
+    } else {
+      document.body.removeChild(progressToast);
+      alert("Compartilhamento nativo de fotos só é suportado dentro do aplicativo Android.");
+    }
+  } catch (err) {
+    try {
+      document.body.removeChild(progressToast);
+    } catch (e) {}
+    alert("Erro ao preparar fotos: " + err.message);
+  }
+}
+
 function openPhotoManagerForVehicle(id, vehicleName) {
   activePhotoId = id;
   activePhotoVehicleName = vehicleName;
@@ -3004,3 +3075,11 @@ if (importBackupBtn && dashboardBackupFileInput) {
     }
   });
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (window.AndroidInterface && typeof window.AndroidInterface.onPageLoaded === 'function') {
+      window.AndroidInterface.onPageLoaded();
+    }
+  }
+});
