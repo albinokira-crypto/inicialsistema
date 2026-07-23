@@ -356,6 +356,16 @@
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px; border-top: 1.5px dashed #e2e8f0; padding-top: 16px;">
           <p style="font-size: 0.85rem; color: #4b5563; margin-bottom: 4px; font-weight: bold;">
+            Configuração de Fotos
+          </p>
+          <p id="preferredCameraLabel" style="font-size: 0.85rem; color: #4b5563; margin-top: 2px; margin-bottom: 2px; font-weight: bold; text-align: center;">Câmera preferida: Nenhuma</p>
+          <button id="clearCameraBtn" class="cancel-btn" type="button" style="padding: 10px; font-weight: 700; background: #ef4444; color: white; border: none; border-radius: 12px; cursor: pointer; width: 100%; display: none;">
+            ❌ Limpar Câmera Preferida
+          </button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px; border-top: 1.5px dashed #e2e8f0; padding-top: 16px;">
+          <p style="font-size: 0.85rem; color: #4b5563; margin-bottom: 4px; font-weight: bold;">
             Backup do Sistema
           </p>
           
@@ -386,12 +396,6 @@
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button id="capturePhotoButton" class="primary-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; gap: 6px;">
             📸 Tirar Foto
-          </button>
-          <button id="exportPhotosZipButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; background: #10b981; color: white; border: none; display: flex; align-items: center; justify-content: center; gap: 6px;">
-            📦 Exportar Pasta (ZIP)
-          </button>
-          <button id="openPhotoSettingsBtn" class="ghost-btn" type="button" style="padding: 12px; aspect-ratio: 1; border: 1px solid #d1d5db; color: #4b5563; border-radius: 12px; background: #f3f4f6;">
-            ⚙️
           </button>
         </div>
 

@@ -2602,7 +2602,39 @@ function openSystemSettings() {
     }
   }
 
+  updatePreferredCameraUI();
   if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
+}
+
+function updatePreferredCameraUI() {
+  const preferredCameraLabel = document.getElementById('preferredCameraLabel');
+  const clearCameraBtn = document.getElementById('clearCameraBtn');
+  if (window.AndroidInterface && typeof window.AndroidInterface.getPreferredCameraLabel === 'function') {
+    const label = window.AndroidInterface.getPreferredCameraLabel();
+    if (preferredCameraLabel) {
+      preferredCameraLabel.textContent = `Câmera preferida: ${label}`;
+    }
+    if (clearCameraBtn) {
+      if (label !== 'Nenhuma') {
+        clearCameraBtn.style.display = 'block';
+      } else {
+        clearCameraBtn.style.display = 'none';
+      }
+    }
+  } else {
+    if (preferredCameraLabel) preferredCameraLabel.style.display = 'none';
+    if (clearCameraBtn) clearCameraBtn.style.display = 'none';
+  }
+}
+
+const clearCameraBtn = document.getElementById('clearCameraBtn');
+if (clearCameraBtn) {
+  clearCameraBtn.addEventListener('click', () => {
+    if (window.AndroidInterface && typeof window.AndroidInterface.clearPreferredCamera === 'function') {
+      window.AndroidInterface.clearPreferredCamera();
+      updatePreferredCameraUI();
+    }
+  });
 }
 
 if (systemSettingsBtn) {
@@ -2655,7 +2687,13 @@ function openPhotoManagerForId(id) {
     alert('Por favor, preencha o campo "Veículo (Modelo e Placa)" antes de acessar as fotos.');
     return;
   }
-  openPhotoManagerForVehicle(id, vehicleName.trim());
+  
+  activePhotoId = id;
+  activePhotoVehicleName = vehicleName.trim();
+  
+  if (photoSystemCameraInput) {
+    photoSystemCameraInput.click();
+  }
 }
 
 function openPhotoManagerForVehicle(id, vehicleName) {
