@@ -2107,6 +2107,10 @@ function renderSupervisaoReport() {
 }
 
 function handleSupervisaoAction(action, id) {
+  if (action === 'share-photos') {
+    sharePhotosForSurvey(id);
+    return;
+  }
   if (action === 'photos') {
     openPhotoManagerForId(id);
     return;
@@ -2127,11 +2131,6 @@ function handleSupervisaoAction(action, id) {
   if (action === 'share-text') {
     const text = formatSingleSupervisaoText(s);
     shareSupervisaoText(text, `Supervisão - ${s.vehicle || ''}`);
-    return;
-  }
-
-  if (action === 'share-photos') {
-    sharePhotosForSurvey(id);
     return;
   }
 
