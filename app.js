@@ -2554,10 +2554,8 @@ function saveDirectoryHandle(handle) {
 
 const systemSettingsModal = document.getElementById('systemSettingsModal');
 const photoManagerModal = document.getElementById('photoManagerModal');
-const storageFolderInput = document.getElementById('storageFolderInput');
 const selectDesktopDirButton = document.getElementById('selectDesktopDirButton');
 const selectedDesktopPathLabel = document.getElementById('selectedDesktopPathLabel');
-const saveSystemSettingsBtn = document.getElementById('saveSystemSettingsBtn');
 const closeSystemSettingsBtn = document.getElementById('closeSystemSettingsBtn');
 const systemSettingsBtn = document.getElementById('systemSettingsBtn');
 const selectStorageFolderBtn = document.getElementById('selectStorageFolderBtn');
@@ -2595,13 +2593,6 @@ if (selectDesktopDirButton) {
 }
 
 function openSystemSettings() {
-  const config = getPhotoConfig();
-  if (config.folderName) {
-    storageFolderInput.value = config.folderName;
-  } else {
-    storageFolderInput.value = 'Vistorias';
-  }
-
   const friendlyName = localStorage.getItem('photo_folder_name_friendly');
   if (selectedFolderLabel) {
     if (friendlyName) {
@@ -2624,15 +2615,6 @@ if (openPhotoSettingsBtn) {
 if (closeSystemSettingsBtn && systemSettingsModal) {
   closeSystemSettingsBtn.addEventListener('click', () => {
     systemSettingsModal.style.display = 'none';
-  });
-}
-
-if (saveSystemSettingsBtn && storageFolderInput) {
-  saveSystemSettingsBtn.addEventListener('click', () => {
-    const folderName = storageFolderInput.value.trim() || 'Vistorias';
-    savePhotoConfig('default', folderName);
-    alert('Configurações salvas com sucesso!');
-    if (systemSettingsModal) systemSettingsModal.style.display = 'none';
   });
 }
 
