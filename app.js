@@ -2552,14 +2552,14 @@ function saveDirectoryHandle(handle) {
   store.put(handle, 'root_handle');
 }
 
-const photoSettingsModal = document.getElementById('photoSettingsModal');
+const systemSettingsModal = document.getElementById('systemSettingsModal');
 const photoManagerModal = document.getElementById('photoManagerModal');
-const cameraAppSelect = document.getElementById('cameraAppSelect');
 const storageFolderInput = document.getElementById('storageFolderInput');
 const selectDesktopDirButton = document.getElementById('selectDesktopDirButton');
 const selectedDesktopPathLabel = document.getElementById('selectedDesktopPathLabel');
-const savePhotoSettingsButton = document.getElementById('savePhotoSettingsButton');
-const closePhotoSettingsButton = document.getElementById('closePhotoSettingsButton');
+const saveSystemSettingsBtn = document.getElementById('saveSystemSettingsBtn');
+const closeSystemSettingsBtn = document.getElementById('closeSystemSettingsBtn');
+const systemSettingsBtn = document.getElementById('systemSettingsBtn');
 const capturePhotoButton = document.getElementById('capturePhotoButton');
 const exportPhotosZipButton = document.getElementById('exportPhotosZipButton');
 const openPhotoSettingsBtn = document.getElementById('openPhotoSettingsBtn');
@@ -2592,22 +2592,35 @@ if (selectDesktopDirButton) {
   });
 }
 
-if (savePhotoSettingsButton) {
-  savePhotoSettingsButton.addEventListener('click', () => {
-    const cameraApp = cameraAppSelect.value;
-    const folderName = storageFolderInput.value.trim() || 'Vistorias';
-    savePhotoConfig(cameraApp, folderName);
-    if (photoSettingsModal) photoSettingsModal.style.display = 'none';
-    
-    if (activePhotoVehicleName) {
-      openPhotoManagerForVehicle(activePhotoId, activePhotoVehicleName);
-    }
+function openSystemSettings() {
+  const config = getPhotoConfig();
+  if (config.folderName) {
+    storageFolderInput.value = config.folderName;
+  } else {
+    storageFolderInput.value = 'Vistorias';
+  }
+  if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
+}
+
+if (systemSettingsBtn) {
+  systemSettingsBtn.addEventListener('click', openSystemSettings);
+}
+if (openPhotoSettingsBtn) {
+  openPhotoSettingsBtn.addEventListener('click', openSystemSettings);
+}
+
+if (closeSystemSettingsBtn && systemSettingsModal) {
+  closeSystemSettingsBtn.addEventListener('click', () => {
+    systemSettingsModal.style.display = 'none';
   });
 }
 
-if (closePhotoSettingsButton) {
-  closePhotoSettingsButton.addEventListener('click', () => {
-    if (photoSettingsModal) photoSettingsModal.style.display = 'none';
+if (saveSystemSettingsBtn && storageFolderInput) {
+  saveSystemSettingsBtn.addEventListener('click', () => {
+    const folderName = storageFolderInput.value.trim() || 'Vistorias';
+    savePhotoConfig('default', folderName);
+    alert('Configurações salvas com sucesso!');
+    if (systemSettingsModal) systemSettingsModal.style.display = 'none';
   });
 }
 
@@ -2617,19 +2630,6 @@ if (closePhotoManagerButton) {
     activePhotoVehicleName = '';
     activePhotoId = '';
   });
-}
-
-if (openPhotoSettingsBtn) {
-  openPhotoSettingsBtn.addEventListener('click', () => {
-    openPhotoSettings();
-  });
-}
-
-function openPhotoSettings() {
-  const config = getPhotoConfig();
-  if (config.cameraApp) cameraAppSelect.value = config.cameraApp;
-  if (config.folderName) storageFolderInput.value = config.folderName;
-  if (photoSettingsModal) photoSettingsModal.style.display = 'flex';
 }
 
 function openPhotoManagerForId(id) {
@@ -2918,24 +2918,5 @@ if (importBackupBtn && dashboardBackupFileInput) {
       };
       reader.readAsText(file);
     }
-  });
-}
-
-// ==========================================
-// SYSTEM SETTINGS MODAL BINDINGS
-// ==========================================
-const systemSettingsBtn = document.getElementById('systemSettingsBtn');
-const systemSettingsModal = document.getElementById('systemSettingsModal');
-const closeSystemSettingsBtn = document.getElementById('closeSystemSettingsBtn');
-
-if (systemSettingsBtn && systemSettingsModal) {
-  systemSettingsBtn.addEventListener('click', () => {
-    systemSettingsModal.style.display = 'flex';
-  });
-}
-
-if (closeSystemSettingsBtn && systemSettingsModal) {
-  closeSystemSettingsBtn.addEventListener('click', () => {
-    systemSettingsModal.style.display = 'none';
   });
 }

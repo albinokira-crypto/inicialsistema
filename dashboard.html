@@ -348,16 +348,26 @@
         <h3>Configurações do Sistema</h3>
         
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
-          <p style="font-size: 0.85rem; color: #4b5563; margin-bottom: 8px;">
-            Gerencie o backup das vistorias registradas no dispositivo.
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.875rem; font-weight: 700; color: #334155;">
+            Pasta de Destino das Fotos (Celular)
+            <input type="text" id="storageFolderInput" placeholder="Ex: Vistorias" value="Vistorias" style="padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 0.9rem; outline: none; font-weight: normal;" />
+          </label>
+          <button id="saveSystemSettingsBtn" class="primary-btn" type="button" style="padding: 12px; font-weight: 700; background: #10b981; color: white; border: none; border-radius: 12px; cursor: pointer; width: 100%;">
+            💾 Salvar Pasta de Destino
+          </button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px; border-top: 1.5px dashed #e2e8f0; padding-top: 16px;">
+          <p style="font-size: 0.85rem; color: #4b5563; margin-bottom: 4px; font-weight: bold;">
+            Backup do Sistema
           </p>
           
-          <button id="exportBackupBtn" class="primary-btn" type="button" style="padding: 12px; font-weight: 700; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 12px; cursor: pointer; width: 100%;">
-            📤 Exportar Backup do Sistema (JSON)
+          <button id="exportBackupBtn" class="ghost-btn" type="button" style="padding: 10px; font-weight: 700; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; cursor: pointer; width: 100%;">
+            📤 Exportar Backup (JSON)
           </button>
           
-          <button id="importBackupBtn" class="ghost-btn" type="button" style="padding: 12px; font-weight: 700; color: #1e3a8a; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;">
-            📥 Importar Backup do Sistema (JSON)
+          <button id="importBackupBtn" class="ghost-btn" type="button" style="padding: 10px; font-weight: 700; color: #10b981; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; cursor: pointer; width: 100%;">
+            📥 Importar Backup (JSON)
           </button>
           
           <input type="file" id="dashboardBackupFileInput" accept=".json" style="display: none;" />
@@ -369,42 +379,7 @@
       </div>
     </div>
 
-    <!-- PHOTO SETTINGS MODAL -->
-    <div id="photoSettingsModal" class="photo-modal-overlay" style="display: none;">
-      <div class="photo-modal">
-        <h3>Configuração de Fotos</h3>
-        
-        <label>
-          Aplicativo de Câmera Preferido
-          <select id="cameraAppSelect">
-            <option value="default">Câmera Padrão do Navegador</option>
-            <option value="custom">Outro Aplicativo (Solicitado pelo celular)</option>
-          </select>
-        </label>
-        
-        <label>
-          Pasta de Destino das Fotos
-          <input type="text" id="storageFolderInput" placeholder="Ex: Vistorias" value="Vistorias" />
-        </label>
-        
-        <div id="desktopDirPickerContainer" style="display: none;">
-          <button id="selectDesktopDirButton" class="ghost-btn" type="button" style="width: 100%; padding: 10px; border-radius: 12px; font-weight: 700; border: 1.5px dashed #3b82f6; color: #2563eb; background: #eff6ff;">
-            📂 Selecionar Pasta do Computador
-          </button>
-          <p id="selectedDesktopPathLabel" style="font-size: 0.75rem; color: #4b5563; margin-top: 4px; word-break: break-all;"></p>
-        </div>
 
-        <div class="settings-info-box">
-          <strong>Aviso de Armazenamento Local</strong>
-          No celular, as fotos são salvas de forma segura no armazenamento interno do navegador (OPFS). Você pode exportar todas as fotos organizadas por veículo em um arquivo ZIP a qualquer momento.
-        </div>
-
-        <div class="photo-modal-actions">
-          <button id="savePhotoSettingsButton" class="save-btn" type="button">Salvar</button>
-          <button id="closePhotoSettingsButton" class="cancel-btn" type="button">Cancelar</button>
-        </div>
-      </div>
-    </div>
 
     <!-- PHOTO MANAGER MODAL -->
     <div id="photoManagerModal" class="photo-modal-overlay" style="display: none;">
