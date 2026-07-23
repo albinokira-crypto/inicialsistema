@@ -2907,7 +2907,7 @@ async function savePhotoToDb(vehicleName, name, blob) {
     const tx = localDb.transaction('photos', 'readwrite');
     const store = tx.objectStore('photos');
     const id = `${vehicleName}_${name}`;
-    store.put({ id: id, visitId: vehicleName, name: name, blob: blob }, id);
+    store.put({ id: id, visitId: vehicleName, name: name, blob: blob });
     tx.oncomplete = () => resolve();
   });
 }
