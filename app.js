@@ -2687,24 +2687,12 @@ function openPhotoManagerForId(id) {
     alert('Por favor, preencha o campo "Veículo (Modelo e Placa)" antes de acessar as fotos.');
     return;
   }
-  
-  activePhotoId = id;
-  activePhotoVehicleName = vehicleName.trim();
-  
-  if (photoSystemCameraInput) {
-    photoSystemCameraInput.click();
-  }
+  openPhotoManagerForVehicle(id, vehicleName.trim());
 }
 
 function openPhotoManagerForVehicle(id, vehicleName) {
   activePhotoId = id;
   activePhotoVehicleName = vehicleName;
-  
-  const config = getPhotoConfig();
-  if (!config.cameraApp || !config.folderName) {
-    openPhotoSettings();
-    return;
-  }
   
   if (photoManagerModal) {
     document.getElementById('photoManagerTitle').textContent = `Fotos: ${vehicleName}`;
@@ -2826,17 +2814,8 @@ async function handlePhotoFilesSelected(files) {
     
     await savePhotoToDb(activePhotoVehicleName, filename, file);
     
-    // Call Android JavascriptInterface Bridge if active
-    if (window.AndroidInterface && typeof window.AndroidInterface.savePhoto === 'function') {
-      const reader = new FileReader();
-      reader.onload = function() {
-        const base64Data = reader.result.split(',')[1];
-        const config = getPhotoConfig();
-        const folderName = config.folderName || 'Vistorias';
-        window.AndroidInterface.savePhoto(activePhotoVehicleName, filename, base64Data, folderName);
-      };
-      reader.readAsDataURL(file);
-    }
+    // We removed the automatic Android bridge call from here.
+    // Photos are saved to local IndexedDB and shown in the grid.
     
     if (directoryHandle) {
       try {
@@ -2864,27 +2843,38 @@ window.deletePhotoEvent = async function(name) {
   }
 };
 
-if (exportPhotosZipButton) {
-  exportPhotosZipButton.addEventListener('click', async () => {
+function readBlobAsBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = (e) => reject(e);
+    reader.readAsDataURL(blob);
+  });
+}
+
+const savePhotosToFolderBtn = document.getElementById('savePhotosToFolderBtn');
+if (savePhotosToFolderBtn) {
+  savePhotosToFolderBtn.addEventListener('click', async () => {
     const photos = await getStoredPhotosForVehicle(activePhotoVehicleName);
     if (!photos || photos.length === 0) {
-      alert('Não há fotos para exportar.');
+      alert('Nenhuma foto para salvar nesta vistoria.');
       return;
     }
     
-    const zip = new JSZip();
-    const folder = zip.folder(activePhotoVehicleName);
-    
-    photos.forEach(photo => {
-      folder.file(photo.name, photo.rawBlob);
-    });
-    
-    zip.generateAsync({ type: 'blob' }).then(content => {
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = `${activePhotoVehicleName}.zip`;
-      link.click();
-    });
+    if (window.AndroidInterface && typeof window.AndroidInterface.savePhoto === 'function') {
+      let savedCount = 0;
+      for (const photo of photos) {
+        try {
+          const base64Data = await readBlobAsBase64(photo.rawBlob);
+          window.AndroidInterface.savePhoto(activePhotoVehicleName, photo.name, base64Data, "Vistorias");
+          savedCount++;
+        } catch (e) {
+          console.error("Erro ao ler foto para base64:", e);
+        }
+      }
+    } else {
+      alert('Dispositivo Android não detectado ou recurso indisponível.');
+    }
   });
 }
 
