@@ -7,7 +7,7 @@
     <title>Gestão de Vistoria Inicial</title>
     <script>
       (function() {
-        const APP_VERSION = 'v50_photo_fixes';
+        const APP_VERSION = 'v51_photo_fixes';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           localStorage.setItem('app_version', APP_VERSION);
           if ('serviceWorker' in navigator) {
@@ -23,7 +23,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=50" />
+    <link rel="stylesheet" href="styles.css?v=51" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -396,9 +396,6 @@
           <button id="capturePhotoButton" class="primary-btn" type="button" style="flex: 1; min-width: 130px; padding: 12px; font-weight: 700; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; gap: 6px;">
             📸 Tirar Foto
           </button>
-          <button id="importGalleryPhotosBtn" class="primary-btn" type="button" style="flex: 1; min-width: 130px; padding: 12px; font-weight: 700; background: #ea580c; color: white; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: 12px; cursor: pointer;">
-            📥 Importar Galeria
-          </button>
           <button id="savePhotosToFolderBtn" class="primary-btn" type="button" style="flex: 1; min-width: 100%; padding: 12px; font-weight: 700; background: #10b981; color: white; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: 12px; cursor: pointer; margin-top: 4px;">
             💾 Salvar na Pasta do Celular
           </button>
@@ -420,6 +417,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=50"></script>
+    <script src="app.js?v=51"></script>
   </body>
 </html>

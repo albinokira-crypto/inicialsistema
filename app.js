@@ -2933,18 +2933,6 @@ if (capturePhotoButton) {
   });
 }
 
-const importGalleryPhotosBtn = document.getElementById('importGalleryPhotosBtn');
-if (importGalleryPhotosBtn) {
-  importGalleryPhotosBtn.addEventListener('click', () => {
-    if (window.AndroidInterface && typeof window.AndroidInterface.importPhotosFromGallery === 'function') {
-      window.AndroidInterface.importPhotosFromGallery(activePhotoVehicleName);
-    } else {
-      const fileInput = document.getElementById('photoSystemFileInput');
-      if (fileInput) fileInput.click();
-    }
-  });
-}
-
 window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64Data) {
   try {
     if (vehicleName) {
@@ -2968,6 +2956,7 @@ window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64
     }
   } catch (e) {
     console.error("Erro ao processar imagem capturada do Android:", e);
+    alert("Erro ao processar imagem no navegador: " + e.message);
   }
 };
 
