@@ -2896,6 +2896,18 @@ if (capturePhotoButton) {
   });
 }
 
+const importGalleryPhotosBtn = document.getElementById('importGalleryPhotosBtn');
+if (importGalleryPhotosBtn) {
+  importGalleryPhotosBtn.addEventListener('click', () => {
+    if (window.AndroidInterface && typeof window.AndroidInterface.importPhotosFromGallery === 'function') {
+      window.AndroidInterface.importPhotosFromGallery();
+    } else {
+      const fileInput = document.getElementById('photoSystemFileInput');
+      if (fileInput) fileInput.click();
+    }
+  });
+}
+
 window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64Data) {
   try {
     if (vehicleName) {
