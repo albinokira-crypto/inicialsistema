@@ -2794,9 +2794,14 @@ function openPhotoManagerForVehicle(id, vehicleName) {
   localStorage.setItem('active_photo_id', id);
   localStorage.setItem('active_photo_vehicle_name', vehicleName);
   
-  if (photoManagerModal) {
-    document.getElementById('photoManagerTitle').textContent = `Fotos: ${vehicleName}`;
-    photoManagerModal.style.display = 'flex';
+  // Set flag that we are waiting for camera to return
+  localStorage.setItem('waiting_camera_return', 'true');
+  
+  // Trigger camera capture directly
+  if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
+    window.AndroidInterface.launchCameraCapture(activePhotoVehicleName);
+  } else if (photoSystemCameraInput) {
+    photoSystemCameraInput.click();
   }
   
   loadPhotosForActiveVehicle();
@@ -2919,6 +2924,16 @@ window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64
       activePhotoVehicleName = vehicleName;
       localStorage.setItem('active_photo_vehicle_name', vehicleName);
     }
+    
+    // Open modal if we were waiting for camera return
+    if (localStorage.getItem('waiting_camera_return') === 'true') {
+      localStorage.removeItem('waiting_camera_return');
+      if (photoManagerModal && activePhotoVehicleName) {
+        document.getElementById('photoManagerTitle').textContent = `Fotos: ${activePhotoVehicleName}`;
+        photoManagerModal.style.display = 'flex';
+      }
+    }
+
     const byteCharacters = atob(base64Data);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
@@ -3114,6 +3129,20 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     if (window.AndroidInterface && typeof window.AndroidInterface.onPageLoaded === 'function') {
       window.AndroidInterface.onPageLoaded();
+    }
+    
+    // Check if we were waiting for the camera to return!
+    if (localStorage.getItem('waiting_camera_return') === 'true') {
+      localStorage.removeItem('waiting_camera_return');
+      
+      // Delay opening modal slightly to feel smoother and let Android scan start
+      setTimeout(() => {
+        if (photoManagerModal && activePhotoVehicleName) {
+          document.getElementById('photoManagerTitle').textContent = `Fotos: ${activePhotoVehicleName}`;
+          photoManagerModal.style.display = 'flex';
+          loadPhotosForActiveVehicle();
+        }
+      }, 300);
     }
   }
 });
