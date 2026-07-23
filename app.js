@@ -2793,9 +2793,30 @@ function removePhotoFromDb(vehicleName, name) {
 
 if (capturePhotoButton) {
   capturePhotoButton.addEventListener('click', () => {
-    if (photoSystemCameraInput) photoSystemCameraInput.click();
+    if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
+      window.AndroidInterface.launchCameraCapture(activePhotoVehicleName);
+    } else if (photoSystemCameraInput) {
+      photoSystemCameraInput.click();
+    }
   });
 }
+
+window.onPhotoCapturedFromAndroid = async function(filename, base64Data) {
+  try {
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+    await savePhotoToDb(activePhotoVehicleName, filename, blob);
+    loadPhotosForActiveVehicle();
+  } catch (e) {
+    console.error("Erro ao processar imagem capturada do Android:", e);
+  }
+};
 
 if (photoSystemFileInput) {
   photoSystemFileInput.addEventListener('change', (e) => handlePhotoFilesSelected(e.target.files));
