@@ -2560,6 +2560,8 @@ const selectedDesktopPathLabel = document.getElementById('selectedDesktopPathLab
 const saveSystemSettingsBtn = document.getElementById('saveSystemSettingsBtn');
 const closeSystemSettingsBtn = document.getElementById('closeSystemSettingsBtn');
 const systemSettingsBtn = document.getElementById('systemSettingsBtn');
+const selectStorageFolderBtn = document.getElementById('selectStorageFolderBtn');
+const selectedFolderLabel = document.getElementById('selectedFolderLabel');
 const capturePhotoButton = document.getElementById('capturePhotoButton');
 const exportPhotosZipButton = document.getElementById('exportPhotosZipButton');
 const openPhotoSettingsBtn = document.getElementById('openPhotoSettingsBtn');
@@ -2599,6 +2601,16 @@ function openSystemSettings() {
   } else {
     storageFolderInput.value = 'Vistorias';
   }
+
+  const friendlyName = localStorage.getItem('photo_folder_name_friendly');
+  if (selectedFolderLabel) {
+    if (friendlyName) {
+      selectedFolderLabel.textContent = `Pasta selecionada: ${friendlyName}`;
+    } else {
+      selectedFolderLabel.textContent = 'Nenhuma pasta selecionada (usando padrão)';
+    }
+  }
+
   if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
 }
 
@@ -2623,6 +2635,24 @@ if (saveSystemSettingsBtn && storageFolderInput) {
     if (systemSettingsModal) systemSettingsModal.style.display = 'none';
   });
 }
+
+if (selectStorageFolderBtn) {
+  if (window.AndroidInterface && typeof window.AndroidInterface.selectStorageFolder === 'function') {
+    selectStorageFolderBtn.style.display = 'block';
+    selectStorageFolderBtn.addEventListener('click', () => {
+      window.AndroidInterface.selectStorageFolder();
+    });
+  } else {
+    selectStorageFolderBtn.style.display = 'none';
+  }
+}
+
+window.onStorageFolderSelected = function(folderName) {
+  if (selectedFolderLabel) {
+    selectedFolderLabel.textContent = `Pasta selecionada: ${folderName}`;
+  }
+  localStorage.setItem('photo_folder_name_friendly', folderName);
+};
 
 if (closePhotoManagerButton) {
   closePhotoManagerButton.addEventListener('click', () => {
@@ -2755,12 +2785,7 @@ function removePhotoFromDb(vehicleName, name) {
 
 if (capturePhotoButton) {
   capturePhotoButton.addEventListener('click', () => {
-    const config = getPhotoConfig();
-    if (config.cameraApp === 'default') {
-      if (photoSystemCameraInput) photoSystemCameraInput.click();
-    } else {
-      if (photoSystemFileInput) photoSystemFileInput.click();
-    }
+    if (photoSystemCameraInput) photoSystemCameraInput.click();
   });
 }
 
