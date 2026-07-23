@@ -2786,7 +2786,9 @@ async function handlePhotoFilesSelected(files) {
       const reader = new FileReader();
       reader.onload = function() {
         const base64Data = reader.result.split(',')[1];
-        window.AndroidInterface.savePhoto(activePhotoVehicleName, filename, base64Data);
+        const config = getPhotoConfig();
+        const folderName = config.folderName || 'Vistorias';
+        window.AndroidInterface.savePhoto(activePhotoVehicleName, filename, base64Data, folderName);
       };
       reader.readAsDataURL(file);
     }
