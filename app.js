@@ -2971,6 +2971,10 @@ window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64
   }
 };
 
+window.onPhotoSaveFailed = function(errorMsg) {
+  alert("Erro ao salvar foto no celular: " + errorMsg);
+};
+
 if (photoSystemFileInput) {
   photoSystemFileInput.addEventListener('change', (e) => handlePhotoFilesSelected(e.target.files));
 }
