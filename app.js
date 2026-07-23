@@ -2688,21 +2688,9 @@ if (closePhotoManagerButton) {
       localStorage.removeItem('active_photo_vehicle_name');
     }
 
-    // Save and clear database in background
+    // Clear photos from IndexedDB to clean the grid
     const photos = await getStoredPhotosForVehicle(vehicleName);
     if (photos && photos.length > 0) {
-      if (window.AndroidInterface && typeof window.AndroidInterface.savePhoto === 'function') {
-        for (const photo of photos) {
-          try {
-            const base64Data = await readBlobAsBase64(photo.rawBlob);
-            window.AndroidInterface.savePhoto(vehicleName, photo.name, base64Data, "Vistorias");
-          } catch (e) {
-            console.error("Erro ao salvar foto na saída:", e);
-          }
-        }
-      }
-      
-      // Clear photos from IndexedDB to clean the grid and prevent duplicate saving
       for (const photo of photos) {
         try {
           await removePhotoFromDb(vehicleName, photo.name);
