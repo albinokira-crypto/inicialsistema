@@ -2918,3 +2918,22 @@ if (importBackupBtn && dashboardBackupFileInput) {
     }
   });
 }
+
+// ==========================================
+// SYSTEM SETTINGS MODAL BINDINGS
+// ==========================================
+const systemSettingsBtn = document.getElementById('systemSettingsBtn');
+const systemSettingsModal = document.getElementById('systemSettingsModal');
+const closeSystemSettingsBtn = document.getElementById('closeSystemSettingsBtn');
+
+if (systemSettingsBtn && systemSettingsModal) {
+  systemSettingsBtn.addEventListener('click', () => {
+    systemSettingsModal.style.display = 'flex';
+  });
+}
+
+if (closeSystemSettingsBtn && systemSettingsModal) {
+  closeSystemSettingsBtn.addEventListener('click', () => {
+    systemSettingsModal.style.display = 'none';
+  });
+}
