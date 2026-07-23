@@ -40,8 +40,9 @@
           <h1>Controle de Vistoria Inicial</h1>
           <p>Registre e acompanhe informações de vistorias iniciais com acesso seguro pelo celular ou desktop.</p>
         </div>
-        <div class="hero-actions">
+        <div class="hero-actions" style="display: flex; gap: 8px;">
           <button id="installButton" class="primary-btn" type="button" hidden>Instalar atalho</button>
+          <button id="systemSettingsBtn" style="background: white; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 6px;">⚙️ Configurações</button>
         </div>
       </header>
 
@@ -60,23 +61,13 @@
           <button class="menu-btn special-btn-total" type="button" data-day="Total da semana">Total da Semana</button>
           <button class="menu-btn special-btn-total" type="button" data-day="Todas as vistorias">Todas as Vistorias</button>
         </div>
-        <div style="margin-top: 18px; display: flex; flex-direction: column; gap: 8px; width: 100%;">
-          <div style="display: flex; gap: 8px; width: 100%;">
-            <button id="homeClearWeekButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #b91c1c; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; cursor: pointer;">
-              🧹 Limpar Semana
-            </button>
-            <button id="homeLogoutButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #4b5d76; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 12px; cursor: pointer;">
-              Sair
-            </button>
-          </div>
-          <div style="display: flex; gap: 8px; width: 100%;">
-            <button id="exportBackupBtn" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; cursor: pointer;">
-              📤 Exportar Backup
-            </button>
-            <button id="importBackupBtn" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #10b981; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; cursor: pointer;">
-              📥 Importar Backup
-            </button>
-          </div>
+        <div style="margin-top: 18px; display: flex; gap: 8px; width: 100%;">
+          <button id="homeClearWeekButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #b91c1c; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; cursor: pointer;">
+            🧹 Limpar Semana
+          </button>
+          <button id="homeLogoutButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #4b5d76; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 12px; cursor: pointer;">
+            Sair
+          </button>
           <input type="file" id="dashboardBackupFileInput" accept=".json" style="display: none;" />
         </div>
       </section>
