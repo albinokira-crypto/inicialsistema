@@ -2737,54 +2737,10 @@ async function sharePhotosForSurvey(id) {
     return;
   }
   
-  const progressToast = document.createElement('div');
-  progressToast.style.position = 'fixed';
-  progressToast.style.bottom = '20px';
-  progressToast.style.left = '50%';
-  progressToast.style.transform = 'translateX(-50%)';
-  progressToast.style.background = '#1e40af';
-  progressToast.style.color = 'white';
-  progressToast.style.padding = '12px 24px';
-  progressToast.style.borderRadius = '999px';
-  progressToast.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.1)';
-  progressToast.style.zIndex = '999999';
-  progressToast.textContent = 'Preparando fotos para compartilhar...';
-  document.body.appendChild(progressToast);
-
-  try {
-    const photos = await getStoredPhotosForVehicle(vehicleName.trim());
-    if (!photos || photos.length === 0) {
-      document.body.removeChild(progressToast);
-      alert("Nenhuma foto disponível para compartilhar nesta vistoria.");
-      return;
-    }
-    
-    if (window.AndroidInterface && typeof window.AndroidInterface.clearTempShare === 'function') {
-      window.AndroidInterface.clearTempShare();
-      
-      for (let i = 0; i < photos.length; i++) {
-        const p = photos[i];
-        progressToast.textContent = `Preparando foto ${i + 1} de ${photos.length}...`;
-        const base64Str = await blobToBase64(p.rawBlob);
-        window.AndroidInterface.addTempShareFile(p.name, base64Str);
-      }
-      
-      progressToast.textContent = 'Enviando para o WhatsApp...';
-      setTimeout(() => {
-        try {
-          document.body.removeChild(progressToast);
-        } catch (e) {}
-        window.AndroidInterface.startShare(vehicleName.trim());
-      }, 500);
-    } else {
-      document.body.removeChild(progressToast);
-      alert("Compartilhamento nativo de fotos só é suportado dentro do aplicativo Android.");
-    }
-  } catch (err) {
-    try {
-      document.body.removeChild(progressToast);
-    } catch (e) {}
-    alert("Erro ao preparar fotos: " + err.message);
+  if (window.AndroidInterface && typeof window.AndroidInterface.startShare === 'function') {
+    window.AndroidInterface.startShare(vehicleName.trim());
+  } else {
+    alert("Compartilhamento nativo de fotos só é suportado dentro do aplicativo Android.");
   }
 }
 
