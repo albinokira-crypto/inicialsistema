@@ -2529,6 +2529,14 @@ dbRequest.onupgradeneeded = function(e) {
 dbRequest.onsuccess = function(e) {
   db = e.target.result;
   loadStoredDirectoryHandle();
+  
+  const savedActiveVehicle = localStorage.getItem('active_photo_vehicle_name');
+  const savedActiveId = localStorage.getItem('active_photo_id');
+  if (savedActiveVehicle && savedActiveId) {
+    setTimeout(() => {
+      openPhotoManagerForVehicle(savedActiveId, savedActiveVehicle);
+    }, 150);
+  }
 };
 
 async function loadStoredDirectoryHandle() {
@@ -2673,6 +2681,8 @@ if (closePhotoManagerButton) {
     if (photoManagerModal) photoManagerModal.style.display = 'none';
     activePhotoVehicleName = '';
     activePhotoId = '';
+    localStorage.removeItem('active_photo_id');
+    localStorage.removeItem('active_photo_vehicle_name');
   });
 }
 
@@ -2693,6 +2703,8 @@ function openPhotoManagerForId(id) {
 function openPhotoManagerForVehicle(id, vehicleName) {
   activePhotoId = id;
   activePhotoVehicleName = vehicleName;
+  localStorage.setItem('active_photo_id', id);
+  localStorage.setItem('active_photo_vehicle_name', vehicleName);
   
   if (photoManagerModal) {
     document.getElementById('photoManagerTitle').textContent = `Fotos: ${vehicleName}`;
@@ -2746,10 +2758,22 @@ function viewFullImage(url) {
   document.body.appendChild(overlay);
 }
 
-function getStoredPhotosForVehicle(vehicleName) {
+function getDb() {
   return new Promise((resolve) => {
-    if (!db) return resolve([]);
-    const tx = db.transaction('photos', 'readonly');
+    if (db) return resolve(db);
+    const check = setInterval(() => {
+      if (db) {
+        clearInterval(check);
+        resolve(db);
+      }
+    }, 50);
+  });
+}
+
+async function getStoredPhotosForVehicle(vehicleName) {
+  const localDb = await getDb();
+  return new Promise((resolve) => {
+    const tx = localDb.transaction('photos', 'readonly');
     const store = tx.objectStore('photos');
     const index = store.openCursor();
     const results = [];
@@ -2769,10 +2793,10 @@ function getStoredPhotosForVehicle(vehicleName) {
   });
 }
 
-function savePhotoToDb(vehicleName, name, blob) {
+async function savePhotoToDb(vehicleName, name, blob) {
+  const localDb = await getDb();
   return new Promise((resolve) => {
-    if (!db) return resolve();
-    const tx = db.transaction('photos', 'readwrite');
+    const tx = localDb.transaction('photos', 'readwrite');
     const store = tx.objectStore('photos');
     const id = `${vehicleName}_${name}`;
     store.put({ id: id, visitId: vehicleName, name: name, blob: blob }, id);
@@ -2780,10 +2804,10 @@ function savePhotoToDb(vehicleName, name, blob) {
   });
 }
 
-function removePhotoFromDb(vehicleName, name) {
+async function removePhotoFromDb(vehicleName, name) {
+  const localDb = await getDb();
   return new Promise((resolve) => {
-    if (!db) return resolve();
-    const tx = db.transaction('photos', 'readwrite');
+    const tx = localDb.transaction('photos', 'readwrite');
     const store = tx.objectStore('photos');
     const id = `${vehicleName}_${name}`;
     store.delete(id);
@@ -2801,8 +2825,12 @@ if (capturePhotoButton) {
   });
 }
 
-window.onPhotoCapturedFromAndroid = async function(filename, base64Data) {
+window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64Data) {
   try {
+    if (vehicleName) {
+      activePhotoVehicleName = vehicleName;
+      localStorage.setItem('active_photo_vehicle_name', vehicleName);
+    }
     const byteCharacters = atob(base64Data);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
