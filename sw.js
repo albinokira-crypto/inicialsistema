@@ -1,4 +1,4 @@
-const CACHE_NAME = 'projeto-planilha-mobile-v69';
+const CACHE_NAME = 'projeto-planilha-mobile-v70';
 const ASSETS = [
   '/',
   '/index.html',
