@@ -7,7 +7,7 @@
     <title>Gestão de Vistorias</title>
     <script>
       (function() {
-        const APP_VERSION = 'v65_no_grid';
+        const APP_VERSION = 'v66_video_support';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           localStorage.setItem('app_version', APP_VERSION);
           if ('serviceWorker' in navigator) {
@@ -23,7 +23,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=65" />
+    <link rel="stylesheet" href="styles.css?v=66" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -348,9 +348,6 @@
         <h3>Configurações do Sistema</h3>
         
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
-          <a href="/VistoriaInicial.apk" download style="padding: 12px; font-weight: 700; background: #10b981; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 12px; cursor: pointer; width: 100%; text-decoration: none; box-sizing: border-box; text-align: center;">
-            📥 Baixar Aplicativo Atualizado (APK)
-          </a>
           <button id="selectStorageFolderBtn" class="primary-btn" type="button" style="padding: 12px; font-weight: 700; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 12px; cursor: pointer; width: 100%;">
             📂 Selecionar Pasta no Celular
           </button>
@@ -413,11 +410,11 @@
     </div>
 
     <!-- INVISIBLE FILE INPUTS FOR CAMERA -->
-    <input type="file" id="photoSystemFileInput" accept="image/*" multiple style="display: none;" />
-    <input type="file" id="photoSystemCameraInput" accept="image/*" capture="environment" style="display: none;" />
+    <input type="file" id="photoSystemFileInput" accept="image/*,video/*" multiple style="display: none;" />
+    <input type="file" id="photoSystemCameraInput" accept="image/*,video/*" capture="environment" style="display: none;" />
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=65"></script>
+    <script src="app.js?v=66"></script>
   </body>
 </html>
