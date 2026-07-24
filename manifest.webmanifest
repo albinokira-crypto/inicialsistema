@@ -1,7 +1,7 @@
 {
-  "name": "Gestão de Vistoria Inicial",
-  "short_name": "Vistoria",
-  "description": "Sistema de controle de vistorias iniciais com login e relatórios semanais.",
+  "name": "Gestão de Vistorias",
+  "short_name": "Vistorias",
+  "description": "Sistema de controle de vistorias com login e relatórios semanais.",
   "lang": "pt-BR",
   "start_url": "/",
   "display": "standalone",

@@ -810,6 +810,7 @@ function render() {
                 <button class="action-btn" type="button" data-super-action="share-text" data-id="${entry.id}">📱 Visualizar</button>
                 <button class="action-btn" type="button" data-super-action="share-photos" data-id="${entry.id}">🟢 WhatsApp Fotos</button>
                 <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">📸 Fotos</button>
+                <button class="action-btn" type="button" data-super-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
                 <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
                 <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
               </div>
@@ -839,6 +840,7 @@ function render() {
                 <button class="action-btn" type="button" data-action="share-text" data-id="${entry.id}">📱 Visualizar</button>
                 <button class="action-btn" type="button" data-action="share-photos" data-id="${entry.id}">🟢 WhatsApp Fotos</button>
                 <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">📸 Fotos</button>
+                <button class="action-btn" type="button" data-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
                 <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
                 <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
               </div>
@@ -961,6 +963,7 @@ function render() {
           <button class="action-btn" type="button" data-action="share-text" data-id="${item.id}">📱 Compartilhar</button>
           <button class="action-btn" type="button" data-action="share-photos" data-id="${item.id}">🟢 WhatsApp Fotos</button>
           <button class="action-btn" type="button" data-action="photos" data-id="${item.id}">📸 Fotos</button>
+          <button class="action-btn" type="button" data-action="open-folder" data-id="${item.id}">📂 Pasta</button>
           <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
           <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
         </div>
@@ -1129,7 +1132,9 @@ function shareSurveyText(id) {
   const text = getSurveyText(id);
   if (!text) return;
 
-  if (navigator.share) {
+  if (window.AndroidInterface && typeof window.AndroidInterface.shareText === 'function') {
+    window.AndroidInterface.shareText('Compartilhamento de Vistoria', text);
+  } else if (navigator.share) {
     navigator.share({
       title: 'Compartilhamento de Vistoria',
       text: text
@@ -1160,6 +1165,10 @@ function copyTextToClipboard(text) {
 }
 
 function handleAction(action, id) {
+  if (action === 'open-folder') {
+    openInspectionFolderForId(id);
+    return;
+  }
   if (action === 'photos') {
     openPhotoManagerForId(id);
     return;
@@ -1633,7 +1642,7 @@ function renderDynamicSurveyFields() {
   const obsHtml = `
     <label style="grid-column: 1 / -1;">
       Observações (Obs.)
-      <input type="text" name="obs" placeholder="Ex: tinta tricoat" />
+      <textarea name="obs" rows="3" placeholder="Ex: tinta tricoat"></textarea>
     </label>
   `;
 
@@ -2093,6 +2102,7 @@ function renderSupervisaoReport() {
             <button class="action-btn" type="button" data-super-action="share-text" data-id="${s.id}" title="Compartilhar texto">📱 Compartilhar</button>
             <button class="action-btn" type="button" data-super-action="share-photos" data-id="${s.id}">🟢 WhatsApp Fotos</button>
             <button class="action-btn" type="button" data-super-action="photos" data-id="${s.id}">📸 Fotos</button>
+            <button class="action-btn" type="button" data-super-action="open-folder" data-id="${s.id}">📂 Pasta</button>
             <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
             <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
           </div>
@@ -2107,6 +2117,10 @@ function renderSupervisaoReport() {
 }
 
 function handleSupervisaoAction(action, id) {
+  if (action === 'open-folder') {
+    openInspectionFolderForId(id);
+    return;
+  }
   if (action === 'share-photos') {
     sharePhotosForSurvey(id);
     return;
@@ -2248,6 +2262,10 @@ function formatAllSupervisoesText(filteredList) {
 }
 
 async function shareSupervisaoText(text, title = 'Relatório de Supervisão') {
+  if (window.AndroidInterface && typeof window.AndroidInterface.shareText === 'function') {
+    window.AndroidInterface.shareText(title, text);
+    return;
+  }
   if (navigator.share) {
     try {
       await navigator.share({
@@ -2358,24 +2376,31 @@ function generateSupervisaoReportPDF() {
 
   const filename = `relatorio_supervisao_${new Date().toISOString().slice(0, 10)}.pdf`;
   try {
-    const pdfBlob = doc.output('blob');
-    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({
-        files: [file],
-        title: 'Relatório de Supervisão de Vistorias',
-        text: 'Segue em anexo o relatório de supervisão.'
-      }).catch(err => {
-        console.warn('Erro ao abrir diálogo de compartilhamento:', err);
-        doc.save(filename);
-      });
+    if (window.AndroidInterface && typeof window.AndroidInterface.sharePdf === 'function') {
+      const base64Pdf = doc.output('datauristring').split(',')[1];
+      window.AndroidInterface.sharePdf(filename, base64Pdf);
     } else {
-      doc.save(filename);
+      const pdfBlob = doc.output('blob');
+      const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: 'Relatório de Supervisão de Vistorias',
+          text: 'Segue em anexo o relatório de supervisão.'
+        }).catch(err => {
+          console.warn('Erro ao abrir diálogo de compartilhamento:', err);
+          doc.save(filename);
+        });
+      } else {
+        doc.save(filename);
+      }
     }
   } catch (error) {
-    console.error('Falha ao compartilhar PDF, executando download direto:', error);
-    doc.save(filename);
+    console.error('Falha ao compartilhar PDF:', error);
+    if (!(window.AndroidInterface && typeof window.AndroidInterface.sharePdf === 'function')) {
+      doc.save(filename);
+    }
   }
 }
 
@@ -2389,7 +2414,7 @@ function generateWeeklyReportPDF() {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(37, 99, 235);
-  doc.text("Gestão de Vistoria - Relatório Semanal", pageWidth / 2, 20, { align: "center" });
+  doc.text("Gestão de Vistorias - Relatório Semanal", pageWidth / 2, 20, { align: "center" });
 
   // Subtitle
   doc.setFont("helvetica", "normal");
@@ -2470,25 +2495,32 @@ function generateWeeklyReportPDF() {
 
   const filename = `relatorio_semanal_${new Date().toISOString().slice(0, 10)}.pdf`;
   try {
-    const pdfBlob = doc.output('blob');
-    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({
-        files: [file],
-        title: 'Relatório Semanal de Vistorias',
-        text: 'Segue em anexo o relatório semanal de vistorias em PDF.'
-      }).catch(err => {
-        if (err.name === 'AbortError') return;
-        console.warn('Erro ao abrir diálogo de compartilhamento:', err);
-        doc.save(filename);
-      });
+    if (window.AndroidInterface && typeof window.AndroidInterface.sharePdf === 'function') {
+      const base64Pdf = doc.output('datauristring').split(',')[1];
+      window.AndroidInterface.sharePdf(filename, base64Pdf);
     } else {
-      doc.save(filename);
+      const pdfBlob = doc.output('blob');
+      const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: 'Relatório Semanal de Vistorias',
+          text: 'Segue em anexo o relatório semanal de vistorias em PDF.'
+        }).catch(err => {
+          if (err.name === 'AbortError') return;
+          console.warn('Erro ao abrir diálogo de compartilhamento:', err);
+          doc.save(filename);
+        });
+      } else {
+        doc.save(filename);
+      }
     }
   } catch (error) {
-    console.error('Falha ao gerar/compartilhar PDF, salvando diretamente:', error);
-    doc.save(filename);
+    console.error('Falha ao gerar/compartilhar PDF:', error);
+    if (!(window.AndroidInterface && typeof window.AndroidInterface.sharePdf === 'function')) {
+      doc.save(filename);
+    }
   }
 }
 
@@ -2701,6 +2733,24 @@ if (closePhotoManagerButton) {
   });
 }
 
+function openInspectionFolderForId(id) {
+  const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
+  if (!item) {
+    alert('Erro: Registro não encontrado!');
+    return;
+  }
+  const vehicleName = item.plate || item.vehicle;
+  if (!vehicleName || !vehicleName.trim()) {
+    alert('Nome do veículo ou placa inválido!');
+    return;
+  }
+  if (window.AndroidInterface && typeof window.AndroidInterface.openInspectionFolder === 'function') {
+    window.AndroidInterface.openInspectionFolder(vehicleName.trim());
+  } else {
+    alert("Esta funcionalidade de acessar a pasta só está disponível no aplicativo Android.");
+  }
+}
+
 function openPhotoManagerForId(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
@@ -2736,8 +2786,16 @@ async function sharePhotosForSurvey(id) {
     return;
   }
   
+  let reportText = '';
+  const isInspection = items.some(entry => entry.id === id);
+  if (isInspection) {
+    reportText = getSurveyText(id);
+  } else {
+    reportText = formatSingleSupervisaoText(item);
+  }
+  
   if (window.AndroidInterface && typeof window.AndroidInterface.startShare === 'function') {
-    window.AndroidInterface.startShare(vehicleName.trim());
+    window.AndroidInterface.startShare(vehicleName.trim(), reportText);
   } else {
     alert("Compartilhamento nativo de fotos só é suportado dentro do aplicativo Android.");
   }
@@ -2880,33 +2938,17 @@ window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64
       localStorage.setItem('active_photo_vehicle_name', vehicleName);
     }
     
-    // Open modal if we were waiting for camera return
+    // Clear flag but do not open modal
     if (localStorage.getItem('waiting_camera_return') === 'true') {
       localStorage.removeItem('waiting_camera_return');
-      if (photoManagerModal && activePhotoVehicleName) {
-        document.getElementById('photoManagerTitle').textContent = `Fotos: ${activePhotoVehicleName}`;
-        photoManagerModal.style.display = 'flex';
-      }
     }
 
-    const byteCharacters = atob(base64Data);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: 'image/jpeg' });
-
-    await savePhotoToDb(activePhotoVehicleName, filename, blob);
-    loadPhotosForActiveVehicle();
-
-    // Salvar no Android imediatamente
-    if (window.AndroidInterface && typeof window.AndroidInterface.savePhoto === 'function') {
+    // Salvar no Android imediatamente se houver base64
+    if (base64Data && window.AndroidInterface && typeof window.AndroidInterface.savePhoto === 'function') {
       window.AndroidInterface.savePhoto(activePhotoVehicleName, filename, base64Data, "Vistorias");
     }
   } catch (e) {
     console.error("Erro ao processar imagem capturada do Android:", e);
-    alert("Erro ao processar imagem no navegador: " + e.message);
   }
 };
 
@@ -3015,6 +3057,19 @@ if (formPhotosBtn) {
   });
 }
 
+// Attach listener to Supervision Form photos button
+const supervisaoFormPhotosBtn = document.getElementById('supervisaoFormPhotosButton');
+if (supervisaoFormPhotosBtn) {
+  supervisaoFormPhotosBtn.addEventListener('click', () => {
+    const vehicleValue = supervisaoVehicleInput.value.trim();
+    if (!vehicleValue) {
+      alert('Por favor, preencha o campo "Veículo (Modelo e Placa)" antes de tirar fotos.');
+      return;
+    }
+    openPhotoManagerForVehicle(editingSupervisaoId || 'new_supervisao_item', vehicleValue);
+  });
+}
+
 // ==========================================
 // SYSTEM BACKUP & RESTORE IMPLEMENTATION
 // ==========================================
@@ -3089,15 +3144,8 @@ document.addEventListener('visibilitychange', () => {
     // Check if we were waiting for the camera to return!
     if (localStorage.getItem('waiting_camera_return') === 'true') {
       localStorage.removeItem('waiting_camera_return');
-      
-      // Delay opening modal slightly to feel smoother and let Android scan start
-      setTimeout(() => {
-        if (photoManagerModal && activePhotoVehicleName) {
-          document.getElementById('photoManagerTitle').textContent = `Fotos: ${activePhotoVehicleName}`;
-          photoManagerModal.style.display = 'flex';
-          loadPhotosForActiveVehicle();
-        }
-      }, 300);
+      localStorage.removeItem('active_photo_id');
+      localStorage.removeItem('active_photo_vehicle_name');
     }
   }
 });
