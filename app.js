@@ -2560,13 +2560,10 @@ dbRequest.onsuccess = function(e) {
   db = e.target.result;
   loadStoredDirectoryHandle();
   
-  const savedActiveVehicle = localStorage.getItem('active_photo_vehicle_name');
-  const savedActiveId = localStorage.getItem('active_photo_id');
-  if (savedActiveVehicle && savedActiveId) {
-    setTimeout(() => {
-      openPhotoManagerForVehicle(savedActiveId, savedActiveVehicle);
-    }, 150);
-  }
+  // Clear any leftovers on startup to prevent camera loop
+  localStorage.removeItem('active_photo_id');
+  localStorage.removeItem('active_photo_vehicle_name');
+  localStorage.removeItem('waiting_camera_return');
 };
 
 async function loadStoredDirectoryHandle() {
