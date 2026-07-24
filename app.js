@@ -2938,26 +2938,9 @@ window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64
       localStorage.setItem('active_photo_vehicle_name', vehicleName);
     }
     
-    // Clear flag and open modal if we were waiting for camera return
+    // Clear flag but do not open modal
     if (localStorage.getItem('waiting_camera_return') === 'true') {
       localStorage.removeItem('waiting_camera_return');
-      if (photoManagerModal && activePhotoVehicleName) {
-        document.getElementById('photoManagerTitle').textContent = `Fotos: ${activePhotoVehicleName}`;
-        photoManagerModal.style.display = 'flex';
-      }
-    }
-
-    if (base64Data) {
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/jpeg' });
-
-      await savePhotoToDb(activePhotoVehicleName, filename, blob);
-      loadPhotosForActiveVehicle();
     }
   } catch (e) {
     console.error("Erro ao processar imagem capturada do Android:", e);
@@ -3156,15 +3139,8 @@ document.addEventListener('visibilitychange', () => {
     // Check if we were waiting for the camera to return!
     if (localStorage.getItem('waiting_camera_return') === 'true') {
       localStorage.removeItem('waiting_camera_return');
-      
-      // Delay opening modal slightly to feel smoother and let Android scan start
-      setTimeout(() => {
-        if (photoManagerModal && activePhotoVehicleName) {
-          document.getElementById('photoManagerTitle').textContent = `Fotos: ${activePhotoVehicleName}`;
-          photoManagerModal.style.display = 'flex';
-          loadPhotosForActiveVehicle();
-        }
-      }, 300);
+      localStorage.removeItem('active_photo_id');
+      localStorage.removeItem('active_photo_vehicle_name');
     }
   }
 });
