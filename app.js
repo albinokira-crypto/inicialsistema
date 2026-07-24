@@ -3141,3 +3141,27 @@ document.addEventListener('visibilitychange', () => {
     }
   }
 });
+
+window.onAndroidBackButtonPressed = function() {
+  const systemSettingsModal = document.getElementById('systemSettingsModal');
+  if (systemSettingsModal && systemSettingsModal.style.display === 'flex') {
+    systemSettingsModal.style.display = 'none';
+    return true;
+  }
+  
+  const photoManagerModal = document.getElementById('photoManagerModal');
+  if (photoManagerModal && photoManagerModal.style.display === 'flex') {
+    const closePhotoManagerButton = document.getElementById('closePhotoManagerButton');
+    if (closePhotoManagerButton) closePhotoManagerButton.click();
+    return true;
+  }
+
+  const appContent = document.getElementById('appContent');
+  const backToMenuButton = document.getElementById('backToMenuButton');
+  if (appContent && appContent.style.display !== 'none' && backToMenuButton) {
+    backToMenuButton.click();
+    return true;
+  }
+
+  return false;
+};
