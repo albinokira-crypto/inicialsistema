@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
     internal var activeCameraVehicleName: String = ""
     internal val CAMERA_CAPTURE_REQUEST_CODE = 400
     internal val importedPhotoNames = HashSet<String>()
+    internal val importedMediaStoreIds = HashSet<Long>() // rastreia IDs do MediaStore já importados
     internal val originalPaths = HashMap<String, String>()
 
     private val mediaCapturedReceiver = object : android.content.BroadcastReceiver() {
@@ -391,6 +392,7 @@ class MainActivity : ComponentActivity() {
 
     fun scanDirectoriesForNewPhotos(startTime: Long) {
         importedPhotoNames.clear()
+        importedMediaStoreIds.clear() // limpa IDs da sessão anterior
         
         Thread {
             for (attempt in 1..40) { // Check for 40 seconds
@@ -451,17 +453,22 @@ class MainActivity : ComponentActivity() {
                     val timestampToUse = if (dateTakenMs > 0) dateTakenMs else dateAddedMs
                     
                     if (timestampToUse >= (startTime - 15000)) {
+                        // Pula se já importamos este ID ou nome nesta sessão
+                        if (importedMediaStoreIds.contains(id)) continue
                         if (importedPhotoNames.contains(name)) continue
                         
                         val contentUri = Uri.withAppendedPath(uri, id.toString())
                         try {
-                            // Always use safe SAF stream copy to ensure files are visible to the app and SAF
                             val saved = contentResolver.openInputStream(contentUri)?.use { inputStream ->
                                 savePhotoDirectly(activeCameraVehicleName, name, inputStream)
                             } ?: false
                             
                             if (saved) {
-                                // Delete original file to avoid duplication
+                                // Marca como importado ANTES de deletar para evitar reprocessamento
+                                importedMediaStoreIds.add(id)
+                                importedPhotoNames.add(name)
+                                
+                                // Deleta o original apenas se tiver caminho físico válido
                                 if (absolutePath != null) {
                                     try {
                                         val origFile = File(absolutePath)
@@ -475,7 +482,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                                 
-                                // Remove from MediaStore DB
+                                // Remove do banco do MediaStore
                                 try {
                                     contentResolver.delete(contentUri, null, null)
                                 } catch (e: Exception) {
@@ -485,7 +492,6 @@ class MainActivity : ComponentActivity() {
                                 runOnUiThread {
                                     webView.evaluateJavascript("window.onPhotoCapturedFromAndroid('$activeCameraVehicleName', '$name', '')", null)
                                 }
-                                importedPhotoNames.add(name)
                                 importedCount++
                             }
                         } catch (e: Exception) {
@@ -761,6 +767,9 @@ class MainActivity : ComponentActivity() {
     private fun startCameraAndRecordTime(preferredPkg: String?) {
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
         val startTime = System.currentTimeMillis()
+        // Limpa rastreamentos da sessão anterior para não contaminar a nova sessão
+        importedPhotoNames.clear()
+        importedMediaStoreIds.clear()
         prefs.edit().apply {
             putLong("check_photos_start_time", startTime)
             putString("active_camera_vehicle_name", activeCameraVehicleName)
