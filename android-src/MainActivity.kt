@@ -625,10 +625,19 @@ class MainActivity : ComponentActivity() {
             if (filePathCallback == null) return
             var results: Array<Uri>? = null
             if (resultCode == Activity.RESULT_OK) {
+                // Coleta todos os URIs: cameraPhotoUri + qualquer URI retornado pelo data (foto ou vídeo)
+                val uriList = ArrayList<Uri>()
                 if (cameraPhotoUri != null) {
-                    results = arrayOf(cameraPhotoUri!!)
-                } else if (data?.data != null || data?.clipData != null) {
-                    results = WebChromeClient.FileChooserParams.parseResult(resultCode, data)
+                    uriList.add(cameraPhotoUri!!)
+                }
+                val fromData = WebChromeClient.FileChooserParams.parseResult(resultCode, data)
+                if (fromData != null) {
+                    for (u in fromData) {
+                        if (u != null && !uriList.contains(u)) uriList.add(u)
+                    }
+                }
+                if (uriList.isNotEmpty()) {
+                    results = uriList.toTypedArray()
                 }
 
                 if (results != null) {
@@ -643,8 +652,13 @@ class MainActivity : ComponentActivity() {
                             for (i in results!!.indices) {
                                 val uri = results!![i]
                                 try {
+                                    // Detecta MIME pelo contentResolver; se falhar, tenta pelo path da URI
                                     val mimeType = contentResolver.getType(uri) ?: ""
-                                    val isVideoFile = mimeType.startsWith("video")
+                                    val isVideoFile = mimeType.startsWith("video") ||
+                                        uri.path?.lowercase()?.let { p ->
+                                            p.endsWith(".mp4") || p.endsWith(".3gp") ||
+                                            p.endsWith(".mkv") || p.endsWith(".mov")
+                                        } == true
                                     val ext = if (isVideoFile) "mp4" else "jpg"
                                     val filename = "midia_${System.currentTimeMillis()}_$i.$ext"
                                     
@@ -1041,7 +1055,10 @@ class AndroidInterface(private val activity: ComponentActivity) {
                             for (file in files) {
                                 if (file.isFile) {
                                     val name = file.name?.lowercase() ?: ""
-                                    if (name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png")) {
+                                    if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
+                                        name.endsWith(".png") || name.endsWith(".mp4") ||
+                                        name.endsWith(".mov") || name.endsWith(".3gp") ||
+                                        name.endsWith(".mkv")) {
                                         safUrisToCopy.add(file.uri)
                                     }
                                 }
@@ -1062,7 +1079,10 @@ class AndroidInterface(private val activity: ComponentActivity) {
                         for (file in files) {
                             if (file.isFile) {
                                 val name = file.name.lowercase()
-                                if (name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png")) {
+                                if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
+                                    name.endsWith(".png") || name.endsWith(".mp4") ||
+                                    name.endsWith(".mov") || name.endsWith(".3gp") ||
+                                    name.endsWith(".mkv")) {
                                     filesToCopy.add(file)
                                 }
                             }
@@ -1083,7 +1103,10 @@ class AndroidInterface(private val activity: ComponentActivity) {
                             for (file in files) {
                                 if (file.isFile) {
                                     val name = file.name.lowercase()
-                                    if (name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png")) {
+                                    if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
+                                        name.endsWith(".png") || name.endsWith(".mp4") ||
+                                        name.endsWith(".mov") || name.endsWith(".3gp") ||
+                                        name.endsWith(".mkv")) {
                                         filesToCopy.add(file)
                                     }
                                 }
@@ -1142,7 +1165,8 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 
                 val intent = Intent().apply {
                     action = Intent.ACTION_SEND_MULTIPLE
-                    type = "image/*"
+                    // Usa */* para suportar fotos e vídeos juntos
+                    type = "*/*"
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
                     putExtra(Intent.EXTRA_SUBJECT, "Fotos da Vistoria: $vehicleName")
                     putExtra(Intent.EXTRA_TEXT, reportText)
