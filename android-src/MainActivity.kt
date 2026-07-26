@@ -344,10 +344,15 @@ class MainActivity : ComponentActivity() {
 
     private fun scanPhysicalCameraFolder(startTime: Long): Int {
         var importedCount = 0
+        if (startTime == 0L || System.currentTimeMillis() - startTime > 300_000) return 0
         val dcim = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+        val movies = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+        val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val foldersToCheck = arrayOf(
             File(dcim, "Camera"),
-            File(dcim, "OpenCamera")
+            File(dcim, "OpenCamera"),
+            File(movies, "Camera"),
+            File(downloads, "Camera")
         )
         
         for (folder in foldersToCheck) {
@@ -416,6 +421,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun queryMediaStoreForNewMedia(startTime: Long, isVideo: Boolean): Int {
+        if (startTime == 0L || System.currentTimeMillis() - startTime > 300_000) return 0
         val uri = if (isVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
             MediaStore.MediaColumns._ID,
@@ -788,13 +794,13 @@ class MainActivity : ComponentActivity() {
                 intent = pm.getLaunchIntentForPackage(preferredPkg)
             }
             
-            if (intent == null) {
-                intent = if (isVideo) {
-                    Intent(android.provider.MediaStore.INTENT_ACTION_VIDEO_CAMERA)
-                } else {
-                    Intent(android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
-                }
+        if (intent == null) {
+            intent = Intent(android.provider.MediaStore.INTENT_ACTION_VIDEO_CAMERA)
+            val resolved = pm.queryIntentActivities(intent, 0)
+            if (resolved.isEmpty()) {
+                intent = Intent(android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
             }
+        }
             
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
@@ -908,7 +914,8 @@ class MainActivity : ComponentActivity() {
         val savedUriStr = prefs.getString("selected_folder_uri", null)
 
         var savedSuccessfully = false
-        val isVideo = filename.lowercase().endsWith(".mp4")
+        val lowerName = filename.lowercase()
+        val isVideo = lowerName.endsWith(".mp4") || lowerName.endsWith(".3gp") || lowerName.endsWith(".mov") || lowerName.endsWith(".mkv") || lowerName.endsWith(".webm")
         val mimeType = if (isVideo) "video/mp4" else "image/jpeg"
 
         if (savedUriStr != null) {
