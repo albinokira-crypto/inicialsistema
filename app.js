@@ -31,6 +31,7 @@ const recordsCard = document.getElementById('recordsCard');
 const reportCard = document.getElementById('reportCard');
 const shareWhatsappButton = document.getElementById('shareWhatsappButton');
 const noInsurersNote = document.getElementById('noInsurersNote');
+const syncStatusLabel = document.getElementById('syncStatusLabel');
 const continueButton = document.getElementById('continueButton');
 const welcomeScreen = document.getElementById('welcomeScreen');
 const appContent = document.getElementById('appContent');
@@ -42,6 +43,9 @@ let editingId = null;
 let editingInsurerId = null;
 let selectedDay = 'Seguradoras';
 let appInitialized = false;
+let serverSync = false;
+let syncIntervalId = null;
+const SYNC_POLL_MS = 5000;
 
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
@@ -67,6 +71,29 @@ function registerServiceWorker() {
       console.warn('Registro do service worker falhou', error);
     });
   }
+}
+
+function attachGlobalEventListeners() {
+  if (shareWhatsappButton) {
+    shareWhatsappButton.addEventListener('click', () => {
+      const text = buildWeeklyReportText();
+      const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.location.href = url;
+    });
+  }
+}
+
+async function updateLocalAndServerData() {
+  saveItems();
+  saveInsurers();
+  if (serverSync) {
+    await syncDataToServer();
+  }
+}
+
+function updateSyncStatus(message) {
+  if (!syncStatusLabel) return;
+  syncStatusLabel.textContent = message;
 }
 
 function attachGlobalEventListeners() {
@@ -184,6 +211,7 @@ function initializeApp() {
     updateDayTabs();
     render();
     renderInsurers();
+    startSync();
   } catch (error) {
     console.error('Erro ao iniciar o app:', error);
   }
@@ -237,6 +265,7 @@ function saveItem(event) {
   updateFormState();
   updateFormDisplay();
   render();
+  updateLocalAndServerData();
 }
 
 function saveInsurer(event) {
@@ -275,6 +304,7 @@ function saveInsurer(event) {
   if (recordsCard) recordsCard.hidden = true;
   if (reportCard) reportCard.hidden = true;
   render();
+  updateLocalAndServerData();
 }
 
 function render() {
@@ -522,6 +552,50 @@ function updateFormState() {
   } else {
     cancelEditButton.hidden = true;
     form.querySelector('button[type="submit"]').textContent = 'Salvar';
+  }
+}
+
+async function startSync() {
+  await loadServerData();
+  if (syncIntervalId) return;
+  syncIntervalId = setInterval(loadServerData, SYNC_POLL_MS);
+}
+
+async function loadServerData() {
+  try {
+    const response = await fetch('/api/data', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Servidor local não disponível');
+    const data = await response.json();
+    if (Array.isArray(data.items) && Array.isArray(data.insurers)) {
+      items = data.items;
+      insurers = data.insurers;
+      saveItems();
+      saveInsurers();
+      serverSync = true;
+      updateSyncStatus('Sincronizado com servidor local');
+      render();
+      renderInsurers();
+      populateProviderSelect();
+      return;
+    }
+    throw new Error('Dados do servidor inválidos');
+  } catch (error) {
+    serverSync = false;
+    updateSyncStatus('Serviço local indisponível; usando dados locais');
+  }
+}
+
+async function syncDataToServer() {
+  try {
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, insurers })
+    });
+    updateSyncStatus('Dados enviados para servidor local');
+  } catch (error) {
+    serverSync = false;
+    updateSyncStatus('Falha na sincronização local');
   }
 }
 
