@@ -248,6 +248,10 @@ function attachGlobalEventListeners() {
   }
 }
 
+let serverSync = false;
+let syncIntervalId = null;
+let syncStatusLabel = null;
+
 async function updateLocalAndServerData() {
   saveItems();
   saveInsurers();
@@ -261,15 +265,6 @@ function updateSyncStatus(message) {
   syncStatusLabel.textContent = message;
 }
 
-function attachGlobalEventListeners() {
-  if (shareWhatsappButton) {
-    shareWhatsappButton.addEventListener('click', () => {
-      const text = buildWeeklyReportText();
-      const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-      window.location.href = url;
-    });
-  }
-}
 
 form.addEventListener('submit', saveItem);
 searchInput.addEventListener('input', render);
