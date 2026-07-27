@@ -2851,13 +2851,16 @@ function blobToBase64(blob) {
 // Compartilha fotos + relatório. Se não há fotos, compartilha só o relatório.
 async function shareVistoria(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
-  if (!item) return;
-  const vehicleName = item.plate || item.vehicle;
-  if (!vehicleName || !vehicleName.trim()) {
+  if (!item) {
+    alert('Registro não encontrado!');
+    return;
+  }
+  const vehicleName = (item.plate || item.vehicle || '').trim();
+  if (!vehicleName) {
     alert("Nome do veículo ou placa inválido!");
     return;
   }
-  
+
   const isInspection = items.some(entry => entry.id === id);
   let reportText = '';
   if (isInspection) {
@@ -2865,20 +2868,27 @@ async function shareVistoria(id) {
   } else {
     reportText = formatSingleSupervisaoText(item);
   }
-  
+
+  // Garante que haja texto para compartilhar
+  if (!reportText || !reportText.trim()) {
+    reportText = `Vistoria do veículo: ${vehicleName}`;
+  }
+
   if (window.AndroidInterface && typeof window.AndroidInterface.startShare === 'function') {
     // startShare no Android busca as fotos da pasta e compartilha junto com o relatório.
     // Se não há fotos na pasta, o Android compartilhará apenas o texto do relatório.
-    window.AndroidInterface.startShare(vehicleName.trim(), reportText);
+    window.AndroidInterface.startShare(vehicleName, reportText);
   } else {
     // Fallback para navegador: compartilha apenas o texto
     if (navigator.share) {
       navigator.share({ title: 'Vistoria: ' + vehicleName, text: reportText }).catch(err => {
         if (err.name === 'AbortError') return;
         copyTextToClipboard(reportText);
+        alert('Relatório copiado para a área de transferência!');
       });
     } else {
       copyTextToClipboard(reportText);
+      alert('Relatório copiado para a área de transferência!');
     }
   }
 }
@@ -2893,14 +2903,14 @@ function openPhotoManagerForVehicle(id, vehicleName) {
   activePhotoVehicleName = vehicleName;
   localStorage.setItem('active_photo_id', id);
   localStorage.setItem('active_photo_vehicle_name', vehicleName);
-  
-  // Trigger camera capture directly
-  if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
-    window.AndroidInterface.launchCameraCapture(activePhotoVehicleName);
-  } else if (photoSystemCameraInput) {
-    photoSystemCameraInput.click();
-  }
-  
+
+  // Atualiza o título do modal
+  const titleEl = document.getElementById('photoManagerTitle');
+  if (titleEl) titleEl.textContent = `Fotos - ${vehicleName}`;
+
+  // Abre o modal de gerenciamento de fotos
+  if (photoManagerModal) photoManagerModal.style.display = 'flex';
+
   loadPhotosForActiveVehicle();
 }
 
