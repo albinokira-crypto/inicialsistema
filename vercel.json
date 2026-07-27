@@ -1,6 +1,7 @@
 {
-  "version": 2,
-  "routes": [
-    { "src": "/", "dest": "/login.html" }
+  "cleanUrls": true,
+  "redirects": [
+    { "source": "/login.html", "destination": "/", "permanent": true },
+    { "source": "/login", "destination": "/", "permanent": true }
   ]
 }

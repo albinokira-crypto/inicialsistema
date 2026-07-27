@@ -20,7 +20,7 @@ function contentType(p) {
 
 const server = http.createServer((req, res) => {
   let urlPath = decodeURIComponent(req.url.split('?')[0]);
-  if (urlPath === '/') urlPath = '/login.html';
+  if (urlPath === '/' || urlPath === '/login.html') urlPath = '/index.html';
   const filePath = path.join(base, urlPath);
 
   fs.stat(filePath, (err, stats) => {
