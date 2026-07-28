@@ -179,6 +179,39 @@ function closeSystemSettings() {
 }
 
 function attachGlobalEventListeners() {
+  const homeExportBackupBtn = document.getElementById('homeExportBackupBtn');
+  if (homeExportBackupBtn) {
+    homeExportBackupBtn.addEventListener('click', async () => {
+      try {
+        const backup = {};
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          backup[key] = localStorage.getItem(key);
+        }
+        const jsonString = JSON.stringify(backup, null, 2);
+        const filename = `backup_vistoria_${new Date().toISOString().slice(0, 10)}.json`;
+
+        if (window.AndroidInterface && typeof window.AndroidInterface.exportBackup === 'function') {
+          window.AndroidInterface.exportBackup(filename, jsonString);
+        } else {
+          const blob = new Blob([jsonString], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          }, 100);
+        }
+      } catch (err) {
+        alert('Erro ao exportar backup: ' + err.message);
+      }
+    });
+  }
+
   // Logout (home)
   if (homeLogoutButton) {
     homeLogoutButton.addEventListener('click', () => {
