@@ -482,60 +482,47 @@ function isValidPlate(value) {
   return value && value.trim().length > 0;
 }
 
-function updateFormState() {
-  const formCard = document.getElementById('formCard');
-  const recordsCard = document.getElementById('recordsCard');
-  const vistoriaTypeTabsCard = document.getElementById('vistoriaTypeTabsCard');
-  const supervisaoFormCard = document.getElementById('supervisaoFormCard');
-  const supervisaoRecordsCard = document.getElementById('supervisaoRecordsCard');
-  const insurerCard = document.getElementById('insurerCard');
-  const oficinaCard = document.getElementById('oficinaCard');
-  const summaryGrid = document.getElementById('summaryGrid');
+function updateFormDisplay() {
+  const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
+  const isSupervisao = selectedDay === 'Supervisão';
+  const isSeguradoras = selectedDay === 'Seguradoras';
+  const isOficinas = selectedDay === 'Oficinas';
+  const isTotalSemana = selectedDay === 'Total da semana';
+  const isTodasVistorias = selectedDay === 'Todas as vistorias';
 
-  if (formCard) formCard.style.display = 'none';
-  if (recordsCard) recordsCard.style.display = 'none';
-  if (vistoriaTypeTabsCard) vistoriaTypeTabsCard.style.display = 'none';
-  if (supervisaoFormCard) supervisaoFormCard.style.display = 'none';
-  if (supervisaoRecordsCard) supervisaoRecordsCard.style.display = 'none';
-  if (insurerCard) insurerCard.style.display = 'none';
-  if (oficinaCard) oficinaCard.style.display = 'none';
-  if (summaryGrid) summaryGrid.style.display = 'none';
+  const formCardEl = document.getElementById('formCard');
+  const recordsCardEl = document.getElementById('recordsCard');
+  const vistoriaTypeTabsCardEl = document.getElementById('vistoriaTypeTabsCard');
+  const supervisaoFormCardEl = document.getElementById('supervisaoFormCard');
+  const supervisaoRecordsCardEl = document.getElementById('supervisaoRecordsCard');
+  const insurerCardEl = document.getElementById('insurerCard');
+  const oficinaCardEl = document.getElementById('oficinaCard');
+  const summaryGridEl = document.getElementById('summaryGrid');
 
-  if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
-    if (formCard) formCard.style.display = 'block';
-    if (recordsCard) recordsCard.style.display = 'block';
-    if (vistoriaTypeTabsCard) vistoriaTypeTabsCard.style.display = 'block';
-  } else if (selectedDay === 'Supervisão') {
-    if (supervisaoFormCard) supervisaoFormCard.style.display = 'block';
-    if (supervisaoRecordsCard) supervisaoRecordsCard.style.display = 'block';
-  } else if (selectedDay === 'Seguradoras') {
-    if (insurerCard) insurerCard.style.display = 'block';
-  } else if (selectedDay === 'Oficinas') {
-    if (oficinaCard) oficinaCard.style.display = 'block';
-  } else if (selectedDay === 'Total da semana' || selectedDay === 'Todas as vistorias') {
-    if (recordsCard) recordsCard.style.display = 'block';
-    if (summaryGrid) summaryGrid.style.display = 'grid';
-  }
+  if (formCardEl) formCardEl.hidden = !isWeekday;
+  if (recordsCardEl) recordsCardEl.hidden = !(isWeekday || isTotalSemana || isTodasVistorias);
+  if (vistoriaTypeTabsCardEl) vistoriaTypeTabsCardEl.hidden = !isWeekday;
 
-  const dayTabs = document.getElementById('dayTabs');
-  if (dayTabs) {
-    dayTabs.querySelectorAll('.tab-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.day === selectedDay);
-    });
-  }
+  if (supervisaoFormCardEl) supervisaoFormCardEl.hidden = !isSupervisao;
+  if (supervisaoRecordsCardEl) supervisaoRecordsCardEl.hidden = !isSupervisao;
+
+  if (insurerCardEl) insurerCardEl.hidden = !isSeguradoras;
+  if (oficinaCardEl) oficinaCardEl.hidden = !isOficinas;
+  if (summaryGridEl) summaryGridEl.style.display = (isTotalSemana || isTodasVistorias) ? 'grid' : 'none';
 }
 
-function updateFormDisplay() {
-  updateFormState();
+function updateFormState() {
+  updateFormDisplay();
 }
 
 function updateDayTabs() {
-  const dayTabs = document.getElementById('dayTabs');
-  if (dayTabs) {
-    dayTabs.querySelectorAll('.tab-btn').forEach((btn) => {
+  const dayTabsEl = document.getElementById('dayTabs');
+  if (dayTabsEl) {
+    dayTabsEl.querySelectorAll('.tab-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.day === selectedDay);
     });
   }
+  updateFormDisplay();
 }
 
 function updateTypeButtonsHighlight() {
@@ -601,19 +588,10 @@ function showWelcomeScreen() {
   const appHeaderEl = document.getElementById('appHeader');
   const appContentEl = document.getElementById('appContent');
 
-  if (welcomeScreenEl) {
-    welcomeScreenEl.hidden = false;
-    welcomeScreenEl.style.display = 'block';
-  }
-  if (homeSummaryCardEl) {
-    homeSummaryCardEl.hidden = false;
-    homeSummaryCardEl.style.display = 'block';
-  }
+  if (welcomeScreenEl) welcomeScreenEl.hidden = false;
+  if (homeSummaryCardEl) homeSummaryCardEl.hidden = false;
   if (appHeaderEl) appHeaderEl.style.display = 'flex';
-  if (appContentEl) {
-    appContentEl.hidden = true;
-    appContentEl.style.display = 'none';
-  }
+  if (appContentEl) appContentEl.hidden = true;
   updateHomeSummary();
 }
 
@@ -657,21 +635,11 @@ function handleMenuButtonClick(targetDay) {
     }
   }
   
-  if (welcomeScreenEl) {
-    welcomeScreenEl.hidden = true;
-    welcomeScreenEl.style.display = 'none';
-  }
-  if (homeSummaryCardEl) {
-    homeSummaryCardEl.hidden = true;
-    homeSummaryCardEl.style.display = 'none';
-  }
+  if (welcomeScreenEl) welcomeScreenEl.hidden = true;
+  if (homeSummaryCardEl) homeSummaryCardEl.hidden = true;
   if (appHeaderEl) appHeaderEl.style.display = 'flex';
-  if (appContentEl) {
-    appContentEl.hidden = false;
-    appContentEl.style.display = 'block';
-  }
+  if (appContentEl) appContentEl.hidden = false;
 
-  updateFormState();
   updateDayTabs();
   render();
   if (selectedDay === 'Supervisão') {
