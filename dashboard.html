@@ -7,7 +7,7 @@
     <title>Gestão de Vistorias</title>
     <script>
       (function() {
-        const APP_VERSION = 'v82_inline_click_sweep';
+        const APP_VERSION = 'v83_reference_error_fixed';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -31,7 +31,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=82" />
+    <link rel="stylesheet" href="styles.css?v=83" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -420,6 +420,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=82"></script>
+    <script src="app.js?v=83"></script>
   </body>
 </html>

@@ -482,6 +482,74 @@ function isValidPlate(value) {
   return value && value.trim().length > 0;
 }
 
+function updateFormState() {
+  const formCard = document.getElementById('formCard');
+  const recordsCard = document.getElementById('recordsCard');
+  const vistoriaTypeTabsCard = document.getElementById('vistoriaTypeTabsCard');
+  const supervisaoFormCard = document.getElementById('supervisaoFormCard');
+  const supervisaoRecordsCard = document.getElementById('supervisaoRecordsCard');
+  const insurerCard = document.getElementById('insurerCard');
+  const oficinaCard = document.getElementById('oficinaCard');
+  const summaryGrid = document.getElementById('summaryGrid');
+
+  if (formCard) formCard.style.display = 'none';
+  if (recordsCard) recordsCard.style.display = 'none';
+  if (vistoriaTypeTabsCard) vistoriaTypeTabsCard.style.display = 'none';
+  if (supervisaoFormCard) supervisaoFormCard.style.display = 'none';
+  if (supervisaoRecordsCard) supervisaoRecordsCard.style.display = 'none';
+  if (insurerCard) insurerCard.style.display = 'none';
+  if (oficinaCard) oficinaCard.style.display = 'none';
+  if (summaryGrid) summaryGrid.style.display = 'none';
+
+  if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
+    if (formCard) formCard.style.display = 'block';
+    if (recordsCard) recordsCard.style.display = 'block';
+    if (vistoriaTypeTabsCard) vistoriaTypeTabsCard.style.display = 'block';
+  } else if (selectedDay === 'Supervisão') {
+    if (supervisaoFormCard) supervisaoFormCard.style.display = 'block';
+    if (supervisaoRecordsCard) supervisaoRecordsCard.style.display = 'block';
+  } else if (selectedDay === 'Seguradoras') {
+    if (insurerCard) insurerCard.style.display = 'block';
+  } else if (selectedDay === 'Oficinas') {
+    if (oficinaCard) oficinaCard.style.display = 'block';
+  } else if (selectedDay === 'Total da semana' || selectedDay === 'Todas as vistorias') {
+    if (recordsCard) recordsCard.style.display = 'block';
+    if (summaryGrid) summaryGrid.style.display = 'grid';
+  }
+
+  const dayTabs = document.getElementById('dayTabs');
+  if (dayTabs) {
+    dayTabs.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.day === selectedDay);
+    });
+  }
+}
+
+function updateFormDisplay() {
+  updateFormState();
+}
+
+function updateDayTabs() {
+  const dayTabs = document.getElementById('dayTabs');
+  if (dayTabs) {
+    dayTabs.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.day === selectedDay);
+    });
+  }
+}
+
+function updateTypeButtonsHighlight() {
+  if (vistoriaTypeTabs) {
+    vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.type === (selectedType || 'Inicial'));
+    });
+  }
+}
+
+function updateInsurerButtonsHighlight() {
+  // Safe stub
+}
+
 function cancelEdit() {
   editingId = null;
   form.reset();
