@@ -568,36 +568,52 @@ function cancelInsurerEdit() {
 }
 
 function updateHomeSummary() {
-  if (!homeSummaryGrid) return;
+  const summaryGridEl = document.getElementById('homeSummaryGrid');
+  if (!summaryGridEl) return;
   const statsItems = items.filter(item => item.clearedFromWeek !== true);
   const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
   const uniqueDays = new Set(statsItems.map((item) => item.day)).size;
+  const lastRecord = statsItems.length ? (statsItems[0].date ? formatDateString(statsItems[0].date) : (statsItems[0].createdAt || '—')) : '—';
 
-  homeSummaryGrid.innerHTML = `
-    <article class="summary-item">
-      <strong>${statsItems.length}</strong>
-      <span>vistorias</span>
+  summaryGridEl.innerHTML = `
+    <article class="summary-item" style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 1.3rem; color: #1e40af; display: block;">${statsItems.length}</strong>
+      <span style="font-size: 0.78rem; color: #3b82f6; font-weight: 700; text-transform: uppercase;">vistorias</span>
     </article>
-    <article class="summary-item">
-      <strong>R$ ${totalValue.toFixed(2).replace('.', ',')}</strong>
-      <span>valor total</span>
+    <article class="summary-item" style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 1.2rem; color: #065f46; display: block;">R$ ${totalValue.toFixed(2).replace('.', ',')}</strong>
+      <span style="font-size: 0.78rem; color: #10b981; font-weight: 700; text-transform: uppercase;">valor total</span>
     </article>
-    <article class="summary-item">
-      <strong>${uniqueDays}</strong>
-      <span>dias preenchidos</span>
+    <article class="summary-item" style="background: #fef3c7; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 1.3rem; color: #92400e; display: block;">${uniqueDays}</strong>
+      <span style="font-size: 0.78rem; color: #d97706; font-weight: 700; text-transform: uppercase;">dias preenchidos</span>
     </article>
-    <article class="summary-item">
-      <strong>${statsItems.length ? escapeHtml(statsItems[0].createdAt) : '—'}</strong>
-      <span>último registro</span>
+    <article class="summary-item" style="background: #f3e8ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 0.95rem; color: #6b21a8; display: block; word-break: break-word;">${lastRecord}</strong>
+      <span style="font-size: 0.78rem; color: #9333ea; font-weight: 700; text-transform: uppercase;">último registro</span>
     </article>
   `;
 }
 
 function showWelcomeScreen() {
-  if (welcomeScreen) welcomeScreen.hidden = false;
-  if (homeSummaryCard) homeSummaryCard.hidden = false;
-  if (appHeader) appHeader.style.display = 'flex';
-  if (appContent) appContent.hidden = true;
+  const welcomeScreenEl = document.getElementById('welcomeScreen');
+  const homeSummaryCardEl = document.getElementById('homeSummaryCard');
+  const appHeaderEl = document.getElementById('appHeader');
+  const appContentEl = document.getElementById('appContent');
+
+  if (welcomeScreenEl) {
+    welcomeScreenEl.hidden = false;
+    welcomeScreenEl.style.display = 'block';
+  }
+  if (homeSummaryCardEl) {
+    homeSummaryCardEl.hidden = false;
+    homeSummaryCardEl.style.display = 'block';
+  }
+  if (appHeaderEl) appHeaderEl.style.display = 'flex';
+  if (appContentEl) {
+    appContentEl.hidden = true;
+    appContentEl.style.display = 'none';
+  }
   updateHomeSummary();
 }
 
@@ -614,6 +630,11 @@ function getAutomaticDayOfWeek() {
 }
 
 function handleMenuButtonClick(targetDay) {
+  const welcomeScreenEl = document.getElementById('welcomeScreen');
+  const homeSummaryCardEl = document.getElementById('homeSummaryCard');
+  const appHeaderEl = document.getElementById('appHeader');
+  const appContentEl = document.getElementById('appContent');
+
   if (targetDay === 'Vistorias') {
     selectedDay = getAutomaticDayOfWeek();
   } else {
@@ -622,22 +643,33 @@ function handleMenuButtonClick(targetDay) {
   
   if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
     selectedType = 'Inicial';
-    if (vistoriaTypeTabs) {
-      vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
+    const typeTabsEl = document.getElementById('vistoriaTypeTabs');
+    if (typeTabsEl) {
+      typeTabsEl.querySelectorAll('.tab-btn').forEach((b) => {
         b.classList.toggle('active', b.dataset.type === 'Inicial');
       });
     }
-    if (typeInput) typeInput.value = 'Inicial';
-    const formTitle = document.getElementById('formTitle');
-    if (formTitle) {
-      formTitle.textContent = `Novo registro - Inicial`;
+    const typeInputEl = document.getElementById('typeInput');
+    if (typeInputEl) typeInputEl.value = 'Inicial';
+    const formTitleEl = document.getElementById('formTitle');
+    if (formTitleEl) {
+      formTitleEl.textContent = `Novo registro - Inicial`;
     }
   }
   
-  if (welcomeScreen) welcomeScreen.hidden = true;
-  if (homeSummaryCard) homeSummaryCard.hidden = true;
-  if (appHeader) appHeader.style.display = 'flex';
-  if (appContent) appContent.hidden = false;
+  if (welcomeScreenEl) {
+    welcomeScreenEl.hidden = true;
+    welcomeScreenEl.style.display = 'none';
+  }
+  if (homeSummaryCardEl) {
+    homeSummaryCardEl.hidden = true;
+    homeSummaryCardEl.style.display = 'none';
+  }
+  if (appHeaderEl) appHeaderEl.style.display = 'flex';
+  if (appContentEl) {
+    appContentEl.hidden = false;
+    appContentEl.style.display = 'block';
+  }
 
   updateFormState();
   updateDayTabs();
@@ -736,18 +768,22 @@ function initializeApp() {
   }
 }
 
+function initAppWithDOM() {
+  initializeApp();
+  showWelcomeScreen();
+  attachMenuListeners();
+  attachGlobalEventListeners();
+}
+
 if (localStorage.getItem('authenticated') !== 'true') {
   window.location.href = 'index.html';
 } else {
   registerServiceWorker();
-  initializeApp();
-  showWelcomeScreen();
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', attachMenuListeners);
+    document.addEventListener('DOMContentLoaded', initAppWithDOM);
   } else {
-    attachMenuListeners();
+    initAppWithDOM();
   }
-  attachGlobalEventListeners();
 }
 
 function saveItem(event) {

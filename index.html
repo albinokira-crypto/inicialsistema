@@ -7,31 +7,20 @@
     <title>Login - Gestão de Vistorias</title>
     <script>
       (function() {
-        const APP_VERSION = 'v83_reference_error_fixed';
-        if (localStorage.getItem('app_version') !== APP_VERSION) {
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-              return Promise.all(registrations.map(r => r.unregister()));
-            }).then(function() {
-              if ('caches' in window) {
-                return caches.keys().then(function(names) {
-                  return Promise.all(names.map(name => caches.delete(name)));
-                });
-              }
-            }).then(function() {
-              localStorage.setItem('app_version', APP_VERSION);
-              window.location.reload(true);
-            }).catch(function() {
-              localStorage.setItem('app_version', APP_VERSION);
-              window.location.reload(true);
-            });
-          } else {
+        try {
+          const APP_VERSION = 'v84_dom_init_fix';
+          if (localStorage.getItem('app_version') !== APP_VERSION) {
             localStorage.setItem('app_version', APP_VERSION);
+            if ('caches' in window) {
+              caches.keys().then(function(names) {
+                for (let name of names) caches.delete(name);
+              }).catch(function(){});
+            }
           }
-        }
+        } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=83" />
+    <link rel="stylesheet" href="styles.css?v=84" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
