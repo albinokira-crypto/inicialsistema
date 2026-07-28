@@ -8,7 +8,7 @@
     <script>
       (function() {
         try {
-          const APP_VERSION = 'v88_syntax_error_fix_verified';
+          const APP_VERSION = 'v89_backup_export_fix';
           if (localStorage.getItem('app_version') !== APP_VERSION) {
             localStorage.setItem('app_version', APP_VERSION);
             if ('caches' in window) {
@@ -20,7 +20,7 @@
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=88" />
+    <link rel="stylesheet" href="styles.css?v=89" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -363,11 +363,11 @@
             Backup do Sistema
           </p>
           
-          <button id="exportBackupBtn" class="ghost-btn" type="button" style="padding: 10px; font-weight: 700; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; cursor: pointer; width: 100%;">
+          <button id="exportBackupBtn" class="ghost-btn" type="button" onclick="triggerExportBackup()" style="padding: 10px; font-weight: 700; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; cursor: pointer; width: 100%;">
             📤 Exportar Backup (JSON)
           </button>
           
-          <button id="importBackupBtn" class="ghost-btn" type="button" style="padding: 10px; font-weight: 700; color: #10b981; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; cursor: pointer; width: 100%;">
+          <button id="importBackupBtn" class="ghost-btn" type="button" onclick="triggerImportBackup()" style="padding: 10px; font-weight: 700; color: #10b981; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; cursor: pointer; width: 100%;">
             📥 Importar Backup (JSON)
           </button>
           
@@ -409,6 +409,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=88"></script>
+    <script src="app.js?v=89"></script>
   </body>
 </html>

@@ -3473,66 +3473,83 @@ if (supervisaoFormPhotosBtn) {
 // SYSTEM BACKUP & RESTORE IMPLEMENTATION
 // ==========================================
 
+async function triggerExportBackup() {
+  try {
+    const backup = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      backup[key] = localStorage.getItem(key);
+    }
+    
+    const jsonString = JSON.stringify(backup, null, 2);
+    const filename = `backup_sistema_vistoria_${new Date().toISOString().slice(0, 10)}.json`;
+
+    if (window.AndroidInterface && typeof window.AndroidInterface.exportBackup === 'function') {
+      window.AndroidInterface.exportBackup(filename, jsonString);
+      return;
+    }
+
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    if (!isMobile && 'showSaveFilePicker' in window) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{
+            description: 'Arquivo JSON de Backup',
+            accept: { 'application/json': ['.json'] }
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(jsonString);
+        await writable.close();
+        alert('Backup salvo com sucesso!');
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        console.warn('showSaveFilePicker cancelado ou falhou, fallback para download:', err);
+      }
+    }
+
+    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 1500);
+  } catch (err) {
+    alert('Erro ao exportar backup: ' + err.message);
+  }
+}
+
+function triggerImportBackup() {
+  const dashboardBackupFileInput = document.getElementById('dashboardBackupFileInput');
+  if (dashboardBackupFileInput) {
+    dashboardBackupFileInput.click();
+  }
+}
+
+window.triggerExportBackup = triggerExportBackup;
+window.triggerImportBackup = triggerImportBackup;
+window.exportBackup = triggerExportBackup;
+window.importBackup = triggerImportBackup;
+
 const exportBackupBtn = document.getElementById('exportBackupBtn');
 const importBackupBtn = document.getElementById('importBackupBtn');
 const dashboardBackupFileInput = document.getElementById('dashboardBackupFileInput');
 
 if (exportBackupBtn) {
-  exportBackupBtn.addEventListener('click', async () => {
-    try {
-      const backup = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        backup[key] = localStorage.getItem(key);
-      }
-      
-      const jsonString = JSON.stringify(backup, null, 2);
-      const filename = `backup_sistema_vistoria_${new Date().toISOString().slice(0, 10)}.json`;
-
-      if (window.AndroidInterface && typeof window.AndroidInterface.exportBackup === 'function') {
-        window.AndroidInterface.exportBackup(filename, jsonString);
-      } else {
-        if ('showSaveFilePicker' in window) {
-          try {
-            const handle = await window.showSaveFilePicker({
-              suggestedName: filename,
-              types: [{
-                description: 'Arquivo JSON de Backup',
-                accept: { 'application/json': ['.json'] }
-              }]
-            });
-            const writable = await handle.createWritable();
-            await writable.write(jsonString);
-            await writable.close();
-            alert('Backup salvo com sucesso no local escolhido!');
-            return;
-          } catch (err) {
-            if (err.name === 'AbortError') return;
-            console.warn('showSaveFilePicker cancelado ou falhou, fallback para download:', err);
-          }
-        }
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }, 100);
-      }
-    } catch (err) {
-      alert('Erro ao exportar backup: ' + err.message);
-    }
-  });
+  exportBackupBtn.addEventListener('click', triggerExportBackup);
 }
 
 if (importBackupBtn && dashboardBackupFileInput) {
-  importBackupBtn.addEventListener('click', () => {
-    dashboardBackupFileInput.click();
-  });
+  importBackupBtn.addEventListener('click', triggerImportBackup);
 
   dashboardBackupFileInput.addEventListener('change', (event) => {
     const file = event.target.files[0];
@@ -3547,7 +3564,6 @@ if (importBackupBtn && dashboardBackupFileInput) {
             throw new Error('Formato de backup inválido.');
           }
 
-          // Clear local storage and set new values
           localStorage.clear();
           Object.keys(data).forEach(key => {
             localStorage.setItem(key, data[key]);
