@@ -185,33 +185,24 @@ function attachGlobalEventListeners() {
   const systemSettingsBtn = document.getElementById('systemSettingsBtn');
   if (systemSettingsBtn) {
     systemSettingsBtn.addEventListener('click', () => {
-      // Abre modal de configurações se existir, caso contrário redireciona
-      const modal = document.getElementById('settingsModal');
-      if (modal) modal.showModal();
-      else window.location.href = 'settings.html';
+      openSystemSettings();
     });
   }
 
-  // Photo manager button
-  const formPhotosButton = document.getElementById('formPhotosButton');
-  if (formPhotosButton) {
-    formPhotosButton.addEventListener('click', () => openPhotoManagerForVehicle());
-  }
-
-  // Share PDF button (já existe)
+  // Share PDF button
   if (sharePdfButton) {
     sharePdfButton.addEventListener('click', () => generateWeeklyReportPDF());
   }
 
-  // Share supervision text button (já existe)
+  // Share supervision text button
   if (shareSupervisaoTextButton) {
     shareSupervisaoTextButton.addEventListener('click', () => {
-      const text = generateSupervisaoReportText();
-      shareSupervisaoText(text);
+      const filtered = getFilteredSupervisoes();
+      const text = formatAllSupervisoesText(filtered);
+      shareSupervisaoText(text, 'Relatório de Supervisão');
     });
   }
 
-  // Manter os demais listeners existentes
   const supervisaoQuickAdd = document.getElementById('supervisaoQuickAddOficina');
   if (supervisaoQuickAdd) {
     supervisaoQuickAdd.addEventListener('click', (e) => {
@@ -276,95 +267,6 @@ function attachGlobalEventListeners() {
         updateHomeSummary();
         render();
       }
-    });
-  }
-
-  if (homeLogoutButton) {
-    homeLogoutButton.addEventListener('click', () => {
-      localStorage.removeItem('authenticated');
-      window.location.href = 'index.html';
-    });
-  }
-}
-  if (sharePdfButton) {
-    sharePdfButton.addEventListener('click', () => {
-      generateWeeklyReportPDF();
-    });
-  }
-
-  const supervisaoQuickAdd = document.getElementById('supervisaoQuickAddOficina');
-  if (supervisaoQuickAdd) {
-    supervisaoQuickAdd.addEventListener('click', (e) => {
-      e.preventDefault();
-      const name = window.prompt('Digite o nome da nova oficina:');
-      if (name && name.trim()) {
-        const cleanedName = name.trim();
-        const exists = oficinas.some(o => o.name.toLowerCase() === cleanedName.toLowerCase());
-        if (exists) {
-          alert('Esta oficina já está cadastrada!');
-          return;
-        }
-        const newOficina = {
-          id: Date.now().toString(),
-          name: cleanedName
-        };
-        oficinas.push(newOficina);
-        saveOficinas();
-        renderOficinas();
-        
-        populateSupervisaoOficinaSelect();
-        if (supervisaoOficinaSelect) {
-          supervisaoOficinaSelect.value = newOficina.id;
-        }
-      }
-    });
-  }
-
-  const supervisaoQuickAddStage = document.getElementById('supervisaoQuickAddStage');
-  if (supervisaoQuickAddStage) {
-    supervisaoQuickAddStage.addEventListener('click', (e) => {
-      e.preventDefault();
-      const name = window.prompt('Digite o nome da nova etapa:');
-      if (name && name.trim()) {
-        const cleanedName = name.trim();
-        const exists = stages.some(st => st.toLowerCase() === cleanedName.toLowerCase());
-        if (exists) {
-          alert('Esta etapa já está cadastrada!');
-          return;
-        }
-        stages.push(cleanedName);
-        saveStages();
-        
-        populateSupervisaoStageSelect();
-        if (supervisaoStageInput) {
-          supervisaoStageInput.value = cleanedName;
-        }
-      }
-    });
-  }
-
-  if (homeClearWeekButton) {
-    homeClearWeekButton.addEventListener('click', () => {
-      const verification = window.prompt(
-        '⚠️ CONFIRMAÇÃO:\n\n' +
-        'Deseja limpar os registros da semana atual? Eles continuarão no relatório de "Todas as Vistorias".\n\n' +
-        'Para confirmar, digite a palavra LIMPAR abaixo:'
-      );
-      if (verification && verification.trim().toUpperCase() === 'LIMPAR') {
-        items.forEach((item) => {
-          item.clearedFromWeek = true;
-        });
-        saveItems();
-        updateHomeSummary();
-        render();
-      }
-    });
-  }
-
-  if (homeLogoutButton) {
-    homeLogoutButton.addEventListener('click', () => {
-      localStorage.removeItem('authenticated');
-      window.location.href = 'index.html';
     });
   }
 }
@@ -610,11 +512,28 @@ function showWelcomeScreen() {
   updateHomeSummary();
 }
 
+function getAutomaticDayOfWeek() {
+  const dayIndex = new Date().getDay();
+  const map = {
+    1: 'Segunda',
+    2: 'Terça',
+    3: 'Quarta',
+    4: 'Quinta',
+    5: 'Sexta'
+  };
+  return map[dayIndex] || 'Segunda';
+}
+
 function attachMenuListeners() {
   const menuButtons = document.querySelectorAll('.menu-btn');
   menuButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
-      selectedDay = btn.dataset.day;
+      const targetDay = btn.dataset.day;
+      if (targetDay === 'Vistorias') {
+        selectedDay = getAutomaticDayOfWeek();
+      } else {
+        selectedDay = targetDay;
+      }
       initializeApp();
       
       if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
