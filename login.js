@@ -124,6 +124,53 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+function downloadJsonFile(filename, jsonString) {
+  if (window.AndroidInterface && typeof window.AndroidInterface.exportBackup === 'function') {
+    window.AndroidInterface.exportBackup(filename, jsonString);
+    alert('Backup exportado com sucesso!');
+    return;
+  }
+
+  try {
+    if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+      const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        try {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        } catch (e) {}
+      }, 1500);
+      return;
+    }
+  } catch (e) {
+    console.warn('createObjectURL falhou, usando fallback Data URI:', e);
+  }
+
+  try {
+    const encodedData = encodeURIComponent(jsonString);
+    const dataUrl = 'data:application/json;charset=utf-8,' + encodedData;
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = filename;
+    link.target = '_blank';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      try { document.body.removeChild(link); } catch (e) {}
+    }, 1000);
+  } catch (err) {
+    alert('Erro ao gerar arquivo de backup: ' + err.message);
+  }
+}
+
 // Backup Export & Import Logic in login.js
 const exportEmergencyBackupBtn = document.getElementById('exportEmergencyBackupBtn');
 if (exportEmergencyBackupBtn) {
@@ -137,21 +184,7 @@ if (exportEmergencyBackupBtn) {
       const jsonString = JSON.stringify(backup, null, 2);
       const filename = `backup_vistoria_${new Date().toISOString().slice(0, 10)}.json`;
 
-      if (window.AndroidInterface && typeof window.AndroidInterface.exportBackup === 'function') {
-        window.AndroidInterface.exportBackup(filename, jsonString);
-      } else {
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }, 100);
-      }
+      downloadJsonFile(filename, jsonString);
     } catch (err) {
       alert('Erro ao exportar backup: ' + err.message);
     }
