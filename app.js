@@ -589,6 +589,47 @@ function handleMenuButtonClick(targetDay) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+window.openMenuSection = function(targetDay) {
+  handleMenuButtonClick(targetDay);
+};
+
+window.backToHomeMenu = function() {
+  selectedOficinaForTodasVistorias = null;
+  showWelcomeScreen();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.homeLogout = function() {
+  localStorage.removeItem('authenticated');
+  window.location.href = 'index.html';
+};
+
+window.homeClearWeek = function() {
+  const verification = window.prompt(
+    '⚠️ CONFIRMAÇÃO:\n\n' +
+    'Deseja limpar os registros da semana atual? Eles continuarão no relatório de "Todas as Vistorias".\n\n' +
+    'Para confirmar, digite a palavra LIMPAR abaixo:'
+  );
+  if (verification && verification.trim().toUpperCase() === 'LIMPAR') {
+    items.forEach((item) => {
+      item.clearedFromWeek = true;
+    });
+    saveItems();
+    updateHomeSummary();
+    render();
+  }
+};
+
+window.openSystemSettings = function() {
+  const modal = document.getElementById('systemSettingsModal');
+  if (modal) modal.style.display = 'flex';
+};
+
+window.closeSystemSettings = function() {
+  const modal = document.getElementById('systemSettingsModal');
+  if (modal) modal.style.display = 'none';
+};
+
 function attachMenuListeners() {
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.menu-btn');

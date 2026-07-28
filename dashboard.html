@@ -7,7 +7,7 @@
     <title>Gestão de Vistorias</title>
     <script>
       (function() {
-        const APP_VERSION = 'v81_delegated_menu_clicks';
+        const APP_VERSION = 'v82_inline_click_sweep';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -31,7 +31,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=81" />
+    <link rel="stylesheet" href="styles.css?v=82" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -50,7 +50,7 @@
         </div>
         <div class="hero-actions" style="display: flex; gap: 8px;">
           <button id="installButton" class="primary-btn" type="button" hidden>Instalar atalho</button>
-          <button id="systemSettingsBtn" style="background: white; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 6px;">⚙️ Configurações</button>
+          <button id="systemSettingsBtn" onclick="openSystemSettings()" style="background: white; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 6px;">⚙️ Configurações</button>
         </div>
       </header>
 
@@ -58,18 +58,18 @@
       <section class="card menu-card" id="welcomeScreen">
         <h2>Selecione uma opção</h2>
         <div class="menu-grid">
-          <button class="menu-btn" type="button" data-day="Vistorias" style="background: #2563eb; color: white; font-weight: 800;">Vistorias</button>
-          <button class="menu-btn special-btn-supervisao" type="button" data-day="Supervisão">Supervisão</button>
-          <button class="menu-btn special-btn-seguradora" type="button" data-day="Seguradoras">Seguradoras</button>
-          <button class="menu-btn special-btn-seguradora" type="button" data-day="Oficinas">Oficinas</button>
-          <button class="menu-btn special-btn-total" type="button" data-day="Total da semana">Total da Semana</button>
-          <button class="menu-btn special-btn-total" type="button" data-day="Todas as vistorias">Todas as Vistorias</button>
+          <button class="menu-btn" type="button" data-day="Vistorias" onclick="openMenuSection('Vistorias')" style="background: #2563eb; color: white; font-weight: 800;">Vistorias</button>
+          <button class="menu-btn special-btn-supervisao" type="button" data-day="Supervisão" onclick="openMenuSection('Supervisão')">Supervisão</button>
+          <button class="menu-btn special-btn-seguradora" type="button" data-day="Seguradoras" onclick="openMenuSection('Seguradoras')">Seguradoras</button>
+          <button class="menu-btn special-btn-seguradora" type="button" data-day="Oficinas" onclick="openMenuSection('Oficinas')">Oficinas</button>
+          <button class="menu-btn special-btn-total" type="button" data-day="Total da semana" onclick="openMenuSection('Total da semana')">Total da Semana</button>
+          <button class="menu-btn special-btn-total" type="button" data-day="Todas as vistorias" onclick="openMenuSection('Todas as vistorias')">Todas as Vistorias</button>
         </div>
         <div style="margin-top: 18px; display: flex; gap: 8px; width: 100%;">
-          <button id="homeClearWeekButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #b91c1c; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; cursor: pointer;">
+          <button id="homeClearWeekButton" class="ghost-btn" type="button" onclick="homeClearWeek()" style="flex: 1; padding: 12px; font-weight: 700; color: #b91c1c; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; cursor: pointer;">
             🧹 Limpar Semana
           </button>
-          <button id="homeLogoutButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #4b5d76; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 12px; cursor: pointer;">
+          <button id="homeLogoutButton" class="ghost-btn" type="button" onclick="homeLogout()" style="flex: 1; padding: 12px; font-weight: 700; color: #4b5d76; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 12px; cursor: pointer;">
             Sair
           </button>
           <input type="file" id="dashboardBackupFileInput" accept=".json" style="display: none;" />
@@ -84,7 +84,7 @@
 
       <div id="appContent" hidden>
         <div class="card view-header-card" style="display: flex; align-items: center; width: 100%; padding: 12px 14px; margin-top: 32px; margin-bottom: 14px; box-sizing: border-box; background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-          <button id="backToMenuButton" class="ghost-btn" type="button" style="font-size: 0.78rem; padding: 6px 12px; flex: 0 0 auto; white-space: nowrap; font-weight: 700; background: #eef4ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 999px;">
+          <button id="backToMenuButton" class="ghost-btn" type="button" onclick="backToHomeMenu()" style="font-size: 0.78rem; padding: 6px 12px; flex: 0 0 auto; white-space: nowrap; font-weight: 700; background: #eef4ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 999px;">
             ← Voltar ao Menu
           </button>
         </div>
@@ -386,7 +386,7 @@
         </div>
 
         <div class="photo-modal-actions" style="margin-top: 24px;">
-          <button id="closeSystemSettingsBtn" class="cancel-btn" type="button" style="width: 100%;">Fechar</button>
+          <button id="closeSystemSettingsBtn" class="cancel-btn" type="button" onclick="closeSystemSettings()" style="width: 100%;">Fechar</button>
         </div>
       </div>
     </div>
@@ -420,6 +420,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=81"></script>
+    <script src="app.js?v=82"></script>
   </body>
 </html>
