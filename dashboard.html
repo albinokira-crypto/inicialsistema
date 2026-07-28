@@ -7,7 +7,7 @@
     <title>Gestão de Vistorias</title>
     <script>
       (function() {
-        const APP_VERSION = 'v76_unified_vistorias';
+        const APP_VERSION = 'v77_all_6_fixes_done';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           localStorage.setItem('app_version', APP_VERSION);
           if ('serviceWorker' in navigator) {
@@ -23,7 +23,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=76" />
+    <link rel="stylesheet" href="styles.css?v=77" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -50,7 +50,7 @@
       <section class="card menu-card" id="welcomeScreen">
         <h2>Selecione uma opção</h2>
         <div class="menu-grid">
-          <button class="menu-btn" type="button" data-day="Vistorias" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; font-weight: 800; font-size: 1.1rem; grid-column: 1 / -1; padding: 16px; border-radius: 14px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">📋 Vistorias</button>
+          <button class="menu-btn" type="button" data-day="Vistorias" style="background: #2563eb; color: white; font-weight: 800;">Vistorias</button>
           <button class="menu-btn special-btn-supervisao" type="button" data-day="Supervisão">Supervisão</button>
           <button class="menu-btn special-btn-seguradora" type="button" data-day="Seguradoras">Seguradoras</button>
           <button class="menu-btn special-btn-seguradora" type="button" data-day="Oficinas">Oficinas</button>
@@ -107,6 +107,7 @@
             <button class="tab-btn" type="button" data-type="Moto">Moto</button>
             <button class="tab-btn" type="button" data-type="Complemento">Complemento</button>
             <button class="tab-btn" type="button" data-type="Pós entrega">Pós entrega</button>
+            <button class="tab-btn" type="button" data-type="Vistoria Rio log">Vistoria Rio log</button>
           </div>
         </section>
 
@@ -411,6 +412,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=76"></script>
+    <script src="app.js?v=77"></script>
   </body>
 </html>

@@ -592,6 +592,17 @@ input, select, textarea {
   white-space: nowrap;
 }
 
+.badge-riolog {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #7dd3fc;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* Compact Survey Card Layout */
 .compact-item-card {
   display: flex !important;

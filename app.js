@@ -843,7 +843,8 @@ function render() {
         'Enchente': 'badge-enchente',
         'Moto': 'badge-moto',
         'Complemento': 'badge-complemento',
-        'Pós entrega': 'badge-pos'
+        'Pós entrega': 'badge-pos',
+        'Vistoria Rio log': 'badge-riolog'
       };
 
       const itemsHtml = listToDisplay.map((entry) => {
@@ -997,7 +998,8 @@ function render() {
     'Enchente': 'badge-enchente',
     'Moto': 'badge-moto',
     'Complemento': 'badge-complemento',
-    'Pós entrega': 'badge-pos'
+    'Pós entrega': 'badge-pos',
+    'Vistoria Rio log': 'badge-riolog'
   };
 
   itemList.innerHTML = filtered.map((item) => {
@@ -1170,17 +1172,25 @@ function getSurveyText(id) {
     }
   }
 
-  // Universal fields (Trocas & Reparos)
-  if (details.trocas) {
-    sections.push(`Trocas\n${details.trocas}`);
-  } else if (item.type === 'Incêndio') {
-    sections.push(`Trocas`);
-  }
+  if (item.type === 'Vistoria Rio log') {
+    if (details.avarias) {
+      sections.push(`Avarias\n${details.avarias}`);
+    } else {
+      sections.push(`Avarias`);
+    }
+  } else {
+    // Universal fields (Trocas & Reparos)
+    if (details.trocas) {
+      sections.push(`Trocas\n${details.trocas}`);
+    } else if (item.type === 'Incêndio') {
+      sections.push(`Trocas`);
+    }
 
-  if (details.reparos) {
-    sections.push(`Reparos\n${details.reparos}`);
-  } else if (item.type === 'Incêndio') {
-    sections.push(`Reparos`);
+    if (details.reparos) {
+      sections.push(`Reparos\n${details.reparos}`);
+    } else if (item.type === 'Incêndio') {
+      sections.push(`Reparos`);
+    }
   }
 
   return sections.join('\n\n');
@@ -1833,6 +1843,14 @@ function renderDynamicSurveyFields() {
         <input type="text" name="alturaAgua" placeholder="Ex: Acima dos bancos" />
       </label>
     ` + extraFieldsHtml;
+  } else if (selectedType === 'Vistoria Rio log') {
+    const avariasHtml = `
+      <label style="grid-column: 1 / -1;">
+        Avarias (uma por linha)
+        <textarea name="avarias" rows="4" placeholder="Ex:&#10;Para-choque dianteiro avariado&#10;Farol LE quebrado"></textarea>
+      </label>
+    `;
+    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + obsHtml + avariasHtml;
   } else if (selectedType === 'Complemento' || selectedType === 'Pós entrega') {
     fieldsHtml = `
       <label style="grid-column: 1 / -1;">
@@ -3238,6 +3256,25 @@ if (exportBackupBtn) {
       if (window.AndroidInterface && typeof window.AndroidInterface.exportBackup === 'function') {
         window.AndroidInterface.exportBackup(filename, jsonString);
       } else {
+        if ('showSaveFilePicker' in window) {
+          try {
+            const handle = await window.showSaveFilePicker({
+              suggestedName: filename,
+              types: [{
+                description: 'Arquivo JSON de Backup',
+                accept: { 'application/json': ['.json'] }
+              }]
+            });
+            const writable = await handle.createWritable();
+            await writable.write(jsonString);
+            await writable.close();
+            alert('Backup salvo com sucesso no local escolhido!');
+            return;
+          } catch (err) {
+            if (err.name === 'AbortError') return;
+            console.warn('showSaveFilePicker cancelado ou falhou, fallback para download:', err);
+          }
+        }
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
