@@ -499,16 +499,39 @@ function updateFormDisplay() {
   const oficinaCardEl = document.getElementById('oficinaCard');
   const summaryGridEl = document.getElementById('summaryGrid');
 
-  if (formCardEl) formCardEl.hidden = !isWeekday;
-  if (recordsCardEl) recordsCardEl.hidden = !(isWeekday || isTotalSemana || isTodasVistorias);
-  if (vistoriaTypeTabsCardEl) vistoriaTypeTabsCardEl.hidden = !isWeekday;
+  if (formCardEl) {
+    formCardEl.hidden = !isWeekday;
+    formCardEl.style.display = isWeekday ? 'block' : 'none';
+  }
+  if (recordsCardEl) {
+    recordsCardEl.hidden = !(isWeekday || isTotalSemana || isTodasVistorias);
+    recordsCardEl.style.display = (isWeekday || isTotalSemana || isTodasVistorias) ? 'block' : 'none';
+  }
+  if (vistoriaTypeTabsCardEl) {
+    vistoriaTypeTabsCardEl.hidden = !isWeekday;
+    vistoriaTypeTabsCardEl.style.display = isWeekday ? 'block' : 'none';
+  }
 
-  if (supervisaoFormCardEl) supervisaoFormCardEl.hidden = !isSupervisao;
-  if (supervisaoRecordsCardEl) supervisaoRecordsCardEl.hidden = !isSupervisao;
+  if (supervisaoFormCardEl) {
+    supervisaoFormCardEl.hidden = !isSupervisao;
+    supervisaoFormCardEl.style.display = isSupervisao ? 'block' : 'none';
+  }
+  if (supervisaoRecordsCardEl) {
+    supervisaoRecordsCardEl.hidden = !isSupervisao;
+    supervisaoRecordsCardEl.style.display = isSupervisao ? 'block' : 'none';
+  }
 
-  if (insurerCardEl) insurerCardEl.hidden = !isSeguradoras;
-  if (oficinaCardEl) oficinaCardEl.hidden = !isOficinas;
-  if (summaryGridEl) summaryGridEl.style.display = (isTotalSemana || isTodasVistorias) ? 'grid' : 'none';
+  if (insurerCardEl) {
+    insurerCardEl.hidden = !isSeguradoras;
+    insurerCardEl.style.display = isSeguradoras ? 'block' : 'none';
+  }
+  if (oficinaCardEl) {
+    oficinaCardEl.hidden = !isOficinas;
+    oficinaCardEl.style.display = isOficinas ? 'block' : 'none';
+  }
+  if (summaryGridEl) {
+    summaryGridEl.style.display = (isTotalSemana || isTodasVistorias) ? 'grid' : 'none';
+  }
 }
 
 function updateFormState() {
@@ -588,10 +611,19 @@ function showWelcomeScreen() {
   const appHeaderEl = document.getElementById('appHeader');
   const appContentEl = document.getElementById('appContent');
 
-  if (welcomeScreenEl) welcomeScreenEl.hidden = false;
-  if (homeSummaryCardEl) homeSummaryCardEl.hidden = false;
+  if (welcomeScreenEl) {
+    welcomeScreenEl.hidden = false;
+    welcomeScreenEl.style.display = 'block';
+  }
+  if (homeSummaryCardEl) {
+    homeSummaryCardEl.hidden = false;
+    homeSummaryCardEl.style.display = 'block';
+  }
   if (appHeaderEl) appHeaderEl.style.display = 'flex';
-  if (appContentEl) appContentEl.hidden = true;
+  if (appContentEl) {
+    appContentEl.hidden = true;
+    appContentEl.style.display = 'none';
+  }
   updateHomeSummary();
 }
 
@@ -635,10 +667,19 @@ function handleMenuButtonClick(targetDay) {
     }
   }
   
-  if (welcomeScreenEl) welcomeScreenEl.hidden = true;
-  if (homeSummaryCardEl) homeSummaryCardEl.hidden = true;
+  if (welcomeScreenEl) {
+    welcomeScreenEl.hidden = true;
+    welcomeScreenEl.style.display = 'none';
+  }
+  if (homeSummaryCardEl) {
+    homeSummaryCardEl.hidden = true;
+    homeSummaryCardEl.style.display = 'none';
+  }
   if (appHeaderEl) appHeaderEl.style.display = 'flex';
-  if (appContentEl) appContentEl.hidden = false;
+  if (appContentEl) {
+    appContentEl.hidden = false;
+    appContentEl.style.display = 'block';
+  }
 
   updateDayTabs();
   render();
