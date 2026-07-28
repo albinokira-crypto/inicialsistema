@@ -164,6 +164,20 @@ function registerServiceWorker() {
   }
 }
 
+function openSystemSettings() {
+  const modal = document.getElementById('systemSettingsModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function closeSystemSettings() {
+  const modal = document.getElementById('systemSettingsModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
 function attachGlobalEventListeners() {
   // Logout (home)
   if (homeLogoutButton) {
@@ -186,6 +200,13 @@ function attachGlobalEventListeners() {
   if (systemSettingsBtn) {
     systemSettingsBtn.addEventListener('click', () => {
       openSystemSettings();
+    });
+  }
+
+  const closeSystemSettingsBtn = document.getElementById('closeSystemSettingsBtn');
+  if (closeSystemSettingsBtn) {
+    closeSystemSettingsBtn.addEventListener('click', () => {
+      closeSystemSettings();
     });
   }
 
@@ -534,7 +555,6 @@ function attachMenuListeners() {
       } else {
         selectedDay = targetDay;
       }
-      initializeApp();
       
       if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
         selectedType = 'Inicial';
@@ -552,11 +572,22 @@ function attachMenuListeners() {
       
       if (welcomeScreen) welcomeScreen.hidden = true;
       if (homeSummaryCard) homeSummaryCard.hidden = true;
-      if (appHeader) appHeader.style.display = 'none';
+      if (appHeader) appHeader.style.display = 'flex';
       if (appContent) appContent.hidden = false;
 
+      updateFormState();
       updateDayTabs();
       render();
+      if (selectedDay === 'Supervisão') {
+        populateSupervisaoOficinaSelect();
+        populateSupervisaoOficinaFilter();
+        populateSupervisaoStageSelect();
+        renderSupervisaoReport();
+      } else if (selectedDay === 'Seguradoras') {
+        renderInsurers();
+      } else if (selectedDay === 'Oficinas') {
+        renderOficinas();
+      }
 
       updatePageTitleHeader();
     });
