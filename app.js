@@ -1,3 +1,23 @@
+function openMenuSection(targetDay) {
+  handleMenuButtonClick(targetDay);
+}
+window.openMenuSection = openMenuSection;
+
+function backToHomeMenu() {
+  selectedOficinaForTodasVistorias = null;
+  showWelcomeScreen();
+  if (typeof window.scrollTo === 'function') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+window.backToHomeMenu = backToHomeMenu;
+
+function homeLogout() {
+  localStorage.removeItem('authenticated');
+  window.location.href = 'index.html';
+}
+window.homeLogout = homeLogout;
+
 const STORAGE_KEY = 'web-system-items-v1';
 const form = document.getElementById('itemForm');
 const dateInput = document.getElementById('dateInput');
@@ -2881,40 +2901,33 @@ function generateWeeklyReportPDF() {
 
 let activePhotoVehicleName = ''; 
 let activePhotoId = '';          
-let directoryHandle = null;      
-
-function getPhotoConfig() {
-  return {
-    cameraApp: localStorage.getItem('photo_camera_app') || null,
-    folderName: localStorage.getItem('photo_folder_name') || null
-  };
-}
-
-function savePhotoConfig(cameraApp, folderName) {
-  localStorage.setItem('photo_camera_app', cameraApp);
-  localStorage.setItem('photo_folder_name', folderName);
-}
-
 let db = null;
-const dbRequest = indexedDB.open('PhotoSystemDB', 1);
-dbRequest.onupgradeneeded = function(e) {
-  const localDb = e.target.result;
-  if (!localDb.objectStoreNames.contains('directories')) {
-    localDb.createObjectStore('directories');
+let dbRequest = null;
+if (typeof window !== 'undefined' && 'indexedDB' in window && window.indexedDB) {
+  try {
+    dbRequest = window.indexedDB.open('PhotoSystemDB', 1);
+    dbRequest.onupgradeneeded = function(e) {
+      const localDb = e.target.result;
+      if (!localDb.objectStoreNames.contains('directories')) {
+        localDb.createObjectStore('directories');
+      }
+      if (!localDb.objectStoreNames.contains('photos')) {
+        localDb.createObjectStore('photos', { keyPath: 'id' });
+      }
+    };
+    dbRequest.onsuccess = function(e) {
+      db = e.target.result;
+      loadStoredDirectoryHandle();
+      
+      // Clear any leftovers on startup to prevent camera loop
+      localStorage.removeItem('active_photo_id');
+      localStorage.removeItem('active_photo_vehicle_name');
+      localStorage.removeItem('waiting_camera_return');
+    };
+  } catch (err) {
+    console.warn('indexedDB não disponível neste ambiente:', err);
   }
-  if (!localDb.objectStoreNames.contains('photos')) {
-    localDb.createObjectStore('photos', { keyPath: 'id' });
-  }
-};
-dbRequest.onsuccess = function(e) {
-  db = e.target.result;
-  loadStoredDirectoryHandle();
-  
-  // Clear any leftovers on startup to prevent camera loop
-  localStorage.removeItem('active_photo_id');
-  localStorage.removeItem('active_photo_vehicle_name');
-  localStorage.removeItem('waiting_camera_return');
-};
+}
 
 async function loadStoredDirectoryHandle() {
   if (!db) return;
@@ -3465,7 +3478,7 @@ const importBackupBtn = document.getElementById('importBackupBtn');
 const dashboardBackupFileInput = document.getElementById('dashboardBackupFileInput');
 
 if (exportBackupBtn) {
-  exportBackupBtn.addEventListener('click', () => {
+  exportBackupBtn.addEventListener('click', async () => {
     try {
       const backup = {};
       for (let i = 0; i < localStorage.length; i++) {
