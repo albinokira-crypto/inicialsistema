@@ -1084,6 +1084,7 @@ function render() {
               </div>
               <div class="actions vertical-actions">
                 <button class="action-btn" type="button" data-super-action="share-vistoria" data-id="${entry.id}">📤 Compartilhar Vistoria</button>
+                <button class="action-btn" type="button" data-super-action="share-report-text" data-id="${entry.id}">📝 Compartilhar Relatório</button>
                 <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">📸 Fotos</button>
                 <button class="action-btn" type="button" data-super-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
                 <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
@@ -1113,6 +1114,7 @@ function render() {
               </div>
               <div class="actions vertical-actions">
                 <button class="action-btn" type="button" data-action="share-vistoria" data-id="${entry.id}">📤 Compartilhar Vistoria</button>
+                <button class="action-btn" type="button" data-action="share-report-text" data-id="${entry.id}">📝 Compartilhar Relatório</button>
                 <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">📸 Fotos</button>
                 <button class="action-btn" type="button" data-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
                 <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
@@ -1236,6 +1238,7 @@ function render() {
         </div>
         <div class="actions vertical-actions">
           <button class="action-btn" type="button" data-action="share-vistoria" data-id="${item.id}">📤 Compartilhar Vistoria</button>
+          <button class="action-btn" type="button" data-action="share-report-text" data-id="${item.id}">📝 Compartilhar Relatório</button>
           <button class="action-btn" type="button" data-action="photos" data-id="${item.id}">📸 Fotos</button>
           <button class="action-btn" type="button" data-action="open-folder" data-id="${item.id}">📂 Pasta</button>
           <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
@@ -1446,6 +1449,50 @@ function copyTextToClipboard(text) {
   }
 }
 
+async function shareReportTextOnly(id) {
+  const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
+  if (!item) {
+    alert('Registro não encontrado!');
+    return;
+  }
+  const vehicleName = (item.plate || item.vehicle || '').trim();
+  if (!vehicleName) {
+    alert("Nome do veículo ou placa inválido!");
+    return;
+  }
+
+  const isInspection = items.some(entry => entry.id === id);
+  let reportText = isInspection ? getSurveyText(id) : formatSingleSupervisaoText(item);
+  if (!reportText || !reportText.trim()) {
+    reportText = `Vistoria do veículo: ${vehicleName}`;
+  }
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.shareText === 'function') {
+    window.AndroidInterface.shareText(`Relatório: ${vehicleName}`, reportText);
+    return;
+  }
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Relatório: ' + vehicleName, text: reportText });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.warn('navigator.share falhou:', err);
+    }
+  }
+
+  copyTextToClipboard(reportText);
+  try {
+    const encodedText = encodeURIComponent(reportText);
+    const waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+    window.open(waUrl, '_blank');
+  } catch (e) {
+    alert('Relatório copiado para a área de transferência!');
+  }
+}
+window.shareReportTextOnly = shareReportTextOnly;
+
 function handleAction(action, id) {
   if (action === 'open-folder') {
     openInspectionFolderForId(id);
@@ -1455,8 +1502,8 @@ function handleAction(action, id) {
     openPhotoManagerForId(id);
     return;
   }
-  if (action === 'share-text') {
-    shareSurveyText(id);
+  if (action === 'share-text' || action === 'share-report-text') {
+    shareReportTextOnly(id);
     return;
   }
   if (action === 'share-photos') {
@@ -2467,6 +2514,7 @@ function renderSupervisaoReport() {
         <td data-label="Ações">
           <div class="actions">
             <button class="action-btn" type="button" data-super-action="share-vistoria" data-id="${s.id}">📤 Compartilhar Vistoria</button>
+            <button class="action-btn" type="button" data-super-action="share-report-text" data-id="${s.id}">📝 Compartilhar Relatório</button>
             <button class="action-btn" type="button" data-super-action="photos" data-id="${s.id}">📸 Fotos</button>
             <button class="action-btn" type="button" data-super-action="open-folder" data-id="${s.id}">📂 Pasta</button>
             <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
@@ -2485,6 +2533,10 @@ function renderSupervisaoReport() {
 function handleSupervisaoAction(action, id) {
   if (action === 'open-folder') {
     openInspectionFolderForId(id);
+    return;
+  }
+  if (action === 'share-report-text') {
+    shareReportTextOnly(id);
     return;
   }
   if (action === 'share-vistoria') {
@@ -2990,8 +3042,15 @@ if (selectDesktopDirButton) {
   });
 }
 
-function openSystemSettings() {
-  const friendlyName = localStorage.getItem('photo_folder_name_friendly');
+function updateFolderLabelUI() {
+  let friendlyName = localStorage.getItem('photo_folder_name_friendly');
+  if (window.AndroidInterface && typeof window.AndroidInterface.getSelectedFolderName === 'function') {
+    const androidFolder = window.AndroidInterface.getSelectedFolderName();
+    if (androidFolder) {
+      friendlyName = androidFolder;
+      localStorage.setItem('photo_folder_name_friendly', androidFolder);
+    }
+  }
   if (selectedFolderLabel) {
     if (friendlyName) {
       selectedFolderLabel.textContent = `Pasta selecionada: ${friendlyName}`;
@@ -2999,7 +3058,10 @@ function openSystemSettings() {
       selectedFolderLabel.textContent = 'Nenhuma pasta selecionada (usando padrão)';
     }
   }
+}
 
+function openSystemSettings() {
+  updateFolderLabelUI();
   updatePreferredCameraUI();
   if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
 }

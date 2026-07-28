@@ -552,35 +552,52 @@ class MainActivity : ComponentActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == CAMERA_CAPTURE_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
-                photoResultReceived = true // O usuário tirou uma foto/vídeo
+                photoResultReceived = true
                 val vehicleName = activeCameraVehicleName
                 val photoFile = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "IMG_temp.jpg")
                 val videoFile = File(getExternalFilesDir(Environment.DIRECTORY_MOVIES), "VID_temp.mp4")
-                
+                val dataUri = data?.data
+
                 Thread {
                     try {
-                        if (photoFile.exists() && photoFile.length() > 0) {
-                            val filename = "foto_${System.currentTimeMillis()}.jpg"
-                            val saved = photoFile.inputStream().use { inputStream ->
-                                savePhotoDirectly(vehicleName, filename, inputStream)
+                        var saved = false
+                        var savedFilename = ""
+                        var isVideoCaptured = false
+
+                        if (dataUri != null) {
+                            val mimeType = contentResolver.getType(dataUri) ?: ""
+                            isVideoCaptured = mimeType.startsWith("video") || dataUri.toString().contains("video")
+                            savedFilename = if (isVideoCaptured) "midia_${System.currentTimeMillis()}.mp4" else "foto_${System.currentTimeMillis()}.jpg"
+                            saved = contentResolver.openInputStream(dataUri)?.use { inputStream ->
+                                savePhotoDirectly(vehicleName, savedFilename, inputStream)
+                            } ?: false
+                        }
+
+                        if (!saved && photoFile.exists() && photoFile.length() > 0) {
+                            savedFilename = "foto_${System.currentTimeMillis()}.jpg"
+                            saved = photoFile.inputStream().use { inputStream ->
+                                savePhotoDirectly(vehicleName, savedFilename, inputStream)
                             }
-                            if (saved) {
-                                runOnUiThread {
-                                    webView.evaluateJavascript("window.onPhotoCapturedFromAndroid('$vehicleName', '$filename', '')", null)
-                                }
-                                photoFile.delete()
+                            if (saved) photoFile.delete()
+                        }
+
+                        if (!saved && videoFile.exists() && videoFile.length() > 0) {
+                            isVideoCaptured = true
+                            savedFilename = "midia_${System.currentTimeMillis()}.mp4"
+                            saved = videoFile.inputStream().use { inputStream ->
+                                savePhotoDirectly(vehicleName, savedFilename, inputStream)
                             }
-                        } else if (videoFile.exists() && videoFile.length() > 0) {
-                            val filename = "midia_${System.currentTimeMillis()}.mp4"
-                            val saved = videoFile.inputStream().use { inputStream ->
-                                savePhotoDirectly(vehicleName, filename, inputStream)
-                            }
-                            if (saved) {
-                                runOnUiThread {
-                                    webView.evaluateJavascript("window.onPhotoCapturedFromAndroid('$vehicleName', '$filename', '')", null)
+                            if (saved) videoFile.delete()
+                        }
+
+                        if (saved) {
+                            val finalIsVideo = isVideoCaptured
+                            val finalFilename = savedFilename
+                            runOnUiThread {
+                                webView.evaluateJavascript("window.onPhotoCapturedFromAndroid('$vehicleName', '$finalFilename', '')", null)
+                                if (finalIsVideo) {
                                     Toast.makeText(this@MainActivity, "✅ Vídeo salvo na pasta!", Toast.LENGTH_SHORT).show()
                                 }
-                                videoFile.delete()
                             }
                         }
                     } catch (e: Exception) {
@@ -588,7 +605,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }.start()
             }
-            // Se resultCode != RESULT_OK, o usuário saiu sem tirar foto, não fazemos nada
             cameraPhotoUri = null
             return
         }
@@ -1359,6 +1375,19 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             }
             mainAct.startActivityForResult(Intent.createChooser(intent, "Selecione as fotos tiradas"), 300)
+        }
+    }
+
+    @JavascriptInterface
+    fun getSelectedFolderName(): String {
+        val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+        val savedUriStr = prefs.getString("selected_folder_uri", null) ?: return ""
+        return try {
+            val rootUri = Uri.parse(savedUriStr)
+            val documentFile = androidx.documentfile.provider.DocumentFile.fromTreeUri(activity, rootUri)
+            documentFile?.name ?: "Pasta Selecionada"
+        } catch (e: Exception) {
+            ""
         }
     }
 
