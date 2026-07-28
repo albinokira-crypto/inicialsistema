@@ -3143,27 +3143,32 @@ async function shareVistoria(id) {
     reportText = formatSingleSupervisaoText(item);
   }
 
-  // Garante que haja texto para compartilhar
   if (!reportText || !reportText.trim()) {
     reportText = `Vistoria do veículo: ${vehicleName}`;
   }
 
   if (window.AndroidInterface && typeof window.AndroidInterface.startShare === 'function') {
-    // startShare no Android busca as fotos da pasta e compartilha junto com o relatório.
-    // Se não há fotos na pasta, o Android compartilhará apenas o texto do relatório.
     window.AndroidInterface.startShare(vehicleName, reportText);
-  } else {
-    // Fallback para navegador: compartilha apenas o texto
-    if (navigator.share) {
-      navigator.share({ title: 'Vistoria: ' + vehicleName, text: reportText }).catch(err => {
-        if (err.name === 'AbortError') return;
-        copyTextToClipboard(reportText);
-        alert('Relatório copiado para a área de transferência!');
-      });
-    } else {
-      copyTextToClipboard(reportText);
-      alert('Relatório copiado para a área de transferência!');
+    return;
+  }
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Vistoria: ' + vehicleName, text: reportText });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.warn('navigator.share falhou, utilizando fallback de texto/WhatsApp:', err);
     }
+  }
+
+  copyTextToClipboard(reportText);
+  try {
+    const encodedText = encodeURIComponent(reportText);
+    const waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+    window.open(waUrl, '_blank');
+  } catch (e) {
+    alert('Relatório copiado para a área de transferência!');
   }
 }
 
@@ -3476,7 +3481,6 @@ if (supervisaoFormPhotosBtn) {
 function downloadJsonFile(filename, jsonString) {
   if (window.AndroidInterface && typeof window.AndroidInterface.exportBackup === 'function') {
     window.AndroidInterface.exportBackup(filename, jsonString);
-    alert('Backup exportado com sucesso!');
     return;
   }
 

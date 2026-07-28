@@ -127,7 +127,6 @@ if ('serviceWorker' in navigator) {
 function downloadJsonFile(filename, jsonString) {
   if (window.AndroidInterface && typeof window.AndroidInterface.exportBackup === 'function') {
     window.AndroidInterface.exportBackup(filename, jsonString);
-    alert('Backup exportado com sucesso!');
     return;
   }
 

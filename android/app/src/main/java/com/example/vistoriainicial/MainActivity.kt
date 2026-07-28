@@ -42,8 +42,28 @@ class MainActivity : ComponentActivity() {
     internal val importedPhotoNames = HashSet<String>()
     internal val importedMediaStoreIds = HashSet<Long>() // rastreia IDs do MediaStore já importados
     internal val originalPaths = HashMap<String, String>()
-    // Flag para indicar se o usuário realmente capturou uma foto/vídeo
     internal var photoResultReceived = false
+    internal var pendingBackupJson: String? = null
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 9988 && resultCode == RESULT_OK && data != null) {
+            val uri = data.data
+            if (uri != null && pendingBackupJson != null) {
+                try {
+                    contentResolver.openOutputStream(uri)?.use { ops ->
+                        ops.write(pendingBackupJson!!.toByteArray(Charsets.UTF_8))
+                    }
+                    Toast.makeText(this, "Backup salvo com sucesso!", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    Toast.makeText(this, "Erro ao salvar backup: ${e.message}", Toast.LENGTH_LONG).show()
+                } finally {
+                    pendingBackupJson = null
+                }
+            }
+        }
+    }
 
     private val mediaCapturedReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
@@ -1177,50 +1197,52 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             var fileIndex = 1
             // Mapa de nomes e tamanhos já adicionados para evitar duplicatas
-            val addedFilenames = HashSet<String>()
-            val addedFileSizes = HashSet<Long>()
+            val addedHashes = HashSet<String>()
             
+            fun calculateMd5(bytes: ByteArray): String {
+                return try {
+                    val md = java.security.MessageDigest.getInstance("MD5")
+                    val digest = md.digest(bytes)
+                    digest.joinToString("") { "%02x".format(it) }
+                } catch (e: Exception) {
+                    bytes.size.toString()
+                }
+            }
+
             for (pair in safPairsToCopy) {
                 val origName = pair.first
                 val uri = pair.second
-                val safName = origName.lowercase()
-                if (addedFilenames.contains(safName)) { fileIndex++; continue }
-                
                 try {
                     val inputStream = activity.contentResolver.openInputStream(uri)
                     if (inputStream != null) {
                         val bytes = inputStream.readBytes()
-                        val fileSize = bytes.size.toLong()
-                        if (fileSize > 0 && addedFileSizes.contains(fileSize)) { fileIndex++; continue }
-                        
-                        addedFilenames.add(safName)
-                        if (fileSize > 0) addedFileSizes.add(fileSize)
-                        
-                        val destFile = java.io.File(cacheDir, origName)
-                        destFile.writeBytes(bytes)
-                        tempShareFiles.add(destFile)
-                        fileIndex++
+                        if (bytes.isNotEmpty()) {
+                            val hash = calculateMd5(bytes)
+                            if (addedHashes.contains(hash)) continue
+                            addedHashes.add(hash)
+                            
+                            val destFile = java.io.File(cacheDir, origName)
+                            destFile.writeBytes(bytes)
+                            tempShareFiles.add(destFile)
+                        }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
 
-            val processedNames = HashSet<String>()
             for (file in filesToCopy) {
-                val lowerName = file.name.lowercase()
-                if (processedNames.contains(lowerName)) continue
-                if (addedFilenames.contains(lowerName)) continue // já adicionado via SAF
-                if (file.length() > 0 && addedFileSizes.contains(file.length())) continue // mesmo conteúdo já adicionado
-                
-                processedNames.add(lowerName)
-                addedFilenames.add(lowerName)
-                if (file.length() > 0) addedFileSizes.add(file.length())
-                
                 try {
-                    val destFile = java.io.File(cacheDir, file.name)
-                    file.copyTo(destFile, overwrite = true)
-                    tempShareFiles.add(destFile)
+                    if (file.exists() && file.length() > 0) {
+                        val bytes = file.readBytes()
+                        val hash = calculateMd5(bytes)
+                        if (addedHashes.contains(hash)) continue
+                        addedHashes.add(hash)
+                        
+                        val destFile = java.io.File(cacheDir, file.name)
+                        destFile.writeBytes(bytes)
+                        tempShareFiles.add(destFile)
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
