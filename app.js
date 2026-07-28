@@ -179,39 +179,6 @@ function closeSystemSettings() {
 }
 
 function attachGlobalEventListeners() {
-  const homeExportBackupBtn = document.getElementById('homeExportBackupBtn');
-  if (homeExportBackupBtn) {
-    homeExportBackupBtn.addEventListener('click', async () => {
-      try {
-        const backup = {};
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          backup[key] = localStorage.getItem(key);
-        }
-        const jsonString = JSON.stringify(backup, null, 2);
-        const filename = `backup_vistoria_${new Date().toISOString().slice(0, 10)}.json`;
-
-        if (window.AndroidInterface && typeof window.AndroidInterface.exportBackup === 'function') {
-          window.AndroidInterface.exportBackup(filename, jsonString);
-        } else {
-          const blob = new Blob([jsonString], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          setTimeout(() => {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-          }, 100);
-        }
-      } catch (err) {
-        alert('Erro ao exportar backup: ' + err.message);
-      }
-    });
-  }
-
   // Logout (home)
   if (homeLogoutButton) {
     homeLogoutButton.addEventListener('click', () => {
@@ -578,58 +545,67 @@ function getAutomaticDayOfWeek() {
   return map[dayIndex] || 'Segunda';
 }
 
+function handleMenuButtonClick(targetDay) {
+  if (targetDay === 'Vistorias') {
+    selectedDay = getAutomaticDayOfWeek();
+  } else {
+    selectedDay = targetDay;
+  }
+  
+  if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
+    selectedType = 'Inicial';
+    if (vistoriaTypeTabs) {
+      vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
+        b.classList.toggle('active', b.dataset.type === 'Inicial');
+      });
+    }
+    if (typeInput) typeInput.value = 'Inicial';
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+      formTitle.textContent = `Novo registro - Inicial`;
+    }
+  }
+  
+  if (welcomeScreen) welcomeScreen.hidden = true;
+  if (homeSummaryCard) homeSummaryCard.hidden = true;
+  if (appHeader) appHeader.style.display = 'flex';
+  if (appContent) appContent.hidden = false;
+
+  updateFormState();
+  updateDayTabs();
+  render();
+  if (selectedDay === 'Supervisão') {
+    populateSupervisaoOficinaSelect();
+    populateSupervisaoOficinaFilter();
+    populateSupervisaoStageSelect();
+    renderSupervisaoReport();
+  } else if (selectedDay === 'Seguradoras') {
+    renderInsurers();
+  } else if (selectedDay === 'Oficinas') {
+    renderOficinas();
+  }
+
+  updatePageTitleHeader();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function attachMenuListeners() {
-  const menuButtons = document.querySelectorAll('.menu-btn');
-  menuButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.menu-btn');
+    if (btn) {
       const targetDay = btn.dataset.day;
-      if (targetDay === 'Vistorias') {
-        selectedDay = getAutomaticDayOfWeek();
-      } else {
-        selectedDay = targetDay;
+      if (targetDay) {
+        handleMenuButtonClick(targetDay);
       }
-      
-      if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
-        selectedType = 'Inicial';
-        if (vistoriaTypeTabs) {
-          vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
-            b.classList.toggle('active', b.dataset.type === 'Inicial');
-          });
-        }
-        if (typeInput) typeInput.value = 'Inicial';
-        const formTitle = document.getElementById('formTitle');
-        if (formTitle) {
-          formTitle.textContent = `Novo registro - Inicial`;
-        }
-      }
-      
-      if (welcomeScreen) welcomeScreen.hidden = true;
-      if (homeSummaryCard) homeSummaryCard.hidden = true;
-      if (appHeader) appHeader.style.display = 'flex';
-      if (appContent) appContent.hidden = false;
-
-      updateFormState();
-      updateDayTabs();
-      render();
-      if (selectedDay === 'Supervisão') {
-        populateSupervisaoOficinaSelect();
-        populateSupervisaoOficinaFilter();
-        populateSupervisaoStageSelect();
-        renderSupervisaoReport();
-      } else if (selectedDay === 'Seguradoras') {
-        renderInsurers();
-      } else if (selectedDay === 'Oficinas') {
-        renderOficinas();
-      }
-
-      updatePageTitleHeader();
-    });
+    }
   });
 
   if (backToMenuButton) {
-    backToMenuButton.addEventListener('click', () => {
+    backToMenuButton.addEventListener('click', (e) => {
+      e.preventDefault();
       selectedOficinaForTodasVistorias = null;
       showWelcomeScreen();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
 }

@@ -7,7 +7,7 @@
     <title>Gestão de Vistorias</title>
     <script>
       (function() {
-        const APP_VERSION = 'v80_backup_button_added';
+        const APP_VERSION = 'v81_delegated_menu_clicks';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
           if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -31,7 +31,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=80" />
+    <link rel="stylesheet" href="styles.css?v=81" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -65,10 +65,7 @@
           <button class="menu-btn special-btn-total" type="button" data-day="Total da semana">Total da Semana</button>
           <button class="menu-btn special-btn-total" type="button" data-day="Todas as vistorias">Todas as Vistorias</button>
         </div>
-        <button id="homeExportBackupBtn" class="ghost-btn" type="button" style="width: 100%; margin-top: 14px; padding: 12px; font-weight: 800; color: #15803d; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; cursor: pointer;">
-          📤 Baixar Backup dos Meus Dados (JSON)
-        </button>
-        <div style="margin-top: 10px; display: flex; gap: 8px; width: 100%;">
+        <div style="margin-top: 18px; display: flex; gap: 8px; width: 100%;">
           <button id="homeClearWeekButton" class="ghost-btn" type="button" style="flex: 1; padding: 12px; font-weight: 700; color: #b91c1c; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; cursor: pointer;">
             🧹 Limpar Semana
           </button>
@@ -423,6 +420,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=80"></script>
+    <script src="app.js?v=81"></script>
   </body>
 </html>
