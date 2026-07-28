@@ -463,6 +463,11 @@ class MainActivity : ComponentActivity() {
                     val name = c.getString(nameColumn) ?: "midia_${System.currentTimeMillis()}.${if (isVideo) "mp4" else "jpg"}"
                     val absolutePath = c.getString(dataColumn)
                     
+                    // Exclude files already inside Vistorias folder to prevent accidental deletion/duplication
+                    if (absolutePath != null && (absolutePath.contains("/Vistorias/", ignoreCase = true) || absolutePath.contains("/vistorias/", ignoreCase = true))) {
+                        continue
+                    }
+                    
                     val dateAddedSec = c.getLong(dateAddedColumn)
                     val dateTakenMs = c.getLong(dateTakenColumn)
                     
@@ -1154,18 +1159,26 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             var fileIndex = 1
-            // Mapa de nomes já adicionados para evitar duplicatas entre SAF e filesystem físico
+            // Mapa de nomes e tamanhos já adicionados para evitar duplicatas
             val addedFilenames = HashSet<String>()
+            val addedFileSizes = HashSet<Long>()
             
             for (uri in safUrisToCopy) {
                 try {
-                    val safName = androidx.documentfile.provider.DocumentFile.fromSingleUri(activity, uri)?.name ?: "foto_${fileIndex}.jpg"
+                    val safName = (androidx.documentfile.provider.DocumentFile.fromSingleUri(activity, uri)?.name ?: "foto_${fileIndex}.jpg").lowercase()
                     if (addedFilenames.contains(safName)) { fileIndex++; continue }
-                    addedFilenames.add(safName)
+                    
                     val inputStream = activity.contentResolver.openInputStream(uri)
                     if (inputStream != null) {
+                        val bytes = inputStream.readBytes()
+                        val fileSize = bytes.size.toLong()
+                        if (fileSize > 0 && addedFileSizes.contains(fileSize)) { fileIndex++; continue }
+                        
+                        addedFilenames.add(safName)
+                        if (fileSize > 0) addedFileSizes.add(fileSize)
+                        
                         val destFile = java.io.File(cacheDir, safName)
-                        destFile.writeBytes(inputStream.readBytes())
+                        destFile.writeBytes(bytes)
                         tempShareFiles.add(destFile)
                         fileIndex++
                     }
@@ -1176,10 +1189,15 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             val processedNames = HashSet<String>()
             for (file in filesToCopy) {
-                if (processedNames.contains(file.name)) continue
-                if (addedFilenames.contains(file.name)) continue // já adicionado via SAF
-                processedNames.add(file.name)
-                addedFilenames.add(file.name)
+                val lowerName = file.name.lowercase()
+                if (processedNames.contains(lowerName)) continue
+                if (addedFilenames.contains(lowerName)) continue // já adicionado via SAF
+                if (file.length() > 0 && addedFileSizes.contains(file.length())) continue // mesmo conteúdo já adicionado
+                
+                processedNames.add(lowerName)
+                addedFilenames.add(lowerName)
+                if (file.length() > 0) addedFileSizes.add(file.length())
+                
                 try {
                     val destFile = java.io.File(cacheDir, file.name)
                     file.copyTo(destFile, overwrite = true)
@@ -1488,6 +1506,65 @@ class AndroidInterface(private val activity: ComponentActivity) {
             } catch (e: Exception) {
                 e.printStackTrace()
                 Toast.makeText(activity, "Erro ao compartilhar PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun exportBackup(filename: String, jsonContent: String) {
+        activity.runOnUiThread {
+            try {
+                var saved = false
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val values = android.content.ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                        put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    }
+                    val uri = activity.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    if (uri != null) {
+                        activity.contentResolver.openOutputStream(uri)?.use { os ->
+                            os.write(jsonContent.toByteArray())
+                        }
+                        saved = true
+                    }
+                }
+                if (!saved) {
+                    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    if (downloadsDir.exists() || downloadsDir.mkdirs()) {
+                        val file = File(downloadsDir, filename)
+                        file.writeText(jsonContent)
+                        saved = true
+                    }
+                }
+                if (saved) {
+                    Toast.makeText(activity, "✅ Backup exportado para a pasta Downloads!", Toast.LENGTH_LONG).show()
+                    try {
+                        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                        val file = File(downloadsDir, filename)
+                        if (file.exists()) {
+                            val uri = androidx.core.content.FileProvider.getUriForFile(
+                                activity,
+                                "com.example.vistoriainicial.fileprovider",
+                                file
+                            )
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/json"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                putExtra(Intent.EXTRA_SUBJECT, filename)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            activity.startActivity(Intent.createChooser(intent, "Salvar / Compartilhar Backup"))
+                        }
+                    } catch (e: Exception) {
+                        // Safe fallback
+                    }
+                } else {
+                    Toast.makeText(activity, "Erro ao exportar backup", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(activity, "Erro ao exportar backup: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }

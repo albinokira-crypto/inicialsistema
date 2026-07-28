@@ -42,6 +42,8 @@ class MainActivity : ComponentActivity() {
     internal val importedPhotoNames = HashSet<String>()
     internal val importedMediaStoreIds = HashSet<Long>() // rastreia IDs do MediaStore já importados
     internal val originalPaths = HashMap<String, String>()
+    // Flag para indicar se o usuário realmente capturou uma foto/vídeo
+    internal var photoResultReceived = false
 
     private val mediaCapturedReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
@@ -322,12 +324,13 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
         val shouldCheck = prefs.getBoolean("should_check_new_photos", false)
-        if (shouldCheck) {
+        // Só executa o scan se o usuário realmente capturou algo (não apenas abriu e fechou a câmera)
+        if (shouldCheck && photoResultReceived) {
+            photoResultReceived = false // reset
+            prefs.edit().putBoolean("should_check_new_photos", false).apply()
             // Check if the page is already loaded by evaluating a JS snippet
             webView.evaluateJavascript("typeof window.onPhotoCapturedFromAndroid") { result ->
                 if (result != null && result.contains("function")) {
-                    // Page is loaded and JS is ready! We can consume it now.
-                    prefs.edit().putBoolean("should_check_new_photos", false).apply()
                     checkPhotosStartTime = prefs.getLong("check_photos_start_time", 0)
                     activeCameraVehicleName = prefs.getString("active_camera_vehicle_name", "") ?: ""
                     shouldCheckNewPhotos = false
@@ -339,15 +342,23 @@ class MainActivity : ComponentActivity() {
                     }, 1000)
                 }
             }
+        } else if (shouldCheck && !photoResultReceived) {
+            // O usuário abriu a câmera mas não tirou foto; cancelar o scan
+            prefs.edit().putBoolean("should_check_new_photos", false).apply()
         }
     }
 
     private fun scanPhysicalCameraFolder(startTime: Long): Int {
         var importedCount = 0
+        if (startTime == 0L || System.currentTimeMillis() - startTime > 300_000) return 0
         val dcim = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+        val movies = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+        val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val foldersToCheck = arrayOf(
             File(dcim, "Camera"),
-            File(dcim, "OpenCamera")
+            File(dcim, "OpenCamera"),
+            File(movies, "Camera"),
+            File(downloads, "Camera")
         )
         
         for (folder in foldersToCheck) {
@@ -395,15 +406,20 @@ class MainActivity : ComponentActivity() {
         importedMediaStoreIds.clear() // limpa IDs da sessão anterior
         
         Thread {
+            var toastShown = false
             for (attempt in 1..40) { // Check for 40 seconds
                 val physCount = scanPhysicalCameraFolder(startTime)
                 val imagesCount = queryMediaStoreForNewMedia(startTime, isVideo = false)
                 val videosCount = queryMediaStoreForNewMedia(startTime, isVideo = true)
                 val totalImported = physCount + imagesCount + videosCount
-                if (totalImported > 0) {
+                if (totalImported > 0 && !toastShown) {
+                    toastShown = true
                     runOnUiThread {
                         Toast.makeText(this, "✅ $totalImported arquivo(s) importado(s)!", Toast.LENGTH_SHORT).show()
                     }
+                    // Após importar com sucesso, aguarda mais alguns segundos e para
+                    Thread.sleep(5000)
+                    break
                 }
                 
                 try {
@@ -416,6 +432,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun queryMediaStoreForNewMedia(startTime: Long, isVideo: Boolean): Int {
+        if (startTime == 0L || System.currentTimeMillis() - startTime > 300_000) return 0
         val uri = if (isVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
             MediaStore.MediaColumns._ID,
@@ -445,6 +462,11 @@ class MainActivity : ComponentActivity() {
                     val id = c.getLong(idColumn)
                     val name = c.getString(nameColumn) ?: "midia_${System.currentTimeMillis()}.${if (isVideo) "mp4" else "jpg"}"
                     val absolutePath = c.getString(dataColumn)
+                    
+                    // Exclude files already inside Vistorias folder to prevent accidental deletion/duplication
+                    if (absolutePath != null && (absolutePath.contains("/Vistorias/", ignoreCase = true) || absolutePath.contains("/vistorias/", ignoreCase = true))) {
+                        continue
+                    }
                     
                     val dateAddedSec = c.getLong(dateAddedColumn)
                     val dateTakenMs = c.getLong(dateTakenColumn)
@@ -510,6 +532,7 @@ class MainActivity : ComponentActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == CAMERA_CAPTURE_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
+                photoResultReceived = true // O usuário tirou uma foto/vídeo
                 val vehicleName = activeCameraVehicleName
                 val photoFile = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "IMG_temp.jpg")
                 val videoFile = File(getExternalFilesDir(Environment.DIRECTORY_MOVIES), "VID_temp.mp4")
@@ -545,6 +568,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }.start()
             }
+            // Se resultCode != RESULT_OK, o usuário saiu sem tirar foto, não fazemos nada
             cameraPhotoUri = null
             return
         }
@@ -647,6 +671,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 if (results != null) {
+                    photoResultReceived = true // O usuário selecionou arquivos
                     val currentVehicleName = activeCameraVehicleName.ifEmpty {
                         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
                         prefs.edit().putString("active_camera_vehicle_name", "").apply()
@@ -788,13 +813,13 @@ class MainActivity : ComponentActivity() {
                 intent = pm.getLaunchIntentForPackage(preferredPkg)
             }
             
-            if (intent == null) {
-                intent = if (isVideo) {
-                    Intent(android.provider.MediaStore.INTENT_ACTION_VIDEO_CAMERA)
-                } else {
-                    Intent(android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
-                }
+        if (intent == null) {
+            intent = Intent(android.provider.MediaStore.INTENT_ACTION_VIDEO_CAMERA)
+            val resolved = pm.queryIntentActivities(intent, 0)
+            if (resolved.isEmpty()) {
+                intent = Intent(android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
             }
+        }
             
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
@@ -908,7 +933,8 @@ class MainActivity : ComponentActivity() {
         val savedUriStr = prefs.getString("selected_folder_uri", null)
 
         var savedSuccessfully = false
-        val isVideo = filename.lowercase().endsWith(".mp4")
+        val lowerName = filename.lowercase()
+        val isVideo = lowerName.endsWith(".mp4") || lowerName.endsWith(".3gp") || lowerName.endsWith(".mov") || lowerName.endsWith(".mkv") || lowerName.endsWith(".webm")
         val mimeType = if (isVideo) "video/mp4" else "image/jpeg"
 
         if (savedUriStr != null) {
@@ -982,7 +1008,9 @@ class AndroidInterface(private val activity: ComponentActivity) {
         mainAct.runOnUiThread {
             val prefs = mainAct.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
             val shouldCheck = prefs.getBoolean("should_check_new_photos", false)
-            if (shouldCheck) {
+            // Só executa scan se o usuário realmente capturou algo
+            if (shouldCheck && mainAct.photoResultReceived) {
+                mainAct.photoResultReceived = false
                 prefs.edit().putBoolean("should_check_new_photos", false).apply()
                 
                 mainAct.checkPhotosStartTime = prefs.getLong("check_photos_start_time", 0)
@@ -993,6 +1021,9 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 mainAct.webView.postDelayed({
                     mainAct.scanDirectoriesForNewPhotos(mainAct.checkPhotosStartTime)
                 }, 1000)
+            } else if (shouldCheck) {
+                // Sem foto capturada, cancela o scan
+                prefs.edit().putBoolean("should_check_new_photos", false).apply()
             }
         }
     }
@@ -1128,13 +1159,26 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             var fileIndex = 1
+            // Mapa de nomes e tamanhos já adicionados para evitar duplicatas
+            val addedFilenames = HashSet<String>()
+            val addedFileSizes = HashSet<Long>()
+            
             for (uri in safUrisToCopy) {
                 try {
+                    val safName = (androidx.documentfile.provider.DocumentFile.fromSingleUri(activity, uri)?.name ?: "foto_${fileIndex}.jpg").lowercase()
+                    if (addedFilenames.contains(safName)) { fileIndex++; continue }
+                    
                     val inputStream = activity.contentResolver.openInputStream(uri)
                     if (inputStream != null) {
-                        val filename = "foto_${fileIndex}.jpg"
-                        val destFile = java.io.File(cacheDir, filename)
-                        destFile.writeBytes(inputStream.readBytes())
+                        val bytes = inputStream.readBytes()
+                        val fileSize = bytes.size.toLong()
+                        if (fileSize > 0 && addedFileSizes.contains(fileSize)) { fileIndex++; continue }
+                        
+                        addedFilenames.add(safName)
+                        if (fileSize > 0) addedFileSizes.add(fileSize)
+                        
+                        val destFile = java.io.File(cacheDir, safName)
+                        destFile.writeBytes(bytes)
                         tempShareFiles.add(destFile)
                         fileIndex++
                     }
@@ -1145,8 +1189,15 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             val processedNames = HashSet<String>()
             for (file in filesToCopy) {
-                if (processedNames.contains(file.name)) continue
-                processedNames.add(file.name)
+                val lowerName = file.name.lowercase()
+                if (processedNames.contains(lowerName)) continue
+                if (addedFilenames.contains(lowerName)) continue // já adicionado via SAF
+                if (file.length() > 0 && addedFileSizes.contains(file.length())) continue // mesmo conteúdo já adicionado
+                
+                processedNames.add(lowerName)
+                addedFilenames.add(lowerName)
+                if (file.length() > 0) addedFileSizes.add(file.length())
+                
                 try {
                     val destFile = java.io.File(cacheDir, file.name)
                     file.copyTo(destFile, overwrite = true)
@@ -1157,7 +1208,29 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             if (tempShareFiles.isEmpty()) {
-                Toast.makeText(activity, "Nenhuma foto encontrada para compartilhar nesta vistoria.", Toast.LENGTH_LONG).show()
+                // Sem fotos: compartilha apenas o relatório
+                try {
+                    val textIntent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
+                        putExtra(Intent.EXTRA_TEXT, reportText)
+                    }
+                    try {
+                        val waIntent = Intent(textIntent).apply { setPackage("com.whatsapp") }
+                        activity.startActivity(waIntent)
+                    } catch (e: Exception) {
+                        try {
+                            val wbIntent = Intent(textIntent).apply { setPackage("com.whatsapp.w4b") }
+                            activity.startActivity(wbIntent)
+                        } catch (e2: Exception) {
+                            activity.startActivity(Intent.createChooser(textIntent, "Compartilhar Relatório"))
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    Toast.makeText(activity, "Nenhuma foto encontrada. Compartilhando apenas o relatório.", Toast.LENGTH_LONG).show()
+                }
                 return@runOnUiThread
             }
 
@@ -1433,6 +1506,65 @@ class AndroidInterface(private val activity: ComponentActivity) {
             } catch (e: Exception) {
                 e.printStackTrace()
                 Toast.makeText(activity, "Erro ao compartilhar PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun exportBackup(filename: String, jsonContent: String) {
+        activity.runOnUiThread {
+            try {
+                var saved = false
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val values = android.content.ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                        put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    }
+                    val uri = activity.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    if (uri != null) {
+                        activity.contentResolver.openOutputStream(uri)?.use { os ->
+                            os.write(jsonContent.toByteArray())
+                        }
+                        saved = true
+                    }
+                }
+                if (!saved) {
+                    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    if (downloadsDir.exists() || downloadsDir.mkdirs()) {
+                        val file = File(downloadsDir, filename)
+                        file.writeText(jsonContent)
+                        saved = true
+                    }
+                }
+                if (saved) {
+                    Toast.makeText(activity, "✅ Backup exportado para a pasta Downloads!", Toast.LENGTH_LONG).show()
+                    try {
+                        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                        val file = File(downloadsDir, filename)
+                        if (file.exists()) {
+                            val uri = androidx.core.content.FileProvider.getUriForFile(
+                                activity,
+                                "com.example.vistoriainicial.fileprovider",
+                                file
+                            )
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/json"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                putExtra(Intent.EXTRA_SUBJECT, filename)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            activity.startActivity(Intent.createChooser(intent, "Salvar / Compartilhar Backup"))
+                        }
+                    } catch (e: Exception) {
+                        // Safe fallback
+                    }
+                } else {
+                    Toast.makeText(activity, "Erro ao exportar backup", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(activity, "Erro ao exportar backup: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }

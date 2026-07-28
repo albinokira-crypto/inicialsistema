@@ -165,6 +165,127 @@ function registerServiceWorker() {
 }
 
 function attachGlobalEventListeners() {
+  // Logout (home)
+  if (homeLogoutButton) {
+    homeLogoutButton.addEventListener('click', () => {
+      localStorage.removeItem('authenticated');
+      window.location.href = 'index.html';
+    });
+  }
+
+  // Logout (generic)
+  if (logoutButton) {
+    logoutButton.addEventListener('click', () => {
+      localStorage.removeItem('authenticated');
+      window.location.href = 'index.html';
+    });
+  }
+
+  // Settings button
+  const systemSettingsBtn = document.getElementById('systemSettingsBtn');
+  if (systemSettingsBtn) {
+    systemSettingsBtn.addEventListener('click', () => {
+      // Abre modal de configurações se existir, caso contrário redireciona
+      const modal = document.getElementById('settingsModal');
+      if (modal) modal.showModal();
+      else window.location.href = 'settings.html';
+    });
+  }
+
+  // Photo manager button
+  const formPhotosButton = document.getElementById('formPhotosButton');
+  if (formPhotosButton) {
+    formPhotosButton.addEventListener('click', () => openPhotoManagerForVehicle());
+  }
+
+  // Share PDF button (já existe)
+  if (sharePdfButton) {
+    sharePdfButton.addEventListener('click', () => generateWeeklyReportPDF());
+  }
+
+  // Share supervision text button (já existe)
+  if (shareSupervisaoTextButton) {
+    shareSupervisaoTextButton.addEventListener('click', () => {
+      const text = generateSupervisaoReportText();
+      shareSupervisaoText(text);
+    });
+  }
+
+  // Manter os demais listeners existentes
+  const supervisaoQuickAdd = document.getElementById('supervisaoQuickAddOficina');
+  if (supervisaoQuickAdd) {
+    supervisaoQuickAdd.addEventListener('click', (e) => {
+      e.preventDefault();
+      const name = window.prompt('Digite o nome da nova oficina:');
+      if (name && name.trim()) {
+        const cleanedName = name.trim();
+        const exists = oficinas.some(o => o.name.toLowerCase() === cleanedName.toLowerCase());
+        if (exists) {
+          alert('Esta oficina já está cadastrada!');
+          return;
+        }
+        const newOficina = {
+          id: Date.now().toString(),
+          name: cleanedName
+        };
+        oficinas.push(newOficina);
+        saveOficinas();
+        renderOficinas();
+        populateSupervisaoOficinaSelect();
+        if (supervisaoOficinaSelect) {
+          supervisaoOficinaSelect.value = newOficina.id;
+        }
+      }
+    });
+  }
+
+  const supervisaoQuickAddStage = document.getElementById('supervisaoQuickAddStage');
+  if (supervisaoQuickAddStage) {
+    supervisaoQuickAddStage.addEventListener('click', (e) => {
+      e.preventDefault();
+      const name = window.prompt('Digite o nome da nova etapa:');
+      if (name && name.trim()) {
+        const cleanedName = name.trim();
+        const exists = stages.some(st => st.toLowerCase() === cleanedName.toLowerCase());
+        if (exists) {
+          alert('Esta etapa já está cadastrada!');
+          return;
+        }
+        stages.push(cleanedName);
+        saveStages();
+        populateSupervisaoStageSelect();
+        if (supervisaoStageInput) {
+          supervisaoStageInput.value = cleanedName;
+        }
+      }
+    });
+  }
+
+  if (homeClearWeekButton) {
+    homeClearWeekButton.addEventListener('click', () => {
+      const verification = window.prompt(
+        '⚠️ CONFIRMAÇÃO:\n\n' +
+        'Deseja limpar os registros da semana atual? Eles continuarão no relatório de "Todas as Vistorias".\n\n' +
+        'Para confirmar, digite a palavra LIMPAR abaixo:'
+      );
+      if (verification && verification.trim().toUpperCase() === 'LIMPAR') {
+        items.forEach((item) => {
+          item.clearedFromWeek = true;
+        });
+        saveItems();
+        updateHomeSummary();
+        render();
+      }
+    });
+  }
+
+  if (homeLogoutButton) {
+    homeLogoutButton.addEventListener('click', () => {
+      localStorage.removeItem('authenticated');
+      window.location.href = 'index.html';
+    });
+  }
+}
   if (sharePdfButton) {
     sharePdfButton.addEventListener('click', () => {
       generateWeeklyReportPDF();
@@ -2773,29 +2894,14 @@ window.onStorageFolderSelected = function(folderName) {
 };
 
 if (closePhotoManagerButton) {
-  closePhotoManagerButton.addEventListener('click', async () => {
-    const vehicleName = activePhotoVehicleName;
-    
-    // Close the modal immediately for instant feedback
+  closePhotoManagerButton.addEventListener('click', () => {
+    // Close the modal without deleting stored photos from IndexedDB
     if (photoManagerModal) photoManagerModal.style.display = 'none';
-    if (activePhotoVehicleName === vehicleName) {
-      activePhotoVehicleName = '';
-      activePhotoId = '';
-      localStorage.removeItem('active_photo_id');
-      localStorage.removeItem('active_photo_vehicle_name');
-    }
-
-    // Clear photos from IndexedDB to clean the grid
-    const photos = await getStoredPhotosForVehicle(vehicleName);
-    if (photos && photos.length > 0) {
-      for (const photo of photos) {
-        try {
-          await removePhotoFromDb(vehicleName, photo.name);
-        } catch (e) {
-          console.error("Erro ao remover foto do banco local:", e);
-        }
-      }
-    }
+    activePhotoVehicleName = '';
+    activePhotoId = '';
+    localStorage.removeItem('active_photo_id');
+    localStorage.removeItem('active_photo_vehicle_name');
+    if (photoGridContainer) photoGridContainer.innerHTML = '';
   });
 }
 
@@ -2918,6 +3024,15 @@ async function loadPhotosForActiveVehicle() {
   renderPhotoGrid(photos);
 }
 
+function isVideoFile(filename, rawBlob) {
+  if (rawBlob && rawBlob.type && rawBlob.type.startsWith('video/')) return true;
+  if (filename) {
+    const lower = filename.toLowerCase();
+    return lower.endsWith('.mp4') || lower.endsWith('.3gp') || lower.endsWith('.mov') || lower.endsWith('.mkv') || lower.endsWith('.webm');
+  }
+  return false;
+}
+
 function renderPhotoGrid(photos) {
   if (!photoGridContainer) return;
   
@@ -2927,29 +3042,49 @@ function renderPhotoGrid(photos) {
   }
   
   photoGridContainer.innerHTML = photos.map(photo => {
+    const isVid = isVideoFile(photo.name, photo.rawBlob);
+    if (isVid) {
+      return `
+        <div class="photo-item" style="position: relative;">
+          <video src="${photo.url}" controls style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px;"></video>
+          <button class="delete-photo" onclick="deletePhotoEvent('${photo.name}')" type="button">×</button>
+        </div>
+      `;
+    }
     return `
       <div class="photo-item">
-        <img src="${photo.url}" alt="Vistoria" onclick="viewFullImage('${photo.url}')" style="cursor: pointer;" />
+        <img src="${photo.url}" alt="Vistoria" onclick="viewFullImage('${photo.url}', false)" style="cursor: pointer;" />
         <button class="delete-photo" onclick="deletePhotoEvent('${photo.name}')" type="button">×</button>
       </div>
     `;
   }).join('');
 }
 
-function viewFullImage(url) {
+function viewFullImage(url, isVid) {
   const overlay = document.createElement('div');
   overlay.className = 'photo-modal-overlay';
   overlay.style.cursor = 'pointer';
   overlay.onclick = () => document.body.removeChild(overlay);
   
-  const img = document.createElement('img');
-  img.src = url;
-  img.style.maxWidth = '95%';
-  img.style.maxHeight = '95%';
-  img.style.borderRadius = '16px';
-  img.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.5)';
+  if (isVid) {
+    const vid = document.createElement('video');
+    vid.src = url;
+    vid.controls = true;
+    vid.autoplay = true;
+    vid.style.maxWidth = '95%';
+    vid.style.maxHeight = '95%';
+    vid.style.borderRadius = '16px';
+    overlay.appendChild(vid);
+  } else {
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.maxWidth = '95%';
+    img.style.maxHeight = '95%';
+    img.style.borderRadius = '16px';
+    img.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.5)';
+    overlay.appendChild(img);
+  }
   
-  overlay.appendChild(img);
   document.body.appendChild(overlay);
 }
 
@@ -3053,7 +3188,14 @@ async function handlePhotoFilesSelected(files) {
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     const timestamp = Date.now();
-    const filename = `foto_${timestamp}_${i}.jpg`;
+    const isVid = file.type.startsWith('video/') || /\.(mp4|3gp|mov|mkv|webm)$/i.test(file.name);
+    let ext = 'jpg';
+    if (isVid) {
+      const parts = file.name.split('.');
+      ext = parts.length > 1 ? parts.pop().toLowerCase() : 'mp4';
+    }
+    const prefix = isVid ? 'video' : 'foto';
+    const filename = `${prefix}_${timestamp}_${i}.${ext}`;
     
     await savePhotoToDb(activePhotoVehicleName, filename, file);
     
@@ -3171,13 +3313,24 @@ if (exportBackupBtn) {
         backup[key] = localStorage.getItem(key);
       }
       
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `backup_sistema_vistoria_${new Date().toISOString().slice(0, 10)}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
+      const jsonString = JSON.stringify(backup, null, 2);
+      const filename = `backup_sistema_vistoria_${new Date().toISOString().slice(0, 10)}.json`;
+
+      if (window.AndroidInterface && typeof window.AndroidInterface.exportBackup === 'function') {
+        window.AndroidInterface.exportBackup(filename, jsonString);
+      } else {
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 100);
+      }
     } catch (err) {
       alert('Erro ao exportar backup: ' + err.message);
     }
