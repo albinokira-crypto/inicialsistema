@@ -2187,6 +2187,35 @@ async function syncDataToServer() {
   }
 }
 
+function getWeekdayName(dateObj) {
+  const dayIndex = (dateObj || new Date()).getDay();
+  const map = {
+    1: 'Segunda',
+    2: 'Terça',
+    3: 'Quarta',
+    4: 'Quinta',
+    5: 'Sexta'
+  };
+  return map[dayIndex] || 'Segunda';
+}
+
+function formatDateString(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  } catch (e) {
+    return dateStr || '—';
+  }
+}
+
+function formatDateForDisplay(dateStr) {
+  return formatDateString(dateStr);
+}
+
 function getTodayDateValue() {
   return new Date().toISOString().slice(0, 10);
 }
