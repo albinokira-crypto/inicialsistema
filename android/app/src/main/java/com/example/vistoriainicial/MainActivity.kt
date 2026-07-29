@@ -1415,10 +1415,17 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     e.printStackTrace()
                 }
 
+                val shareAction = if (uris.size == 1) Intent.ACTION_SEND else Intent.ACTION_SEND_MULTIPLE
+                val shareType = "image/*"
+
                 val intent = Intent().apply {
-                    action = Intent.ACTION_SEND_MULTIPLE
-                    type = "*/*"
-                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                    action = shareAction
+                    type = shareType
+                    if (uris.size == 1) {
+                        putExtra(Intent.EXTRA_STREAM, uris[0])
+                    } else {
+                        putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                    }
                     putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
                     putExtra(Intent.EXTRA_TEXT, reportText)
                     if (uris.isNotEmpty()) {
@@ -1432,6 +1439,15 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 
                 val chooser = Intent.createChooser(intent, "Compartilhar Vistoria: $vehicleName")
                 chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                
+                val resInfoList = activity.packageManager.queryIntentActivities(chooser, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+                for (resolveInfo in resInfoList) {
+                    val packageName = resolveInfo.activityInfo.packageName
+                    for (uri in uris) {
+                        activity.grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                }
+
                 activity.startActivity(chooser)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -1604,7 +1620,22 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             var opened = false
 
-            if (savedUriStr != null) {
+            // 1. Tentar abrir diretamente pelo aplicativo "Meus Arquivos" da Samsung (com.sec.android.app.myfiles)
+            try {
+                val myFilesIntent = activity.packageManager.getLaunchIntentForPackage("com.sec.android.app.myfiles")
+                if (myFilesIntent != null) {
+                    myFilesIntent.putExtra("current_path", vistoriasDir.absolutePath)
+                    myFilesIntent.putExtra("path", vistoriasDir.absolutePath)
+                    myFilesIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    activity.startActivity(myFilesIntent)
+                    opened = true
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            // 2. Tentar abrir via SAF tree URI se uma pasta personalizada foi selecionada
+            if (!opened && savedUriStr != null) {
                 try {
                     val rootUri = Uri.parse(savedUriStr)
                     val rootFolder = DocumentFile.fromTreeUri(activity, rootUri)
@@ -1630,31 +1661,16 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 }
             }
 
+            // 3. Fallback: Outros gerenciadores de arquivos do sistema (Google Files, etc.)
             if (!opened) {
                 try {
-                    val providerUri = androidx.core.content.FileProvider.getUriForFile(
-                        activity,
-                        "com.example.vistoriainicial.fileprovider",
-                        vistoriasDir
-                    )
-                    val intentPhys = Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(providerUri, DocumentsContract.Document.MIME_TYPE_DIR)
-                        putExtra("android.provider.extra.INITIAL_URI", providerUri)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    activity.startActivity(intentPhys)
+                    val openFilesIntent = activity.packageManager.getLaunchIntentForPackage("com.google.android.documentsui")
+                        ?: Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*" }
+                    openFilesIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    activity.startActivity(openFilesIntent)
                     opened = true
-                } catch (e: Exception) {
-                    try {
-                        val openFilesIntent = activity.packageManager.getLaunchIntentForPackage("com.google.android.documentsui")
-                            ?: activity.packageManager.getLaunchIntentForPackage("com.sec.android.app.myfiles")
-                            ?: Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*" }
-                        openFilesIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        activity.startActivity(openFilesIntent)
-                        opened = true
-                    } catch (ex: Exception) {
-                        ex.printStackTrace()
-                    }
+                } catch (ex: Exception) {
+                    ex.printStackTrace()
                 }
             }
 
