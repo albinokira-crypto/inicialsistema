@@ -390,18 +390,36 @@ class MainActivity : ComponentActivity() {
                                     savePhotoDirectly(activeCameraVehicleName, name, inputStream)
                                 }
                                 if (saved) {
+                                    val deleted = file.delete()
+                                    if (!deleted) {
+                                        try {
+                                            contentResolver.delete(
+                                                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                                                "${MediaStore.MediaColumns.DATA} = ?",
+                                                arrayOf(file.absolutePath)
+                                            )
+                                            contentResolver.delete(
+                                                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                                                "${MediaStore.MediaColumns.DATA} = ?",
+                                                arrayOf(file.absolutePath)
+                                            )
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+                                    }
                                     android.media.MediaScannerConnection.scanFile(
                                         this@MainActivity,
                                         arrayOf(file.absolutePath),
                                         null,
                                         null
                                     )
+                                    deleteOriginalPhoto(name)
                                     runOnUiThread {
                                         webView.evaluateJavascript("window.onPhotoCapturedFromAndroid('$activeCameraVehicleName', '$name', '')", null)
                                     }
                                     importedPhotoNames.add(name)
                                     importedCount++
-                                    android.util.Log.d("Vistoria", "Imported physical file: ${file.absolutePath}")
+                                    android.util.Log.d("Vistoria", "Imported and moved physical file: ${file.absolutePath}")
                                 }
                             } catch (e: Exception) {
                                 e.printStackTrace()
@@ -507,6 +525,13 @@ class MainActivity : ComponentActivity() {
                                 importedMediaStoreIds.add(id)
                                 importedPhotoNames.add(name)
                                 
+                                try {
+                                    contentResolver.delete(contentUri, null, null)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                                deleteOriginalPhoto(name)
+
                                 runOnUiThread {
                                     webView.evaluateJavascript("window.onPhotoCapturedFromAndroid('$activeCameraVehicleName', '$name', '')", null)
                                 }
@@ -1385,14 +1410,12 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 try {
                     if (file.exists() && file.length() > 0) {
                         val lowerName = file.name.lowercase()
-                        val cleanNameKey = lowerName.replace(Regex("""\s*\(\d+\)"""), "").replace(Regex("""_\d+(?=\.\w+$)"""), "")
-                        if (addedNames.contains(cleanNameKey) || addedNames.contains(lowerName)) continue
+                        if (addedNames.contains(lowerName)) continue
                         val bytes = file.readBytes()
                         val hash = calculateMd5(bytes)
                         if (addedHashes.contains(hash)) continue
                         addedHashes.add(hash)
                         addedNames.add(lowerName)
-                        addedNames.add(cleanNameKey)
                         
                         val destFile = java.io.File(cacheDir, file.name)
                         destFile.writeBytes(bytes)
@@ -1453,7 +1476,15 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 }
 
                 val shareAction = if (uris.size == 1) Intent.ACTION_SEND else Intent.ACTION_SEND_MULTIPLE
-                val shareType = "image/*"
+                val hasImages = tempShareFiles.any { f -> 
+                    val name = f.name.lowercase()
+                    name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png")
+                }
+                val hasVideos = tempShareFiles.any { f -> 
+                    val name = f.name.lowercase()
+                    name.endsWith(".mp4") || name.endsWith(".mov") || name.endsWith(".3gp") || name.endsWith(".mkv") || name.endsWith(".webm")
+                }
+                val shareType = if (hasImages && hasVideos) "*/*" else if (hasVideos) "video/*" else "image/*"
 
                 val intent = Intent().apply {
                     action = shareAction
