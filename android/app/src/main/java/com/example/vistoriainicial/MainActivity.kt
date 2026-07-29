@@ -45,26 +45,6 @@ class MainActivity : ComponentActivity() {
     internal var photoResultReceived = false
     internal var pendingBackupJson: String? = null
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 9988 && resultCode == RESULT_OK && data != null) {
-            val uri = data.data
-            if (uri != null && pendingBackupJson != null) {
-                try {
-                    contentResolver.openOutputStream(uri)?.use { ops ->
-                        ops.write(pendingBackupJson!!.toByteArray(Charsets.UTF_8))
-                    }
-                    Toast.makeText(this, "Backup salvo com sucesso!", Toast.LENGTH_LONG).show()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    Toast.makeText(this, "Erro ao salvar backup: ${e.message}", Toast.LENGTH_LONG).show()
-                } finally {
-                    pendingBackupJson = null
-                }
-            }
-        }
-    }
-
     private val mediaCapturedReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
             if (intent?.action == "com.example.vistoriainicial.MEDIA_CAPTURED") {

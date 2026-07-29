@@ -14,10 +14,10 @@ window.backToHomeMenu = backToHomeMenu;
 
 function homeLogout() {
   const savedFolder = localStorage.getItem('photo_folder_name_friendly');
+  const savedCamera = localStorage.getItem('preferred_camera_label');
   localStorage.removeItem('authenticated');
-  if (savedFolder) {
-    localStorage.setItem('photo_folder_name_friendly', savedFolder);
-  }
+  if (savedFolder) localStorage.setItem('photo_folder_name_friendly', savedFolder);
+  if (savedCamera) localStorage.setItem('preferred_camera_label', savedCamera);
   window.location.href = 'index.html';
 }
 window.homeLogout = homeLogout;
@@ -3249,14 +3249,16 @@ function openPhotoManagerForVehicle(id, vehicleName) {
   localStorage.setItem('active_photo_id', id);
   localStorage.setItem('active_photo_vehicle_name', vehicleName);
 
-  // Atualiza o título do modal
-  const titleEl = document.getElementById('photoManagerTitle');
-  if (titleEl) titleEl.textContent = `Fotos - ${vehicleName}`;
-
-  // Abre o modal de gerenciamento de fotos
-  if (photoManagerModal) photoManagerModal.style.display = 'flex';
-
-  loadPhotosForActiveVehicle();
+  if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
+    window.AndroidInterface.launchCameraCapture(vehicleName);
+  } else if (photoSystemCameraInput) {
+    photoSystemCameraInput.click();
+  } else {
+    const titleEl = document.getElementById('photoManagerTitle');
+    if (titleEl) titleEl.textContent = `Fotos - ${vehicleName}`;
+    if (photoManagerModal) photoManagerModal.style.display = 'flex';
+    loadPhotosForActiveVehicle();
+  }
 }
 
 async function loadPhotosForActiveVehicle() {
