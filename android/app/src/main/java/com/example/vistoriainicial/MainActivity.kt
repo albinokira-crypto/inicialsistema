@@ -1244,6 +1244,64 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
+            try {
+                val moviesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+                val vistoriasMoviesDir = java.io.File(moviesDir, "Vistorias/$cleanVehicleName")
+                if (vistoriasMoviesDir.exists()) {
+                    val files = vistoriasMoviesDir.listFiles()
+                    if (files != null) {
+                        for (file in files) {
+                            if (file.isFile && isSameDate(file.lastModified())) {
+                                val name = file.name.lowercase()
+                                if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
+                                    name.endsWith(".png") || name.endsWith(".mp4") ||
+                                    name.endsWith(".mov") || name.endsWith(".3gp") ||
+                                    name.endsWith(".mkv")) {
+                                    filesToCopy.add(file)
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            try {
+                val mediaUris = arrayOf(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                )
+                for (contentUri in mediaUris) {
+                    val projection = arrayOf(
+                        MediaStore.MediaColumns._ID,
+                        MediaStore.MediaColumns.DISPLAY_NAME,
+                        MediaStore.MediaColumns.DATA,
+                        MediaStore.MediaColumns.DATE_MODIFIED
+                    )
+                    val selection = "${MediaStore.MediaColumns.DATA} LIKE ? OR ${MediaStore.MediaColumns.RELATIVE_PATH} LIKE ?"
+                    val selectionArgs = arrayOf("%Vistorias/$cleanVehicleName/%", "%Vistorias/$cleanVehicleName/%")
+                    activity.contentResolver.query(contentUri, projection, selection, selectionArgs, null)?.use { cursor ->
+                        val nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+                        val dataCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA)
+                        val dateModCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_MODIFIED)
+                        while (cursor.moveToNext()) {
+                            val filePath = cursor.getString(dataCol)
+                            val fileName = cursor.getString(nameCol) ?: ""
+                            val dateModSec = cursor.getLong(dateModCol)
+                            if (filePath != null && fileName.isNotEmpty() && isSameDate(dateModSec * 1000)) {
+                                val file = java.io.File(filePath)
+                                if (file.exists() && file.isFile && file.length() > 0) {
+                                    filesToCopy.add(file)
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
             val addedHashes = HashSet<String>()
             val addedNames = HashSet<String>()
             

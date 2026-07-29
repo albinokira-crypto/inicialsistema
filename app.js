@@ -3214,12 +3214,31 @@ async function shareVistoria(id) {
     reportText = `Vistoria do veículo: ${vehicleName}`;
   }
 
-  if (window.AndroidInterface && typeof window.AndroidInterface.startShareWithDate === 'function') {
-    window.AndroidInterface.startShareWithDate(vehicleName, reportText, itemDate);
-    return;
-  } else if (window.AndroidInterface && typeof window.AndroidInterface.startShare === 'function') {
-    window.AndroidInterface.startShare(vehicleName, reportText);
-    return;
+  if (window.AndroidInterface) {
+    try {
+      const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
+      if (storedPhotos && storedPhotos.length > 0 && typeof window.AndroidInterface.savePhoto === 'function') {
+        for (const p of storedPhotos) {
+          if (p.rawBlob) {
+            const base64 = await blobToBase64(p.rawBlob);
+            if (base64) {
+              const rawData = base64.includes(',') ? base64.split(',')[1] : base64;
+              window.AndroidInterface.savePhoto(vehicleName, p.name, rawData);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Erro ao sincronizar fotos web para Android antes do envio:", e);
+    }
+
+    if (typeof window.AndroidInterface.startShareWithDate === 'function') {
+      window.AndroidInterface.startShareWithDate(vehicleName, reportText, itemDate);
+      return;
+    } else if (typeof window.AndroidInterface.startShare === 'function') {
+      window.AndroidInterface.startShare(vehicleName, reportText);
+      return;
+    }
   }
 
   if (navigator.share) {
