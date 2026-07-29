@@ -617,9 +617,13 @@ class MainActivity : ComponentActivity() {
                         contentResolver.takePersistableUriPermission(treeUri, takeFlags)
 
                         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-                        prefs.edit().putString("selected_folder_uri", treeUri.toString()).apply()
-
                         val folderName = getDocumentTreeFolderName(treeUri)
+                        prefs.edit()
+                            .putString("selected_folder_uri", treeUri.toString())
+                            .putString("selected_folder_name", folderName)
+                            .putString("photo_folder_name_friendly", folderName)
+                            .apply()
+
                         runOnUiThread {
                             webView.evaluateJavascript("window.onStorageFolderSelected('$folderName')", null)
                         }
@@ -1385,13 +1389,16 @@ class AndroidInterface(private val activity: ComponentActivity) {
     @JavascriptInterface
     fun getSelectedFolderName(): String {
         val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+        val savedName = prefs.getString("selected_folder_name", null) ?: prefs.getString("photo_folder_name_friendly", null)
+        if (!savedName.isNullOrEmpty()) return savedName
+
         val savedUriStr = prefs.getString("selected_folder_uri", null) ?: return ""
         return try {
             val rootUri = Uri.parse(savedUriStr)
             val documentFile = androidx.documentfile.provider.DocumentFile.fromTreeUri(activity, rootUri)
             documentFile?.name ?: "Pasta Selecionada"
         } catch (e: Exception) {
-            ""
+            "Pasta Selecionada"
         }
     }
 

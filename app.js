@@ -13,7 +13,11 @@ function backToHomeMenu() {
 window.backToHomeMenu = backToHomeMenu;
 
 function homeLogout() {
+  const savedFolder = localStorage.getItem('photo_folder_name_friendly');
   localStorage.removeItem('authenticated');
+  if (savedFolder) {
+    localStorage.setItem('photo_folder_name_friendly', savedFolder);
+  }
   window.location.href = 'index.html';
 }
 window.homeLogout = homeLogout;
@@ -3387,10 +3391,10 @@ async function removePhotoFromDb(vehicleName, name) {
 
 if (capturePhotoButton) {
   capturePhotoButton.addEventListener('click', () => {
-    if (photoSystemCameraInput) {
-      photoSystemCameraInput.click();
-    } else if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
+    if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
       window.AndroidInterface.launchCameraCapture(activePhotoVehicleName);
+    } else if (photoSystemCameraInput) {
+      photoSystemCameraInput.click();
     }
   });
 }
