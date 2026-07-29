@@ -1480,14 +1480,17 @@ class AndroidInterface(private val activity: ComponentActivity) {
         val savedName = prefs.getString("selected_folder_name", null) ?: prefs.getString("photo_folder_name_friendly", null)
         if (!savedName.isNullOrEmpty()) return savedName
 
-        val savedUriStr = prefs.getString("selected_folder_uri", null) ?: return ""
-        return try {
-            val rootUri = Uri.parse(savedUriStr)
-            val documentFile = androidx.documentfile.provider.DocumentFile.fromTreeUri(activity, rootUri)
-            documentFile?.name ?: "Pasta Selecionada"
-        } catch (e: Exception) {
-            "Pasta Selecionada"
+        val savedUriStr = prefs.getString("selected_folder_uri", null)
+        if (!savedUriStr.isNullOrEmpty()) {
+            return try {
+                val rootUri = Uri.parse(savedUriStr)
+                val documentFile = androidx.documentfile.provider.DocumentFile.fromTreeUri(activity, rootUri)
+                documentFile?.name ?: "Pasta Selecionada"
+            } catch (e: Exception) {
+                "Pasta Selecionada"
+            }
         }
+        return "Pictures/Vistorias (Padrão)"
     }
 
     @JavascriptInterface
@@ -1595,15 +1598,19 @@ class AndroidInterface(private val activity: ComponentActivity) {
             val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
             val savedUriStr = prefs.getString("selected_folder_uri", null)
             
-            try {
-                if (savedUriStr != null) {
+            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val vistoriasDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
+            if (!vistoriasDir.exists()) vistoriasDir.mkdirs()
+
+            var opened = false
+
+            if (savedUriStr != null) {
+                try {
                     val rootUri = Uri.parse(savedUriStr)
                     val rootFolder = DocumentFile.fromTreeUri(activity, rootUri)
                     if (rootFolder != null && rootFolder.exists()) {
                         val vehicleFolder = mainAct.getOrCreateDirectory(rootFolder, cleanVehicleName)
                         if (vehicleFolder != null && vehicleFolder.exists()) {
-                            // Usa a URI do DocumentFile da subpasta diretamente (não reconstrói via tree)
-                            // e passa EXTRA_INITIAL_URI para o gerenciador de arquivos navegar até ela
                             val vehicleFolderUri = vehicleFolder.uri
                             val intent = Intent(Intent.ACTION_VIEW).apply {
                                 setDataAndType(vehicleFolderUri, DocumentsContract.Document.MIME_TYPE_DIR)
@@ -1612,45 +1619,18 @@ class AndroidInterface(private val activity: ComponentActivity) {
                             }
                             try {
                                 activity.startActivity(intent)
-                                return@runOnUiThread
+                                opened = true
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             }
-                            // Fallback: tenta com Intent explícito para o Files do Google (DocumentsUI)
-                            try {
-                                val intentDocUI = Intent(Intent.ACTION_VIEW).apply {
-                                    setClassName("com.google.android.documentsui", "com.android.documentsui.files.FilesActivity")
-                                    putExtra("android.provider.extra.INITIAL_URI", vehicleFolderUri)
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                activity.startActivity(intentDocUI)
-                                return@runOnUiThread
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
-                        
-                        // Fallback 1: Open root folder selected by user
-                        try {
-                            val rootDocId = DocumentsContract.getTreeDocumentId(rootUri)
-                            val rootDocUri = DocumentsContract.buildDocumentUriUsingTree(rootUri, rootDocId)
-                            val intentRoot = Intent(Intent.ACTION_VIEW).apply {
-                                setDataAndType(rootDocUri, DocumentsContract.Document.MIME_TYPE_DIR)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            activity.startActivity(intentRoot)
-                            return@runOnUiThread
-                        } catch (e: Exception) {
-                            e.printStackTrace()
                         }
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-                
-                // Fallback 2: Open physical Pictures/Vistorias folder
-                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                val vistoriasDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
-                if (!vistoriasDir.exists()) vistoriasDir.mkdirs()
-                
+            }
+
+            if (!opened) {
                 try {
                     val providerUri = androidx.core.content.FileProvider.getUriForFile(
                         activity,
@@ -1659,19 +1639,26 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     )
                     val intentPhys = Intent(Intent.ACTION_VIEW).apply {
                         setDataAndType(providerUri, DocumentsContract.Document.MIME_TYPE_DIR)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                        putExtra("android.provider.extra.INITIAL_URI", providerUri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     activity.startActivity(intentPhys)
+                    opened = true
                 } catch (e: Exception) {
-                    // Fallback 3: Launch system Files app directly
-                    val openFilesIntent = activity.packageManager.getLaunchIntentForPackage("com.google.android.documentsui")
-                        ?: Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*" }
-                    activity.startActivity(openFilesIntent)
+                    try {
+                        val openFilesIntent = activity.packageManager.getLaunchIntentForPackage("com.google.android.documentsui")
+                            ?: activity.packageManager.getLaunchIntentForPackage("com.sec.android.app.myfiles")
+                            ?: Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*" }
+                        openFilesIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        activity.startActivity(openFilesIntent)
+                        opened = true
+                    } catch (ex: Exception) {
+                        ex.printStackTrace()
+                    }
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(activity, "Não foi possível abrir a pasta: ${e.message}", Toast.LENGTH_SHORT).show()
             }
+
+            Toast.makeText(activity, "Pasta da Vistoria: Pictures/Vistorias/$cleanVehicleName", Toast.LENGTH_LONG).show()
         }
     }
 

@@ -3059,7 +3059,7 @@ function updateFolderLabelUI() {
     if (friendlyName) {
       selectedFolderLabel.textContent = `Pasta selecionada: ${friendlyName}`;
     } else {
-      selectedFolderLabel.textContent = 'Nenhuma pasta selecionada (usando padrão: Vistorias)';
+      selectedFolderLabel.textContent = 'Pasta selecionada: Pictures/Vistorias (Padrão)';
     }
   }
 }
@@ -3073,13 +3073,18 @@ function openSystemSettings() {
 function updatePreferredCameraUI() {
   const preferredCameraLabel = document.getElementById('preferredCameraLabel');
   const clearCameraBtn = document.getElementById('clearCameraBtn');
-  let label = localStorage.getItem('preferred_camera_label') || 'Nenhuma';
+  let label = 'Nenhuma';
   if (window.AndroidInterface && typeof window.AndroidInterface.getPreferredCameraLabel === 'function') {
     const androidLabel = window.AndroidInterface.getPreferredCameraLabel();
     if (androidLabel && androidLabel !== 'Nenhuma') {
       label = androidLabel;
       localStorage.setItem('preferred_camera_label', androidLabel);
+    } else {
+      label = 'Nenhuma';
+      localStorage.removeItem('preferred_camera_label');
     }
+  } else {
+    label = localStorage.getItem('preferred_camera_label') || 'Nenhuma';
   }
   if (preferredCameraLabel) {
     preferredCameraLabel.style.display = 'block';
@@ -3093,10 +3098,11 @@ function updatePreferredCameraUI() {
 const clearCameraBtn = document.getElementById('clearCameraBtn');
 if (clearCameraBtn) {
   clearCameraBtn.addEventListener('click', () => {
+    localStorage.removeItem('preferred_camera_label');
     if (window.AndroidInterface && typeof window.AndroidInterface.clearPreferredCamera === 'function') {
       window.AndroidInterface.clearPreferredCamera();
-      updatePreferredCameraUI();
     }
+    updatePreferredCameraUI();
   });
 }
 
