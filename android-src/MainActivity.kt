@@ -344,27 +344,22 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
         val shouldCheck = prefs.getBoolean("should_check_new_photos", false)
-        // Só executa o scan se o usuário realmente capturou algo (não apenas abriu e fechou a câmera)
-        if (shouldCheck && photoResultReceived) {
-            photoResultReceived = false // reset
+        if (shouldCheck) {
+            photoResultReceived = false
             prefs.edit().putBoolean("should_check_new_photos", false).apply()
-            // Check if the page is already loaded by evaluating a JS snippet
             webView.evaluateJavascript("typeof window.onPhotoCapturedFromAndroid") { result ->
                 if (result != null && result.contains("function")) {
                     checkPhotosStartTime = prefs.getLong("check_photos_start_time", 0)
                     activeCameraVehicleName = prefs.getString("active_camera_vehicle_name", "") ?: ""
                     shouldCheckNewPhotos = false
 
-                    Toast.makeText(this, "Importando novas fotos tiradas...", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Importando fotos para a pasta da vistoria...", Toast.LENGTH_SHORT).show()
                     webView.postDelayed({
                         importedPhotoNames.clear()
                         scanDirectoriesForNewPhotos(checkPhotosStartTime)
-                    }, 1000)
+                    }, 800)
                 }
             }
-        } else if (shouldCheck && !photoResultReceived) {
-            // O usuário abriu a câmera mas não tirou foto; cancelar o scan
-            prefs.edit().putBoolean("should_check_new_photos", false).apply()
         }
     }
 
@@ -1084,8 +1079,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
         mainAct.runOnUiThread {
             val prefs = mainAct.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
             val shouldCheck = prefs.getBoolean("should_check_new_photos", false)
-            // Só executa scan se o usuário realmente capturou algo
-            if (shouldCheck && mainAct.photoResultReceived) {
+            if (shouldCheck) {
                 mainAct.photoResultReceived = false
                 prefs.edit().putBoolean("should_check_new_photos", false).apply()
                 
@@ -1093,13 +1087,10 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 mainAct.activeCameraVehicleName = prefs.getString("active_camera_vehicle_name", "") ?: ""
                 mainAct.shouldCheckNewPhotos = false
 
-                Toast.makeText(mainAct, "Importando novas fotos tiradas...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(mainAct, "Importando fotos para a pasta da vistoria...", Toast.LENGTH_SHORT).show()
                 mainAct.webView.postDelayed({
                     mainAct.scanDirectoriesForNewPhotos(mainAct.checkPhotosStartTime)
-                }, 1000)
-            } else if (shouldCheck) {
-                // Sem foto capturada, cancela o scan
-                prefs.edit().putBoolean("should_check_new_photos", false).apply()
+                }, 800)
             }
         }
     }
