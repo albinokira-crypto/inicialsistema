@@ -979,7 +979,26 @@ class MainActivity : ComponentActivity() {
     }
 
     fun deleteOriginalPhoto(filename: String) {
-        // Safe no-op to prevent accidental deletion of copied target files
+        try {
+            val dcimCamera = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "Camera")
+            if (dcimCamera.exists() && dcimCamera.isDirectory) {
+                val orig = File(dcimCamera, filename)
+                if (orig.exists() && orig.isFile && !orig.absolutePath.contains("/Vistorias/", ignoreCase = true)) {
+                    orig.delete()
+                    android.media.MediaScannerConnection.scanFile(this, arrayOf(orig.absolutePath), null, null)
+                }
+            }
+            val picturesCamera = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera")
+            if (picturesCamera.exists() && picturesCamera.isDirectory) {
+                val orig = File(picturesCamera, filename)
+                if (orig.exists() && orig.isFile && !orig.absolutePath.contains("/Vistorias/", ignoreCase = true)) {
+                    orig.delete()
+                    android.media.MediaScannerConnection.scanFile(this, arrayOf(orig.absolutePath), null, null)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun savePhotoDirectly(vehicleName: String, filename: String, sourceStream: java.io.InputStream): Boolean {

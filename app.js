@@ -699,7 +699,7 @@ function handleMenuButtonClick(targetDay) {
     homeSummaryCardEl.hidden = true;
     homeSummaryCardEl.style.display = 'none';
   }
-  if (appHeaderEl) appHeaderEl.style.display = 'flex';
+  if (appHeaderEl) appHeaderEl.style.display = 'none';
   if (appContentEl) {
     appContentEl.hidden = false;
     appContentEl.style.display = 'block';
