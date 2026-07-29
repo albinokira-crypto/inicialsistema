@@ -232,8 +232,12 @@ class MainActivity : ComponentActivity() {
                                 builder.setItems(names.toTypedArray()) { dialog, which ->
                                     val selectedIntent = intents[which]
                                     val selectedPkg = selectedIntent.`package`
+                                    val selectedLabel = names[which]
                                     if (selectedPkg != null) {
-                                        prefs.edit().putString("preferred_camera_package", selectedPkg).apply()
+                                        prefs.edit()
+                                            .putString("preferred_camera_package", selectedPkg)
+                                            .putString("preferred_camera_label", selectedLabel)
+                                            .commit()
                                     }
                                     startActivityForResult(selectedIntent, FILE_CHOOSER_RESULT_CODE)
                                     dialog.dismiss()
@@ -798,7 +802,11 @@ class MainActivity : ComponentActivity() {
                         .setTitle("Selecione o aplicativo de Câmera")
                         .setItems(names.toTypedArray()) { dialog, which ->
                             val selectedPkg = packages[which]
-                            prefs.edit().putString("preferred_camera_package", selectedPkg).apply()
+                            val selectedLabel = names[which]
+                            prefs.edit()
+                                .putString("preferred_camera_package", selectedPkg)
+                                .putString("preferred_camera_label", selectedLabel)
+                                .commit()
                             dialog.dismiss()
                             startCameraAndRecordTime(selectedPkg)
                         }
@@ -808,7 +816,11 @@ class MainActivity : ComponentActivity() {
                 return
             } else if (cameraActivities.size == 1) {
                 val selectedPkg = cameraActivities[0].activityInfo.packageName
-                prefs.edit().putString("preferred_camera_package", selectedPkg).apply()
+                val selectedLabel = cameraActivities[0].loadLabel(pm).toString()
+                prefs.edit()
+                    .putString("preferred_camera_package", selectedPkg)
+                    .putString("preferred_camera_label", selectedLabel)
+                    .commit()
                 startCameraAndRecordTime(selectedPkg)
                 return
             }
@@ -1040,12 +1052,22 @@ class MainActivity : ComponentActivity() {
         try {
             val resolver = contentResolver
             val relativePath = "Pictures/Vistorias/$cleanVehicleName/"
+            val targetUri = if (isVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            
+            val projection = arrayOf(MediaStore.MediaColumns._ID)
+            val selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
+            val selectionArgs = arrayOf(cleanFilename, relativePath)
+            resolver.query(targetUri, projection, selection, selectionArgs, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    return true
+                }
+            }
+
             val contentValues = android.content.ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, cleanFilename)
                 put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
                 put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
             }
-            val targetUri = if (isVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
             val uri = resolver.insert(targetUri, contentValues)
             if (uri != null) {
                 resolver.openOutputStream(uri)?.use { ops ->
@@ -1363,12 +1385,14 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 try {
                     if (file.exists() && file.length() > 0) {
                         val lowerName = file.name.lowercase()
-                        if (addedNames.contains(lowerName)) continue
+                        val cleanNameKey = lowerName.replace(Regex("""\s*\(\d+\)"""), "").replace(Regex("""_\d+(?=\.\w+$)"""), "")
+                        if (addedNames.contains(cleanNameKey) || addedNames.contains(lowerName)) continue
                         val bytes = file.readBytes()
                         val hash = calculateMd5(bytes)
                         if (addedHashes.contains(hash)) continue
                         addedHashes.add(hash)
                         addedNames.add(lowerName)
+                        addedNames.add(cleanNameKey)
                         
                         val destFile = java.io.File(cacheDir, file.name)
                         destFile.writeBytes(bytes)
@@ -1600,13 +1624,18 @@ class AndroidInterface(private val activity: ComponentActivity) {
     @JavascriptInterface
     fun getPreferredCameraLabel(): String {
         val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
-        val pkg = prefs.getString("preferred_camera_package", null) ?: return "Nenhuma"
+        val savedLabel = prefs.getString("preferred_camera_label", null)
+        val pkg = prefs.getString("preferred_camera_package", null)
+        if (pkg == null && savedLabel == null) return "Nenhuma"
+        if (savedLabel != null && savedLabel.isNotEmpty()) return savedLabel
         return try {
-            val pm = activity.packageManager
-            val info = pm.getApplicationInfo(pkg, 0)
-            pm.getApplicationLabel(info).toString()
+            if (pkg != null) {
+                val pm = activity.packageManager
+                val appInfo = pm.getApplicationInfo(pkg, 0)
+                pm.getApplicationLabel(appInfo).toString()
+            } else "Nenhuma"
         } catch (e: Exception) {
-            "Configurada"
+            "Câmera Preferida"
         }
     }
 

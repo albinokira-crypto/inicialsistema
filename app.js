@@ -3080,8 +3080,7 @@ function updatePreferredCameraUI() {
       label = androidLabel;
       localStorage.setItem('preferred_camera_label', androidLabel);
     } else {
-      label = 'Nenhuma';
-      localStorage.removeItem('preferred_camera_label');
+      label = localStorage.getItem('preferred_camera_label') || 'Nenhuma';
     }
   } else {
     label = localStorage.getItem('preferred_camera_label') || 'Nenhuma';
