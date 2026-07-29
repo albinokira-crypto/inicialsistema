@@ -3203,17 +3203,22 @@ async function shareVistoria(id) {
 
   const isInspection = items.some(entry => entry.id === id);
   let reportText = '';
+  let itemDate = '';
   if (isInspection) {
     reportText = getSurveyText(id);
   } else {
     reportText = formatSingleSupervisaoText(item);
+    itemDate = item.date || item.dateInput || '';
   }
 
   if (!reportText || !reportText.trim()) {
     reportText = `Vistoria do veículo: ${vehicleName}`;
   }
 
-  if (window.AndroidInterface && typeof window.AndroidInterface.startShare === 'function') {
+  if (window.AndroidInterface && typeof window.AndroidInterface.startShareWithDate === 'function') {
+    window.AndroidInterface.startShareWithDate(vehicleName, reportText, itemDate);
+    return;
+  } else if (window.AndroidInterface && typeof window.AndroidInterface.startShare === 'function') {
     window.AndroidInterface.startShare(vehicleName, reportText);
     return;
   }

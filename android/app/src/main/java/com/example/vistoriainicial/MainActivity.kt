@@ -1106,11 +1106,16 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
     @JavascriptInterface
     fun startShare(vehicleName: String) {
-        startShare(vehicleName, "Seguem as fotos da vistoria do veículo: $vehicleName")
+        startShareWithDate(vehicleName, "Seguem as fotos da vistoria do veículo: $vehicleName", "")
     }
 
     @JavascriptInterface
     fun startShare(vehicleName: String, reportText: String) {
+        startShareWithDate(vehicleName, reportText, "")
+    }
+
+    @JavascriptInterface
+    fun startShareWithDate(vehicleName: String, reportText: String, targetDate: String) {
         activity.runOnUiThread {
             val mainAct = activity as MainActivity
             val cleanVehicleName = mainAct.sanitizeFilename(vehicleName)
@@ -1128,6 +1133,24 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
+            fun isSameDate(lastModified: Long): Boolean {
+                if (targetDate.isNullOrEmpty()) return true
+                try {
+                    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                    val fileDate = sdf.format(java.util.Date(lastModified))
+                    var cleanTarget = targetDate.trim().replace("/", "-")
+                    val parts = cleanTarget.split("-")
+                    if (parts.size >= 3) {
+                        if (parts[0].length == 2 && parts[2].length == 4) {
+                            cleanTarget = "${parts[2]}-${parts[1]}-${parts[0]}"
+                        }
+                    }
+                    return fileDate == cleanTarget
+                } catch (e: Exception) {
+                    return true
+                }
+            }
+
             val filesToCopy = ArrayList<java.io.File>()
             val safPairsToCopy = ArrayList<Pair<String, Uri>>()
 
@@ -1140,7 +1163,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                         if (vehicleFolder != null && vehicleFolder.exists()) {
                             val files = vehicleFolder.listFiles()
                             for (file in files) {
-                                if (file.isFile) {
+                                if (file.isFile && isSameDate(file.lastModified())) {
                                     val name = file.name ?: ""
                                     val lowerName = name.lowercase()
                                     if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") ||
@@ -1165,7 +1188,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     val files = vistoriasDir.listFiles()
                     if (files != null) {
                         for (file in files) {
-                            if (file.isFile) {
+                            if (file.isFile && isSameDate(file.lastModified())) {
                                 val name = file.name.lowercase()
                                 if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
                                     name.endsWith(".png") || name.endsWith(".mp4") ||
@@ -1189,7 +1212,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                         val files = vistoriasDir.listFiles()
                         if (files != null) {
                             for (file in files) {
-                                if (file.isFile) {
+                                if (file.isFile && isSameDate(file.lastModified())) {
                                     val name = file.name.lowercase()
                                     if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
                                         name.endsWith(".png") || name.endsWith(".mp4") ||
@@ -1206,8 +1229,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
-            var fileIndex = 1
-            // Mapa de nomes e hashes já adicionados para evitar duplicatas ao compartilhar
             val addedHashes = HashSet<String>()
             val addedNames = HashSet<String>()
             
@@ -1271,7 +1292,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             if (tempShareFiles.isEmpty()) {
-                // Sem fotos: compartilha apenas o relatório via seletor do sistema
                 try {
                     val textIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
@@ -1308,33 +1328,16 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 
                 val intent = Intent().apply {
                     action = Intent.ACTION_SEND_MULTIPLE
-                    // Usa */* para suportar fotos e vídeos juntos
                     type = "*/*"
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-                    putExtra(Intent.EXTRA_SUBJECT, "Fotos da Vistoria: $vehicleName")
+                    putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
                     putExtra(Intent.EXTRA_TEXT, reportText)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 
-                try {
-                    val waIntent = Intent(intent).apply { setPackage("com.whatsapp") }
-                    for (uri in uris) {
-                        activity.grantUriPermission("com.whatsapp", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    activity.startActivity(waIntent)
-                } catch (e: Exception) {
-                    try {
-                        val wbIntent = Intent(intent).apply { setPackage("com.whatsapp.w4b") }
-                        for (uri in uris) {
-                            activity.grantUriPermission("com.whatsapp.w4b", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-                        activity.startActivity(wbIntent)
-                    } catch (e2: Exception) {
-                        val chooser = Intent.createChooser(intent, "Compartilhar Fotos da Vistoria")
-                        chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        activity.startActivity(chooser)
-                    }
-                }
+                val chooser = Intent.createChooser(intent, "Compartilhar Vistoria: $vehicleName")
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                activity.startActivity(chooser)
             } catch (e: Exception) {
                 e.printStackTrace()
                 Toast.makeText(activity, "Erro ao compartilhar: ${e.message}", Toast.LENGTH_SHORT).show()
