@@ -381,7 +381,6 @@ class MainActivity : ComponentActivity() {
                                     savePhotoDirectly(activeCameraVehicleName, name, inputStream)
                                 }
                                 if (saved) {
-                                    file.delete()
                                     android.media.MediaScannerConnection.scanFile(
                                         this@MainActivity,
                                         arrayOf(file.absolutePath),
@@ -393,7 +392,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                     importedPhotoNames.add(name)
                                     importedCount++
-                                    android.util.Log.d("Vistoria", "Imported and deleted physical file: ${file.absolutePath}")
+                                    android.util.Log.d("Vistoria", "Imported physical file: ${file.absolutePath}")
                                 }
                             } catch (e: Exception) {
                                 e.printStackTrace()
@@ -496,30 +495,8 @@ class MainActivity : ComponentActivity() {
                             } ?: false
                             
                             if (saved) {
-                                // Marca como importado ANTES de deletar para evitar reprocessamento
                                 importedMediaStoreIds.add(id)
                                 importedPhotoNames.add(name)
-                                
-                                // Deleta o original apenas se tiver caminho físico válido
-                                if (absolutePath != null) {
-                                    try {
-                                        val origFile = File(absolutePath)
-                                        if (origFile.exists() && origFile.isFile) {
-                                            origFile.delete()
-                                            android.media.MediaScannerConnection.scanFile(this@MainActivity, arrayOf(absolutePath), null, null)
-                                            android.util.Log.d("Vistoria", "Deleted original file at path: $absolutePath")
-                                        }
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                }
-                                
-                                // Remove do banco do MediaStore
-                                try {
-                                    contentResolver.delete(contentUri, null, null)
-                                } catch (e: Exception) {
-                                    // Ignore
-                                }
                                 
                                 runOnUiThread {
                                     webView.evaluateJavascript("window.onPhotoCapturedFromAndroid('$activeCameraVehicleName', '$name', '')", null)
@@ -1399,6 +1376,14 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     }
                 }
                 
+                try {
+                    val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    val clip = android.content.ClipData.newPlainText("RelatorioVistoria", reportText)
+                    clipboard.setPrimaryClip(clip)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
                 val intent = Intent().apply {
                     action = Intent.ACTION_SEND_MULTIPLE
                     type = "*/*"
