@@ -3095,6 +3095,17 @@ function updatePreferredCameraUI() {
   }
 }
 
+const selectCameraBtn = document.getElementById('selectCameraBtn');
+if (selectCameraBtn) {
+  selectCameraBtn.addEventListener('click', () => {
+    if (window.AndroidInterface && typeof window.AndroidInterface.selectPreferredCamera === 'function') {
+      window.AndroidInterface.selectPreferredCamera();
+    } else {
+      alert("A seleção de câmera preferida está disponível no app Android.");
+    }
+  });
+}
+
 const clearCameraBtn = document.getElementById('clearCameraBtn');
 if (clearCameraBtn) {
   clearCameraBtn.addEventListener('click', () => {

@@ -352,10 +352,15 @@ class MainActivity : ComponentActivity() {
         val dcim = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
         val movies = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
         val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val pictures = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
         val foldersToCheck = arrayOf(
             File(dcim, "Camera"),
             File(dcim, "OpenCamera"),
+            File(dcim, "100ANDRO"),
+            File(pictures, "Camera"),
+            File(pictures, "OpenCamera"),
             File(movies, "Camera"),
+            File(movies, "OpenCamera"),
             File(downloads, "Camera")
         )
         
@@ -947,20 +952,27 @@ class MainActivity : ComponentActivity() {
 
     fun deleteOriginalPhoto(filename: String) {
         try {
-            val dcimCamera = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "Camera")
-            if (dcimCamera.exists() && dcimCamera.isDirectory) {
-                val orig = File(dcimCamera, filename)
-                if (orig.exists() && orig.isFile && !orig.absolutePath.contains("/Vistorias/", ignoreCase = true)) {
-                    orig.delete()
-                    android.media.MediaScannerConnection.scanFile(this, arrayOf(orig.absolutePath), null, null)
-                }
-            }
-            val picturesCamera = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera")
-            if (picturesCamera.exists() && picturesCamera.isDirectory) {
-                val orig = File(picturesCamera, filename)
-                if (orig.exists() && orig.isFile && !orig.absolutePath.contains("/Vistorias/", ignoreCase = true)) {
-                    orig.delete()
-                    android.media.MediaScannerConnection.scanFile(this, arrayOf(orig.absolutePath), null, null)
+            val dcim = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+            val movies = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+            val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val pictures = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val foldersToClean = arrayOf(
+                File(dcim, "Camera"),
+                File(dcim, "OpenCamera"),
+                File(dcim, "100ANDRO"),
+                File(pictures, "Camera"),
+                File(pictures, "OpenCamera"),
+                File(movies, "Camera"),
+                File(movies, "OpenCamera"),
+                File(downloads, "Camera")
+            )
+            for (folder in foldersToClean) {
+                if (folder.exists() && folder.isDirectory) {
+                    val orig = File(folder, filename)
+                    if (orig.exists() && orig.isFile && !orig.absolutePath.contains("/Vistorias/", ignoreCase = true)) {
+                        orig.delete()
+                        android.media.MediaScannerConnection.scanFile(this, arrayOf(orig.absolutePath), null, null)
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -1005,9 +1017,10 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // 2. Default Public Folder: /storage/emulated/0/Vistorias/$cleanVehicleName/
+        // 2. Default Public Folder: Pictures/Vistorias/$cleanVehicleName/
         try {
-            val rootVistorias = File(Environment.getExternalStorageDirectory(), "Vistorias/$cleanVehicleName")
+            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val rootVistorias = File(picturesDir, "Vistorias/$cleanVehicleName")
             if (!rootVistorias.exists()) rootVistorias.mkdirs()
             val targetFile = File(rootVistorias, cleanFilename)
             if (targetFile.exists() && targetFile.length() > 0) {
@@ -1017,7 +1030,7 @@ class MainActivity : ComponentActivity() {
                 sourceStream.copyTo(ops)
             }
             android.media.MediaScannerConnection.scanFile(this, arrayOf(targetFile.absolutePath), arrayOf(mimeType), null)
-            android.util.Log.d("Vistoria", "Saved directly to root Vistorias folder: ${targetFile.absolutePath}")
+            android.util.Log.d("Vistoria", "Saved directly to Pictures/Vistorias folder: ${targetFile.absolutePath}")
             return true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -1524,9 +1537,61 @@ class AndroidInterface(private val activity: ComponentActivity) {
     }
 
     @JavascriptInterface
+    fun selectPreferredCamera() {
+        val mainAct = activity as MainActivity
+        mainAct.runOnUiThread {
+            val pm = mainAct.packageManager
+            val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+            val launcherIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
+            }
+            val launcherActivities = pm.queryIntentActivities(launcherIntent, 0)
+            val cameraActivities = ArrayList<android.content.pm.ResolveInfo>()
+            val cameraKeywords = listOf("camera", "câmera", "camer", "foto", "photo", "gcam", "opencamera", "camara")
+            
+            for (info in launcherActivities) {
+                val pkgName = info.activityInfo.packageName.lowercase()
+                val label = info.loadLabel(pm).toString().lowercase()
+                if (pkgName == mainAct.packageName.lowercase()) continue
+                val isCameraApp = cameraKeywords.any { pkgName.contains(it) || label.contains(it) }
+                if (isCameraApp) {
+                    cameraActivities.add(info)
+                }
+            }
+
+            if (cameraActivities.isNotEmpty()) {
+                val names = ArrayList<String>()
+                val packages = ArrayList<String>()
+                for (resolveInfo in cameraActivities) {
+                    names.add(resolveInfo.loadLabel(pm).toString())
+                    packages.add(resolveInfo.activityInfo.packageName)
+                }
+                
+                android.app.AlertDialog.Builder(mainAct)
+                    .setTitle("Selecione a Câmera Preferida")
+                    .setItems(names.toTypedArray()) { dialog, which ->
+                        val selectedPkg = packages[which]
+                        val label = names[which]
+                        prefs.edit()
+                            .putString("preferred_camera_package", selectedPkg)
+                            .putString("preferred_camera_label", label)
+                            .commit()
+                        dialog.dismiss()
+                        Toast.makeText(mainAct, "Câmera preferida salva: $label", Toast.LENGTH_SHORT).show()
+                        mainAct.webView.evaluateJavascript("if (typeof updatePreferredCameraUI === 'function') updatePreferredCameraUI();", null)
+                    }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            } else {
+                Toast.makeText(mainAct, "Nenhum aplicativo de câmera encontrado.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    @JavascriptInterface
     fun clearPreferredCamera() {
         val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
-        prefs.edit().remove("preferred_camera_package").apply()
+        prefs.edit().remove("preferred_camera_package").remove("preferred_camera_label").commit()
         activity.runOnUiThread {
             Toast.makeText(activity, "Preferência de câmera limpa!", Toast.LENGTH_SHORT).show()
         }
