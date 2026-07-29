@@ -1213,8 +1213,9 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             var fileIndex = 1
-            // Mapa de nomes e tamanhos já adicionados para evitar duplicatas
+            // Mapa de nomes e hashes já adicionados para evitar duplicatas ao compartilhar
             val addedHashes = HashSet<String>()
+            val addedNames = HashSet<String>()
             
             fun calculateMd5(bytes: ByteArray): String {
                 return try {
@@ -1228,8 +1229,10 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             for (pair in safPairsToCopy) {
                 val origName = pair.first
+                val lowerName = origName.lowercase()
                 val uri = pair.second
                 try {
+                    if (addedNames.contains(lowerName)) continue
                     val inputStream = activity.contentResolver.openInputStream(uri)
                     if (inputStream != null) {
                         val bytes = inputStream.readBytes()
@@ -1237,10 +1240,13 @@ class AndroidInterface(private val activity: ComponentActivity) {
                             val hash = calculateMd5(bytes)
                             if (addedHashes.contains(hash)) continue
                             addedHashes.add(hash)
+                            addedNames.add(lowerName)
                             
                             val destFile = java.io.File(cacheDir, origName)
                             destFile.writeBytes(bytes)
-                            tempShareFiles.add(destFile)
+                            if (!tempShareFiles.contains(destFile)) {
+                                tempShareFiles.add(destFile)
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -1251,14 +1257,19 @@ class AndroidInterface(private val activity: ComponentActivity) {
             for (file in filesToCopy) {
                 try {
                     if (file.exists() && file.length() > 0) {
+                        val lowerName = file.name.lowercase()
+                        if (addedNames.contains(lowerName)) continue
                         val bytes = file.readBytes()
                         val hash = calculateMd5(bytes)
                         if (addedHashes.contains(hash)) continue
                         addedHashes.add(hash)
+                        addedNames.add(lowerName)
                         
                         val destFile = java.io.File(cacheDir, file.name)
                         destFile.writeBytes(bytes)
-                        tempShareFiles.add(destFile)
+                        if (!tempShareFiles.contains(destFile)) {
+                            tempShareFiles.add(destFile)
+                        }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -1285,13 +1296,20 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             try {
                 val uris = ArrayList<Uri>()
+                val addedUriStrings = HashSet<String>()
                 for (file in tempShareFiles) {
-                    val uri = androidx.core.content.FileProvider.getUriForFile(
-                        activity,
-                        "com.example.vistoriainicial.fileprovider",
-                        file
-                    )
-                    uris.add(uri)
+                    if (file.exists() && file.length() > 0) {
+                        val uri = androidx.core.content.FileProvider.getUriForFile(
+                            activity,
+                            "com.example.vistoriainicial.fileprovider",
+                            file
+                        )
+                        val uriStr = uri.toString()
+                        if (!addedUriStrings.contains(uriStr)) {
+                            addedUriStrings.add(uriStr)
+                            uris.add(uri)
+                        }
+                    }
                 }
                 
                 val intent = Intent().apply {
