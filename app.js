@@ -3612,6 +3612,9 @@ function fallbackDownloadJson(filename, jsonString) {
   }
 }
 
+let currentBackupJsonString = '';
+let currentBackupFilename = '';
+
 async function triggerExportBackup() {
   try {
     const backup = {};
@@ -3620,12 +3623,59 @@ async function triggerExportBackup() {
       backup[key] = localStorage.getItem(key);
     }
     
-    const jsonString = JSON.stringify(backup, null, 2);
-    const filename = `backup_sistema_vistoria_${new Date().toISOString().slice(0, 10)}.json`;
+    currentBackupJsonString = JSON.stringify(backup, null, 2);
+    currentBackupFilename = `backup_sistema_vistoria_${new Date().toISOString().slice(0, 10)}.json`;
 
-    downloadJsonFile(filename, jsonString);
+    const backupExportModal = document.getElementById('backupExportModal');
+    const backupTextarea = document.getElementById('backupTextarea');
+    if (backupExportModal && backupTextarea) {
+      backupTextarea.value = currentBackupJsonString;
+      backupExportModal.style.display = 'flex';
+    } else {
+      downloadJsonFile(currentBackupFilename, currentBackupJsonString);
+    }
   } catch (err) {
     alert('Erro ao exportar backup: ' + err.message);
+  }
+}
+
+function closeBackupExportModal() {
+  const backupExportModal = document.getElementById('backupExportModal');
+  if (backupExportModal) backupExportModal.style.display = 'none';
+}
+
+function openPasteImportModal() {
+  const backupPasteImportModal = document.getElementById('backupPasteImportModal');
+  const pasteBackupTextarea = document.getElementById('pasteBackupTextarea');
+  if (pasteBackupTextarea) pasteBackupTextarea.value = '';
+  if (backupPasteImportModal) backupPasteImportModal.style.display = 'flex';
+}
+
+function closePasteImportModal() {
+  const backupPasteImportModal = document.getElementById('backupPasteImportModal');
+  if (backupPasteImportModal) backupPasteImportModal.style.display = 'none';
+}
+
+function restoreBackupFromJsonString(jsonString) {
+  if (!jsonString || !jsonString.trim()) {
+    alert('Por favor, cole o código do backup no campo de texto.');
+    return;
+  }
+  try {
+    const data = JSON.parse(jsonString.trim());
+    if (!data || typeof data !== 'object') {
+      throw new Error('Formato de código de backup inválido.');
+    }
+    if (confirm('Deseja realmente restaurar este backup? Isso substituirá os dados atuais do sistema.')) {
+      localStorage.clear();
+      Object.keys(data).forEach(key => {
+        localStorage.setItem(key, data[key]);
+      });
+      alert('✅ Backup importado com sucesso! O sistema será recarregado.');
+      window.location.reload();
+    }
+  } catch (err) {
+    alert('Erro ao restaurar backup: ' + err.message);
   }
 }
 
@@ -3640,13 +3690,68 @@ window.triggerExportBackup = triggerExportBackup;
 window.triggerImportBackup = triggerImportBackup;
 window.exportBackup = triggerExportBackup;
 window.importBackup = triggerImportBackup;
+window.closeBackupExportModal = closeBackupExportModal;
+window.openPasteImportModal = openPasteImportModal;
+window.closePasteImportModal = closePasteImportModal;
 
 const exportBackupBtn = document.getElementById('exportBackupBtn');
 const importBackupBtn = document.getElementById('importBackupBtn');
 const dashboardBackupFileInput = document.getElementById('dashboardBackupFileInput');
+const copyBackupTextBtn = document.getElementById('copyBackupTextBtn');
+const downloadBackupFileBtn = document.getElementById('downloadBackupFileBtn');
+const shareBackupTextBtn = document.getElementById('shareBackupTextBtn');
+const submitPasteBackupBtn = document.getElementById('submitPasteBackupBtn');
 
 if (exportBackupBtn) {
   exportBackupBtn.addEventListener('click', triggerExportBackup);
+}
+
+if (copyBackupTextBtn) {
+  copyBackupTextBtn.addEventListener('click', () => {
+    if (!currentBackupJsonString) return;
+    copyTextToClipboard(currentBackupJsonString);
+    alert('✅ Código do backup copiado com sucesso! Você pode colar no WhatsApp, bloco de notas ou e-mail.');
+  });
+}
+
+if (downloadBackupFileBtn) {
+  downloadBackupFileBtn.addEventListener('click', () => {
+    if (!currentBackupJsonString || !currentBackupFilename) return;
+    downloadJsonFile(currentBackupFilename, currentBackupJsonString);
+  });
+}
+
+if (shareBackupTextBtn) {
+  shareBackupTextBtn.addEventListener('click', async () => {
+    if (!currentBackupJsonString) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Backup do Sistema de Vistoria',
+          text: currentBackupJsonString
+        });
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+    copyTextToClipboard(currentBackupJsonString);
+    try {
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(currentBackupJsonString.slice(0, 2000))}`;
+      window.open(waUrl, '_blank');
+    } catch (e) {
+      alert('Código do backup copiado para a área de transferência!');
+    }
+  });
+}
+
+if (submitPasteBackupBtn) {
+  submitPasteBackupBtn.addEventListener('click', () => {
+    const pasteBackupTextarea = document.getElementById('pasteBackupTextarea');
+    if (pasteBackupTextarea) {
+      restoreBackupFromJsonString(pasteBackupTextarea.value);
+    }
+  });
 }
 
 if (importBackupBtn && dashboardBackupFileInput) {
@@ -3659,22 +3764,7 @@ if (importBackupBtn && dashboardBackupFileInput) {
     if (confirm('Deseja realmente importar o backup? Isso substituirá todas as informações atuais do sistema.')) {
       const reader = new FileReader();
       reader.onload = function(e) {
-        try {
-          const data = JSON.parse(e.target.result);
-          if (!data || typeof data !== 'object') {
-            throw new Error('Formato de backup inválido.');
-          }
-
-          localStorage.clear();
-          Object.keys(data).forEach(key => {
-            localStorage.setItem(key, data[key]);
-          });
-
-          alert('Backup importado com sucesso! O sistema será recarregado.');
-          window.location.reload();
-        } catch (err) {
-          alert('Erro ao importar backup: ' + err.message);
-        }
+        restoreBackupFromJsonString(e.target.result);
       };
       reader.readAsText(file);
     }

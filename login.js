@@ -191,7 +191,24 @@ if (exportEmergencyBackupBtn) {
 }
 
 const importBackupButton = document.getElementById('importBackupButton');
+const importPasteBackupLoginBtn = document.getElementById('importPasteBackupLoginBtn');
 const backupFileInput = document.getElementById('backupFileInput');
+
+function restoreBackupInLogin(jsonString) {
+  try {
+    const data = JSON.parse(jsonString.trim());
+    if (!data || typeof data !== 'object') {
+      throw new Error('Formato de backup inválido.');
+    }
+    Object.keys(data).forEach(key => {
+      localStorage.setItem(key, data[key]);
+    });
+    alert('✅ Backup importado com sucesso! Agora você já pode fazer login no sistema.');
+    window.location.reload();
+  } catch (err) {
+    alert('Erro ao importar backup: ' + err.message);
+  }
+}
 
 if (importBackupButton && backupFileInput) {
   importBackupButton.addEventListener('click', () => {
@@ -204,23 +221,17 @@ if (importBackupButton && backupFileInput) {
 
     const reader = new FileReader();
     reader.onload = function(e) {
-      try {
-        const data = JSON.parse(e.target.result);
-        if (!data || typeof data !== 'object') {
-          throw new Error('Formato de backup inválido.');
-        }
-
-        // Restore keys to localStorage
-        Object.keys(data).forEach(key => {
-          localStorage.setItem(key, data[key]);
-        });
-
-        alert('Backup importado com sucesso! Agora você já pode fazer login.');
-        window.location.reload();
-      } catch (err) {
-        alert('Erro ao importar backup: ' + err.message);
-      }
+      restoreBackupInLogin(e.target.result);
     };
     reader.readAsText(file);
+  });
+}
+
+if (importPasteBackupLoginBtn) {
+  importPasteBackupLoginBtn.addEventListener('click', () => {
+    const jsonInput = prompt('Cole abaixo o código de backup (JSON):');
+    if (jsonInput && jsonInput.trim()) {
+      restoreBackupInLogin(jsonInput);
+    }
   });
 }
