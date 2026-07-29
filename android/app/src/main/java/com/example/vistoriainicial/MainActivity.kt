@@ -367,6 +367,13 @@ class MainActivity : ComponentActivity() {
                         val name = file.name
                         if (importedPhotoNames.contains(name)) continue
                         
+                        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+                        val customFolderName = prefs.getString("selected_folder_name", null) ?: prefs.getString("photo_folder_name_friendly", null) ?: ""
+                        val absPath = file.absolutePath.lowercase()
+                        if (absPath.contains("/vistorias/") || (customFolderName.isNotEmpty() && absPath.contains("/${customFolderName.lowercase()}/"))) {
+                            continue
+                        }
+                        
                         // Check if file was modified after camera session started (with 15s margin)
                         if (file.lastModified() >= (startTime - 15000)) {
                             try {
@@ -461,9 +468,14 @@ class MainActivity : ComponentActivity() {
                     val name = c.getString(nameColumn) ?: "midia_${System.currentTimeMillis()}.${if (isVideo) "mp4" else "jpg"}"
                     val absolutePath = c.getString(dataColumn)
                     
-                    // Exclude files already inside Vistorias folder to prevent accidental deletion/duplication
-                    if (absolutePath != null && (absolutePath.contains("/Vistorias/", ignoreCase = true) || absolutePath.contains("/vistorias/", ignoreCase = true))) {
-                        continue
+                    // Exclude files already inside Vistorias folder or custom selected folder
+                    val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+                    val customFolderName = prefs.getString("selected_folder_name", null) ?: prefs.getString("photo_folder_name_friendly", null) ?: ""
+                    if (absolutePath != null) {
+                        val lowerPath = absolutePath.lowercase()
+                        if (lowerPath.contains("/vistorias/") || (customFolderName.isNotEmpty() && lowerPath.contains("/${customFolderName.lowercase()}/"))) {
+                            continue
+                        }
                     }
                     
                     val dateAddedSec = c.getLong(dateAddedColumn)

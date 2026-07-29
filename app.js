@@ -3253,16 +3253,12 @@ function openPhotoManagerForVehicle(id, vehicleName) {
   localStorage.setItem('active_photo_id', id);
   localStorage.setItem('active_photo_vehicle_name', vehicleName);
 
-  if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
-    window.AndroidInterface.launchCameraCapture(vehicleName);
-  } else if (photoSystemCameraInput) {
-    photoSystemCameraInput.click();
-  } else {
-    const titleEl = document.getElementById('photoManagerTitle');
-    if (titleEl) titleEl.textContent = `Fotos - ${vehicleName}`;
-    if (photoManagerModal) photoManagerModal.style.display = 'flex';
-    loadPhotosForActiveVehicle();
-  }
+  const titleEl = document.getElementById('photoManagerTitle');
+  if (titleEl) titleEl.textContent = `Fotos - ${vehicleName}`;
+
+  if (photoManagerModal) photoManagerModal.style.display = 'flex';
+
+  loadPhotosForActiveVehicle();
 }
 
 async function loadPhotosForActiveVehicle() {
