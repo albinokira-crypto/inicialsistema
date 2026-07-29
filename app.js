@@ -3073,21 +3073,20 @@ function openSystemSettings() {
 function updatePreferredCameraUI() {
   const preferredCameraLabel = document.getElementById('preferredCameraLabel');
   const clearCameraBtn = document.getElementById('clearCameraBtn');
+  let label = localStorage.getItem('preferred_camera_label') || 'Nenhuma';
   if (window.AndroidInterface && typeof window.AndroidInterface.getPreferredCameraLabel === 'function') {
-    const label = window.AndroidInterface.getPreferredCameraLabel();
-    if (preferredCameraLabel) {
-      preferredCameraLabel.textContent = `Câmera preferida: ${label}`;
+    const androidLabel = window.AndroidInterface.getPreferredCameraLabel();
+    if (androidLabel && androidLabel !== 'Nenhuma') {
+      label = androidLabel;
+      localStorage.setItem('preferred_camera_label', androidLabel);
     }
-    if (clearCameraBtn) {
-      if (label !== 'Nenhuma') {
-        clearCameraBtn.style.display = 'block';
-      } else {
-        clearCameraBtn.style.display = 'none';
-      }
-    }
-  } else {
-    if (preferredCameraLabel) preferredCameraLabel.style.display = 'none';
-    if (clearCameraBtn) clearCameraBtn.style.display = 'none';
+  }
+  if (preferredCameraLabel) {
+    preferredCameraLabel.style.display = 'block';
+    preferredCameraLabel.textContent = `Câmera preferida: ${label}`;
+  }
+  if (clearCameraBtn) {
+    clearCameraBtn.style.display = (label && label !== 'Nenhuma') ? 'inline-block' : 'none';
   }
 }
 

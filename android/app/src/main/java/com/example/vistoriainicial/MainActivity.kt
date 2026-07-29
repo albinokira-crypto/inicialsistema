@@ -164,15 +164,18 @@ class MainActivity : ComponentActivity() {
                         if (preferredPkg != null) {
                             try {
                                 pm.getPackageInfo(preferredPkg, 0)
-                                val explicitIntent = Intent(captureIntent).apply {
-                                    setPackage(preferredPkg)
-                                    putExtra(android.provider.MediaStore.EXTRA_OUTPUT, cameraPhotoUri)
-                                    addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                                var explicitIntent = pm.getLaunchIntentForPackage(preferredPkg)
+                                if (explicitIntent == null) {
+                                    explicitIntent = Intent(captureIntent).apply {
+                                        setPackage(preferredPkg)
+                                        putExtra(android.provider.MediaStore.EXTRA_OUTPUT, cameraPhotoUri)
+                                        addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                                    }
                                 }
                                 startActivityForResult(explicitIntent, FILE_CHOOSER_RESULT_CODE)
                                 return true
                             } catch (e: Exception) {
-                                prefs.edit().remove("preferred_camera_package").apply()
+                                e.printStackTrace()
                             }
                         }
 
@@ -1332,6 +1335,12 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
                     putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
                     putExtra(Intent.EXTRA_TEXT, reportText)
+                    if (uris.isNotEmpty()) {
+                        clipData = android.content.ClipData.newRawUri("Vistoria", uris[0])
+                        for (i in 1 until uris.size) {
+                            clipData?.addItem(android.content.ClipData.Item(uris[i]))
+                        }
+                    }
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 
