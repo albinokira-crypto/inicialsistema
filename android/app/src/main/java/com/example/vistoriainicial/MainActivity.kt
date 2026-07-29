@@ -1369,6 +1369,10 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             if (tempShareFiles.isEmpty()) {
+                if (!targetDate.isNullOrEmpty()) {
+                    startShareWithDate(vehicleName, reportText, "")
+                    return@runOnUiThread
+                }
                 try {
                     val textIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
@@ -1525,6 +1529,30 @@ class AndroidInterface(private val activity: ComponentActivity) {
     @JavascriptInterface
     fun savePhoto(vehicleName: String, filename: String, base64Data: String) {
         savePhoto(vehicleName, filename, base64Data, "Vistorias")
+    }
+
+    @JavascriptInterface
+    fun savePhotoSync(vehicleName: String, filename: String, base64Data: String): Boolean {
+        val mainAct = activity as MainActivity
+        val data: ByteArray
+        try {
+            data = Base64.decode(base64Data, Base64.DEFAULT)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
+        }
+        return try {
+            val saved = java.io.ByteArrayInputStream(data).use { inputStream ->
+                mainAct.savePhotoDirectly(vehicleName, filename, inputStream)
+            }
+            if (saved) {
+                mainAct.deleteOriginalPhoto(mainAct.sanitizeFilename(filename))
+            }
+            saved
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
     }
 
     @JavascriptInterface

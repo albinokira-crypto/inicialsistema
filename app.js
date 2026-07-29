@@ -3059,7 +3059,7 @@ function updateFolderLabelUI() {
     if (friendlyName) {
       selectedFolderLabel.textContent = `Pasta selecionada: ${friendlyName}`;
     } else {
-      selectedFolderLabel.textContent = 'Nenhuma pasta selecionada (usando padrão)';
+      selectedFolderLabel.textContent = 'Nenhuma pasta selecionada (usando padrão: Vistorias)';
     }
   }
 }
@@ -3187,6 +3187,22 @@ function blobToBase64(blob) {
   });
 }
 
+function base64ToBlob(base64, mimeType = 'image/jpeg') {
+  const cleanBase64 = base64.includes(',') ? base64.split(',')[1] : base64;
+  const byteCharacters = atob(cleanBase64);
+  const byteArrays = [];
+  for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+    const slice = byteCharacters.slice(offset, offset + 512);
+    const byteNumbers = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+  return new Blob(byteArrays, { type: mimeType });
+}
+
 // Compartilha fotos + relatório. Se não há fotos, compartilha só o relatório.
 async function shareVistoria(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
@@ -3205,6 +3221,7 @@ async function shareVistoria(id) {
   let itemDate = '';
   if (isInspection) {
     reportText = getSurveyText(id);
+    itemDate = item.date || item.day || '';
   } else {
     reportText = formatSingleSupervisaoText(item);
     itemDate = item.date || item.dateInput || '';
@@ -3214,16 +3231,23 @@ async function shareVistoria(id) {
     reportText = `Vistoria do veículo: ${vehicleName}`;
   }
 
+  // Copia o texto do relatório para a área de transferência como segurança
+  copyTextToClipboard(reportText);
+
   if (window.AndroidInterface) {
     try {
       const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
-      if (storedPhotos && storedPhotos.length > 0 && typeof window.AndroidInterface.savePhoto === 'function') {
+      if (storedPhotos && storedPhotos.length > 0) {
         for (const p of storedPhotos) {
           if (p.rawBlob) {
             const base64 = await blobToBase64(p.rawBlob);
             if (base64) {
               const rawData = base64.includes(',') ? base64.split(',')[1] : base64;
-              window.AndroidInterface.savePhoto(vehicleName, p.name, rawData);
+              if (typeof window.AndroidInterface.savePhotoSync === 'function') {
+                window.AndroidInterface.savePhotoSync(vehicleName, p.name, rawData);
+              } else if (typeof window.AndroidInterface.savePhoto === 'function') {
+                window.AndroidInterface.savePhoto(vehicleName, p.name, rawData);
+              }
             }
           }
         }
@@ -3241,9 +3265,34 @@ async function shareVistoria(id) {
     }
   }
 
+  // Fallback para Navegador Web / PWA usando Web Share API com arquivos
+  const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
+  let filesToShare = [];
+  if (storedPhotos && storedPhotos.length > 0) {
+    for (const p of storedPhotos) {
+      if (p.rawBlob) {
+        let mimeType = p.rawBlob.type;
+        if (!mimeType || mimeType === 'application/octet-stream') {
+          const isVid = /\.(mp4|3gp|mov|mkv|webm)$/i.test(p.name);
+          mimeType = isVid ? 'video/mp4' : 'image/jpeg';
+        }
+        filesToShare.push(new File([p.rawBlob], p.name, { type: mimeType }));
+      }
+    }
+  }
+
   if (navigator.share) {
+    const shareData = {
+      title: 'Vistoria: ' + vehicleName,
+      text: reportText
+    };
+
+    if (filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
+      shareData.files = filesToShare;
+    }
+
     try {
-      await navigator.share({ title: 'Vistoria: ' + vehicleName, text: reportText });
+      await navigator.share(shareData);
       return;
     } catch (err) {
       if (err.name === 'AbortError') return;
@@ -3251,7 +3300,6 @@ async function shareVistoria(id) {
     }
   }
 
-  copyTextToClipboard(reportText);
   try {
     const encodedText = encodeURIComponent(reportText);
     const waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
@@ -3431,12 +3479,27 @@ window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64
       localStorage.setItem('active_photo_vehicle_name', vehicleName);
     }
     
-    // Clear flag but do not open modal
+    if (filename && vehicleName) {
+      const isVid = /\.(mp4|3gp|mov|mkv|webm)$/i.test(filename);
+      if (base64Data) {
+        try {
+          const blob = base64ToBlob(base64Data, isVid ? 'video/mp4' : 'image/jpeg');
+          await savePhotoToDb(vehicleName, filename, blob);
+        } catch (err) {
+          console.warn("Erro ao registrar mídia capturada no IndexedDB:", err);
+        }
+      }
+    }
+
+    if (typeof loadPhotosForActiveVehicle === 'function') {
+      loadPhotosForActiveVehicle();
+    }
+
     if (localStorage.getItem('waiting_camera_return') === 'true') {
       localStorage.removeItem('waiting_camera_return');
     }
   } catch (e) {
-    console.error("Erro ao processar imagem capturada do Android:", e);
+    console.error("Erro ao processar mídia capturada do Android:", e);
   }
 };
 
