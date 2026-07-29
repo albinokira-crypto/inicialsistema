@@ -3656,22 +3656,98 @@ function closePasteImportModal() {
   if (backupPasteImportModal) backupPasteImportModal.style.display = 'none';
 }
 
+function repairTruncatedJson(str) {
+  if (!str) throw new Error('O texto de backup informado está vazio.');
+  str = str.trim();
+  try {
+    const directParse = JSON.parse(str);
+    if (directParse && typeof directParse === 'object') return directParse;
+  } catch (e) {
+    console.warn('JSON.parse direto falhou, iniciando reparo automático...', e);
+  }
+
+  let fixedStr = str;
+  // Se houver aspas não fechadas, fecha aspas no final
+  let quoteCount = 0;
+  for (let i = 0; i < fixedStr.length; i++) {
+    if (fixedStr[i] === '"' && (i === 0 || fixedStr[i-1] !== '\\')) {
+      quoteCount++;
+    }
+  }
+  if (quoteCount % 2 !== 0) {
+    fixedStr += '"';
+  }
+
+  // Remove pontuações truncadas no final
+  fixedStr = fixedStr.replace(/[,:]\s*"?$/, '');
+
+  // Conta chaves e colchetes abertos
+  let openBraces = 0;
+  let openBrackets = 0;
+  let inString = false;
+  for (let i = 0; i < fixedStr.length; i++) {
+    const ch = fixedStr[i];
+    if (ch === '"' && (i === 0 || fixedStr[i-1] !== '\\')) {
+      inString = !inString;
+    }
+    if (!inString) {
+      if (ch === '{') openBraces++;
+      if (ch === '}') openBraces--;
+      if (ch === '[') openBrackets++;
+      if (ch === ']') openBrackets--;
+    }
+  }
+
+  while (openBrackets > 0) {
+    fixedStr += ']';
+    openBrackets--;
+  }
+  while (openBraces > 0) {
+    fixedStr += '}';
+    openBraces--;
+  }
+
+  try {
+    const parsed = JSON.parse(fixedStr);
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch (e) {
+    console.warn('Reparo automático de estrutura falhou, extraindo chaves via expressões regulares...', e);
+  }
+
+  // Extrator por Regex para resgatar o máximo de chaves do localStorage salvas
+  const result = {};
+  const kvRegex = /"([^"\\]+)"\s*:\s*("(?:[^"\\]|\\.)*"|true|false|null|-?\d+(?:\.\d+)?)/g;
+  let match;
+  while ((match = kvRegex.exec(str)) !== null) {
+    try {
+      const k = match[1];
+      const v = JSON.parse(match[2]);
+      result[k] = v;
+    } catch(err) {}
+  }
+
+  if (Object.keys(result).length > 0) {
+    return result;
+  }
+
+  throw new Error('Não foi possível ler o código do backup. Certifique-se de colar o código completo.');
+}
+
 function restoreBackupFromJsonString(jsonString) {
   if (!jsonString || !jsonString.trim()) {
     alert('Por favor, cole o código do backup no campo de texto.');
     return;
   }
   try {
-    const data = JSON.parse(jsonString.trim());
-    if (!data || typeof data !== 'object') {
-      throw new Error('Formato de código de backup inválido.');
-    }
+    const data = repairTruncatedJson(jsonString);
     if (confirm('Deseja realmente restaurar este backup? Isso substituirá os dados atuais do sistema.')) {
+      let restoredKeys = 0;
       localStorage.clear();
       Object.keys(data).forEach(key => {
         localStorage.setItem(key, data[key]);
+        restoredKeys++;
       });
-      alert('✅ Backup importado com sucesso! O sistema será recarregado.');
+      alert(`✅ Backup importado com sucesso! (${restoredKeys} chaves restauradas). O sistema será recarregado.`);
       window.location.reload();
     }
   } catch (err) {
@@ -3737,7 +3813,7 @@ if (shareBackupTextBtn) {
     }
     copyTextToClipboard(currentBackupJsonString);
     try {
-      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(currentBackupJsonString.slice(0, 2000))}`;
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(currentBackupJsonString)}`;
       window.open(waUrl, '_blank');
     } catch (e) {
       alert('Código do backup copiado para a área de transferência!');

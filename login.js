@@ -193,22 +193,114 @@ if (exportEmergencyBackupBtn) {
 const importBackupButton = document.getElementById('importBackupButton');
 const importPasteBackupLoginBtn = document.getElementById('importPasteBackupLoginBtn');
 const backupFileInput = document.getElementById('backupFileInput');
+const submitPasteBackupLoginBtn = document.getElementById('submitPasteBackupLoginBtn');
+
+function repairTruncatedJson(str) {
+  if (!str) throw new Error('O texto de backup informado está vazio.');
+  str = str.trim();
+  try {
+    const directParse = JSON.parse(str);
+    if (directParse && typeof directParse === 'object') return directParse;
+  } catch (e) {
+    console.warn('JSON.parse direto falhou, iniciando reparo automático...', e);
+  }
+
+  let fixedStr = str;
+  // Se houver aspas não fechadas, fecha aspas no final
+  let quoteCount = 0;
+  for (let i = 0; i < fixedStr.length; i++) {
+    if (fixedStr[i] === '"' && (i === 0 || fixedStr[i-1] !== '\\')) {
+      quoteCount++;
+    }
+  }
+  if (quoteCount % 2 !== 0) {
+    fixedStr += '"';
+  }
+
+  // Remove pontuações truncadas no final
+  fixedStr = fixedStr.replace(/[,:]\s*"?$/, '');
+
+  // Conta chaves e colchetes abertos
+  let openBraces = 0;
+  let openBrackets = 0;
+  let inString = false;
+  for (let i = 0; i < fixedStr.length; i++) {
+    const ch = fixedStr[i];
+    if (ch === '"' && (i === 0 || fixedStr[i-1] !== '\\')) {
+      inString = !inString;
+    }
+    if (!inString) {
+      if (ch === '{') openBraces++;
+      if (ch === '}') openBraces--;
+      if (ch === '[') openBrackets++;
+      if (ch === ']') openBrackets--;
+    }
+  }
+
+  while (openBrackets > 0) {
+    fixedStr += ']';
+    openBrackets--;
+  }
+  while (openBraces > 0) {
+    fixedStr += '}';
+    openBraces--;
+  }
+
+  try {
+    const parsed = JSON.parse(fixedStr);
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch (e) {
+    console.warn('Reparo automático de estrutura falhou, extraindo chaves via expressões regulares...', e);
+  }
+
+  // Extrator por Regex para resgatar o máximo de chaves do localStorage salvas
+  const result = {};
+  const kvRegex = /"([^"\\]+)"\s*:\s*("(?:[^"\\]|\\.)*"|true|false|null|-?\d+(?:\.\d+)?)/g;
+  let match;
+  while ((match = kvRegex.exec(str)) !== null) {
+    try {
+      const k = match[1];
+      const v = JSON.parse(match[2]);
+      result[k] = v;
+    } catch(err) {}
+  }
+
+  if (Object.keys(result).length > 0) {
+    return result;
+  }
+
+  throw new Error('Não foi possível ler o código do backup. Certifique-se de colar o código completo.');
+}
 
 function restoreBackupInLogin(jsonString) {
   try {
-    const data = JSON.parse(jsonString.trim());
-    if (!data || typeof data !== 'object') {
-      throw new Error('Formato de backup inválido.');
-    }
+    const data = repairTruncatedJson(jsonString);
+    let restoredKeys = 0;
     Object.keys(data).forEach(key => {
       localStorage.setItem(key, data[key]);
+      restoredKeys++;
     });
-    alert('✅ Backup importado com sucesso! Agora você já pode fazer login no sistema.');
+    alert(`✅ Backup importado com sucesso! (${restoredKeys} chaves restauradas). Agora você já pode entrar no sistema.`);
     window.location.reload();
   } catch (err) {
     alert('Erro ao importar backup: ' + err.message);
   }
 }
+
+function openPasteImportLoginModal() {
+  const modal = document.getElementById('backupPasteImportLoginModal');
+  const txt = document.getElementById('pasteBackupLoginTextarea');
+  if (txt) txt.value = '';
+  if (modal) modal.style.display = 'flex';
+}
+
+function closePasteImportLoginModal() {
+  const modal = document.getElementById('backupPasteImportLoginModal');
+  if (modal) modal.style.display = 'none';
+}
+
+window.openPasteImportLoginModal = openPasteImportLoginModal;
+window.closePasteImportLoginModal = closePasteImportLoginModal;
 
 if (importBackupButton && backupFileInput) {
   importBackupButton.addEventListener('click', () => {
@@ -228,10 +320,14 @@ if (importBackupButton && backupFileInput) {
 }
 
 if (importPasteBackupLoginBtn) {
-  importPasteBackupLoginBtn.addEventListener('click', () => {
-    const jsonInput = prompt('Cole abaixo o código de backup (JSON):');
-    if (jsonInput && jsonInput.trim()) {
-      restoreBackupInLogin(jsonInput);
+  importPasteBackupLoginBtn.addEventListener('click', openPasteImportLoginModal);
+}
+
+if (submitPasteBackupLoginBtn) {
+  submitPasteBackupLoginBtn.addEventListener('click', () => {
+    const txt = document.getElementById('pasteBackupLoginTextarea');
+    if (txt) {
+      restoreBackupInLogin(txt.value);
     }
   });
 }
