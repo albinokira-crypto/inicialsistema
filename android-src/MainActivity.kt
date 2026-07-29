@@ -974,11 +974,11 @@ class MainActivity : ComponentActivity() {
         val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
         val savedUriStr = prefs.getString("selected_folder_uri", null)
 
-        var savedSuccessfully = false
         val lowerName = filename.lowercase()
         val isVideo = lowerName.endsWith(".mp4") || lowerName.endsWith(".3gp") || lowerName.endsWith(".mov") || lowerName.endsWith(".mkv") || lowerName.endsWith(".webm")
         val mimeType = if (isVideo) "video/mp4" else "image/jpeg"
 
+        // 1. SAF Custom Folder
         if (savedUriStr != null) {
             try {
                 val rootUri = Uri.parse(savedUriStr)
@@ -986,17 +986,17 @@ class MainActivity : ComponentActivity() {
                 if (rootFolder != null && rootFolder.exists()) {
                     val vehicleFolder = getOrCreateDirectory(rootFolder, cleanVehicleName)
                     if (vehicleFolder != null) {
-                        val file = getFileInDirectory(vehicleFolder, cleanFilename)
-                        if (file != null) {
-                            try { file.delete() } catch(e: Exception){}
+                        val existingFile = getFileInDirectory(vehicleFolder, cleanFilename)
+                        if (existingFile != null && existingFile.length() > 0) {
+                            return true
                         }
                         val newFile = vehicleFolder.createFile(mimeType, cleanFilename)
                         if (newFile != null) {
                             contentResolver.openOutputStream(newFile.uri)?.use { ops ->
                                 sourceStream.copyTo(ops)
                             }
-                            savedSuccessfully = true
                             android.util.Log.d("Vistoria", "Saved safely via SAF: ${newFile.uri}")
+                            return true
                         }
                     }
                 }
@@ -1005,40 +1005,45 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        if (!savedSuccessfully) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val resolver = contentResolver
-                    val relativePath = if (isVideo) "Movies/Vistorias/$cleanVehicleName/" else "Pictures/Vistorias/$cleanVehicleName/"
-                    val contentValues = android.content.ContentValues().apply {
-                        put(MediaStore.MediaColumns.DISPLAY_NAME, cleanFilename)
-                        put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-                        put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
-                    }
-                    val targetUri = if (isVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                    val uri = resolver.insert(targetUri, contentValues)
-                    if (uri != null) {
-                        resolver.openOutputStream(uri)?.use { ops ->
-                            sourceStream.copyTo(ops)
-                        }
-                        savedSuccessfully = true
-                    }
-                } else {
-                    val parentDir = if (isVideo) Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES) else Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                    val vistoriasDir = File(parentDir, "Vistorias/$cleanVehicleName")
-                    if (vistoriasDir.exists() || vistoriasDir.mkdirs()) {
-                        val file = File(vistoriasDir, cleanFilename)
-                        java.io.FileOutputStream(file).use { ops ->
-                            sourceStream.copyTo(ops)
-                        }
-                        savedSuccessfully = true
-                    }
-                }
-            } catch (err: Exception) {
-                err.printStackTrace()
+        // 2. Default Public Folder: /storage/emulated/0/Vistorias/$cleanVehicleName/
+        try {
+            val rootVistorias = File(Environment.getExternalStorageDirectory(), "Vistorias/$cleanVehicleName")
+            if (!rootVistorias.exists()) rootVistorias.mkdirs()
+            val targetFile = File(rootVistorias, cleanFilename)
+            if (targetFile.exists() && targetFile.length() > 0) {
+                return true
             }
+            java.io.FileOutputStream(targetFile).use { ops ->
+                sourceStream.copyTo(ops)
+            }
+            android.media.MediaScannerConnection.scanFile(this, arrayOf(targetFile.absolutePath), arrayOf(mimeType), null)
+            android.util.Log.d("Vistoria", "Saved directly to root Vistorias folder: ${targetFile.absolutePath}")
+            return true
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        return savedSuccessfully
+
+        // 3. MediaStore Fallback: Pictures/Vistorias/$cleanVehicleName/
+        try {
+            val resolver = contentResolver
+            val relativePath = "Pictures/Vistorias/$cleanVehicleName/"
+            val contentValues = android.content.ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, cleanFilename)
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
+            }
+            val targetUri = if (isVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            val uri = resolver.insert(targetUri, contentValues)
+            if (uri != null) {
+                resolver.openOutputStream(uri)?.use { ops ->
+                    sourceStream.copyTo(ops)
+                }
+                return true
+            }
+        } catch (err: Exception) {
+            err.printStackTrace()
+        }
+        return false
     }
 }
 
@@ -1212,6 +1217,28 @@ class AndroidInterface(private val activity: ComponentActivity) {
                                         name.endsWith(".mkv")) {
                                         filesToCopy.add(file)
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            try {
+                val rootVistorias = java.io.File(Environment.getExternalStorageDirectory(), "Vistorias/$cleanVehicleName")
+                if (rootVistorias.exists()) {
+                    val files = rootVistorias.listFiles()
+                    if (files != null) {
+                        for (file in files) {
+                            if (file.isFile && isSameDate(file.lastModified())) {
+                                val name = file.name.lowercase()
+                                if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
+                                    name.endsWith(".png") || name.endsWith(".mp4") ||
+                                    name.endsWith(".mov") || name.endsWith(".3gp") ||
+                                    name.endsWith(".mkv")) {
+                                    filesToCopy.add(file)
                                 }
                             }
                         }
