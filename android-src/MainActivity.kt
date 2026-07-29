@@ -686,6 +686,7 @@ class MainActivity : ComponentActivity() {
                 }.start()
             }
             return
+        }
         if (requestCode == 9988 && resultCode == Activity.RESULT_OK) {
             val uri = data?.data
             if (uri != null && pendingBackupJson != null) {
@@ -1265,34 +1266,19 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             if (tempShareFiles.isEmpty()) {
-                // Sem fotos: compartilha apenas o relatório
+                // Sem fotos: compartilha apenas o relatório via seletor do sistema
                 try {
                     val textIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
                         putExtra(Intent.EXTRA_TEXT, reportText)
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
-                    var launched = false
-                    try {
-                        val waIntent = Intent(textIntent).apply { setPackage("com.whatsapp") }
-                        activity.startActivity(waIntent)
-                        launched = true
-                    } catch (e1: Exception) {
-                        try {
-                            val wbIntent = Intent(textIntent).apply { setPackage("com.whatsapp.w4b") }
-                            activity.startActivity(wbIntent)
-                            launched = true
-                        } catch (e2: Exception) {}
-                    }
-                    if (!launched) {
-                        val chooser = Intent.createChooser(textIntent, "Compartilhar Relatório")
-                        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        activity.startActivity(chooser)
-                    }
+                    val chooser = Intent.createChooser(textIntent, "Compartilhar Relatório")
+                    chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    activity.startActivity(chooser)
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    Toast.makeText(activity, "Erro ao compartilhar texto: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(activity, "Erro ao compartilhar relatório: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
                 return@runOnUiThread
             }

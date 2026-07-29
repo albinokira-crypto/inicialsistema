@@ -3387,10 +3387,10 @@ async function removePhotoFromDb(vehicleName, name) {
 
 if (capturePhotoButton) {
   capturePhotoButton.addEventListener('click', () => {
-    if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
-      window.AndroidInterface.launchCameraCapture(activePhotoVehicleName);
-    } else if (photoSystemCameraInput) {
+    if (photoSystemCameraInput) {
       photoSystemCameraInput.click();
+    } else if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
+      window.AndroidInterface.launchCameraCapture(activePhotoVehicleName);
     }
   });
 }
@@ -3439,11 +3439,13 @@ async function handlePhotoFilesSelected(files) {
     
     await savePhotoToDb(activePhotoVehicleName, filename, file);
     
-    // Salvar no Android se disponível na WebView
+    // Salvar no Android se disponível na WebView (evitando crash OOM em vídeos grandes)
     if (window.AndroidInterface && typeof window.AndroidInterface.savePhoto === 'function') {
       try {
-        const base64Data = await readBlobAsBase64(file);
-        window.AndroidInterface.savePhoto(activePhotoVehicleName, filename, base64Data, "Vistorias");
+        if (!isVid || file.size < 5 * 1024 * 1024) {
+          const base64Data = await readBlobAsBase64(file);
+          window.AndroidInterface.savePhoto(activePhotoVehicleName, filename, base64Data, "Vistorias");
+        }
       } catch (err) {
         console.error('Error saving file to Android via interface:', err);
       }
@@ -3546,6 +3548,30 @@ function downloadJsonFile(filename, jsonString) {
     return;
   }
 
+  if ('showSaveFilePicker' in window) {
+    window.showSaveFilePicker({
+      suggestedName: filename,
+      types: [{
+        description: 'Arquivo JSON de Backup',
+        accept: { 'application/json': ['.json'] }
+      }]
+    }).then(async (handle) => {
+      const writable = await handle.createWritable();
+      await writable.write(jsonString);
+      await writable.close();
+      alert('Backup salvo com sucesso no local escolhido!');
+    }).catch((err) => {
+      if (err.name === 'AbortError') return; // usuário cancelou
+      console.warn('showSaveFilePicker falhou, utilizando fallback:', err);
+      fallbackDownloadJson(filename, jsonString);
+    });
+    return;
+  }
+
+  fallbackDownloadJson(filename, jsonString);
+}
+
+function fallbackDownloadJson(filename, jsonString) {
   try {
     if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
       const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' });
