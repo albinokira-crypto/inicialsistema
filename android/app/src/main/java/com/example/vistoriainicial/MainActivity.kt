@@ -1190,23 +1190,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
-            fun isSameDate(lastModified: Long): Boolean {
-                if (targetDate.isNullOrEmpty()) return true
-                try {
-                    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                    val fileDate = sdf.format(java.util.Date(lastModified))
-                    var cleanTarget = targetDate.trim().replace("/", "-")
-                    val parts = cleanTarget.split("-")
-                    if (parts.size >= 3) {
-                        if (parts[0].length == 2 && parts[2].length == 4) {
-                            cleanTarget = "${parts[2]}-${parts[1]}-${parts[0]}"
-                        }
-                    }
-                    return fileDate == cleanTarget
-                } catch (e: Exception) {
-                    return true
-                }
-            }
+            fun isSameDate(lastModified: Long): Boolean = true
 
             val filesToCopy = ArrayList<java.io.File>()
             val safPairsToCopy = ArrayList<Pair<String, Uri>>()
@@ -1747,19 +1731,52 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             // 1. Tentar abrir diretamente pelo aplicativo "Meus Arquivos" da Samsung (com.sec.android.app.myfiles)
             try {
-                val myFilesIntent = activity.packageManager.getLaunchIntentForPackage("com.sec.android.app.myfiles")
-                if (myFilesIntent != null) {
-                    myFilesIntent.putExtra("current_path", vistoriasDir.absolutePath)
-                    myFilesIntent.putExtra("path", vistoriasDir.absolutePath)
-                    myFilesIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    activity.startActivity(myFilesIntent)
-                    opened = true
+                val myFilesIntent = Intent(Intent.ACTION_VIEW).apply {
+                    setPackage("com.sec.android.app.myfiles")
+                    putExtra("current_path", vistoriasDir.absolutePath)
+                    putExtra("path", vistoriasDir.absolutePath)
+                    putExtra("folder_path", vistoriasDir.absolutePath)
+                    setDataAndType(Uri.fromFile(vistoriasDir), "resource/folder")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
+                activity.startActivity(myFilesIntent)
+                opened = true
             } catch (e: Exception) {
-                e.printStackTrace()
+                try {
+                    val myFilesLaunch = activity.packageManager.getLaunchIntentForPackage("com.sec.android.app.myfiles")
+                    if (myFilesLaunch != null) {
+                        myFilesLaunch.putExtra("current_path", vistoriasDir.absolutePath)
+                        myFilesLaunch.putExtra("path", vistoriasDir.absolutePath)
+                        myFilesLaunch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        activity.startActivity(myFilesLaunch)
+                        opened = true
+                    }
+                } catch (ex: Exception) {
+                    ex.printStackTrace()
+                }
             }
 
-            // 2. Tentar abrir via SAF tree URI se uma pasta personalizada foi selecionada
+            // 2. Tentar via FileProvider folder intent
+            if (!opened) {
+                try {
+                    val folderUri = androidx.core.content.FileProvider.getUriForFile(
+                        activity,
+                        "com.example.vistoriainicial.fileprovider",
+                        vistoriasDir
+                    )
+                    val viewFolderIntent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(folderUri, DocumentsContract.Document.MIME_TYPE_DIR)
+                        putExtra("android.provider.extra.INITIAL_URI", folderUri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    activity.startActivity(viewFolderIntent)
+                    opened = true
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            // 3. Tentar abrir via SAF tree URI se uma pasta personalizada foi selecionada
             if (!opened && savedUriStr != null) {
                 try {
                     val rootUri = Uri.parse(savedUriStr)
@@ -1786,7 +1803,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 }
             }
 
-            // 3. Fallback: Outros gerenciadores de arquivos do sistema (Google Files, etc.)
+            // 4. Fallback: Outros gerenciadores de arquivos do sistema (Google Files, etc.)
             if (!opened) {
                 try {
                     val openFilesIntent = activity.packageManager.getLaunchIntentForPackage("com.google.android.documentsui")
