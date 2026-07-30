@@ -1229,13 +1229,40 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     val files = vistoriasDir.listFiles()
                     if (files != null) {
                         for (file in files) {
-                            if (file.isFile && isSameDate(file.lastModified())) {
+                            if (file.isFile && file.length() > 0) {
                                 val name = file.name.lowercase()
                                 if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
                                     name.endsWith(".png") || name.endsWith(".mp4") ||
                                     name.endsWith(".mov") || name.endsWith(".3gp") ||
-                                    name.endsWith(".mkv")) {
+                                    name.endsWith(".mkv") || name.endsWith(".webm")) {
                                     filesToCopy.add(file)
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
+                if (vistoriasBaseDir.exists()) {
+                    val subDirs = vistoriasBaseDir.listFiles { file -> file.isDirectory }
+                    if (subDirs != null) {
+                        val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
+                        for (dir in subDirs) {
+                            val dirNameLower = dir.name.lowercase().replace(" ", "").replace("-", "")
+                            if (dirNameLower.contains(cleanLower) || (cleanLower.length > 3 && dirNameLower.contains(cleanLower))) {
+                                val files = dir.listFiles()
+                                if (files != null) {
+                                    for (file in files) {
+                                        if (file.isFile && file.length() > 0) {
+                                            val name = file.name.lowercase()
+                                            if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
+                                                name.endsWith(".png") || name.endsWith(".mp4") ||
+                                                name.endsWith(".mov") || name.endsWith(".3gp") ||
+                                                name.endsWith(".mkv") || name.endsWith(".webm")) {
+                                                filesToCopy.add(file)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1692,6 +1719,13 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             var opened = false
 
+            try {
+                val builder = android.os.StrictMode.VmPolicy.Builder()
+                android.os.StrictMode.setVmPolicy(builder.build())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
             // 1. Tentar abrir diretamente pelo aplicativo "Meus Arquivos" da Samsung (com.sec.android.app.myfiles)
             try {
                 val myFilesIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -1700,7 +1734,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     putExtra("path", vistoriasDir.absolutePath)
                     putExtra("folder_path", vistoriasDir.absolutePath)
                     setDataAndType(Uri.fromFile(vistoriasDir), "resource/folder")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
                 }
                 activity.startActivity(myFilesIntent)
                 opened = true
@@ -1710,7 +1744,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     if (myFilesLaunch != null) {
                         myFilesLaunch.putExtra("current_path", vistoriasDir.absolutePath)
                         myFilesLaunch.putExtra("path", vistoriasDir.absolutePath)
-                        myFilesLaunch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        myFilesLaunch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
                         activity.startActivity(myFilesLaunch)
                         opened = true
                     }
