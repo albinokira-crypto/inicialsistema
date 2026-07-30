@@ -126,9 +126,12 @@
           <input id="dayInput" name="day" type="hidden" />
           <label>
             Veículo (Modelo e Placa)
-            <div style="display: flex; gap: 8px;">
-              <input id="plateInput" name="plate" type="text" required placeholder="Ex: TIGGO 7 HYBRID PRO MAX DRIVE 1.5 TURBO HÍBRIDO 2025 SRR-4G96" style="flex: 1; margin: 0;" />
-              <button id="gerarPastaBtn" class="ghost-btn" type="button" onclick="gerarPastaNova()" style="flex: 0 0 auto; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; border-radius: 12px; font-weight: 700; padding: 0 16px; margin: 0;">📁 Gerar Pasta</button>
+            <div style="display: flex; gap: 8px; align-items: stretch;">
+              <input id="plateInput" name="plate" type="text" required placeholder="Ex: TIGGO 7 HYBRID PRO MAX DRIVE 1.5 TURBO HÍBRIDO 2025 SRR-4G96" style="flex: 8; margin: 0; min-width: 0;" />
+              <button id="gerarPastaBtn" class="ghost-btn" type="button" onclick="gerarPastaNova()" style="flex: 2; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; border-radius: 12px; font-weight: 700; padding: 8px 4px; margin: 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.75rem; line-height: 1;">
+                <span style="font-size: 1.1rem; margin-bottom: 2px;">📁</span>
+                Gerar
+              </button>
             </div>
           </label>
           <input type="hidden" id="typeInput" name="type" value="Inicial" />
