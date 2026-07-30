@@ -1167,6 +1167,168 @@ class AndroidInterface(private val activity: ComponentActivity) {
     }
 
     @JavascriptInterface
+    fun shareVistoriaWhatsApp(vehicleName: String, reportText: String) {
+        activity.runOnUiThread {
+            val mainAct = activity as MainActivity
+            val cleanVehicleName = mainAct.sanitizeFilename(vehicleName)
+            
+            try {
+                val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("RelatorioVistoria", reportText)
+                clipboard.setPrimaryClip(clip)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            val filesToShare = ArrayList<java.io.File>()
+            val addedNames = HashSet<String>()
+
+            try {
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val vistoriasDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
+                if (vistoriasDir.exists()) {
+                    val files = vistoriasDir.listFiles()
+                    if (files != null) {
+                        for (file in files) {
+                            if (file.isFile && file.length() > 0) {
+                                val name = file.name.lowercase()
+                                if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
+                                    name.endsWith(".png") || name.endsWith(".mp4") ||
+                                    name.endsWith(".mov") || name.endsWith(".3gp") ||
+                                    name.endsWith(".mkv") || name.endsWith(".webm")) {
+                                    if (!addedNames.contains(name)) {
+                                        addedNames.add(name)
+                                        filesToShare.add(file)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
+                if (vistoriasBaseDir.exists()) {
+                    val subDirs = vistoriasBaseDir.listFiles { file -> file.isDirectory }
+                    if (subDirs != null) {
+                        val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
+                        for (dir in subDirs) {
+                            val dirNameLower = dir.name.lowercase().replace(" ", "").replace("-", "")
+                            if (dirNameLower.contains(cleanLower) || (cleanLower.length > 3 && dirNameLower.contains(cleanLower))) {
+                                val files = dir.listFiles()
+                                if (files != null) {
+                                    for (file in files) {
+                                        if (file.isFile && file.length() > 0) {
+                                            val name = file.name.lowercase()
+                                            if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
+                                                name.endsWith(".png") || name.endsWith(".mp4") ||
+                                                name.endsWith(".mov") || name.endsWith(".3gp") ||
+                                                name.endsWith(".mkv") || name.endsWith(".webm")) {
+                                                if (!addedNames.contains(name)) {
+                                                    addedNames.add(name)
+                                                    filesToShare.add(file)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            val uris = ArrayList<Uri>()
+            val addedUriStrings = HashSet<String>()
+            for (file in filesToShare) {
+                try {
+                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                        activity,
+                        "com.example.vistoriainicial.fileprovider",
+                        file
+                    )
+                    val uriStr = uri.toString()
+                    if (!addedUriStrings.contains(uriStr)) {
+                        addedUriStrings.add(uriStr)
+                        uris.add(uri)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            val pm = activity.packageManager
+            var whatsappPkg: String? = null
+            try {
+                pm.getPackageInfo("com.whatsapp", 0)
+                whatsappPkg = "com.whatsapp"
+            } catch (e: Exception) {
+                try {
+                    pm.getPackageInfo("com.whatsapp.w4b", 0)
+                    whatsappPkg = "com.whatsapp.w4b"
+                } catch (ex: Exception) {
+                    whatsappPkg = null
+                }
+            }
+
+            if (whatsappPkg == null) {
+                Toast.makeText(activity, "WhatsApp não está instalado no aparelho!", Toast.LENGTH_LONG).show()
+                return@runOnUiThread
+            }
+
+            val hasImages = filesToShare.any { f -> 
+                val name = f.name.lowercase()
+                name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png")
+            }
+            val hasVideos = filesToShare.any { f -> 
+                val name = f.name.lowercase()
+                name.endsWith(".mp4") || name.endsWith(".mov") || name.endsWith(".3gp") || name.endsWith(".mkv") || name.endsWith(".webm")
+            }
+            val shareType = if (hasImages && hasVideos) "*/*" else if (hasVideos) "video/*" else "image/*"
+
+            val intent = Intent().apply {
+                setPackage(whatsappPkg)
+                if (uris.isEmpty()) {
+                    action = Intent.ACTION_SEND
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, reportText)
+                } else if (uris.size == 1) {
+                    action = Intent.ACTION_SEND
+                    type = shareType
+                    putExtra(Intent.EXTRA_STREAM, uris[0])
+                    putExtra(Intent.EXTRA_TEXT, reportText)
+                } else {
+                    action = Intent.ACTION_SEND_MULTIPLE
+                    type = shareType
+                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                    putExtra(Intent.EXTRA_TEXT, reportText)
+                }
+                if (uris.isNotEmpty()) {
+                    val clip = android.content.ClipData.newRawUri("Vistoria", uris[0])
+                    for (i in 1 until uris.size) {
+                        clip.addItem(android.content.ClipData.Item(uris[i]))
+                    }
+                    clipData = clip
+                }
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            for (uri in uris) {
+                activity.grantUriPermission(whatsappPkg, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            try {
+                activity.startActivity(intent)
+                Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias...", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(activity, "Erro ao abrir WhatsApp: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    @JavascriptInterface
     fun startShare(vehicleName: String, reportText: String) {
         startShareWithDate(vehicleName, reportText, "")
     }

@@ -1087,8 +1087,7 @@ function render() {
                 </div>
               </div>
               <div class="actions vertical-actions">
-                <button class="action-btn" type="button" data-super-action="share-vistoria" data-id="${entry.id}">📤 Compartilhar Vistoria</button>
-                <button class="action-btn" type="button" data-super-action="share-report-text" data-id="${entry.id}">📝 Compartilhar Relatório</button>
+                <button class="action-btn" type="button" data-super-action="share-whatsapp" data-id="${entry.id}">💬 Compartilhar vistoria</button>
                 <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">📸 Fotos</button>
                 <button class="action-btn" type="button" data-super-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
                 <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
@@ -1117,8 +1116,7 @@ function render() {
                 </div>
               </div>
               <div class="actions vertical-actions">
-                <button class="action-btn" type="button" data-action="share-vistoria" data-id="${entry.id}">📤 Compartilhar Vistoria</button>
-                <button class="action-btn" type="button" data-action="share-report-text" data-id="${entry.id}">📝 Compartilhar Relatório</button>
+                <button class="action-btn" type="button" data-action="share-whatsapp" data-id="${entry.id}">💬 Compartilhar vistoria</button>
                 <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">📸 Fotos</button>
                 <button class="action-btn" type="button" data-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
                 <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
@@ -1241,8 +1239,7 @@ function render() {
           </div>
         </div>
         <div class="actions vertical-actions">
-          <button class="action-btn" type="button" data-action="share-vistoria" data-id="${item.id}">📤 Compartilhar Vistoria</button>
-          <button class="action-btn" type="button" data-action="share-report-text" data-id="${item.id}">📝 Compartilhar Relatório</button>
+          <button class="action-btn" type="button" data-action="share-whatsapp" data-id="${item.id}">💬 Compartilhar vistoria</button>
           <button class="action-btn" type="button" data-action="photos" data-id="${item.id}">📸 Fotos</button>
           <button class="action-btn" type="button" data-action="open-folder" data-id="${item.id}">📂 Pasta</button>
           <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
@@ -1506,16 +1503,8 @@ function handleAction(action, id) {
     openPhotoManagerForId(id);
     return;
   }
-  if (action === 'share-text' || action === 'share-report-text') {
-    shareReportTextOnly(id);
-    return;
-  }
-  if (action === 'share-photos') {
-    sharePhotosForSurvey(id);
-    return;
-  }
-  if (action === 'share-vistoria') {
-    shareVistoria(id);
+  if (action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-text' || action === 'share-report-text') {
+    shareVistoriaWhatsApp(id);
     return;
   }
   if (action === 'delete') {
@@ -2517,8 +2506,7 @@ function renderSupervisaoReport() {
         <td data-label="Previsão/Estimativa">${prevEst}</td>
         <td data-label="Ações">
           <div class="actions">
-            <button class="action-btn" type="button" data-super-action="share-vistoria" data-id="${s.id}">📤 Compartilhar Vistoria</button>
-            <button class="action-btn" type="button" data-super-action="share-report-text" data-id="${s.id}">📝 Compartilhar Relatório</button>
+            <button class="action-btn" type="button" data-super-action="share-whatsapp" data-id="${s.id}">💬 Compartilhar vistoria</button>
             <button class="action-btn" type="button" data-super-action="photos" data-id="${s.id}">📸 Fotos</button>
             <button class="action-btn" type="button" data-super-action="open-folder" data-id="${s.id}">📂 Pasta</button>
             <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
@@ -2539,16 +2527,8 @@ function handleSupervisaoAction(action, id) {
     openInspectionFolderForId(id);
     return;
   }
-  if (action === 'share-report-text') {
-    shareReportTextOnly(id);
-    return;
-  }
-  if (action === 'share-vistoria') {
-    shareVistoria(id);
-    return;
-  }
-  if (action === 'share-photos') {
-    sharePhotosForSurvey(id);
+  if (action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-report-text' || action === 'share-photos') {
+    shareVistoriaWhatsApp(id);
     return;
   }
   if (action === 'photos') {
@@ -3220,7 +3200,7 @@ function base64ToBlob(base64, mimeType = 'image/jpeg') {
 }
 
 // Compartilha fotos + relatório. Se não há fotos, compartilha só o relatório.
-async function shareVistoria(id) {
+async function shareVistoriaWhatsApp(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
     alert('Registro não encontrado!');
@@ -3233,87 +3213,53 @@ async function shareVistoria(id) {
   }
 
   const isInspection = items.some(entry => entry.id === id);
-  let reportText = '';
-  let itemDate = '';
-  if (isInspection) {
-    reportText = getSurveyText(id);
-    itemDate = item.date || item.day || '';
-  } else {
-    reportText = formatSingleSupervisaoText(item);
-    itemDate = item.date || item.dateInput || '';
-  }
-
+  let reportText = isInspection ? getSurveyText(id) : formatSingleSupervisaoText(item);
   if (!reportText || !reportText.trim()) {
     reportText = `Vistoria do veículo: ${vehicleName}`;
   }
 
-  // Copia o texto do relatório para a área de transferência como segurança
   copyTextToClipboard(reportText);
 
-  if (window.AndroidInterface) {
-    try {
-      const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
-      if (storedPhotos && storedPhotos.length > 0) {
-        for (const p of storedPhotos) {
-          if (p.rawBlob) {
-            const base64 = await blobToBase64(p.rawBlob);
-            if (base64) {
-              const rawData = base64.includes(',') ? base64.split(',')[1] : base64;
-              if (typeof window.AndroidInterface.savePhotoSync === 'function') {
-                window.AndroidInterface.savePhotoSync(vehicleName, p.name, rawData);
-              } else if (typeof window.AndroidInterface.savePhoto === 'function') {
-                window.AndroidInterface.savePhoto(vehicleName, p.name, rawData);
-              }
-            }
+  if (window.AndroidInterface && typeof window.AndroidInterface.shareVistoriaWhatsApp === 'function') {
+    window.AndroidInterface.shareVistoriaWhatsApp(vehicleName, reportText);
+    return;
+  } else if (window.AndroidInterface && typeof window.AndroidInterface.startShareWithDate === 'function') {
+    window.AndroidInterface.startShareWithDate(vehicleName, reportText, '');
+    return;
+  }
+
+  try {
+    const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
+    let filesToShare = [];
+    if (storedPhotos && storedPhotos.length > 0) {
+      for (const p of storedPhotos) {
+        if (p.rawBlob) {
+          let mimeType = p.rawBlob.type;
+          if (!mimeType || mimeType === 'application/octet-stream') {
+            const isVid = /\.(mp4|3gp|mov|mkv|webm)$/i.test(p.name);
+            mimeType = isVid ? 'video/mp4' : 'image/jpeg';
           }
+          filesToShare.push(new File([p.rawBlob], p.name, { type: mimeType }));
         }
       }
-    } catch (e) {
-      console.warn("Erro ao sincronizar fotos web para Android antes do envio:", e);
     }
 
-    if (typeof window.AndroidInterface.startShareWithDate === 'function') {
-      window.AndroidInterface.startShareWithDate(vehicleName, reportText, itemDate);
-      return;
-    } else if (typeof window.AndroidInterface.startShare === 'function') {
-      window.AndroidInterface.startShare(vehicleName, reportText);
-      return;
-    }
-  }
+    if (navigator.share) {
+      const shareData = {
+        title: 'Vistoria: ' + vehicleName,
+        text: reportText
+      };
 
-  // Fallback para Navegador Web / PWA usando Web Share API com arquivos
-  const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
-  let filesToShare = [];
-  if (storedPhotos && storedPhotos.length > 0) {
-    for (const p of storedPhotos) {
-      if (p.rawBlob) {
-        let mimeType = p.rawBlob.type;
-        if (!mimeType || mimeType === 'application/octet-stream') {
-          const isVid = /\.(mp4|3gp|mov|mkv|webm)$/i.test(p.name);
-          mimeType = isVid ? 'video/mp4' : 'image/jpeg';
-        }
-        filesToShare.push(new File([p.rawBlob], p.name, { type: mimeType }));
+      if (filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
+        shareData.files = filesToShare;
       }
-    }
-  }
 
-  if (navigator.share) {
-    const shareData = {
-      title: 'Vistoria: ' + vehicleName,
-      text: reportText
-    };
-
-    if (filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
-      shareData.files = filesToShare;
-    }
-
-    try {
       await navigator.share(shareData);
       return;
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-      console.warn('navigator.share falhou, utilizando fallback de texto/WhatsApp:', err);
     }
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    console.warn('navigator.share falhou, utilizando fallback de texto/WhatsApp:', err);
   }
 
   try {
