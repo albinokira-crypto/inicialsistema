@@ -39,6 +39,16 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
+      - name: Copy web assets to Android
+        run: |
+          mkdir -p android/app/src/main/assets
+          cp index.html android/app/src/main/assets/
+          cp dashboard.html android/app/src/main/assets/
+          cp app.js android/app/src/main/assets/
+          cp styles.css android/app/src/main/assets/
+          cp login.js android/app/src/main/assets/ || true
+          cp logo.png android/app/src/main/assets/ || true
+
       - name: Build Debug APK
         run: |
           cd android

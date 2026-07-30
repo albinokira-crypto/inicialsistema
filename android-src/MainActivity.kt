@@ -338,8 +338,8 @@ class MainActivity : ComponentActivity() {
             }
         })
 
-        // Load Live Vercel URL
-        webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/dashboard.html")
+        // Carregar o arquivo HTML local
+        webView.loadUrl("file:///android_asset/index.html")
 
         // Request Permissions
         checkPermissions()
