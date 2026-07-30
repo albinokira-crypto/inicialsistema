@@ -1315,6 +1315,19 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     }
                 }
 
+                // 5. Fallback: Se nenhuma mídia foi encontrada pela placa, varre mídias criadas nas últimas 48h em Pictures/Vistorias/
+                if (filesToShare.isEmpty() && vistoriasBaseDir.exists()) {
+                    val now = System.currentTimeMillis()
+                    val twoDaysAgo = now - (48 * 3600 * 1000L)
+                    val allFiles = vistoriasBaseDir.listFiles()
+                    if (allFiles != null) {
+                        for (file in allFiles) {
+                            if (file.isFile && file.length() > 0 && file.lastModified() >= twoDaysAgo) {
+                                checkAndAddFile(file)
+                            }
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -1358,20 +1371,16 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             if (uris.isEmpty()) {
-                Toast.makeText(activity, "Nenhuma foto/vídeo encontrado em Pictures/Vistorias para o veículo: $vehicleName. Enviando relatório...", Toast.LENGTH_LONG).show()
+                Toast.makeText(activity, "Nenhuma foto/vídeo encontrado para $vehicleName. Enviando relatório de texto...", Toast.LENGTH_LONG).show()
             } else {
-                Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias e relatório...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias...", Toast.LENGTH_SHORT).show()
             }
 
-            val hasImages = filesToShare.any { f -> 
-                val name = f.name.lowercase()
-                name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png")
-            }
-            val hasVideos = filesToShare.any { f -> 
+            val hasVideosOnly = filesToShare.all { f -> 
                 val name = f.name.lowercase()
                 name.endsWith(".mp4") || name.endsWith(".mov") || name.endsWith(".3gp") || name.endsWith(".mkv") || name.endsWith(".webm")
             }
-            val shareType = if (hasImages && hasVideos) "*/*" else if (hasVideos) "video/*" else "image/*"
+            val shareType = if (hasVideosOnly) "video/*" else "image/*"
 
             val intent = Intent().apply {
                 setPackage(whatsappPkg)
@@ -1401,7 +1410,15 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             for (uri in uris) {
-                activity.grantUriPermission(whatsappPkg, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                try {
+                    activity.grantUriPermission("com.whatsapp", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    activity.grantUriPermission("com.whatsapp.w4b", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    if (whatsappPkg != null) {
+                        activity.grantUriPermission(whatsappPkg, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
 
             try {
