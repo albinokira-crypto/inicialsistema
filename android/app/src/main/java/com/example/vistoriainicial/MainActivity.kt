@@ -1180,32 +1180,49 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
+            tempShareFiles.clear()
+            val cacheDir = java.io.File(activity.cacheDir, "share_temp")
+            try {
+                if (cacheDir.exists()) {
+                    cacheDir.deleteRecursively()
+                }
+                cacheDir.mkdirs()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
             val filesToShare = ArrayList<java.io.File>()
             val addedNames = HashSet<String>()
 
+            fun checkAndAddFile(file: java.io.File) {
+                if (file.exists() && file.isFile && file.length() > 0) {
+                    val name = file.name.lowercase()
+                    if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
+                        name.endsWith(".png") || name.endsWith(".mp4") ||
+                        name.endsWith(".mov") || name.endsWith(".3gp") ||
+                        name.endsWith(".mkv") || name.endsWith(".webm")) {
+                        if (!addedNames.contains(name)) {
+                            addedNames.add(name)
+                            filesToShare.add(file)
+                        }
+                    }
+                }
+            }
+
             try {
+                // 1. Pictures/Vistorias/$cleanVehicleName
                 val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                 val vistoriasDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
                 if (vistoriasDir.exists()) {
                     val files = vistoriasDir.listFiles()
                     if (files != null) {
                         for (file in files) {
-                            if (file.isFile && file.length() > 0) {
-                                val name = file.name.lowercase()
-                                if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
-                                    name.endsWith(".png") || name.endsWith(".mp4") ||
-                                    name.endsWith(".mov") || name.endsWith(".3gp") ||
-                                    name.endsWith(".mkv") || name.endsWith(".webm")) {
-                                    if (!addedNames.contains(name)) {
-                                        addedNames.add(name)
-                                        filesToShare.add(file)
-                                    }
-                                }
-                            }
+                            checkAndAddFile(file)
                         }
                     }
                 }
 
+                // 2. Subdiretórios em Pictures/Vistorias/
                 val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
                 if (vistoriasBaseDir.exists()) {
                     val subDirs = vistoriasBaseDir.listFiles { file -> file.isDirectory }
@@ -1217,15 +1234,75 @@ class AndroidInterface(private val activity: ComponentActivity) {
                                 val files = dir.listFiles()
                                 if (files != null) {
                                     for (file in files) {
-                                        if (file.isFile && file.length() > 0) {
-                                            val name = file.name.lowercase()
-                                            if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
-                                                name.endsWith(".png") || name.endsWith(".mp4") ||
-                                                name.endsWith(".mov") || name.endsWith(".3gp") ||
-                                                name.endsWith(".mkv") || name.endsWith(".webm")) {
-                                                if (!addedNames.contains(name)) {
-                                                    addedNames.add(name)
-                                                    filesToShare.add(file)
+                                        checkAndAddFile(file)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 3. Diretórios de Câmera padrão (DCIM/Camera, Pictures/Camera, DCIM/Vistorias)
+                val dcimDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+                val cameraDirs = listOf(
+                    java.io.File(dcimDir, "Camera"),
+                    java.io.File(dcimDir, "Vistorias/$cleanVehicleName"),
+                    java.io.File(picturesDir, "Camera"),
+                    activity.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                    activity.getExternalFilesDir(null)
+                )
+
+                val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
+                for (cDir in cameraDirs) {
+                    if (cDir != null && cDir.exists()) {
+                        val files = cDir.listFiles()
+                        if (files != null) {
+                            for (file in files) {
+                                if (file.isFile && file.length() > 0) {
+                                    val nameLower = file.name.lowercase()
+                                    if (nameLower.contains(cleanLower) || (cleanLower.length > 3 && nameLower.contains(cleanLower))) {
+                                        checkAndAddFile(file)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 4. Arquivos do SAF (se pasta personalizada foi selecionada)
+                val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+                val savedUriStr = prefs.getString("selected_folder_uri", null)
+                if (savedUriStr != null) {
+                    try {
+                        val rootUri = Uri.parse(savedUriStr)
+                        val rootFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(activity, rootUri)
+                        if (rootFolder != null && rootFolder.exists()) {
+                            val vehicleFolder = mainAct.getOrCreateDirectory(rootFolder, cleanVehicleName)
+                            if (vehicleFolder != null && vehicleFolder.exists()) {
+                                val files = vehicleFolder.listFiles()
+                                for (file in files) {
+                                    if (file.isFile) {
+                                        val name = file.name ?: ""
+                                        val lowerName = name.lowercase()
+                                        if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") ||
+                                            lowerName.endsWith(".png") || lowerName.endsWith(".mp4") ||
+                                            lowerName.endsWith(".mov") || lowerName.endsWith(".3gp") ||
+                                            lowerName.endsWith(".mkv") || lowerName.endsWith(".webm")) {
+                                            if (!addedNames.contains(lowerName)) {
+                                                try {
+                                                    val tempFile = java.io.File(cacheDir, name)
+                                                    activity.contentResolver.openInputStream(file.uri)?.use { input ->
+                                                        java.io.FileOutputStream(tempFile).use { output ->
+                                                            input.copyTo(output)
+                                                        }
+                                                    }
+                                                    if (tempFile.exists() && tempFile.length() > 0) {
+                                                        addedNames.add(lowerName)
+                                                        filesToShare.add(tempFile)
+                                                        tempShareFiles.add(tempFile)
+                                                    }
+                                                } catch (e: Exception) {
+                                                    e.printStackTrace()
                                                 }
                                             }
                                         }
@@ -1233,8 +1310,11 @@ class AndroidInterface(private val activity: ComponentActivity) {
                                 }
                             }
                         }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -1275,6 +1355,12 @@ class AndroidInterface(private val activity: ComponentActivity) {
             if (whatsappPkg == null) {
                 Toast.makeText(activity, "WhatsApp não está instalado no aparelho!", Toast.LENGTH_LONG).show()
                 return@runOnUiThread
+            }
+
+            if (uris.isEmpty()) {
+                Toast.makeText(activity, "Nenhuma foto/vídeo encontrado em Pictures/Vistorias para o veículo: $vehicleName. Enviando relatório...", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias e relatório...", Toast.LENGTH_SHORT).show()
             }
 
             val hasImages = filesToShare.any { f -> 
@@ -1320,7 +1406,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             try {
                 activity.startActivity(intent)
-                Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias...", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 e.printStackTrace()
                 Toast.makeText(activity, "Erro ao abrir WhatsApp: ${e.message}", Toast.LENGTH_LONG).show()

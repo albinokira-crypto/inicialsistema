@@ -3220,12 +3220,35 @@ async function shareVistoriaWhatsApp(id) {
 
   copyTextToClipboard(reportText);
 
-  if (window.AndroidInterface && typeof window.AndroidInterface.shareVistoriaWhatsApp === 'function') {
-    window.AndroidInterface.shareVistoriaWhatsApp(vehicleName, reportText);
-    return;
-  } else if (window.AndroidInterface && typeof window.AndroidInterface.startShareWithDate === 'function') {
-    window.AndroidInterface.startShareWithDate(vehicleName, reportText, '');
-    return;
+  if (window.AndroidInterface) {
+    try {
+      const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
+      if (storedPhotos && storedPhotos.length > 0) {
+        for (const p of storedPhotos) {
+          if (p.rawBlob) {
+            const base64 = await blobToBase64(p.rawBlob);
+            if (base64) {
+              const rawData = base64.includes(',') ? base64.split(',')[1] : base64;
+              if (typeof window.AndroidInterface.savePhotoSync === 'function') {
+                window.AndroidInterface.savePhotoSync(vehicleName, p.name, rawData);
+              } else if (typeof window.AndroidInterface.savePhoto === 'function') {
+                window.AndroidInterface.savePhoto(vehicleName, p.name, rawData);
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Erro ao sincronizar fotos web para Android antes do envio WhatsApp:", e);
+    }
+
+    if (typeof window.AndroidInterface.shareVistoriaWhatsApp === 'function') {
+      window.AndroidInterface.shareVistoriaWhatsApp(vehicleName, reportText);
+      return;
+    } else if (typeof window.AndroidInterface.startShareWithDate === 'function') {
+      window.AndroidInterface.startShareWithDate(vehicleName, reportText, '');
+      return;
+    }
   }
 
   try {
