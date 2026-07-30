@@ -2002,14 +2002,18 @@ class AndroidInterface(private val activity: ComponentActivity) {
                             }
                             activity.startActivity(intent)
                             opened = true
-                            Toast.makeText(activity, "Abrindo pasta selecionada...", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(activity, "Abrindo pasta customizada...", Toast.LENGTH_SHORT).show()
                         }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    Toast.makeText(activity, "Erro de permissão na pasta customizada. Usando padrão.", Toast.LENGTH_LONG).show()
+                    // Vamos deixar prosseguir para a pasta padrão caso dê erro na customizada.
                 }
-            } else {
-                // Pasta padrão
+            } 
+            
+            if (!opened) {
+                // Tenta abrir a pasta padrão caso a customizada não exista, tenha dado erro ou não esteja setada
                 val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                 val vistoriasDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
                 if (!vistoriasDir.exists()) vistoriasDir.mkdirs()
@@ -2079,27 +2083,29 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 }
 
                 if (managerPref == null) {
-                    val options = arrayOf("Meus Arquivos (Samsung)", "Arquivos do Sistema (Android)", "Sempre perguntar (Outros)")
-                    android.app.AlertDialog.Builder(activity)
-                        .setTitle("Qual aplicativo usar para abrir as pastas?")
-                        .setItems(options) { _, which ->
-                            val selectedPref = when (which) {
-                                0 -> "samsung_myfiles"
-                                1 -> "android_default"
-                                else -> "chooser"
+                    try {
+                        val options = arrayOf("Meus Arquivos (Samsung)", "Arquivos do Sistema (Android)", "Sempre perguntar (Outros)")
+                        android.app.AlertDialog.Builder(activity)
+                            .setTitle("Qual aplicativo usar para abrir as pastas?")
+                            .setItems(options) { _, which ->
+                                val selectedPref = when (which) {
+                                    0 -> "samsung_myfiles"
+                                    1 -> "android_default"
+                                    else -> "chooser"
+                                }
+                                prefs.edit().putString("file_manager_preference", selectedPref).apply()
+                                executeFolderOpen(selectedPref)
                             }
-                            prefs.edit().putString("file_manager_preference", selectedPref).apply()
-                            executeFolderOpen(selectedPref)
-                        }
-                        .setNegativeButton("Cancelar", null)
-                        .show()
+                            .setNegativeButton("Cancelar", null)
+                            .show()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Toast.makeText(activity, "Erro ao exibir caixa de diálogo. Usando padrão.", Toast.LENGTH_SHORT).show()
+                        executeFolderOpen("chooser")
+                    }
                 } else {
                     executeFolderOpen(managerPref)
                 }
-            }
-            
-            if (!opened && savedUriStr != null) {
-                Toast.makeText(activity, "Não foi possível abrir a pasta selecionada.", Toast.LENGTH_LONG).show()
             }
         }
     }
