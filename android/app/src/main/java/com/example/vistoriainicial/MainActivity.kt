@@ -2014,70 +2014,88 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 val vistoriasDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
                 if (!vistoriasDir.exists()) vistoriasDir.mkdirs()
 
-                // 1. Tentar via SAF System Document URI (mais confiável para Android 11+)
-                try {
-                    val encodedPath = Uri.encode("Pictures/Vistorias/$cleanVehicleName")
-                    val safUri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3A$encodedPath")
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(safUri, "vnd.android.document/directory")
-                        putExtra("android.provider.extra.INITIAL_URI", safUri)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                val managerPref = prefs.getString("file_manager_preference", null)
+
+                fun executeFolderOpen(pref: String) {
+                    var folderOpened = false
+                    
+                    if (pref == "samsung_myfiles") {
+                        try {
+                            val myFilesIntent = Intent("samsung.myfiles.intent.action.LAUNCH_MY_FILES").apply {
+                                putExtra("samsung.myfiles.intent.extra.START_PATH", vistoriasDir.absolutePath)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            }
+                            activity.startActivity(myFilesIntent)
+                            folderOpened = true
+                        } catch (e: Exception) {
+                            try {
+                                val myFilesIntent2 = Intent(Intent.ACTION_VIEW).apply {
+                                    setPackage("com.sec.android.app.myfiles")
+                                    putExtra("current_path", vistoriasDir.absolutePath)
+                                    putExtra("path", vistoriasDir.absolutePath)
+                                    putExtra("folder_path", vistoriasDir.absolutePath)
+                                    putExtra("START_PATH", vistoriasDir.absolutePath)
+                                    setDataAndType(Uri.fromFile(vistoriasDir), "resource/folder")
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                }
+                                activity.startActivity(myFilesIntent2)
+                                folderOpened = true
+                            } catch (e2: Exception) {
+                                e2.printStackTrace()
+                                Toast.makeText(activity, "App Meus Arquivos não encontrado.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     }
-                    activity.startActivity(intent)
-                    opened = true
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                    
+                    if (!folderOpened && pref == "android_default") {
+                        try {
+                            val encodedPath = Uri.encode("Pictures/Vistorias/$cleanVehicleName")
+                            val safUri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3A$encodedPath")
+                            val intent = Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(safUri, "vnd.android.document/directory")
+                                putExtra("android.provider.extra.INITIAL_URI", safUri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            activity.startActivity(intent)
+                            folderOpened = true
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                    
+                    if (!folderOpened) { // Fallback ou "chooser"
+                        try {
+                            val genericIntent = Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(Uri.fromFile(vistoriasDir), "*/*")
+                                putExtra("current_path", vistoriasDir.absolutePath)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            activity.startActivity(Intent.createChooser(genericIntent, "Abrir pasta da vistoria"))
+                            folderOpened = true
+                        } catch (ex: Exception) {
+                            ex.printStackTrace()
+                        }
+                    }
                 }
 
-                // 2. Tentar Samsung My Files especifico
-                if (!opened) {
-                    try {
-                        val myFilesIntent = Intent("samsung.myfiles.intent.action.LAUNCH_MY_FILES").apply {
-                            putExtra("samsung.myfiles.intent.extra.START_PATH", vistoriasDir.absolutePath)
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                if (managerPref == null) {
+                    val options = arrayOf("Meus Arquivos (Samsung)", "Arquivos do Sistema (Android)", "Sempre perguntar (Outros)")
+                    android.app.AlertDialog.Builder(activity)
+                        .setTitle("Qual aplicativo usar para abrir as pastas?")
+                        .setItems(options) { _, which ->
+                            val selectedPref = when (which) {
+                                0 -> "samsung_myfiles"
+                                1 -> "android_default"
+                                else -> "chooser"
+                            }
+                            prefs.edit().putString("file_manager_preference", selectedPref).apply()
+                            executeFolderOpen(selectedPref)
                         }
-                        activity.startActivity(myFilesIntent)
-                        opened = true
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                        .setNegativeButton("Cancelar", null)
+                        .show()
+                } else {
+                    executeFolderOpen(managerPref)
                 }
-
-                // 3. Tentar abrir diretamente pelo aplicativo "Meus Arquivos" da Samsung antigo
-                if (!opened) {
-                    try {
-                        val myFilesIntent = Intent(Intent.ACTION_VIEW).apply {
-                            setPackage("com.sec.android.app.myfiles")
-                            putExtra("current_path", vistoriasDir.absolutePath)
-                            putExtra("path", vistoriasDir.absolutePath)
-                            putExtra("folder_path", vistoriasDir.absolutePath)
-                            putExtra("START_PATH", vistoriasDir.absolutePath)
-                            setDataAndType(Uri.fromFile(vistoriasDir), "resource/folder")
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        activity.startActivity(myFilesIntent)
-                        opened = true
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-
-                // 4. Intent genérico com Uri.fromFile para qualquer gerenciador instalado
-                if (!opened) {
-                    try {
-                        val genericIntent = Intent(Intent.ACTION_VIEW).apply {
-                            setDataAndType(Uri.fromFile(vistoriasDir), "*/*")
-                            putExtra("current_path", vistoriasDir.absolutePath)
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        activity.startActivity(Intent.createChooser(genericIntent, "Abrir pasta da vistoria"))
-                        opened = true
-                    } catch (ex: Exception) {
-                        ex.printStackTrace()
-                    }
-                }
-                
-                Toast.makeText(activity, "Abrindo pasta: Pictures/Vistorias/$cleanVehicleName", Toast.LENGTH_LONG).show()
             }
             
             if (!opened && savedUriStr != null) {
