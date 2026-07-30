@@ -2033,21 +2033,32 @@ class AndroidInterface(private val activity: ComponentActivity) {
                             folderOpened = true
                         } catch (e: Exception) {
                             try {
-                                val contentUri = androidx.core.content.FileProvider.getUriForFile(activity, "com.example.vistoriainicial.fileprovider", vistoriasDir)
                                 val myFilesIntent2 = Intent(Intent.ACTION_VIEW).apply {
-                                    setPackage("com.sec.android.app.myfiles")
-                                    putExtra("current_path", vistoriasDir.absolutePath)
-                                    putExtra("path", vistoriasDir.absolutePath)
-                                    putExtra("folder_path", vistoriasDir.absolutePath)
-                                    putExtra("START_PATH", vistoriasDir.absolutePath)
-                                    setDataAndType(contentUri, "resource/folder")
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                                    setDataAndType(Uri.parse("myfiles://"), "vnd.android.cursor.dir/myfiles")
+                                    putExtra("samsung.myfiles.intent.extra.START_PATH", vistoriasDir.absolutePath)
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                                 }
                                 activity.startActivity(myFilesIntent2)
                                 folderOpened = true
                             } catch (e2: Exception) {
-                                e2.printStackTrace()
-                                Toast.makeText(activity, "App Meus Arquivos não encontrado.", Toast.LENGTH_SHORT).show()
+                                try {
+                                    val myFilesIntent3 = Intent(Intent.ACTION_VIEW).apply {
+                                        setPackage("com.sec.android.app.myfiles")
+                                        putExtra("current_path", vistoriasDir.absolutePath)
+                                        putExtra("path", vistoriasDir.absolutePath)
+                                        putExtra("folder_path", vistoriasDir.absolutePath)
+                                        putExtra("START_PATH", vistoriasDir.absolutePath)
+                                        setDataAndType(Uri.fromFile(vistoriasDir), "resource/folder")
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                    }
+                                    activity.startActivity(myFilesIntent3)
+                                    folderOpened = true
+                                } catch (e3: Exception) {
+                                    e3.printStackTrace()
+                                    prefs.edit().remove("file_manager_preference").apply()
+                                    Toast.makeText(activity, "App Meus Arquivos não suportado ou não encontrado. Escolha resetada.", Toast.LENGTH_LONG).show()
+                                    folderOpened = true // Força true para pular os fallbacks genéricos e deixar o usuário ver o erro
+                                }
                             }
                         }
                     }
