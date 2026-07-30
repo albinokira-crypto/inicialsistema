@@ -1350,18 +1350,10 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
-            val addedHashes = HashSet<String>()
+            val shareFiles = ArrayList<java.io.File>()
+            val uris = ArrayList<Uri>()
             val addedNames = HashSet<String>()
-            
-            fun calculateMd5(bytes: ByteArray): String {
-                return try {
-                    val md = java.security.MessageDigest.getInstance("MD5")
-                    val digest = md.digest(bytes)
-                    digest.joinToString("") { "%02x".format(it) }
-                } catch (e: Exception) {
-                    bytes.size.toString()
-                }
-            }
+            val addedUriStrings = HashSet<String>()
 
             for (pair in safPairsToCopy) {
                 val origName = pair.first
@@ -1369,21 +1361,11 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 val uri = pair.second
                 try {
                     if (addedNames.contains(lowerName)) continue
-                    val inputStream = activity.contentResolver.openInputStream(uri)
-                    if (inputStream != null) {
-                        val bytes = inputStream.readBytes()
-                        if (bytes.isNotEmpty()) {
-                            val hash = calculateMd5(bytes)
-                            if (addedHashes.contains(hash)) continue
-                            addedHashes.add(hash)
-                            addedNames.add(lowerName)
-                            
-                            val destFile = java.io.File(cacheDir, origName)
-                            destFile.writeBytes(bytes)
-                            if (!tempShareFiles.contains(destFile)) {
-                                tempShareFiles.add(destFile)
-                            }
-                        }
+                    addedNames.add(lowerName)
+                    val uriStr = uri.toString()
+                    if (!addedUriStrings.contains(uriStr)) {
+                        addedUriStrings.add(uriStr)
+                        uris.add(uri)
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -1395,16 +1377,18 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     if (file.exists() && file.length() > 0) {
                         val lowerName = file.name.lowercase()
                         if (addedNames.contains(lowerName)) continue
-                        val bytes = file.readBytes()
-                        val hash = calculateMd5(bytes)
-                        if (addedHashes.contains(hash)) continue
-                        addedHashes.add(hash)
                         addedNames.add(lowerName)
                         
-                        val destFile = java.io.File(cacheDir, file.name)
-                        destFile.writeBytes(bytes)
-                        if (!tempShareFiles.contains(destFile)) {
-                            tempShareFiles.add(destFile)
+                        val uri = androidx.core.content.FileProvider.getUriForFile(
+                            activity,
+                            "com.example.vistoriainicial.fileprovider",
+                            file
+                        )
+                        val uriStr = uri.toString()
+                        if (!addedUriStrings.contains(uriStr)) {
+                            addedUriStrings.add(uriStr)
+                            uris.add(uri)
+                            shareFiles.add(file)
                         }
                     }
                 } catch (e: Exception) {
@@ -1412,11 +1396,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 }
             }
 
-            if (tempShareFiles.isEmpty()) {
-                if (!targetDate.isNullOrEmpty()) {
-                    startShareWithDate(vehicleName, reportText, "")
-                    return@runOnUiThread
-                }
+            if (uris.isEmpty()) {
                 try {
                     val textIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
@@ -1434,23 +1414,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             try {
-                val uris = ArrayList<Uri>()
-                val addedUriStrings = HashSet<String>()
-                for (file in tempShareFiles) {
-                    if (file.exists() && file.length() > 0) {
-                        val uri = androidx.core.content.FileProvider.getUriForFile(
-                            activity,
-                            "com.example.vistoriainicial.fileprovider",
-                            file
-                        )
-                        val uriStr = uri.toString()
-                        if (!addedUriStrings.contains(uriStr)) {
-                            addedUriStrings.add(uriStr)
-                            uris.add(uri)
-                        }
-                    }
-                }
-                
                 try {
                     val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                     val clip = android.content.ClipData.newPlainText("RelatorioVistoria", reportText)
@@ -1460,11 +1423,11 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 }
 
                 val shareAction = if (uris.size == 1) Intent.ACTION_SEND else Intent.ACTION_SEND_MULTIPLE
-                val hasImages = tempShareFiles.any { f -> 
+                val hasImages = shareFiles.any { f -> 
                     val name = f.name.lowercase()
                     name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png")
                 }
-                val hasVideos = tempShareFiles.any { f -> 
+                val hasVideos = shareFiles.any { f -> 
                     val name = f.name.lowercase()
                     name.endsWith(".mp4") || name.endsWith(".mov") || name.endsWith(".3gp") || name.endsWith(".mkv") || name.endsWith(".webm")
                 }
@@ -1737,7 +1700,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     putExtra("path", vistoriasDir.absolutePath)
                     putExtra("folder_path", vistoriasDir.absolutePath)
                     setDataAndType(Uri.fromFile(vistoriasDir), "resource/folder")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 activity.startActivity(myFilesIntent)
                 opened = true
@@ -1747,7 +1710,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     if (myFilesLaunch != null) {
                         myFilesLaunch.putExtra("current_path", vistoriasDir.absolutePath)
                         myFilesLaunch.putExtra("path", vistoriasDir.absolutePath)
-                        myFilesLaunch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        myFilesLaunch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                         activity.startActivity(myFilesLaunch)
                         opened = true
                     }
