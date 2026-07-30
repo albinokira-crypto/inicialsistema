@@ -2139,5 +2139,3 @@ class AndroidInterface(private val activity: ComponentActivity) {
         }
     }
 }
-/ /   T r i g g e r   b u i l d  
- 
