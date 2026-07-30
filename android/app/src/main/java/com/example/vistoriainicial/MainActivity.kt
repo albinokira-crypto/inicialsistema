@@ -1989,54 +1989,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
         }.start()
     }
-    
-    @JavascriptInterface
-    fun createInspectionFolder(vehicleName: String) {
-        val mainAct = activity as MainActivity
-        mainAct.runOnUiThread {
-            val cleanVehicleName = mainAct.sanitizeFilename(vehicleName)
-            val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
-            val savedUriStr = prefs.getString("selected_folder_uri", null)
-            
-            if (savedUriStr != null) {
-                try {
-                    val rootUri = Uri.parse(savedUriStr)
-                    val rootFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(activity, rootUri)
-                    if (rootFolder != null && rootFolder.exists()) {
-                        val existing = rootFolder.findFile(cleanVehicleName)
-                        if (existing != null && existing.isDirectory) {
-                            Toast.makeText(activity, "A pasta '$cleanVehicleName' já existe!", Toast.LENGTH_SHORT).show()
-                        } else {
-                            val created = rootFolder.createDirectory(cleanVehicleName)
-                            if (created != null) {
-                                Toast.makeText(activity, "Pasta '$cleanVehicleName' gerada com sucesso!", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(activity, "Erro ao gerar pasta customizada.", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                        return@runOnUiThread
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-            
-            // Default folder fallback
-            val picturesDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES)
-            val baseDir = java.io.File(picturesDir, "Vistorias")
-            val targetFolder = java.io.File(baseDir, cleanVehicleName)
-            if (targetFolder.exists()) {
-                Toast.makeText(activity, "A pasta '$cleanVehicleName' já existe!", Toast.LENGTH_SHORT).show()
-            } else {
-                if (targetFolder.mkdirs()) {
-                    Toast.makeText(activity, "Pasta '$cleanVehicleName' gerada com sucesso!", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(activity, "Erro ao gerar pasta.", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-
 
     @JavascriptInterface
     fun openInspectionFolder(vehicleName: String) {
@@ -2103,7 +2055,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                         } catch (e: Exception) {
                             try {
                                 val myFilesIntent2 = Intent(Intent.ACTION_VIEW).apply {
-                                    setDataAndType(Uri.parse("myfiles://launch?path=" + Uri.encode(vistoriasDir.absolutePath)), "vnd.android.cursor.dir/myfiles")
+                                    setDataAndType(Uri.parse("myfiles://"), "vnd.android.cursor.dir/myfiles")
                                     putExtra("samsung.myfiles.intent.extra.START_PATH", vistoriasDir.absolutePath)
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                                 }
@@ -2123,20 +2075,10 @@ class AndroidInterface(private val activity: ComponentActivity) {
                                     activity.startActivity(myFilesIntent3)
                                     folderOpened = true
                                 } catch (e3: Exception) {
-                                    try {
-                                        val myFilesIntent4 = Intent(Intent.ACTION_MAIN).apply {
-                                            setComponent(ComponentName("com.sec.android.app.myfiles", "com.sec.android.app.myfiles.common.MainActivity"))
-                                            putExtra("samsung.myfiles.intent.extra.START_PATH", vistoriasDir.absolutePath)
-                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                                        }
-                                        activity.startActivity(myFilesIntent4)
-                                        folderOpened = true
-                                    } catch (e4: Exception) {
-                                        e4.printStackTrace()
-                                        prefs.edit().remove("file_manager_preference").apply()
-                                        Toast.makeText(activity, "App Meus Arquivos (Samsung) incompatível. Tente 'Arquivos do Sistema' na próxima.", Toast.LENGTH_LONG).show()
-                                        folderOpened = true // Impede fallback genérico
-                                    }
+                                    e3.printStackTrace()
+                                    prefs.edit().remove("file_manager_preference").apply()
+                                    Toast.makeText(activity, "App Meus Arquivos não suportado ou não encontrado. Escolha resetada.", Toast.LENGTH_LONG).show()
+                                    folderOpened = true // Força true para pular os fallbacks genéricos e deixar o usuário ver o erro
                                 }
                             }
                         }
@@ -2251,6 +2193,42 @@ class AndroidInterface(private val activity: ComponentActivity) {
             } catch (e: Exception) {
                 e.printStackTrace()
                 Toast.makeText(activity, "Erro ao abrir seletor de local: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun createInspectionFolder(vehicleName: String) {
+        val mainAct = activity as MainActivity
+        mainAct.runOnUiThread {
+            val cleanVehicleName = mainAct.sanitizeFilename(vehicleName)
+            val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+            val savedUriStr = prefs.getString("selected_folder_uri", null)
+            
+            if (savedUriStr != null) {
+                try {
+                    val rootUri = android.net.Uri.parse(savedUriStr)
+                    val rootFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(activity, rootUri)
+                    if (rootFolder != null && rootFolder.exists()) {
+                        val existing = rootFolder.findFile(cleanVehicleName)
+                        if (existing != null && existing.isDirectory) {
+                            android.widget.Toast.makeText(activity, "A pasta '$cleanVehicleName' já existe!", android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            val created = rootFolder.createDirectory(cleanVehicleName)
+                            if (created != null) {
+                                android.widget.Toast.makeText(activity, "Pasta '$cleanVehicleName' gerada com sucesso!", android.widget.Toast.LENGTH_SHORT).show()
+                            } else {
+                                android.widget.Toast.makeText(activity, "Erro ao gerar pasta customizada.", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } else {
+                        android.widget.Toast.makeText(activity, "Pasta raiz não encontrada. Configure o local de salvamento novamente.", android.widget.Toast.LENGTH_LONG).show()
+                    }
+                } catch (e: Exception) {
+                    android.widget.Toast.makeText(activity, "Erro: " + e.message, android.widget.Toast.LENGTH_LONG).show()
+                }
+            } else {
+                android.widget.Toast.makeText(activity, "Local de salvamento não configurado. Por favor, configure primeiro.", android.widget.Toast.LENGTH_LONG).show()
             }
         }
     }
