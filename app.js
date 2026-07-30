@@ -3957,3 +3957,18 @@ window.onAndroidBackButtonPressed = function() {
 
   return false;
 };
+
+
+window.gerarPastaNova = function() {
+  const plateInput = document.getElementById('plateInput');
+  const vehicleName = plateInput ? plateInput.value : '';
+  if (!vehicleName || !vehicleName.trim()) {
+    alert('Por favor, preencha o Modelo e Placa do veículo primeiro.');
+    return;
+  }
+  if (window.AndroidInterface && typeof window.AndroidInterface.createInspectionFolder === 'function') {
+    window.AndroidInterface.createInspectionFolder(vehicleName.trim());
+  } else {
+    alert('Esta funcionalidade de gerar a pasta só está disponível no aplicativo Android.');
+  }
+};
