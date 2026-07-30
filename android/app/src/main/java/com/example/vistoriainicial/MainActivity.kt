@@ -91,8 +91,29 @@ class MainActivity : ComponentActivity() {
 
         webView.webViewClient = WebViewClient()
         
-        // Setup WebChromeClient to support File Chooser (<input type="file">)
+        // Setup WebChromeClient to support File Chooser (<input type="file">) and custom Alert dialogs
         webView.webChromeClient = object : WebChromeClient() {
+            override fun onJsAlert(view: WebView?, url: String?, message: String?, result: android.webkit.JsResult?): Boolean {
+                android.app.AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Gestão de Vistorias diz:")
+                    .setMessage(message)
+                    .setPositiveButton(android.R.string.ok) { _, _ -> result?.confirm() }
+                    .setCancelable(false)
+                    .show()
+                return true
+            }
+
+            override fun onJsConfirm(view: WebView?, url: String?, message: String?, result: android.webkit.JsResult?): Boolean {
+                android.app.AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Gestão de Vistorias diz:")
+                    .setMessage(message)
+                    .setPositiveButton(android.R.string.ok) { _, _ -> result?.confirm() }
+                    .setNegativeButton(android.R.string.cancel) { _, _ -> result?.cancel() }
+                    .setCancelable(false)
+                    .show()
+                return true
+            }
+
             override fun onShowFileChooser(
                 webView: WebView?,
                 filePathCallback: ValueCallback<Array<Uri>>?,

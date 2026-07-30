@@ -1,4 +1,4 @@
-function openMenuSection(targetDay) {
+﻿function openMenuSection(targetDay) {
   handleMenuButtonClick(targetDay);
 }
 window.openMenuSection = openMenuSection;
@@ -83,7 +83,7 @@ const oficinaNameInput = document.getElementById('oficinaNameInput');
 const cancelOficinaEditButton = document.getElementById('cancelOficinaEditButton');
 const oficinaList = document.getElementById('oficinaList');
 
-// Supervisão Elements
+// SupervisÃ£o Elements
 const supervisaoFormCard = document.getElementById('supervisaoFormCard');
 const supervisaoRecordsCard = document.getElementById('supervisaoRecordsCard');
 const supervisaoForm = document.getElementById('supervisaoForm');
@@ -108,11 +108,11 @@ const supervisaoReportContent = document.getElementById('supervisaoReportContent
 
 const STAGES_STORAGE_KEY = 'web-system-stages-v1';
 const DEFAULT_STAGES = [
-  "Aguardando peças fora de serviço",
-  "Em posse do proprietário",
+  "Aguardando peÃ§as fora de serviÃ§o",
+  "Em posse do proprietÃ¡rio",
   "Em lanternagem",
   "Em funilaria",
-  "Em preparação de pintura",
+  "Em preparaÃ§Ã£o de pintura",
   "Em pintura",
   "Em montagem",
   "Testes finais",
@@ -244,7 +244,7 @@ function attachGlobalEventListeners() {
     shareSupervisaoTextButton.addEventListener('click', () => {
       const filtered = getFilteredSupervisoes();
       const text = formatAllSupervisoesText(filtered);
-      shareSupervisaoText(text, 'Relatório de Supervisão');
+      shareSupervisaoText(text, 'RelatÃ³rio de SupervisÃ£o');
     });
   }
 
@@ -257,7 +257,7 @@ function attachGlobalEventListeners() {
         const cleanedName = name.trim();
         const exists = oficinas.some(o => o.name.toLowerCase() === cleanedName.toLowerCase());
         if (exists) {
-          alert('Esta oficina já está cadastrada!');
+          alert('Esta oficina jÃ¡ estÃ¡ cadastrada!');
           return;
         }
         const newOficina = {
@@ -284,7 +284,7 @@ function attachGlobalEventListeners() {
         const cleanedName = name.trim();
         const exists = stages.some(st => st.toLowerCase() === cleanedName.toLowerCase());
         if (exists) {
-          alert('Esta etapa já está cadastrada!');
+          alert('Esta etapa jÃ¡ estÃ¡ cadastrada!');
           return;
         }
         stages.push(cleanedName);
@@ -300,8 +300,8 @@ function attachGlobalEventListeners() {
   if (homeClearWeekButton) {
     homeClearWeekButton.addEventListener('click', () => {
       const verification = window.prompt(
-        '⚠️ CONFIRMAÇÃO:\n\n' +
-        'Deseja limpar os registros da semana atual? Eles continuarão no relatório de "Todas as Vistorias".\n\n' +
+        'âš ï¸ CONFIRMAÃ‡ÃƒO:\n\n' +
+        'Deseja limpar os registros da semana atual? Eles continuarÃ£o no relatÃ³rio de "Todas as Vistorias".\n\n' +
         'Para confirmar, digite a palavra LIMPAR abaixo:'
       );
       if (verification && verification.trim().toUpperCase() === 'LIMPAR') {
@@ -345,7 +345,7 @@ dayTabs.addEventListener('click', (event) => {
   if (!target.matches('.tab-btn')) return;
   selectedDay = target.dataset.day;
   
-  if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
+  if (['Segunda', 'TerÃ§a', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
     selectedType = 'Inicial';
     if (vistoriaTypeTabs) {
       vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
@@ -376,7 +376,7 @@ installButton.addEventListener('click', async () => {
   deferredPrompt = null;
   installButton.hidden = true;
   if (choice.outcome === 'accepted') {
-    console.log('Usuário aceitou o atalho');
+    console.log('UsuÃ¡rio aceitou o atalho');
   }
 });
 insurerForm.addEventListener('submit', saveInsurer);
@@ -390,7 +390,7 @@ if (cancelOficinaEditButton) {
 }
 if (clearWeekButton) {
   clearWeekButton.addEventListener('click', () => {
-    if (window.confirm('Deseja apagar os registros da semana atual? Eles continuarão no relatório mensal.')) {
+    if (window.confirm('Deseja apagar os registros da semana atual? Eles continuarÃ£o no relatÃ³rio mensal.')) {
       items.forEach((item) => {
         item.clearedFromWeek = true;
       });
@@ -402,7 +402,7 @@ if (clearWeekButton) {
 
 if (clearMonthButton) {
   clearMonthButton.addEventListener('click', () => {
-    if (window.confirm('Deseja apagar permanentemente todos os registros de todas as vistorias e supervisões?')) {
+    if (window.confirm('Deseja apagar permanentemente todos os registros de todas as vistorias e supervisÃµes?')) {
       items = [];
       supervisoes = [];
       saveItems();
@@ -482,7 +482,7 @@ if (shareSupervisaoTextButton) {
   shareSupervisaoTextButton.addEventListener('click', () => {
     const filtered = getFilteredSupervisoes();
     const text = formatAllSupervisoesText(filtered);
-    shareSupervisaoText(text, 'Relatório de Supervisão');
+    shareSupervisaoText(text, 'RelatÃ³rio de SupervisÃ£o');
   });
 }
 
@@ -507,8 +507,8 @@ function isValidPlate(value) {
 }
 
 function updateFormDisplay() {
-  const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
-  const isSupervisao = selectedDay === 'Supervisão';
+  const isWeekday = ['Segunda', 'TerÃ§a', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
+  const isSupervisao = selectedDay === 'SupervisÃ£o';
   const isSeguradoras = selectedDay === 'Seguradoras';
   const isOficinas = selectedDay === 'Oficinas';
   const isTotalSemana = selectedDay === 'Total da semana';
@@ -607,7 +607,7 @@ function updateHomeSummary() {
   const statsItems = items.filter(item => item.clearedFromWeek !== true);
   const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
   const uniqueDays = new Set(statsItems.map((item) => item.day)).size;
-  const lastRecord = statsItems.length ? (statsItems[0].date ? formatDateString(statsItems[0].date) : (statsItems[0].createdAt || '—')) : '—';
+  const lastRecord = statsItems.length ? (statsItems[0].date ? formatDateString(statsItems[0].date) : (statsItems[0].createdAt || 'â€”')) : 'â€”';
 
   summaryGridEl.innerHTML = `
     <article class="summary-item" style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; text-align: center;">
@@ -624,7 +624,7 @@ function updateHomeSummary() {
     </article>
     <article class="summary-item" style="background: #f3e8ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; text-align: center;">
       <strong style="font-size: 0.95rem; color: #6b21a8; display: block; word-break: break-word;">${lastRecord}</strong>
-      <span style="font-size: 0.78rem; color: #9333ea; font-weight: 700; text-transform: uppercase;">último registro</span>
+      <span style="font-size: 0.78rem; color: #9333ea; font-weight: 700; text-transform: uppercase;">Ãºltimo registro</span>
     </article>
   `;
 }
@@ -655,7 +655,7 @@ function getAutomaticDayOfWeek() {
   const dayIndex = new Date().getDay();
   const map = {
     1: 'Segunda',
-    2: 'Terça',
+    2: 'TerÃ§a',
     3: 'Quarta',
     4: 'Quinta',
     5: 'Sexta'
@@ -675,7 +675,7 @@ function handleMenuButtonClick(targetDay) {
     selectedDay = targetDay;
   }
   
-  if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
+  if (['Segunda', 'TerÃ§a', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
     selectedType = 'Inicial';
     const typeTabsEl = document.getElementById('vistoriaTypeTabs');
     if (typeTabsEl) {
@@ -707,7 +707,7 @@ function handleMenuButtonClick(targetDay) {
 
   updateDayTabs();
   render();
-  if (selectedDay === 'Supervisão') {
+  if (selectedDay === 'SupervisÃ£o') {
     populateSupervisaoOficinaSelect();
     populateSupervisaoOficinaFilter();
     populateSupervisaoStageSelect();
@@ -739,8 +739,8 @@ window.homeLogout = function() {
 
 window.homeClearWeek = function() {
   const verification = window.prompt(
-    '⚠️ CONFIRMAÇÃO:\n\n' +
-    'Deseja limpar os registros da semana atual? Eles continuarão no relatório de "Todas as Vistorias".\n\n' +
+    'âš ï¸ CONFIRMAÃ‡ÃƒO:\n\n' +
+    'Deseja limpar os registros da semana atual? Eles continuarÃ£o no relatÃ³rio de "Todas as Vistorias".\n\n' +
     'Para confirmar, digite a palavra LIMPAR abaixo:'
   );
   if (verification && verification.trim().toUpperCase() === 'LIMPAR') {
@@ -838,7 +838,7 @@ function saveItem(event) {
   const oficinaName = selectedOficina ? selectedOficina.name : '';
 
   if (!date || !day || !plate || !providerId || !oficinaId) {
-    alert('Por favor, preencha todos os campos obrigatórios, incluindo a oficina.');
+    alert('Por favor, preencha todos os campos obrigatÃ³rios, incluindo a oficina.');
     return;
   }
   if (!isValidPlate(plate)) return;
@@ -932,7 +932,7 @@ function render() {
   const isTodasVistorias = selectedDay === 'Todas as vistorias';
 
   if (summaryGrid) {
-    // Show summaryGrid only on "Mês vigente" (which is now replaced, but keep compatibility or hide it)
+    // Show summaryGrid only on "MÃªs vigente" (which is now replaced, but keep compatibility or hide it)
     summaryGrid.style.display = 'none';
   }
 
@@ -958,7 +958,7 @@ function render() {
         <li style="list-style: none; grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
           <h3 style="margin: 0; color: #1e40af; font-size: 1rem; font-weight: 700;">Selecione uma oficina:</h3>
           <button id="tabClearAllButton" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 999px; cursor: pointer;">
-            🧹 Limpar Tudo
+            ðŸ§¹ Limpar Tudo
           </button>
         </li>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; width: 100%;">
@@ -978,9 +978,9 @@ function render() {
       if (clearAllBtn) {
         clearAllBtn.addEventListener('click', () => {
           const verification = window.prompt(
-            '⚠️ AVISO DE SEGURANÇA:\n\n' +
-            'Esta ação irá apagar PERMANENTEMENTE todos os registros cadastrados (vistorias e supervisões) de todas as oficinas.\n' +
-            'Esta ação não poderá ser desfeita.\n\n' +
+            'âš ï¸ AVISO DE SEGURANÃ‡A:\n\n' +
+            'Esta aÃ§Ã£o irÃ¡ apagar PERMANENTEMENTE todos os registros cadastrados (vistorias e supervisÃµes) de todas as oficinas.\n' +
+            'Esta aÃ§Ã£o nÃ£o poderÃ¡ ser desfeita.\n\n' +
             'Para confirmar que deseja prosseguir, digite a palavra APAGAR no campo abaixo:'
           );
           if (verification && verification.trim().toUpperCase() === 'APAGAR') {
@@ -1040,15 +1040,15 @@ function render() {
           <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
             <strong style="color: #15803d; font-size: 0.95rem;">Oficina: ${escapeHtml(o.name)}</strong>
             <button id="backToOficinasList" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 999px; cursor: pointer;">
-              ← Voltar
+              â† Voltar
             </button>
           </div>
           <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
             <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
               Vistorias
             </button>
-            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-              Supervisões
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'SupervisÃµes' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+              SupervisÃµes
             </button>
           </div>
         </li>
@@ -1057,11 +1057,11 @@ function render() {
       const badgeClasses = {
         'Inicial': 'badge-inicial',
         'Roubo Recuperado': 'badge-roubo',
-        'Incêndio': 'badge-incendio',
+        'IncÃªndio': 'badge-incendio',
         'Enchente': 'badge-enchente',
         'Moto': 'badge-moto',
         'Complemento': 'badge-complemento',
-        'Pós entrega': 'badge-pos',
+        'PÃ³s entrega': 'badge-pos',
         'Vistoria Rio log': 'badge-riolog'
       };
 
@@ -1076,20 +1076,20 @@ function render() {
             <li class="item-card compact-item-card">
               <div class="item-main-info" ${mainInfoStyle}>
                 <div class="plate-badge compact-plate-badge" ${badgeStyle}>
-                  <span class="plate-badge-text" ${badgeTextStyle}>${escapeHtml(entry.vehicle || 'Supervisão')}</span>
+                  <span class="plate-badge-text" ${badgeTextStyle}>${escapeHtml(entry.vehicle || 'SupervisÃ£o')}</span>
                 </div>
                 <div class="item-details">
-                  <strong class="item-provider">Atendido: ${escapeHtml(entry.attended || '—')}</strong>
-                  <span class="item-meta">· ${escapeHtml(formatDateString(entry.date))}</span>
+                  <strong class="item-provider">Atendido: ${escapeHtml(entry.attended || 'â€”')}</strong>
+                  <span class="item-meta">Â· ${escapeHtml(formatDateString(entry.date))}</span>
                   <span class="badge-supervisao" style="margin-left: 6px;">
-                    Supervisão: ${escapeHtml(entry.stage || '')}
+                    SupervisÃ£o: ${escapeHtml(entry.stage || '')}
                   </span>
                 </div>
               </div>
               <div class="actions vertical-actions">
-                <button class="action-btn" type="button" data-super-action="share-whatsapp" data-id="${entry.id}">💬 Compartilhar vistoria</button>
-                <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">📸 Fotos</button>
-                <button class="action-btn" type="button" data-super-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
+                <button class="action-btn" type="button" data-super-action="share-whatsapp" data-id="${entry.id}">ðŸ’¬ Compartilhar vistoria</button>
+                <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">ðŸ“¸ Fotos</button>
+                <button class="action-btn" type="button" data-super-action="open-folder" data-id="${entry.id}">ðŸ“‚ Pasta</button>
                 <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
                 <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
               </div>
@@ -1110,15 +1110,15 @@ function render() {
                 </div>
                 <div class="item-details">
                   <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
-                  <span class="item-meta">· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
-                  <span class="item-meta">· ${escapeHtml(entry.day)}</span>
+                  <span class="item-meta">Â· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
+                  <span class="item-meta">Â· ${escapeHtml(entry.day)}</span>
                   <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
                 </div>
               </div>
               <div class="actions vertical-actions">
-                <button class="action-btn" type="button" data-action="share-whatsapp" data-id="${entry.id}">💬 Compartilhar vistoria</button>
-                <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">📸 Fotos</button>
-                <button class="action-btn" type="button" data-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
+                <button class="action-btn" type="button" data-action="share-whatsapp" data-id="${entry.id}">ðŸ’¬ Compartilhar vistoria</button>
+                <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">ðŸ“¸ Fotos</button>
+                <button class="action-btn" type="button" data-action="open-folder" data-id="${entry.id}">ðŸ“‚ Pasta</button>
                 <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
                 <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
               </div>
@@ -1147,7 +1147,7 @@ function render() {
       }
       if (toggleSupervisoesBtn) {
         toggleSupervisoesBtn.addEventListener('click', () => {
-          selectedTodasVistoriasFilter = 'Supervisões';
+          selectedTodasVistoriasFilter = 'SupervisÃµes';
           render();
         });
       }
@@ -1198,8 +1198,8 @@ function render() {
       <span>dias preenchidos</span>
     </article>
     <article class="summary-item">
-      <strong>${statsItems.length ? escapeHtml(statsItems[0].createdAt) : '—'}</strong>
-      <span>último registro</span>
+      <strong>${statsItems.length ? escapeHtml(statsItems[0].createdAt) : 'â€”'}</strong>
+      <span>Ãºltimo registro</span>
     </article>
   `;
 
@@ -1212,11 +1212,11 @@ function render() {
   const badgeClasses = {
     'Inicial': 'badge-inicial',
     'Roubo Recuperado': 'badge-roubo',
-    'Incêndio': 'badge-incendio',
+    'IncÃªndio': 'badge-incendio',
     'Enchente': 'badge-enchente',
     'Moto': 'badge-moto',
     'Complemento': 'badge-complemento',
-    'Pós entrega': 'badge-pos',
+    'PÃ³s entrega': 'badge-pos',
     'Vistoria Rio log': 'badge-riolog'
   };
 
@@ -1230,8 +1230,8 @@ function render() {
           </div>
           <div class="item-details">
             <strong class="item-provider">${escapeHtml(item.provider || 'Sem seguradora')}</strong>
-            <span class="item-meta">· ${escapeHtml(formatDateString(item.date))}</span>
-            <strong class="item-value">· R$ ${escapeHtml(Number(item.value).toFixed(2).replace('.', ','))}</strong>
+            <span class="item-meta">Â· ${escapeHtml(formatDateString(item.date))}</span>
+            <strong class="item-value">Â· R$ ${escapeHtml(Number(item.value).toFixed(2).replace('.', ','))}</strong>
             <span class="${badgeClass}" style="margin-left: 6px;">
               ${escapeHtml(item.type || 'Inicial')}
             </span>
@@ -1239,9 +1239,9 @@ function render() {
           </div>
         </div>
         <div class="actions vertical-actions">
-          <button class="action-btn" type="button" data-action="share-whatsapp" data-id="${item.id}">💬 Compartilhar vistoria</button>
-          <button class="action-btn" type="button" data-action="photos" data-id="${item.id}">📸 Fotos</button>
-          <button class="action-btn" type="button" data-action="open-folder" data-id="${item.id}">📂 Pasta</button>
+          <button class="action-btn" type="button" data-action="share-whatsapp" data-id="${item.id}">ðŸ’¬ Compartilhar vistoria</button>
+          <button class="action-btn" type="button" data-action="photos" data-id="${item.id}">ðŸ“¸ Fotos</button>
+          <button class="action-btn" type="button" data-action="open-folder" data-id="${item.id}">ðŸ“‚ Pasta</button>
           <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
           <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
         </div>
@@ -1257,14 +1257,14 @@ function render() {
 }
 
 function renderReport(filteredItems) {
-  const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+  const days = ['Segunda', 'TerÃ§a', 'Quarta', 'Quinta', 'Sexta'];
   const totals = days.map((day) => {
     const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
     itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
 
     const platesHtml = itemsForDay.length
       ? itemsForDay.map((item, index) => `<div style="padding: 3px 0; border-bottom: 1px dashed #cbd5e1; font-weight: 500;">${index + 1}. ${escapeHtml(item.plate)}</div>`).join('')
-      : '—';
+      : 'â€”';
     return {
       day,
       visits: itemsForDay.length,
@@ -1276,7 +1276,7 @@ function renderReport(filteredItems) {
   reportBody.innerHTML = totals.map(({ day, visits, platesHtml, value }) => `
     <tr>
       <td data-label="Dia" style="font-weight: 600;">${escapeHtml(day)}</td>
-      <td data-label="Nº Vistorias" style="font-weight: 600;">${visits}</td>
+      <td data-label="NÂº Vistorias" style="font-weight: 600;">${visits}</td>
       <td data-label="Vistorias (Placas)" style="word-break: break-word;">${platesHtml}</td>
       <td data-label="Valor Total" style="font-weight: 600; white-space: nowrap;">R$ ${value.toFixed(2).replace('.', ',')}</td>
     </tr>
@@ -1301,50 +1301,50 @@ function getSurveyText(id) {
   const getCheckmark = (val, field) => {
     const isSim = (val || '').toLowerCase() === 'sim';
     if (field === 'motorFunciona') {
-      return isSim ? 'Sim(x ) Não(   )' : 'Sim(  ) Não(x   )';
+      return isSim ? 'Sim(x ) NÃ£o(   )' : 'Sim(  ) NÃ£o(x   )';
     }
     if (field === 'estepe') {
-      return isSim ? 'Sim ( x) Não ( )' : 'Sim ( ) Não ( x)';
+      return isSim ? 'Sim ( x) NÃ£o ( )' : 'Sim ( ) NÃ£o ( x)';
     }
     if (field === 'triangulo') {
-      return isSim ? 'Sim (x ) Não (   )' : 'Sim ( ) Não ( x )';
+      return isSim ? 'Sim (x ) NÃ£o (   )' : 'Sim ( ) NÃ£o ( x )';
     }
-    return isSim ? 'Sim (x ) Não ( )' : 'Sim ( ) Não (x )';
+    return isSim ? 'Sim (x ) NÃ£o ( )' : 'Sim ( ) NÃ£o (x )';
   };
 
   const radioVal = details.radio === 'Original' ? 'original' : (details.radioBrand || 'Outra');
 
   let sections = [];
 
-  if (item.type === 'Incêndio') {
-    sections.push(`Incêndio`);
+  if (item.type === 'IncÃªndio') {
+    sections.push(`IncÃªndio`);
     sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
     
     let checklist = [];
     checklist.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
-    checklist.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
-    checklist.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
-    checklist.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
-    checklist.push(`MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}`);
-    checklist.push(`TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}`);
-    checklist.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}`);
-    checklist.push(`RÁDIO / MARCA:${radioVal}`);
+    checklist.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'NÃ£o', 'rebocado')}`);
+    checklist.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'NÃ£o', 'motorFunciona')}`);
+    checklist.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'NÃ£o', 'estepe')}`);
+    checklist.push(`MACACO?: ${getCheckmark(details.macaco || 'NÃ£o', 'macaco')}`);
+    checklist.push(`TRIÃ‚NGULO ?: ${getCheckmark(details.triangulo || 'NÃ£o', 'triangulo')}`);
+    checklist.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'NÃ£o', 'chaveRoda')}`);
+    checklist.push(`RÃDIO / MARCA:${radioVal}`);
     checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
     checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
     sections.push(checklist.join('\n'));
 
     let fireDetails = [];
-    if (details.origemIncendio) fireDetails.push(`Ponto de Origem do Incêndio : ${details.origemIncendio}`);
-    if (details.sistemaCombustivel) fireDetails.push(`Avaliação do Sistema de Combustível e Fluidos : ${details.sistemaCombustivel}`);
-    if (details.sistemaEletrico) fireDetails.push(`Avaliação do Sistema Elétrico : ${details.sistemaEletrico}`);
-    if (details.residuosExtincao) fireDetails.push(`Resíduos de Extinção do Incêndio : ${getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao')}`);
-    if (details.tanqueAfetado) fireDetails.push(`Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}`);
+    if (details.origemIncendio) fireDetails.push(`Ponto de Origem do IncÃªndio : ${details.origemIncendio}`);
+    if (details.sistemaCombustivel) fireDetails.push(`AvaliaÃ§Ã£o do Sistema de CombustÃ­vel e Fluidos : ${details.sistemaCombustivel}`);
+    if (details.sistemaEletrico) fireDetails.push(`AvaliaÃ§Ã£o do Sistema ElÃ©trico : ${details.sistemaEletrico}`);
+    if (details.residuosExtincao) fireDetails.push(`ResÃ­duos de ExtinÃ§Ã£o do IncÃªndio : ${getCheckmark(details.residuosExtincao || 'NÃ£o', 'residuosExtincao')}`);
+    if (details.tanqueAfetado) fireDetails.push(`Tanque de combustÃ­vel foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'NÃ£o', 'tanqueAfetado')}`);
     if (fireDetails.length > 0) {
       sections.push(fireDetails.join('\n'));
     }
 
     if (details.obs) {
-      sections.push(`Observações Complementares : ${details.obs}`);
+      sections.push(`ObservaÃ§Ãµes Complementares : ${details.obs}`);
     }
   } else {
     // Other survey types
@@ -1352,34 +1352,34 @@ function getSurveyText(id) {
     
     let checklist = [];
     checklist.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
-    checklist.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
-    checklist.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
+    checklist.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'NÃ£o', 'rebocado')}`);
+    checklist.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'NÃ£o', 'motorFunciona')}`);
     
     if ('estepe' in details) {
-      checklist.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
-      checklist.push(`MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}`);
-      checklist.push(`TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}`);
-      checklist.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}`);
-      checklist.push(`RÁDIO / MARCA:${radioVal}`);
+      checklist.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'NÃ£o', 'estepe')}`);
+      checklist.push(`MACACO?: ${getCheckmark(details.macaco || 'NÃ£o', 'macaco')}`);
+      checklist.push(`TRIÃ‚NGULO ?: ${getCheckmark(details.triangulo || 'NÃ£o', 'triangulo')}`);
+      checklist.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'NÃ£o', 'chaveRoda')}`);
+      checklist.push(`RÃDIO / MARCA:${radioVal}`);
       checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
       checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
     }
 
     if (item.type === 'Roubo Recuperado' && details.obsRoubo) {
-      checklist.push(`Observações Roubo: ${details.obsRoubo}`);
+      checklist.push(`ObservaÃ§Ãµes Roubo: ${details.obsRoubo}`);
     }
     if (item.type === 'Enchente') {
-      const yesNo = (val) => val === 'Sim' ? 'Sim' : 'Não';
-      if (details.aguaOleo) checklist.push(`Vestígios de água no óleo: ${yesNo(details.aguaOleo)}`);
-      if (details.aguaVelas) checklist.push(`Vestígios de água nas velas: ${yesNo(details.aguaVelas)}`);
-      if (details.aguaFarois) checklist.push(`Vestígios de água nos faróis: ${yesNo(details.aguaFarois)}`);
-      if (details.aguaLanternas) checklist.push(`Vestígios de água nas lanternas: ${yesNo(details.aguaLanternas)}`);
-      if (details.aguaFiltro) checklist.push(`Vestígios de água no filtro: ${yesNo(details.aguaFiltro)}`);
+      const yesNo = (val) => val === 'Sim' ? 'Sim' : 'NÃ£o';
+      if (details.aguaOleo) checklist.push(`VestÃ­gios de Ã¡gua no Ã³leo: ${yesNo(details.aguaOleo)}`);
+      if (details.aguaVelas) checklist.push(`VestÃ­gios de Ã¡gua nas velas: ${yesNo(details.aguaVelas)}`);
+      if (details.aguaFarois) checklist.push(`VestÃ­gios de Ã¡gua nos farÃ³is: ${yesNo(details.aguaFarois)}`);
+      if (details.aguaLanternas) checklist.push(`VestÃ­gios de Ã¡gua nas lanternas: ${yesNo(details.aguaLanternas)}`);
+      if (details.aguaFiltro) checklist.push(`VestÃ­gios de Ã¡gua no filtro: ${yesNo(details.aguaFiltro)}`);
       if (details.motorTravado) checklist.push(`Motor travado: ${yesNo(details.motorTravado)}`);
-      if (details.alturaAgua) checklist.push(`Altura da água: ${details.alturaAgua}`);
+      if (details.alturaAgua) checklist.push(`Altura da Ã¡gua: ${details.alturaAgua}`);
     }
-    if ((item.type === 'Complemento' || item.type === 'Pós entrega') && details.conteudoLivre) {
-      checklist.push(`Conteúdo: ${details.conteudoLivre}`);
+    if ((item.type === 'Complemento' || item.type === 'PÃ³s entrega') && details.conteudoLivre) {
+      checklist.push(`ConteÃºdo: ${details.conteudoLivre}`);
     }
     
     sections.push(checklist.join('\n'));
@@ -1400,13 +1400,13 @@ function getSurveyText(id) {
     // Universal fields (Trocas & Reparos)
     if (details.trocas) {
       sections.push(`Trocas\n${details.trocas}`);
-    } else if (item.type === 'Incêndio') {
+    } else if (item.type === 'IncÃªndio') {
       sections.push(`Trocas`);
     }
 
     if (details.reparos) {
       sections.push(`Reparos\n${details.reparos}`);
-    } else if (item.type === 'Incêndio') {
+    } else if (item.type === 'IncÃªndio') {
       sections.push(`Reparos`);
     }
   }
@@ -1426,7 +1426,7 @@ function shareSurveyText(id) {
       text: text
     }).catch(err => {
       if (err.name === 'AbortError') return;
-      console.warn('Erro ao compartilhar pelo Web Share API, copiando para a área de transferência...', err);
+      console.warn('Erro ao compartilhar pelo Web Share API, copiando para a Ã¡rea de transferÃªncia...', err);
       copyTextToClipboard(text);
     });
   } else {
@@ -1453,29 +1453,29 @@ function copyTextToClipboard(text) {
 async function shareReportTextOnly(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
-    alert('Registro não encontrado!');
+    alert('Registro nÃ£o encontrado!');
     return;
   }
   const vehicleName = (item.plate || item.vehicle || '').trim();
   if (!vehicleName) {
-    alert("Nome do veículo ou placa inválido!");
+    alert("Nome do veÃ­culo ou placa invÃ¡lido!");
     return;
   }
 
   const isInspection = items.some(entry => entry.id === id);
   let reportText = isInspection ? getSurveyText(id) : formatSingleSupervisaoText(item);
   if (!reportText || !reportText.trim()) {
-    reportText = `Vistoria do veículo: ${vehicleName}`;
+    reportText = `Vistoria do veÃ­culo: ${vehicleName}`;
   }
 
   if (window.AndroidInterface && typeof window.AndroidInterface.shareText === 'function') {
-    window.AndroidInterface.shareText(`Relatório: ${vehicleName}`, reportText);
+    window.AndroidInterface.shareText(`RelatÃ³rio: ${vehicleName}`, reportText);
     return;
   }
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: 'Relatório: ' + vehicleName, text: reportText });
+      await navigator.share({ title: 'RelatÃ³rio: ' + vehicleName, text: reportText });
       return;
     } catch (err) {
       if (err.name === 'AbortError') return;
@@ -1489,7 +1489,7 @@ async function shareReportTextOnly(id) {
     const waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
     window.open(waUrl, '_blank');
   } catch (e) {
-    alert('Relatório copiado para a área de transferência!');
+    alert('RelatÃ³rio copiado para a Ã¡rea de transferÃªncia!');
   }
 }
 window.shareReportTextOnly = shareReportTextOnly;
@@ -1574,7 +1574,7 @@ function handleAction(action, id) {
   updateInsurerButtonsHighlight();
   updateFormState();
 
-  const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
+  const isWeekday = ['Segunda', 'TerÃ§a', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
   if (!isWeekday) {
     selectedDay = item.day || 'Segunda';
     updateDayTabs();
@@ -1602,7 +1602,7 @@ function updatePageTitleHeader() {
   else if (selectedDay === 'Oficinas') titleText = 'Oficinas';
   else if (selectedDay === 'Total da semana') titleText = 'Total da Semana';
   else if (selectedDay === 'Todas as vistorias') titleText = 'Todas as Vistorias';
-  else if (selectedDay === 'Supervisão') titleText = 'Supervisão';
+  else if (selectedDay === 'SupervisÃ£o') titleText = 'SupervisÃ£o';
 
   elem.innerHTML = titleText;
   elem.textContent = titleText;
@@ -1647,7 +1647,7 @@ function updateFormDisplay() {
   if (oficinaForm) oficinaForm.hidden = selectedDay !== 'Oficinas';
   if (oficinaCard) oficinaCard.hidden = selectedDay !== 'Oficinas';
 
-  const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
+  const isWeekday = ['Segunda', 'TerÃ§a', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
   if (formCard) formCard.hidden = !isWeekday;
   if (recordsCard) recordsCard.hidden = !isWeekday && selectedDay !== 'Todas as vistorias';
   if (reportCard) reportCard.hidden = selectedDay !== 'Total da semana';
@@ -1656,14 +1656,14 @@ function updateFormDisplay() {
     vistoriaTypeTabsCard.style.display = isWeekday ? 'block' : 'none';
   }
   
-  if (supervisaoFormCard) supervisaoFormCard.hidden = selectedDay !== 'Supervisão';
-  if (supervisaoRecordsCard) supervisaoRecordsCard.hidden = selectedDay !== 'Supervisão';
+  if (supervisaoFormCard) supervisaoFormCard.hidden = selectedDay !== 'SupervisÃ£o';
+  if (supervisaoRecordsCard) supervisaoRecordsCard.hidden = selectedDay !== 'SupervisÃ£o';
 
   if (clearWeekButton && clearMonthButton) {
     if (selectedDay === 'Todas as vistorias') {
       clearWeekButton.style.display = 'none';
       clearMonthButton.style.display = 'inline-block';
-    } else if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Total da semana'].includes(selectedDay)) {
+    } else if (['Segunda', 'TerÃ§a', 'Quarta', 'Quinta', 'Sexta', 'Total da semana'].includes(selectedDay)) {
       clearWeekButton.style.display = 'inline-block';
       clearMonthButton.style.display = 'none';
     } else {
@@ -1676,7 +1676,7 @@ function updateFormDisplay() {
     renderDynamicSurveyFields();
   }
 
-  if (selectedDay === 'Supervisão') {
+  if (selectedDay === 'SupervisÃ£o') {
     populateSupervisaoOficinaSelect();
     populateSupervisaoOficinaFilter();
     populateSupervisaoStageSelect();
@@ -1805,7 +1805,7 @@ function saveOficina(event) {
   cancelOficinaEditButton.hidden = true;
   renderOficinas();
   
-  if (selectedDay === 'Supervisão') {
+  if (selectedDay === 'SupervisÃ£o') {
     populateSupervisaoOficinaSelect();
     populateSupervisaoOficinaFilter();
   }
@@ -1888,66 +1888,66 @@ function renderDynamicSurveyFields() {
       <span class="status-label">Rebocado?</span>
       <div class="type-buttons-container" data-input-id="input_rebocado">
         <button type="button" class="type-btn" data-value="Sim">Sim</button>
-        <button type="button" class="type-btn active" data-value="Não">Não</button>
+        <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
       </div>
-      <input type="hidden" id="input_rebocado" name="rebocado" value="Não" />
+      <input type="hidden" id="input_rebocado" name="rebocado" value="NÃ£o" />
     </div>
 
     <div class="form-toggle-field">
       <span class="status-label">Motor funciona?</span>
       <div class="type-buttons-container" data-input-id="input_motor">
         <button type="button" class="type-btn" data-value="Sim">Sim</button>
-        <button type="button" class="type-btn active" data-value="Não">Não</button>
+        <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
       </div>
-      <input type="hidden" id="input_motor" name="motorFunciona" value="Não" />
+      <input type="hidden" id="input_motor" name="motorFunciona" value="NÃ£o" />
     </div>
   `;
 
   const vehicleExtraChecklistHtml = `
     <div class="form-toggle-field">
-      <span class="status-label">Veículo com estepe?</span>
+      <span class="status-label">VeÃ­culo com estepe?</span>
       <div class="type-buttons-container" data-input-id="input_estepe">
         <button type="button" class="type-btn" data-value="Sim">Sim</button>
-        <button type="button" class="type-btn active" data-value="Não">Não</button>
+        <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
       </div>
-      <input type="hidden" id="input_estepe" name="estepe" value="Não" />
+      <input type="hidden" id="input_estepe" name="estepe" value="NÃ£o" />
     </div>
 
     <div class="form-toggle-field">
       <span class="status-label">Macaco?</span>
       <div class="type-buttons-container" data-input-id="input_macaco">
         <button type="button" class="type-btn" data-value="Sim">Sim</button>
-        <button type="button" class="type-btn active" data-value="Não">Não</button>
+        <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
       </div>
-      <input type="hidden" id="input_macaco" name="macaco" value="Não" />
+      <input type="hidden" id="input_macaco" name="macaco" value="NÃ£o" />
     </div>
 
     <div class="form-toggle-field">
-      <span class="status-label">Triângulo?</span>
+      <span class="status-label">TriÃ¢ngulo?</span>
       <div class="type-buttons-container" data-input-id="input_triangulo">
         <button type="button" class="type-btn" data-value="Sim">Sim</button>
-        <button type="button" class="type-btn active" data-value="Não">Não</button>
+        <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
       </div>
-      <input type="hidden" id="input_triangulo" name="triangulo" value="Não" />
+      <input type="hidden" id="input_triangulo" name="triangulo" value="NÃ£o" />
     </div>
 
     <div class="form-toggle-field">
       <span class="status-label">Chave de roda?</span>
       <div class="type-buttons-container" data-input-id="input_chave">
         <button type="button" class="type-btn" data-value="Sim">Sim</button>
-        <button type="button" class="type-btn active" data-value="Não">Não</button>
+        <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
       </div>
-      <input type="hidden" id="input_chave" name="chaveRoda" value="Não" />
+      <input type="hidden" id="input_chave" name="chaveRoda" value="NÃ£o" />
     </div>
 
     <div class="form-toggle-field" style="grid-column: 1 / -1;">
-      <span class="status-label">Rádio / Marca</span>
+      <span class="status-label">RÃ¡dio / Marca</span>
       <div class="type-buttons-container radio-toggle" data-input-id="input_radio" style="margin-bottom: 8px;">
         <button type="button" class="type-btn active" data-value="Original">Original</button>
         <button type="button" class="type-btn" data-value="Outra">Outra</button>
       </div>
       <input type="hidden" id="input_radio" name="radio" value="Original" />
-      <input type="text" id="input_radio_brand" name="radioBrand" placeholder="Digite a marca do rádio" style="display: none;" />
+      <input type="text" id="input_radio_brand" name="radioBrand" placeholder="Digite a marca do rÃ¡dio" style="display: none;" />
     </div>
 
     <div class="form-toggle-field">
@@ -1967,18 +1967,18 @@ function renderDynamicSurveyFields() {
 
   const obsHtml = `
     <label style="grid-column: 1 / -1;">
-      Observações (Obs.)
+      ObservaÃ§Ãµes (Obs.)
       <textarea name="obs" rows="3" placeholder="Ex: tinta tricoat"></textarea>
     </label>
   `;
 
   const trocasReparosHtml = `
     <label style="grid-column: 1 / -1;">
-      Trocas (uma peça por linha)
+      Trocas (uma peÃ§a por linha)
       <textarea name="trocas" rows="3" placeholder="Ex:&#10;Lateral LE&#10;Porta traseira LE"></textarea>
     </label>
     <label style="grid-column: 1 / -1;">
-      Reparos (uma peça por linha)
+      Reparos (uma peÃ§a por linha)
       <textarea name="reparos" rows="3" placeholder="Ex:&#10;Coluna LE do teto&#10;Caixa de ar LE"></textarea>
     </label>
   `;
@@ -1991,15 +1991,15 @@ function renderDynamicSurveyFields() {
     fieldsHtml = commonChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Roubo Recuperado') {
     fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
-  } else if (selectedType === 'Incêndio') {
+  } else if (selectedType === 'IncÃªndio') {
     fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + obsHtml + `
       <label style="grid-column: 1 / -1;">
-        Ponto de Origem do Incêndio
+        Ponto de Origem do IncÃªndio
         <input type="text" name="origemIncendio" placeholder="Ex: Compartimento do motor" />
       </label>
       
       <div class="form-toggle-field" style="grid-column: 1 / -1;">
-        <span class="status-label">Avaliação do Sistema de Combustível e Fluidos</span>
+        <span class="status-label">AvaliaÃ§Ã£o do Sistema de CombustÃ­vel e Fluidos</span>
         <div class="type-buttons-container" data-input-id="input_sistema_combustivel">
           <button type="button" class="type-btn active" data-value="Ok">Ok</button>
           <button type="button" class="type-btn" data-value="Parcialmente Avariado">Parcialmente Avariado</button>
@@ -2009,7 +2009,7 @@ function renderDynamicSurveyFields() {
       </div>
 
       <div class="form-toggle-field" style="grid-column: 1 / -1;">
-        <span class="status-label">Avaliação do Sistema Elétrico</span>
+        <span class="status-label">AvaliaÃ§Ã£o do Sistema ElÃ©trico</span>
         <div class="type-buttons-container" data-input-id="input_sistema_eletrico">
           <button type="button" class="type-btn active" data-value="Ok">Ok</button>
           <button type="button" class="type-btn" data-value="Parcialmente Avariado">Parcialmente Avariado</button>
@@ -2019,81 +2019,81 @@ function renderDynamicSurveyFields() {
       </div>
 
       <div class="form-toggle-field">
-        <span class="status-label">Resíduos de Extinção do Incêndio?</span>
+        <span class="status-label">ResÃ­duos de ExtinÃ§Ã£o do IncÃªndio?</span>
         <div class="type-buttons-container" data-input-id="input_residuos">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
-          <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
         </div>
-        <input type="hidden" id="input_residuos" name="residuosExtincao" value="Não" />
+        <input type="hidden" id="input_residuos" name="residuosExtincao" value="NÃ£o" />
       </div>
 
       <div class="form-toggle-field">
-        <span class="status-label">Tanque de combustível foi afetado?</span>
+        <span class="status-label">Tanque de combustÃ­vel foi afetado?</span>
         <div class="type-buttons-container" data-input-id="input_tanque">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
-          <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
         </div>
-        <input type="hidden" id="input_tanque" name="tanqueAfetado" value="Não" />
+        <input type="hidden" id="input_tanque" name="tanqueAfetado" value="NÃ£o" />
       </div>
     ` + trocasReparosHtml;
   } else if (selectedType === 'Enchente') {
     fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + `
       <div class="form-toggle-field">
-        <span class="status-label">Vestígios de água no óleo do motor?</span>
+        <span class="status-label">VestÃ­gios de Ã¡gua no Ã³leo do motor?</span>
         <div class="type-buttons-container" data-input-id="input_oleo">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
-          <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
         </div>
-        <input type="hidden" id="input_oleo" name="aguaOleo" value="Não" />
+        <input type="hidden" id="input_oleo" name="aguaOleo" value="NÃ£o" />
       </div>
 
       <div class="form-toggle-field">
-        <span class="status-label">Vestígios de água nas velas?</span>
+        <span class="status-label">VestÃ­gios de Ã¡gua nas velas?</span>
         <div class="type-buttons-container" data-input-id="input_velas">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
-          <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
         </div>
-        <input type="hidden" id="input_velas" name="aguaVelas" value="Não" />
+        <input type="hidden" id="input_velas" name="aguaVelas" value="NÃ£o" />
       </div>
 
       <div class="form-toggle-field">
-        <span class="status-label">Vestígios de água nos faróis?</span>
+        <span class="status-label">VestÃ­gios de Ã¡gua nos farÃ³is?</span>
         <div class="type-buttons-container" data-input-id="input_farois">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
-          <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
         </div>
-        <input type="hidden" id="input_farois" name="aguaFarois" value="Não" />
+        <input type="hidden" id="input_farois" name="aguaFarois" value="NÃ£o" />
       </div>
 
       <div class="form-toggle-field">
-        <span class="status-label">Vestígios de água nas lanternas?</span>
+        <span class="status-label">VestÃ­gios de Ã¡gua nas lanternas?</span>
         <div class="type-buttons-container" data-input-id="input_lanternas">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
-          <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
         </div>
-        <input type="hidden" id="input_lanternas" name="aguaLanternas" value="Não" />
+        <input type="hidden" id="input_lanternas" name="aguaLanternas" value="NÃ£o" />
       </div>
 
       <div class="form-toggle-field">
-        <span class="status-label">Vestígios de água no filtro?</span>
+        <span class="status-label">VestÃ­gios de Ã¡gua no filtro?</span>
         <div class="type-buttons-container" data-input-id="input_filtro">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
-          <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
         </div>
-        <input type="hidden" id="input_filtro" name="aguaFiltro" value="Não" />
+        <input type="hidden" id="input_filtro" name="aguaFiltro" value="NÃ£o" />
       </div>
 
       <div class="form-toggle-field">
         <span class="status-label">Motor travado?</span>
         <div class="type-buttons-container" data-input-id="input_travado">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
-          <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn active" data-value="NÃ£o">NÃ£o</button>
         </div>
-        <input type="hidden" id="input_travado" name="motorTravado" value="Não" />
+        <input type="hidden" id="input_travado" name="motorTravado" value="NÃ£o" />
       </div>
 
       <label>
-        Altura da água
+        Altura da Ã¡gua
         <input type="text" name="alturaAgua" placeholder="Ex: Acima dos bancos" />
       </label>
     ` + extraFieldsHtml;
@@ -2105,11 +2105,11 @@ function renderDynamicSurveyFields() {
       </label>
     `;
     fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + obsHtml + avariasHtml;
-  } else if (selectedType === 'Complemento' || selectedType === 'Pós entrega') {
+  } else if (selectedType === 'Complemento' || selectedType === 'PÃ³s entrega') {
     fieldsHtml = `
       <label style="grid-column: 1 / -1;">
-        Conteúdo do Relatório
-        <textarea name="conteudoLivre" rows="5" required placeholder="Digite o conteúdo livre para o relatório..."></textarea>
+        ConteÃºdo do RelatÃ³rio
+        <textarea name="conteudoLivre" rows="5" required placeholder="Digite o conteÃºdo livre para o relatÃ³rio..."></textarea>
       </label>
     ` + extraFieldsHtml;
   }
@@ -2125,7 +2125,7 @@ function renderDynamicSurveyFields() {
         const cleanedName = name.trim();
         const exists = oficinas.some(o => o.name.toLowerCase() === cleanedName.toLowerCase());
         if (exists) {
-          alert('Esta oficina já está cadastrada!');
+          alert('Esta oficina jÃ¡ estÃ¡ cadastrada!');
           return;
         }
         const newOficina = {
@@ -2221,7 +2221,7 @@ async function startSync() {
 async function loadServerData() {
   try {
     const response = await fetch('/api/data', { cache: 'no-store' });
-    if (!response.ok) throw new Error('Servidor local não disponível');
+    if (!response.ok) throw new Error('Servidor local nÃ£o disponÃ­vel');
     const data = await response.json();
     if (Array.isArray(data.items) && Array.isArray(data.insurers)) {
       items = data.items;
@@ -2235,10 +2235,10 @@ async function loadServerData() {
       populateProviderSelect();
       return;
     }
-    throw new Error('Dados do servidor inválidos');
+    throw new Error('Dados do servidor invÃ¡lidos');
   } catch (error) {
     serverSync = false;
-    updateSyncStatus('Serviço local indisponível; usando dados locais');
+    updateSyncStatus('ServiÃ§o local indisponÃ­vel; usando dados locais');
   }
 }
 
@@ -2252,7 +2252,7 @@ async function syncDataToServer() {
     updateSyncStatus('Dados enviados para servidor local');
   } catch (error) {
     serverSync = false;
-    updateSyncStatus('Falha na sincronização local');
+    updateSyncStatus('Falha na sincronizaÃ§Ã£o local');
   }
 }
 
@@ -2260,7 +2260,7 @@ function getWeekdayName(dateObj) {
   const dayIndex = (dateObj || new Date()).getDay();
   const map = {
     1: 'Segunda',
-    2: 'Terça',
+    2: 'TerÃ§a',
     3: 'Quarta',
     4: 'Quinta',
     5: 'Sexta'
@@ -2269,7 +2269,7 @@ function getWeekdayName(dateObj) {
 }
 
 function formatDateString(dateStr) {
-  if (!dateStr) return '—';
+  if (!dateStr) return 'â€”';
   try {
     const parts = dateStr.split('-');
     if (parts.length === 3) {
@@ -2277,7 +2277,7 @@ function formatDateString(dateStr) {
     }
     return dateStr;
   } catch (e) {
-    return dateStr || '—';
+    return dateStr || 'â€”';
   }
 }
 
@@ -2290,7 +2290,7 @@ function getTodayDateValue() {
 }
 
 function getSelectedSaveDay() {
-  const weekdays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+  const weekdays = ['Segunda', 'TerÃ§a', 'Quarta', 'Quinta', 'Sexta'];
   if (weekdays.includes(selectedDay)) {
     return selectedDay;
   }
@@ -2298,7 +2298,7 @@ function getSelectedSaveDay() {
 }
 
 function getWeekdayName(date) {
-  const weekdayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  const weekdayNames = ['Domingo', 'Segunda', 'TerÃ§a', 'Quarta', 'Quinta', 'Sexta', 'SÃ¡bado'];
   return weekdayNames[date.getDay()];
 }
 
@@ -2383,7 +2383,7 @@ function saveSupervisao(event) {
   const oficinaName = selectedOficina ? selectedOficina.name : '';
 
   if (!vehicle || !attended || !stage || !oficinaId) {
-    alert('Por favor, preencha todos os campos obrigatórios.');
+    alert('Por favor, preencha todos os campos obrigatÃ³rios.');
     return;
   }
 
@@ -2417,10 +2417,10 @@ function saveSupervisao(event) {
 
   saveSupervisoes();
   supervisaoForm.reset();
-  if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = 'Não';
+  if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = 'NÃ£o';
   if (supervisaoPartsPendingButtons) {
     supervisaoPartsPendingButtons.querySelectorAll('.type-btn').forEach((b) => {
-      b.classList.toggle('active', b.dataset.value === 'Não');
+      b.classList.toggle('active', b.dataset.value === 'NÃ£o');
     });
   }
   if (supervisaoPartsDetailsContainer) supervisaoPartsDetailsContainer.style.display = 'none';
@@ -2436,10 +2436,10 @@ function saveSupervisao(event) {
 function cancelSupervisaoEdit() {
   editingSupervisaoId = null;
   supervisaoForm.reset();
-  if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = 'Não';
+  if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = 'NÃ£o';
   if (supervisaoPartsPendingButtons) {
     supervisaoPartsPendingButtons.querySelectorAll('.type-btn').forEach((b) => {
-      b.classList.toggle('active', b.dataset.value === 'Não');
+      b.classList.toggle('active', b.dataset.value === 'NÃ£o');
     });
   }
   if (supervisaoPartsDetailsContainer) supervisaoPartsDetailsContainer.style.display = 'none';
@@ -2456,7 +2456,7 @@ function renderSupervisaoReport() {
   });
 
   if (!filtered.length) {
-    supervisaoReportContent.innerHTML = '<tr><td colspan="7" class="empty">Nenhum registro de supervisão encontrado.</td></tr>';
+    supervisaoReportContent.innerHTML = '<tr><td colspan="7" class="empty">Nenhum registro de supervisÃ£o encontrado.</td></tr>';
     return;
   }
 
@@ -2470,17 +2470,17 @@ function renderSupervisaoReport() {
   supervisaoReportContent.innerHTML = filtered.map((s) => {
     let partsPendingHtml = '';
     if (s.partsPending === 'Sim') {
-      partsPendingHtml = `<span class="badge-roubo">Sim: ${escapeHtml(s.parts || '—')}</span>`;
+      partsPendingHtml = `<span class="badge-roubo">Sim: ${escapeHtml(s.parts || 'â€”')}</span>`;
     } else {
-      partsPendingHtml = `<span class="badge-pos">Não</span>`;
+      partsPendingHtml = `<span class="badge-pos">NÃ£o</span>`;
     }
 
     const stageClasses = {
-      'Aguardando peças fora de serviço': 'badge-roubo',
-      'Em posse do proprietário': 'badge-inicial',
+      'Aguardando peÃ§as fora de serviÃ§o': 'badge-roubo',
+      'Em posse do proprietÃ¡rio': 'badge-inicial',
       'Em lanternagem': 'badge-incendio',
       'Em funilaria': 'badge-incendio',
-      'Em preparação de pintura': 'badge-enchente',
+      'Em preparaÃ§Ã£o de pintura': 'badge-enchente',
       'Em pintura': 'badge-enchente',
       'Em montagem': 'badge-moto',
       'Testes finais': 'badge-moto',
@@ -2489,26 +2489,26 @@ function renderSupervisaoReport() {
     };
     const stageClass = stageClasses[s.stage] || 'badge-inicial';
 
-    let prevEst = `Finalização: ${escapeHtml(s.finish || '—')}`;
+    let prevEst = `FinalizaÃ§Ã£o: ${escapeHtml(s.finish || 'â€”')}`;
     if (s.partsPending === 'Sim') {
-      prevEst += `<br><small style="color:#6b7280;">Peças: ${escapeHtml(s.arrival || '—')}</small>`;
+      prevEst += `<br><small style="color:#6b7280;">PeÃ§as: ${escapeHtml(s.arrival || 'â€”')}</small>`;
     }
 
     return `
       <tr>
-        <td data-label="Veículo" style="font-weight: 600;">${escapeHtml(s.vehicle)}</td>
+        <td data-label="VeÃ­culo" style="font-weight: 600;">${escapeHtml(s.vehicle)}</td>
         <td data-label="Oficina" style="font-weight: 500;">${escapeHtml(s.oficinaName || 'Sem oficina')}</td>
         <td data-label="Atendido por">${escapeHtml(s.attended)}</td>
         <td data-label="Status">
           <span class="${stageClass}">${escapeHtml(s.stage)}</span>
         </td>
-        <td data-label="Pendência Peças">${partsPendingHtml}</td>
-        <td data-label="Previsão/Estimativa">${prevEst}</td>
-        <td data-label="Ações">
+        <td data-label="PendÃªncia PeÃ§as">${partsPendingHtml}</td>
+        <td data-label="PrevisÃ£o/Estimativa">${prevEst}</td>
+        <td data-label="AÃ§Ãµes">
           <div class="actions">
-            <button class="action-btn" type="button" data-super-action="share-whatsapp" data-id="${s.id}">💬 Compartilhar vistoria</button>
-            <button class="action-btn" type="button" data-super-action="photos" data-id="${s.id}">📸 Fotos</button>
-            <button class="action-btn" type="button" data-super-action="open-folder" data-id="${s.id}">📂 Pasta</button>
+            <button class="action-btn" type="button" data-super-action="share-whatsapp" data-id="${s.id}">ðŸ’¬ Compartilhar vistoria</button>
+            <button class="action-btn" type="button" data-super-action="photos" data-id="${s.id}">ðŸ“¸ Fotos</button>
+            <button class="action-btn" type="button" data-super-action="open-folder" data-id="${s.id}">ðŸ“‚ Pasta</button>
             <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
             <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
           </div>
@@ -2536,7 +2536,7 @@ function handleSupervisaoAction(action, id) {
     return;
   }
   if (action === 'delete') {
-    if (window.confirm('Deseja excluir este registro de supervisão?')) {
+    if (window.confirm('Deseja excluir este registro de supervisÃ£o?')) {
       supervisoes = supervisoes.filter((s) => s.id !== id);
       saveSupervisoes();
       renderSupervisaoReport();
@@ -2550,7 +2550,7 @@ function handleSupervisaoAction(action, id) {
 
   if (action === 'share-text') {
     const text = formatSingleSupervisaoText(s);
-    shareSupervisaoText(text, `Supervisão - ${s.vehicle || ''}`);
+    shareSupervisaoText(text, `SupervisÃ£o - ${s.vehicle || ''}`);
     return;
   }
 
@@ -2560,7 +2560,7 @@ function handleSupervisaoAction(action, id) {
   supervisaoAttendedInput.value = s.attended || '';
   supervisaoStageInput.value = s.stage || '';
   
-  const pending = s.partsPending || 'Não';
+  const pending = s.partsPending || 'NÃ£o';
   if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = pending;
   if (supervisaoPartsPendingButtons) {
     supervisaoPartsPendingButtons.querySelectorAll('.type-btn').forEach((b) => {
@@ -2579,8 +2579,8 @@ function handleSupervisaoAction(action, id) {
   if (cancelSupervisaoEditButton) cancelSupervisaoEditButton.hidden = false;
   if (saveSupervisaoButton) saveSupervisaoButton.textContent = 'Atualizar';
   
-  if (selectedDay !== 'Supervisão') {
-    selectedDay = 'Supervisão';
+  if (selectedDay !== 'SupervisÃ£o') {
+    selectedDay = 'SupervisÃ£o';
     updateDayTabs();
     if (welcomeScreen) welcomeScreen.hidden = true;
     if (homeSummaryCard) homeSummaryCard.hidden = true;
@@ -2591,10 +2591,10 @@ function handleSupervisaoAction(action, id) {
 }
 
 function formatSingleSupervisaoText(s) {
-  let sections = ['Supervisão'];
+  let sections = ['SupervisÃ£o'];
 
   if (s.vehicle && s.vehicle.trim()) {
-    sections.push(`Veículo: ${s.vehicle.trim()}`);
+    sections.push(`VeÃ­culo: ${s.vehicle.trim()}`);
   }
 
   let details = [];
@@ -2613,26 +2613,26 @@ function formatSingleSupervisaoText(s) {
   }
 
   if (s.stage && s.stage.trim()) {
-    details.push(`Em que parte do serviço esta?: ${s.stage.trim()}`);
+    details.push(`Em que parte do serviÃ§o esta?: ${s.stage.trim()}`);
   }
 
   if (s.partsPending && s.partsPending.trim()) {
     const isPending = s.partsPending === 'Sim';
-    const partsPendingText = isPending ? '( X ) sim  (   ) não' : '(   ) sim  ( X ) não';
-    details.push(`Pendências de peças?: ${partsPendingText}`);
+    const partsPendingText = isPending ? '( X ) sim  (   ) nÃ£o' : '(   ) sim  ( X ) nÃ£o';
+    details.push(`PendÃªncias de peÃ§as?: ${partsPendingText}`);
 
     if (isPending) {
       if (s.parts && s.parts.trim()) {
         details.push(`Quais?: ${s.parts.trim()}`);
       }
       if (s.arrival && s.arrival.trim()) {
-        details.push(`Previsão de chegada?: ${s.arrival.trim()}`);
+        details.push(`PrevisÃ£o de chegada?: ${s.arrival.trim()}`);
       }
     }
   }
 
   if (s.other && s.other.trim()) {
-    details.push(`Alguma outra pendência?: ${s.other.trim()}`);
+    details.push(`Alguma outra pendÃªncia?: ${s.other.trim()}`);
   }
 
   if (details.length > 0) {
@@ -2640,7 +2640,7 @@ function formatSingleSupervisaoText(s) {
   }
 
   if (s.finish && s.finish.trim()) {
-    sections.push(`Estimativa de finalização do veículo?: ${s.finish.trim()}`);
+    sections.push(`Estimativa de finalizaÃ§Ã£o do veÃ­culo?: ${s.finish.trim()}`);
   }
 
   return sections.join('\n\n');
@@ -2662,12 +2662,12 @@ function getFilteredSupervisoes() {
 
 function formatAllSupervisoesText(filteredList) {
   if (!filteredList || filteredList.length === 0) {
-    return 'Nenhum registro de supervisão encontrado.';
+    return 'Nenhum registro de supervisÃ£o encontrado.';
   }
   return filteredList.map((s) => formatSingleSupervisaoText(s)).join('\n\n----------------------------------------\n\n');
 }
 
-async function shareSupervisaoText(text, title = 'Relatório de Supervisão') {
+async function shareSupervisaoText(text, title = 'RelatÃ³rio de SupervisÃ£o') {
   if (window.AndroidInterface && typeof window.AndroidInterface.shareText === 'function') {
     window.AndroidInterface.shareText(title, text);
     return;
@@ -2707,7 +2707,7 @@ function fallbackCopyText(text) {
   try {
     document.execCommand('copy');
   } catch (e) {
-    console.warn('Não foi possível copiar o texto:', e);
+    console.warn('NÃ£o foi possÃ­vel copiar o texto:', e);
   }
   document.body.removeChild(textarea);
 }
@@ -2722,7 +2722,7 @@ function generateSupervisaoReportPDF() {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(37, 99, 235); // #2563eb
-  doc.text("Gestão de Vistoria - Relatório de Supervisão", pageWidth / 2, 20, { align: "center" });
+  doc.text("GestÃ£o de Vistoria - RelatÃ³rio de SupervisÃ£o", pageWidth / 2, 20, { align: "center" });
 
   // Subtitle
   doc.setFont("helvetica", "normal");
@@ -2742,14 +2742,14 @@ function generateSupervisaoReportPDF() {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(16, 37, 66);
-  doc.text(`Total de Veículos em Supervisão: ${filtered.length}`, 14, 42);
+  doc.text(`Total de VeÃ­culos em SupervisÃ£o: ${filtered.length}`, 14, 42);
 
   // Prepare table data
   const tableRows = filtered.map((s) => {
-    let pendingPartsText = s.partsPending === 'Sim' ? `Sim: ${s.parts || '—'}` : 'Não';
-    let prevEstText = `Finalização: ${s.finish || '—'}`;
+    let pendingPartsText = s.partsPending === 'Sim' ? `Sim: ${s.parts || 'â€”'}` : 'NÃ£o';
+    let prevEstText = `FinalizaÃ§Ã£o: ${s.finish || 'â€”'}`;
     if (s.partsPending === 'Sim') {
-      prevEstText += `\nChegada Peças: ${s.arrival || '—'}`;
+      prevEstText += `\nChegada PeÃ§as: ${s.arrival || 'â€”'}`;
     }
     return [
       s.vehicle,
@@ -2758,14 +2758,14 @@ function generateSupervisaoReportPDF() {
       s.stage,
       pendingPartsText,
       prevEstText,
-      s.other || '—'
+      s.other || 'â€”'
     ];
   });
 
   // Generate Table using jsPDF-AutoTable
   doc.autoTable({
     startY: 48,
-    head: [['Veículo', 'Oficina', 'Atendido por', 'Status', 'Pendência Peças', 'Previsão/Estimativa', 'Outras Pendências']],
+    head: [['VeÃ­culo', 'Oficina', 'Atendido por', 'Status', 'PendÃªncia PeÃ§as', 'PrevisÃ£o/Estimativa', 'Outras PendÃªncias']],
     body: tableRows,
     theme: 'striped',
     headStyles: {
@@ -2792,10 +2792,10 @@ function generateSupervisaoReportPDF() {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         navigator.share({
           files: [file],
-          title: 'Relatório de Supervisão de Vistorias',
-          text: 'Segue em anexo o relatório de supervisão.'
+          title: 'RelatÃ³rio de SupervisÃ£o de Vistorias',
+          text: 'Segue em anexo o relatÃ³rio de supervisÃ£o.'
         }).catch(err => {
-          console.warn('Erro ao abrir diálogo de compartilhamento:', err);
+          console.warn('Erro ao abrir diÃ¡logo de compartilhamento:', err);
           doc.save(filename);
         });
       } else {
@@ -2820,7 +2820,7 @@ function generateWeeklyReportPDF() {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(37, 99, 235);
-  doc.text("Gestão de Vistorias - Relatório Semanal", pageWidth / 2, 20, { align: "center" });
+  doc.text("GestÃ£o de Vistorias - RelatÃ³rio Semanal", pageWidth / 2, 20, { align: "center" });
 
   // Subtitle
   doc.setFont("helvetica", "normal");
@@ -2834,7 +2834,7 @@ function generateWeeklyReportPDF() {
   doc.setLineWidth(0.5);
   doc.line(14, 32, pageWidth - 14, 32);
 
-  const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+  const days = ['Segunda', 'TerÃ§a', 'Quarta', 'Quinta', 'Sexta'];
   
   let grandTotalVisits = 0;
   let grandTotalValue = 0;
@@ -2854,7 +2854,7 @@ function generateWeeklyReportPDF() {
     grandTotalValue += dayValue;
 
     // Format vistorias on numbered lines in ascending order: "1. ABC-1234", "2. DEF-5678", ...
-    let numberedPlatesText = '—';
+    let numberedPlatesText = 'â€”';
     if (itemsForDay.length > 0) {
       numberedPlatesText = itemsForDay.map((item, index) => `${index + 1}. ${item.plate}${item.type ? ` (${item.type})` : ''}`).join('\n');
     }
@@ -2871,7 +2871,7 @@ function generateWeeklyReportPDF() {
   tableRows.push([
     'Totais',
     grandTotalVisits.toString(),
-    '—',
+    'â€”',
     `R$ ${grandTotalValue.toFixed(2).replace('.', ',')}`
   ]);
 
@@ -2911,11 +2911,11 @@ function generateWeeklyReportPDF() {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         navigator.share({
           files: [file],
-          title: 'Relatório Semanal de Vistorias',
-          text: 'Segue em anexo o relatório semanal de vistorias em PDF.'
+          title: 'RelatÃ³rio Semanal de Vistorias',
+          text: 'Segue em anexo o relatÃ³rio semanal de vistorias em PDF.'
         }).catch(err => {
           if (err.name === 'AbortError') return;
-          console.warn('Erro ao abrir diálogo de compartilhamento:', err);
+          console.warn('Erro ao abrir diÃ¡logo de compartilhamento:', err);
           doc.save(filename);
         });
       } else {
@@ -2961,7 +2961,7 @@ if (typeof window !== 'undefined' && 'indexedDB' in window && window.indexedDB) 
       localStorage.removeItem('waiting_camera_return');
     };
   } catch (err) {
-    console.warn('indexedDB não disponível neste ambiente:', err);
+    console.warn('indexedDB nÃ£o disponÃ­vel neste ambiente:', err);
   }
 }
 
@@ -3039,7 +3039,7 @@ function updateFolderLabelUI() {
     if (friendlyName) {
       selectedFolderLabel.textContent = `Pasta selecionada: ${friendlyName}`;
     } else {
-      selectedFolderLabel.textContent = 'Pasta selecionada: Pictures/Vistorias (Padrão)';
+      selectedFolderLabel.textContent = 'Pasta selecionada: Pictures/Vistorias (PadrÃ£o)';
     }
   }
 }
@@ -3067,7 +3067,7 @@ function updatePreferredCameraUI() {
   }
   if (preferredCameraLabel) {
     preferredCameraLabel.style.display = 'block';
-    preferredCameraLabel.textContent = `Câmera preferida: ${label}`;
+    preferredCameraLabel.textContent = `CÃ¢mera preferida: ${label}`;
   }
   if (clearCameraBtn) {
     clearCameraBtn.style.display = (label && label !== 'Nenhuma') ? 'inline-block' : 'none';
@@ -3080,7 +3080,7 @@ if (selectCameraBtn) {
     if (window.AndroidInterface && typeof window.AndroidInterface.selectPreferredCamera === 'function') {
       window.AndroidInterface.selectPreferredCamera();
     } else {
-      alert("A seleção de câmera preferida está disponível no app Android.");
+      alert("A seleÃ§Ã£o de cÃ¢mera preferida estÃ¡ disponÃ­vel no app Android.");
     }
   });
 }
@@ -3142,30 +3142,30 @@ if (closePhotoManagerButton) {
 function openInspectionFolderForId(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
-    alert('Erro: Registro não encontrado!');
+    alert('Erro: Registro nÃ£o encontrado!');
     return;
   }
   const vehicleName = item.plate || item.vehicle;
   if (!vehicleName || !vehicleName.trim()) {
-    alert('Nome do veículo ou placa inválido!');
+    alert('Nome do veÃ­culo ou placa invÃ¡lido!');
     return;
   }
   if (window.AndroidInterface && typeof window.AndroidInterface.openInspectionFolder === 'function') {
     window.AndroidInterface.openInspectionFolder(vehicleName.trim());
   } else {
-    alert("Esta funcionalidade de acessar a pasta só está disponível no aplicativo Android.");
+    alert("Esta funcionalidade de acessar a pasta sÃ³ estÃ¡ disponÃ­vel no aplicativo Android.");
   }
 }
 
 function openPhotoManagerForId(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
-    alert('Erro: Registro não encontrado!');
+    alert('Erro: Registro nÃ£o encontrado!');
     return;
   }
   const vehicleName = item.plate || item.vehicle;
   if (!vehicleName || !vehicleName.trim()) {
-    alert('Por favor, preencha o campo "Veículo (Modelo e Placa)" antes de acessar as fotos.');
+    alert('Por favor, preencha o campo "VeÃ­culo (Modelo e Placa)" antes de acessar as fotos.');
     return;
   }
   openPhotoManagerForVehicle(id, vehicleName.trim());
@@ -3199,23 +3199,23 @@ function base64ToBlob(base64, mimeType = 'image/jpeg') {
   return new Blob(byteArrays, { type: mimeType });
 }
 
-// Compartilha fotos + relatório. Se não há fotos, compartilha só o relatório.
+// Compartilha fotos + relatÃ³rio. Se nÃ£o hÃ¡ fotos, compartilha sÃ³ o relatÃ³rio.
 async function shareVistoriaWhatsApp(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
-    alert('Registro não encontrado!');
+    alert('Registro nÃ£o encontrado!');
     return;
   }
   const vehicleName = (item.plate || item.vehicle || '').trim();
   if (!vehicleName) {
-    alert("Nome do veículo ou placa inválido!");
+    alert("Nome do veÃ­culo ou placa invÃ¡lido!");
     return;
   }
 
   const isInspection = items.some(entry => entry.id === id);
   let reportText = isInspection ? getSurveyText(id) : formatSingleSupervisaoText(item);
   if (!reportText || !reportText.trim()) {
-    reportText = `Vistoria do veículo: ${vehicleName}`;
+    reportText = `Vistoria do veÃ­culo: ${vehicleName}`;
   }
 
   copyTextToClipboard(reportText);
@@ -3290,7 +3290,7 @@ async function shareVistoriaWhatsApp(id) {
     const waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
     window.open(waUrl, '_blank');
   } catch (e) {
-    alert('Relatório copiado para a área de transferência!');
+    alert('RelatÃ³rio copiado para a Ã¡rea de transferÃªncia!');
   }
 }
 
@@ -3349,14 +3349,14 @@ function renderPhotoGrid(photos) {
       return `
         <div class="photo-item" style="position: relative;">
           <video src="${photo.url}" controls style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px;"></video>
-          <button class="delete-photo" onclick="deletePhotoEvent('${photo.name}')" type="button">×</button>
+          <button class="delete-photo" onclick="deletePhotoEvent('${photo.name}')" type="button">Ã—</button>
         </div>
       `;
     }
     return `
       <div class="photo-item">
         <img src="${photo.url}" alt="Vistoria" onclick="viewFullImage('${photo.url}', false)" style="cursor: pointer;" />
-        <button class="delete-photo" onclick="deletePhotoEvent('${photo.name}')" type="button">×</button>
+        <button class="delete-photo" onclick="deletePhotoEvent('${photo.name}')" type="button">Ã—</button>
       </div>
     `;
   }).join('');
@@ -3471,7 +3471,7 @@ window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64
           const blob = base64ToBlob(base64Data, isVid ? 'video/mp4' : 'image/jpeg');
           await savePhotoToDb(vehicleName, filename, blob);
         } catch (err) {
-          console.warn("Erro ao registrar mídia capturada no IndexedDB:", err);
+          console.warn("Erro ao registrar mÃ­dia capturada no IndexedDB:", err);
         }
       }
     }
@@ -3484,7 +3484,7 @@ window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64
       localStorage.removeItem('waiting_camera_return');
     }
   } catch (e) {
-    console.error("Erro ao processar mídia capturada do Android:", e);
+    console.error("Erro ao processar mÃ­dia capturada do Android:", e);
   }
 };
 
@@ -3516,7 +3516,7 @@ async function handlePhotoFilesSelected(files) {
     
     await savePhotoToDb(activePhotoVehicleName, filename, file);
     
-    // Salvar no Android se disponível na WebView (evitando crash OOM em vídeos grandes)
+    // Salvar no Android se disponÃ­vel na WebView (evitando crash OOM em vÃ­deos grandes)
     if (window.AndroidInterface && typeof window.AndroidInterface.savePhoto === 'function') {
       try {
         if (!isVid || file.size < 5 * 1024 * 1024) {
@@ -3584,7 +3584,7 @@ if (savePhotosToFolderBtn) {
         }
       }
     } else {
-      alert('Dispositivo Android não detectado ou recurso indisponível.');
+      alert('Dispositivo Android nÃ£o detectado ou recurso indisponÃ­vel.');
     }
   });
 }
@@ -3595,7 +3595,7 @@ if (formPhotosBtn) {
   formPhotosBtn.addEventListener('click', () => {
     const plateValue = plateInput.value.trim();
     if (!plateValue) {
-      alert('Por favor, preencha o campo "Veículo (Modelo e Placa)" antes de tirar fotos.');
+      alert('Por favor, preencha o campo "VeÃ­culo (Modelo e Placa)" antes de tirar fotos.');
       return;
     }
     openPhotoManagerForVehicle(editingId || 'new_form_item', plateValue);
@@ -3608,7 +3608,7 @@ if (supervisaoFormPhotosBtn) {
   supervisaoFormPhotosBtn.addEventListener('click', () => {
     const vehicleValue = supervisaoVehicleInput.value.trim();
     if (!vehicleValue) {
-      alert('Por favor, preencha o campo "Veículo (Modelo e Placa)" antes de tirar fotos.');
+      alert('Por favor, preencha o campo "VeÃ­culo (Modelo e Placa)" antes de tirar fotos.');
       return;
     }
     openPhotoManagerForVehicle(editingSupervisaoId || 'new_supervisao_item', vehicleValue);
@@ -3638,7 +3638,7 @@ function downloadJsonFile(filename, jsonString) {
       await writable.close();
       alert('Backup salvo com sucesso no local escolhido!');
     }).catch((err) => {
-      if (err.name === 'AbortError') return; // usuário cancelou
+      if (err.name === 'AbortError') return; // usuÃ¡rio cancelou
       console.warn('showSaveFilePicker falhou, utilizando fallback:', err);
       fallbackDownloadJson(filename, jsonString);
     });
@@ -3734,17 +3734,17 @@ function closePasteImportModal() {
 }
 
 function repairTruncatedJson(str) {
-  if (!str) throw new Error('O texto de backup informado está vazio.');
+  if (!str) throw new Error('O texto de backup informado estÃ¡ vazio.');
   str = str.trim();
   try {
     const directParse = JSON.parse(str);
     if (directParse && typeof directParse === 'object') return directParse;
   } catch (e) {
-    console.warn('JSON.parse direto falhou, iniciando reparo automático...', e);
+    console.warn('JSON.parse direto falhou, iniciando reparo automÃ¡tico...', e);
   }
 
   let fixedStr = str;
-  // Se houver aspas não fechadas, fecha aspas no final
+  // Se houver aspas nÃ£o fechadas, fecha aspas no final
   let quoteCount = 0;
   for (let i = 0; i < fixedStr.length; i++) {
     if (fixedStr[i] === '"' && (i === 0 || fixedStr[i-1] !== '\\')) {
@@ -3755,7 +3755,7 @@ function repairTruncatedJson(str) {
     fixedStr += '"';
   }
 
-  // Remove pontuações truncadas no final
+  // Remove pontuaÃ§Ãµes truncadas no final
   fixedStr = fixedStr.replace(/[,:]\s*"?$/, '');
 
   // Conta chaves e colchetes abertos
@@ -3788,10 +3788,10 @@ function repairTruncatedJson(str) {
     const parsed = JSON.parse(fixedStr);
     if (parsed && typeof parsed === 'object') return parsed;
   } catch (e) {
-    console.warn('Reparo automático de estrutura falhou, extraindo chaves via expressões regulares...', e);
+    console.warn('Reparo automÃ¡tico de estrutura falhou, extraindo chaves via expressÃµes regulares...', e);
   }
 
-  // Extrator por Regex para resgatar o máximo de chaves do localStorage salvas
+  // Extrator por Regex para resgatar o mÃ¡ximo de chaves do localStorage salvas
   const result = {};
   const kvRegex = /"([^"\\]+)"\s*:\s*("(?:[^"\\]|\\.)*"|true|false|null|-?\d+(?:\.\d+)?)/g;
   let match;
@@ -3807,24 +3807,24 @@ function repairTruncatedJson(str) {
     return result;
   }
 
-  throw new Error('Não foi possível ler o código do backup. Certifique-se de colar o código completo.');
+  throw new Error('NÃ£o foi possÃ­vel ler o cÃ³digo do backup. Certifique-se de colar o cÃ³digo completo.');
 }
 
 function restoreBackupFromJsonString(jsonString) {
   if (!jsonString || !jsonString.trim()) {
-    alert('Por favor, cole o código do backup no campo de texto.');
+    alert('Por favor, cole o cÃ³digo do backup no campo de texto.');
     return;
   }
   try {
     const data = repairTruncatedJson(jsonString);
-    if (confirm('Deseja realmente restaurar este backup? Isso substituirá os dados atuais do sistema.')) {
+    if (confirm('Deseja realmente restaurar este backup? Isso substituirÃ¡ os dados atuais do sistema.')) {
       let restoredKeys = 0;
       localStorage.clear();
       Object.keys(data).forEach(key => {
         localStorage.setItem(key, data[key]);
         restoredKeys++;
       });
-      alert(`✅ Backup importado com sucesso! (${restoredKeys} chaves restauradas). O sistema será recarregado.`);
+      alert(`âœ… Backup importado com sucesso! (${restoredKeys} chaves restauradas). O sistema serÃ¡ recarregado.`);
       window.location.reload();
     }
   } catch (err) {
@@ -3863,7 +3863,7 @@ if (copyBackupTextBtn) {
   copyBackupTextBtn.addEventListener('click', () => {
     if (!currentBackupJsonString) return;
     copyTextToClipboard(currentBackupJsonString);
-    alert('✅ Código do backup copiado com sucesso! Você pode colar no WhatsApp, bloco de notas ou e-mail.');
+    alert('âœ… CÃ³digo do backup copiado com sucesso! VocÃª pode colar no WhatsApp, bloco de notas ou e-mail.');
   });
 }
 
@@ -3893,7 +3893,7 @@ if (shareBackupTextBtn) {
       const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(currentBackupJsonString)}`;
       window.open(waUrl, '_blank');
     } catch (e) {
-      alert('Código do backup copiado para a área de transferência!');
+      alert('CÃ³digo do backup copiado para a Ã¡rea de transferÃªncia!');
     }
   });
 }
@@ -3914,7 +3914,7 @@ if (importBackupBtn && dashboardBackupFileInput) {
     const file = event.target.files[0];
     if (!file) return;
 
-    if (confirm('Deseja realmente importar o backup? Isso substituirá todas as informações atuais do sistema.')) {
+    if (confirm('Deseja realmente importar o backup? Isso substituirÃ¡ todas as informaÃ§Ãµes atuais do sistema.')) {
       const reader = new FileReader();
       reader.onload = function(e) {
         restoreBackupFromJsonString(e.target.result);
@@ -3929,8 +3929,8 @@ document.addEventListener('visibilitychange', () => {
     if (window.AndroidInterface && typeof window.AndroidInterface.onPageLoaded === 'function') {
       window.AndroidInterface.onPageLoaded();
     }
-    // Não limpa active_photo_vehicle_name para não perder contexto
-    // caso o usuário feche a câmera sem tirar foto.
+    // NÃ£o limpa active_photo_vehicle_name para nÃ£o perder contexto
+    // caso o usuÃ¡rio feche a cÃ¢mera sem tirar foto.
   }
 });
 
@@ -3963,13 +3963,13 @@ window.gerarPastaNova = function() {
   const plateInput = document.getElementById('plateInput');
   const vehicleName = plateInput ? plateInput.value : '';
   if (!vehicleName || !vehicleName.trim()) {
-    alert('Por favor, preencha o Modelo e Placa do ve�culo primeiro.');
+    alert('Por favor, preencha o Modelo e Placa do veículo primeiro.');
     return;
   }
   if (window.AndroidInterface && typeof window.AndroidInterface.createInspectionFolder === 'function') {
     window.AndroidInterface.createInspectionFolder(vehicleName.trim());
   } else {
-    alert('Esta funcionalidade de gerar a pasta s� est� dispon�vel no aplicativo Android.');
+    alert('Esta funcionalidade de gerar a pasta só está disponível no aplicativo Android.');
   }
 };
 
@@ -3978,12 +3978,13 @@ window.gerarPastaNovaSupervisao = function() {
   const input = document.getElementById('supervisaoVehicleInput');
   const vehicleName = input ? input.value : '';
   if (!vehicleName || !vehicleName.trim()) {
-    alert('Por favor, preencha o Modelo e Placa do ve�culo primeiro.');
+    alert('Por favor, preencha o Modelo e Placa do veículo primeiro.');
     return;
   }
   if (window.AndroidInterface && typeof window.AndroidInterface.createInspectionFolder === 'function') {
     window.AndroidInterface.createInspectionFolder(vehicleName.trim());
   } else {
-    alert('Esta funcionalidade de gerar a pasta s� est� dispon�vel no aplicativo Android.');
+    alert('Esta funcionalidade de gerar a pasta só está disponível no aplicativo Android.');
   }
 };
+
