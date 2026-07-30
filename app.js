@@ -732,11 +732,6 @@ window.backToHomeMenu = function() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-window.homeLogout = function() {
-  localStorage.removeItem('authenticated');
-  window.location.href = 'index.html';
-};
-
 window.homeClearWeek = function() {
   const verification = window.prompt(
     '⚠️ CONFIRMAÇÃO:\n\n' +
@@ -1257,21 +1252,21 @@ function render() {
 }
 
 function renderReport(filteredItems) {
-  const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+  const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   const totals = days.map((day) => {
     const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
     itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
 
     const platesHtml = itemsForDay.length
-      ? itemsForDay.map((item, index) => `<div style="padding: 3px 0; border-bottom: 1px dashed #cbd5e1; font-weight: 500;">${index + 1}. ${escapeHtml(item.plate)}</div>`).join('')
-      : '—';
+      ? itemsForDay.map((item, index) => '<div style="padding: 3px 0; border-bottom: 1px dashed #cbd5e1; font-weight: 500;">' + (index + 1) + '. ' + escapeHtml(item.plate) + '</div>').join('')
+      : '-';
     return {
       day,
       visits: itemsForDay.length,
       platesHtml,
       value: itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0)
     };
-  }).filter(t => t.visits > 0);
+  });
 
   reportBody.innerHTML = totals.map(({ day, visits, platesHtml, value }) => `
     <tr>
@@ -2834,7 +2829,7 @@ function generateWeeklyReportPDF() {
   doc.setLineWidth(0.5);
   doc.line(14, 32, pageWidth - 14, 32);
 
-  const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+  const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   
   let grandTotalVisits = 0;
   let grandTotalValue = 0;
@@ -2843,8 +2838,6 @@ function generateWeeklyReportPDF() {
   days.forEach((day) => {
     // Get items for this day
     const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
-    
-    if (itemsForDay.length === 0) return;
     
     // Sort in ascending order by id/creation time
     itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
@@ -3053,22 +3046,26 @@ function openSystemSettings() {
 function updatePreferredCameraUI() {
   const preferredCameraLabel = document.getElementById('preferredCameraLabel');
   const clearCameraBtn = document.getElementById('clearCameraBtn');
+  if (!preferredCameraLabel) return;
+
   let label = 'Nenhuma';
+  const saved = localStorage.getItem('preferred_camera_label');
+
   if (window.AndroidInterface && typeof window.AndroidInterface.getPreferredCameraLabel === 'function') {
     const androidLabel = window.AndroidInterface.getPreferredCameraLabel();
     if (androidLabel && androidLabel !== 'Nenhuma') {
       label = androidLabel;
       localStorage.setItem('preferred_camera_label', androidLabel);
-    } else {
-      label = localStorage.getItem('preferred_camera_label') || 'Nenhuma';
+    } else if (saved && saved !== 'Nenhuma') {
+      label = saved;
     }
   } else {
-    label = localStorage.getItem('preferred_camera_label') || 'Nenhuma';
+    if (saved) label = saved;
   }
-  if (preferredCameraLabel) {
-    preferredCameraLabel.style.display = 'block';
-    preferredCameraLabel.textContent = `Câmera preferida: ${label}`;
-  }
+
+  preferredCameraLabel.style.display = 'block';
+  preferredCameraLabel.textContent = "Câmera preferida: " + label;
+  
   if (clearCameraBtn) {
     clearCameraBtn.style.display = (label && label !== 'Nenhuma') ? 'inline-block' : 'none';
   }
