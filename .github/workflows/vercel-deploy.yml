@@ -1,9 +1,10 @@
-﻿name: Deploy to Vercel
+name: Deploy to Vercel
 
 on:
   push:
     branches:
       - master
+      - main
 
 jobs:
   deploy:

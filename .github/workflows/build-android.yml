@@ -1,9 +1,10 @@
-﻿name: Build Android APK
+name: Build Android APK
 
 on:
   push:
     branches:
       - master
+      - main
     paths:
       - 'android/**'
       - 'android-src/MainActivity.kt'
