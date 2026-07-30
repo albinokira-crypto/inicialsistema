@@ -2033,14 +2033,15 @@ class AndroidInterface(private val activity: ComponentActivity) {
                             folderOpened = true
                         } catch (e: Exception) {
                             try {
+                                val contentUri = androidx.core.content.FileProvider.getUriForFile(activity, "com.example.vistoriainicial.fileprovider", vistoriasDir)
                                 val myFilesIntent2 = Intent(Intent.ACTION_VIEW).apply {
                                     setPackage("com.sec.android.app.myfiles")
                                     putExtra("current_path", vistoriasDir.absolutePath)
                                     putExtra("path", vistoriasDir.absolutePath)
                                     putExtra("folder_path", vistoriasDir.absolutePath)
                                     putExtra("START_PATH", vistoriasDir.absolutePath)
-                                    setDataAndType(Uri.fromFile(vistoriasDir), "resource/folder")
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                    setDataAndType(contentUri, "resource/folder")
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                                 }
                                 activity.startActivity(myFilesIntent2)
                                 folderOpened = true
@@ -2069,10 +2070,11 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     
                     if (!folderOpened) { // Fallback ou "chooser"
                         try {
+                            val contentUri = androidx.core.content.FileProvider.getUriForFile(activity, "com.example.vistoriainicial.fileprovider", vistoriasDir)
                             val genericIntent = Intent(Intent.ACTION_VIEW).apply {
-                                setDataAndType(Uri.fromFile(vistoriasDir), "*/*")
+                                setDataAndType(contentUri, "*/*")
                                 putExtra("current_path", vistoriasDir.absolutePath)
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                             }
                             activity.startActivity(Intent.createChooser(genericIntent, "Abrir pasta da vistoria"))
                             folderOpened = true
