@@ -2073,17 +2073,87 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 val vistoriasDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
                 if (!vistoriasDir.exists()) vistoriasDir.mkdirs()
 
+                var folderOpened = false
+
+                // 1. Tentar abrir o app "Meus Arquivos" da Samsung (muito provável para o usuário)
                 try {
-                    val contentUri = androidx.core.content.FileProvider.getUriForFile(activity, "com.example.vistoriainicial.fileprovider", vistoriasDir)
-                    val genericIntent = Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(contentUri, "*/*")
-                        putExtra("current_path", vistoriasDir.absolutePath)
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                    val myFilesIntent = Intent("samsung.myfiles.intent.action.LAUNCH_MY_FILES").apply {
+                        putExtra("samsung.myfiles.intent.extra.START_PATH", vistoriasDir.absolutePath)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                     }
-                    activity.startActivity(Intent.createChooser(genericIntent, "Abrir pasta da vistoria"))
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                    Toast.makeText(activity, "Erro ao abrir a pasta.", Toast.LENGTH_SHORT).show()
+                    activity.startActivity(myFilesIntent)
+                    folderOpened = true
+                } catch (e: Exception) {
+                    try {
+                        val myFilesIntent2 = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(Uri.parse("myfiles://"), "vnd.android.cursor.dir/myfiles")
+                            putExtra("samsung.myfiles.intent.extra.START_PATH", vistoriasDir.absolutePath)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        }
+                        activity.startActivity(myFilesIntent2)
+                        folderOpened = true
+                    } catch (e2: Exception) {
+                        try {
+                            val myFilesIntent3 = Intent(Intent.ACTION_VIEW).apply {
+                                setPackage("com.sec.android.app.myfiles")
+                                putExtra("current_path", vistoriasDir.absolutePath)
+                                putExtra("path", vistoriasDir.absolutePath)
+                                putExtra("folder_path", vistoriasDir.absolutePath)
+                                putExtra("START_PATH", vistoriasDir.absolutePath)
+                                setDataAndType(Uri.fromFile(vistoriasDir), "resource/folder")
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            }
+                            activity.startActivity(myFilesIntent3)
+                            folderOpened = true
+                        } catch (e3: Exception) {
+                            e3.printStackTrace()
+                        }
+                    }
+                }
+
+                // 2. Tentar abrir o gerenciador padrão do sistema Android (SAF)
+                if (!folderOpened) {
+                    try {
+                        val encodedPath = Uri.encode("Pictures/Vistorias/$cleanVehicleName")
+                        val safUri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3A$encodedPath")
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(safUri, "vnd.android.document/directory")
+                            putExtra("android.provider.extra.INITIAL_URI", safUri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        activity.startActivity(intent)
+                        folderOpened = true
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                // 3. Fallback: Abrir seletor do sistema usando MIME types de pastas (não */*)
+                if (!folderOpened) {
+                    try {
+                        val contentUri = androidx.core.content.FileProvider.getUriForFile(activity, "com.example.vistoriainicial.fileprovider", vistoriasDir)
+                        val genericIntent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(contentUri, "vnd.android.document/directory")
+                            putExtra("current_path", vistoriasDir.absolutePath)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                        }
+                        activity.startActivity(Intent.createChooser(genericIntent, "Abrir pasta da vistoria"))
+                        folderOpened = true
+                    } catch (ex: Exception) {
+                        try {
+                            val contentUri = androidx.core.content.FileProvider.getUriForFile(activity, "com.example.vistoriainicial.fileprovider", vistoriasDir)
+                            val genericIntent = Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(contentUri, "resource/folder")
+                                putExtra("current_path", vistoriasDir.absolutePath)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                            }
+                            activity.startActivity(Intent.createChooser(genericIntent, "Abrir pasta da vistoria"))
+                            folderOpened = true
+                        } catch (ex2: Exception) {
+                            ex2.printStackTrace()
+                            Toast.makeText(activity, "Por favor, instale um gerenciador de arquivos para abrir esta pasta.", Toast.LENGTH_LONG).show()
+                        }
+                    }
                 }
             }
         }
