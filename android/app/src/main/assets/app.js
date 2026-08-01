@@ -1374,7 +1374,9 @@ function getSurveyText(id) {
     checklist.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
     checklist.push(`VEICULO COM CHAVE?: ${getCheckmark(details.chaveVeiculo || 'N/I', 'chaveVeiculo')}`);
     checklist.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
-    checklist.push(`AR CONDICIONADO?: ${getCheckmark(details.arCondicionado || 'N/I', 'arCondicionado')}`);
+    if (item.type !== 'Moto') {
+      checklist.push(`AR CONDICIONADO?: ${getCheckmark(details.arCondicionado || 'N/I', 'arCondicionado')}`);
+    }
     
     if ('estepe' in details) {
       checklist.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
@@ -1936,7 +1938,9 @@ function renderDynamicSurveyFields() {
       </div>
       <input type="hidden" id="input_motor" name="motorFunciona" value="Não" />
     </div>
+  `;
 
+  const arCondicionadoHtml = `
     <div class="form-toggle-field">
       <span class="status-label">Ar Condicionado?</span>
       <div class="type-buttons-container" data-input-id="input_ar_condicionado">
@@ -2046,13 +2050,13 @@ function renderDynamicSurveyFields() {
   const extraFieldsHtml = obsHtml + trocasReparosHtml;
 
   if (selectedType === 'Inicial') {
-    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
+    fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Moto') {
     fieldsHtml = commonChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Roubo Recuperado') {
-    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
+    fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Incêndio') {
-    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + obsHtml + `
+    fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + obsHtml + `
       <label style="grid-column: 1 / -1;">
         Ponto de Origem do Incêndio
         <input type="text" name="origemIncendio" placeholder="Ex: Compartimento do motor" />
@@ -2101,7 +2105,7 @@ function renderDynamicSurveyFields() {
       </div>
     ` + trocasReparosHtml;
   } else if (selectedType === 'Enchente') {
-    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + `
+    fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + `
       <div class="form-toggle-field">
         <span class="status-label">Vestígios de água no óleo do motor?</span>
         <div class="type-buttons-container" data-input-id="input_oleo">
@@ -2954,8 +2958,8 @@ function generateWeeklyReportPDF() {
     // Get items for this day
     const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
     
-    // Only include Sábado if there is at least one registry
-    if (day === 'Sábado' && itemsForDay.length === 0) {
+    // Only include day if there is at least one registry
+    if (itemsForDay.length === 0) {
       return;
     }
 

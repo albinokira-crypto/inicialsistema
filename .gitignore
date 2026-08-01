@@ -4,3 +4,15 @@ node_modules/
 .vercel/
 .vercel
 .env*
+/java/
+/android/.gradle/
+/android/app/build/
+/android/local.properties
+/android/.idea/
+*.log
+*.zip
+*.ps1
+*.json
+*.js
+!app.js
+!android/app/src/main/assets/app.js
