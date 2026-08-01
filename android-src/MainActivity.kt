@@ -1214,6 +1214,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             val filesToShare = ArrayList<java.io.File>()
             val addedNames = HashSet<String>()
+            val isSupervision = reportText.contains("Supervisão")
 
             fun checkAndAddFile(file: java.io.File) {
                 if (file.exists() && file.isFile && file.length() > 0) {
@@ -1223,6 +1224,14 @@ class AndroidInterface(private val activity: ComponentActivity) {
                         name.endsWith(".mov") || name.endsWith(".3gp") ||
                         name.endsWith(".mkv") || name.endsWith(".webm")) {
                         if (!addedNames.contains(name)) {
+                            if (isSupervision) {
+                                val fileDate = java.util.Date(file.lastModified())
+                                val today = java.util.Date()
+                                val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+                                if (fmt.format(fileDate) != fmt.format(today)) {
+                                    return
+                                }
+                            }
                             addedNames.add(name)
                             filesToShare.add(file)
                         }
@@ -1310,6 +1319,14 @@ class AndroidInterface(private val activity: ComponentActivity) {
                                             lowerName.endsWith(".mov") || lowerName.endsWith(".3gp") ||
                                             lowerName.endsWith(".mkv") || lowerName.endsWith(".webm")) {
                                             if (!addedNames.contains(lowerName)) {
+                                                if (isSupervision) {
+                                                    val fileDate = java.util.Date(file.lastModified())
+                                                    val today = java.util.Date()
+                                                    val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+                                                    if (fmt.format(fileDate) != fmt.format(today)) {
+                                                        continue
+                                                    }
+                                                }
                                                 try {
                                                     val tempFile = java.io.File(cacheDir, name)
                                                     activity.contentResolver.openInputStream(file.uri)?.use { input ->
@@ -1344,6 +1361,14 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     if (allFiles != null) {
                         for (file in allFiles) {
                             if (file.isFile && file.length() > 0 && file.lastModified() >= twoDaysAgo) {
+                                if (isSupervision) {
+                                    val fileDate = java.util.Date(file.lastModified())
+                                    val today = java.util.Date()
+                                    val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+                                    if (fmt.format(fileDate) != fmt.format(today)) {
+                                        continue
+                                    }
+                                }
                                 checkAndAddFile(file)
                             }
                         }
@@ -1475,7 +1500,16 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
-            fun isSameDate(lastModified: Long): Boolean = true
+            val isSupervision = reportText.contains("Supervisão")
+            fun isSameDate(lastModified: Long): Boolean {
+                if (isSupervision) {
+                    val fileDate = java.util.Date(lastModified)
+                    val today = java.util.Date()
+                    val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+                    return fmt.format(fileDate) == fmt.format(today)
+                }
+                return true
+            }
 
             val filesToCopy = ArrayList<java.io.File>()
             val safPairsToCopy = ArrayList<Pair<String, Uri>>()
@@ -1514,7 +1548,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     val files = vistoriasDir.listFiles()
                     if (files != null) {
                         for (file in files) {
-                            if (file.isFile && file.length() > 0) {
+                            if (file.isFile && file.length() > 0 && isSameDate(file.lastModified())) {
                                 val name = file.name.lowercase()
                                 if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
                                     name.endsWith(".png") || name.endsWith(".mp4") ||
@@ -1538,7 +1572,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                                 val files = dir.listFiles()
                                 if (files != null) {
                                     for (file in files) {
-                                        if (file.isFile && file.length() > 0) {
+                                        if (file.isFile && file.length() > 0 && isSameDate(file.lastModified())) {
                                             val name = file.name.lowercase()
                                             if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
                                                 name.endsWith(".png") || name.endsWith(".mp4") ||

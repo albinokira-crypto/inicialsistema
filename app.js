@@ -851,7 +851,7 @@ function saveItem(event) {
 
   if (editingId) {
     items = items.map((item) => item.id === editingId ? { 
-      ...item, plate, provider, value, providerId, type, oficinaId, oficinaName, details 
+      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details 
     } : item);
   } else {
     items.unshift({
@@ -2384,7 +2384,10 @@ function saveSupervisao(event) {
 
   if (editingSupervisaoId) {
     supervisoes = supervisoes.map((s) => s.id === editingSupervisaoId ? { 
-      ...s, vehicle, plate, attended, stage, partsPending, parts, arrival, other, finish, oficinaId, oficinaName,
+      ...s, 
+      date: getTodayDateValue(),
+      day: getWeekdayName(new Date()),
+      vehicle, plate, attended, stage, partsPending, parts, arrival, other, finish, oficinaId, oficinaName,
       updatedAt: new Date().toLocaleString('pt-BR'),
       updatedAtTime: Date.now()
     } : s);
@@ -2549,11 +2552,23 @@ function handleSupervisaoAction(action, id) {
     return;
   }
 
+  if (selectedDay !== 'Supervisão') {
+    selectedDay = 'Supervisão';
+    updateDayTabs();
+    if (welcomeScreen) welcomeScreen.hidden = true;
+    if (homeSummaryCard) homeSummaryCard.hidden = true;
+    if (appContent) appContent.hidden = false;
+  }
+
+  // Ensure select options are generated in the DOM
+  populateSupervisaoOficinaSelect();
+  populateSupervisaoStageSelect();
+
   editingSupervisaoId = s.id;
   supervisaoVehicleInput.value = s.vehicle || '';
   if (supervisaoOficinaSelect) supervisaoOficinaSelect.value = s.oficinaId || '';
   supervisaoAttendedInput.value = s.attended || '';
-  supervisaoStageInput.value = s.stage || '';
+  if (supervisaoStageInput) supervisaoStageInput.value = s.stage || '';
   
   const pending = s.partsPending || 'Não';
   if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = pending;
@@ -2573,14 +2588,6 @@ function handleSupervisaoAction(action, id) {
 
   if (cancelSupervisaoEditButton) cancelSupervisaoEditButton.hidden = false;
   if (saveSupervisaoButton) saveSupervisaoButton.textContent = 'Atualizar';
-  
-  if (selectedDay !== 'Supervisão') {
-    selectedDay = 'Supervisão';
-    updateDayTabs();
-    if (welcomeScreen) welcomeScreen.hidden = true;
-    if (homeSummaryCard) homeSummaryCard.hidden = true;
-    if (appContent) appContent.hidden = false;
-  }
 
   supervisaoVehicleInput.focus();
 }
@@ -3023,13 +3030,13 @@ function updateFolderLabelUI() {
   let friendlyName = localStorage.getItem('photo_folder_name_friendly');
   if (window.AndroidInterface && typeof window.AndroidInterface.getSelectedFolderName === 'function') {
     const androidFolder = window.AndroidInterface.getSelectedFolderName();
-    if (androidFolder) {
+    if (androidFolder && androidFolder !== 'Pictures/Vistorias (Padrão)' && androidFolder !== 'Pasta Selecionada') {
       friendlyName = androidFolder;
       localStorage.setItem('photo_folder_name_friendly', androidFolder);
     }
   }
   if (selectedFolderLabel) {
-    if (friendlyName) {
+    if (friendlyName && friendlyName !== 'Pictures/Vistorias (Padrão)' && friendlyName !== 'Pasta Selecionada') {
       selectedFolderLabel.textContent = `Pasta selecionada: ${friendlyName}`;
     } else {
       selectedFolderLabel.textContent = 'Pasta selecionada: Pictures/Vistorias (Padrão)';
