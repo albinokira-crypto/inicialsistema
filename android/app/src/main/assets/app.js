@@ -1,0 +1,3992 @@
+function openMenuSection(targetDay) {
+  handleMenuButtonClick(targetDay);
+}
+window.openMenuSection = openMenuSection;
+
+function backToHomeMenu() {
+  selectedOficinaForTodasVistorias = null;
+  showWelcomeScreen();
+  if (typeof window.scrollTo === 'function') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+window.backToHomeMenu = backToHomeMenu;
+
+function homeLogout() {
+  const savedFolder = localStorage.getItem('photo_folder_name_friendly');
+  const savedCamera = localStorage.getItem('preferred_camera_label');
+  localStorage.removeItem('authenticated');
+  if (savedFolder) localStorage.setItem('photo_folder_name_friendly', savedFolder);
+  if (savedCamera) localStorage.setItem('preferred_camera_label', savedCamera);
+  window.location.href = 'index.html';
+}
+window.homeLogout = homeLogout;
+
+const STORAGE_KEY = 'web-system-items-v1';
+const form = document.getElementById('itemForm');
+const dateInput = document.getElementById('dateInput');
+const dayInput = document.getElementById('dayInput');
+const plateInput = document.getElementById('plateInput');
+const providerSelect = document.getElementById('providerSelect');
+const valueInput = document.getElementById('valueInput');
+const searchInput = document.getElementById('searchInput');
+const clearSearchButton = document.getElementById('clearSearchButton');
+const dayTabs = document.getElementById('dayTabs');
+const cancelEditButton = document.getElementById('cancelEditButton');
+const logoutButton = document.getElementById('logoutButton');
+const summaryGrid = document.getElementById('summaryGrid');
+const itemList = document.getElementById('itemList');
+const reportBody = document.getElementById('reportBody');
+const weeklyVisits = document.getElementById('weeklyVisits');
+const weeklyValue = document.getElementById('weeklyValue');
+const clearWeekButton = document.getElementById('clearWeekButton');
+const clearMonthButton = document.getElementById('clearMonthButton');
+const installButton = document.getElementById('installButton');
+const currentDateLabel = document.getElementById('currentDateLabel');
+const currentDayLabel = document.getElementById('currentDayLabel');
+const formTitle = document.getElementById('formTitle');
+const insurerForm = document.getElementById('insurerForm');
+const insurerNameInput = document.getElementById('insurerNameInput');
+const insurerValueInput = document.getElementById('insurerValueInput');
+const cancelInsurerEditButton = document.getElementById('cancelInsurerEditButton');
+const insurerCard = document.getElementById('insurerCard');
+const insurerList = document.getElementById('insurerList');
+const formCard = document.getElementById('formCard');
+const recordsCard = document.getElementById('recordsCard');
+const reportCard = document.getElementById('reportCard');
+const sharePdfButton = document.getElementById('sharePdfButton');
+const noInsurersNote = document.getElementById('noInsurersNote');
+
+const welcomeScreen = document.getElementById('welcomeScreen');
+const appHeader = document.getElementById('appHeader');
+const homeSummaryCard = document.getElementById('homeSummaryCard');
+const homeSummaryGrid = document.getElementById('homeSummaryGrid');
+const homeClearWeekButton = document.getElementById('homeClearWeekButton');
+const homeLogoutButton = document.getElementById('homeLogoutButton');
+const appContent = document.getElementById('appContent');
+const backToMenuButton = document.getElementById('backToMenuButton');
+const currentPageTitle = document.getElementById('currentPageTitle');
+const insurerButtonsContainer = document.getElementById('insurerButtonsContainer');
+const typeInput = document.getElementById('typeInput');
+
+// Vistoria sub-tabs
+const vistoriaTypeTabsCard = document.getElementById('vistoriaTypeTabsCard');
+const vistoriaTypeTabs = document.getElementById('vistoriaTypeTabs');
+
+// Dynamic Survey Fields Container
+const dynamicFieldsContainer = document.getElementById('dynamicFieldsContainer');
+
+// Oficinas Elements
+const oficinaCard = document.getElementById('oficinaCard');
+const oficinaForm = document.getElementById('oficinaForm');
+const oficinaNameInput = document.getElementById('oficinaNameInput');
+const cancelOficinaEditButton = document.getElementById('cancelOficinaEditButton');
+const oficinaList = document.getElementById('oficinaList');
+
+// Supervisão Elements
+const supervisaoFormCard = document.getElementById('supervisaoFormCard');
+const supervisaoRecordsCard = document.getElementById('supervisaoRecordsCard');
+const supervisaoForm = document.getElementById('supervisaoForm');
+const supervisaoVehicleInput = document.getElementById('supervisaoVehicleInput');
+const supervisaoOficinaSelect = document.getElementById('supervisaoOficinaSelect');
+const supervisaoAttendedInput = document.getElementById('supervisaoAttendedInput');
+const supervisaoStageInput = document.getElementById('supervisaoStageInput');
+const supervisaoPartsPendingButtons = document.getElementById('supervisaoPartsPendingButtons');
+const supervisaoPartsPendingInput = document.getElementById('supervisaoPartsPendingInput');
+const supervisaoPartsDetailsContainer = document.getElementById('supervisaoPartsDetailsContainer');
+const supervisaoPartsInput = document.getElementById('supervisaoPartsInput');
+const supervisaoArrivalInput = document.getElementById('supervisaoArrivalInput');
+const supervisaoOtherInput = document.getElementById('supervisaoOtherInput');
+const supervisaoFinishInput = document.getElementById('supervisaoFinishInput');
+const saveSupervisaoButton = document.getElementById('saveSupervisaoButton');
+const cancelSupervisaoEditButton = document.getElementById('cancelSupervisaoEditButton');
+const shareSupervisaoTextButton = document.getElementById('shareSupervisaoTextButton');
+const copySupervisaoTextButton = document.getElementById('copySupervisaoTextButton');
+const supervisaoStageFilterContainer = document.getElementById('supervisaoStageFilterContainer');
+const supervisaoOficinaFilterContainer = document.getElementById('supervisaoOficinaFilterContainer');
+const supervisaoReportContent = document.getElementById('supervisaoReportContent');
+
+const STAGES_STORAGE_KEY = 'web-system-stages-v1';
+const DEFAULT_STAGES = [
+  "Aguardando peças fora de serviço",
+  "Em posse do proprietário",
+  "Em lanternagem",
+  "Em funilaria",
+  "Em preparação de pintura",
+  "Em pintura",
+  "Em montagem",
+  "Testes finais",
+  "Finalizado e entregue",
+  "Finalizado"
+];
+
+function loadStages() {
+  const raw = localStorage.getItem(STAGES_STORAGE_KEY);
+  if (!raw) return DEFAULT_STAGES;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return DEFAULT_STAGES;
+  }
+}
+
+function saveStages() {
+  localStorage.setItem(STAGES_STORAGE_KEY, JSON.stringify(stages));
+}
+
+let deferredPrompt = null;
+let items = loadItems();
+let insurers = loadInsurers();
+let oficinas = loadOficinas();
+let supervisoes = loadSupervisoes();
+let stages = loadStages();
+let editingId = null;
+let editingInsurerId = null;
+let editingOficinaId = null;
+let editingSupervisaoId = null;
+let selectedDay = 'Seguradoras';
+let selectedType = 'Inicial';
+let appInitialized = false;
+let selectedSupervisaoStage = 'Todos';
+let selectedSupervisaoOficina = 'Todas';
+let selectedOficinaForTodasVistorias = null;
+let selectedTodasVistoriasFilter = 'Vistorias';
+
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  deferredPrompt = event;
+  if (installButton) installButton.hidden = false;
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  if (installButton) installButton.hidden = true;
+  console.log('App instalado');
+});
+
+function ensureAuthentication() {
+  if (localStorage.getItem('authenticated') !== 'true') {
+    window.location.href = 'index.html';
+  }
+}
+
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        // Force checking for updates immediately on load
+        registration.update();
+      })
+      .catch((error) => {
+        console.warn('Registro do service worker falhou', error);
+      });
+
+    // Auto-reload when service worker updates to apply changes in real-time
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
+  }
+}
+
+function openSystemSettings() {
+  const modal = document.getElementById('systemSettingsModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function closeSystemSettings() {
+  const modal = document.getElementById('systemSettingsModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function attachGlobalEventListeners() {
+  // Logout (home)
+  if (homeLogoutButton) {
+    homeLogoutButton.addEventListener('click', () => {
+      localStorage.removeItem('authenticated');
+      window.location.href = 'index.html';
+    });
+  }
+
+  // Logout (generic)
+  if (logoutButton) {
+    logoutButton.addEventListener('click', () => {
+      localStorage.removeItem('authenticated');
+      window.location.href = 'index.html';
+    });
+  }
+
+  // Settings button
+  const systemSettingsBtn = document.getElementById('systemSettingsBtn');
+  if (systemSettingsBtn) {
+    systemSettingsBtn.addEventListener('click', () => {
+      openSystemSettings();
+    });
+  }
+
+  const closeSystemSettingsBtn = document.getElementById('closeSystemSettingsBtn');
+  if (closeSystemSettingsBtn) {
+    closeSystemSettingsBtn.addEventListener('click', () => {
+      closeSystemSettings();
+    });
+  }
+
+  // Share PDF button
+  if (sharePdfButton) {
+    sharePdfButton.addEventListener('click', () => generateWeeklyReportPDF());
+  }
+
+  // Share supervision text button
+  if (shareSupervisaoTextButton) {
+    shareSupervisaoTextButton.addEventListener('click', () => {
+      const filtered = getFilteredSupervisoes();
+      const text = formatAllSupervisoesText(filtered);
+      shareSupervisaoText(text, 'Relatório de Supervisão');
+    });
+  }
+
+  const supervisaoQuickAdd = document.getElementById('supervisaoQuickAddOficina');
+  if (supervisaoQuickAdd) {
+    supervisaoQuickAdd.addEventListener('click', (e) => {
+      e.preventDefault();
+      const name = window.prompt('Digite o nome da nova oficina:');
+      if (name && name.trim()) {
+        const cleanedName = name.trim();
+        const exists = oficinas.some(o => o.name.toLowerCase() === cleanedName.toLowerCase());
+        if (exists) {
+          alert('Esta oficina já está cadastrada!');
+          return;
+        }
+        const newOficina = {
+          id: Date.now().toString(),
+          name: cleanedName
+        };
+        oficinas.push(newOficina);
+        saveOficinas();
+        renderOficinas();
+        populateSupervisaoOficinaSelect();
+        if (supervisaoOficinaSelect) {
+          supervisaoOficinaSelect.value = newOficina.id;
+        }
+      }
+    });
+  }
+
+  const supervisaoQuickAddStage = document.getElementById('supervisaoQuickAddStage');
+  if (supervisaoQuickAddStage) {
+    supervisaoQuickAddStage.addEventListener('click', (e) => {
+      e.preventDefault();
+      const name = window.prompt('Digite o nome da nova etapa:');
+      if (name && name.trim()) {
+        const cleanedName = name.trim();
+        const exists = stages.some(st => st.toLowerCase() === cleanedName.toLowerCase());
+        if (exists) {
+          alert('Esta etapa já está cadastrada!');
+          return;
+        }
+        stages.push(cleanedName);
+        saveStages();
+        populateSupervisaoStageSelect();
+        if (supervisaoStageInput) {
+          supervisaoStageInput.value = cleanedName;
+        }
+      }
+    });
+  }
+
+  if (homeClearWeekButton) {
+    homeClearWeekButton.addEventListener('click', () => {
+      const verification = window.prompt(
+        '⚠️ CONFIRMAÇÃO:\n\n' +
+        'Deseja limpar os registros da semana atual? Eles continuarão no relatório de "Todas as Vistorias".\n\n' +
+        'Para confirmar, digite a palavra LIMPAR abaixo:'
+      );
+      if (verification && verification.trim().toUpperCase() === 'LIMPAR') {
+        items.forEach((item) => {
+          item.clearedFromWeek = true;
+        });
+        saveItems();
+        updateHomeSummary();
+        render();
+      }
+    });
+  }
+}
+
+let serverSync = false;
+let syncIntervalId = null;
+let syncStatusLabel = null;
+
+async function updateLocalAndServerData() {
+  saveItems();
+  saveInsurers();
+  if (serverSync) {
+    await syncDataToServer();
+  }
+}
+
+function updateSyncStatus(message) {
+  if (!syncStatusLabel) return;
+  syncStatusLabel.textContent = message;
+}
+
+
+form.addEventListener('submit', saveItem);
+searchInput.addEventListener('input', render);
+clearSearchButton.addEventListener('click', () => {
+  searchInput.value = '';
+  render();
+});
+dayTabs.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!target.matches('.tab-btn')) return;
+  selectedDay = target.dataset.day;
+  
+  if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
+    selectedType = 'Inicial';
+    if (vistoriaTypeTabs) {
+      vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
+        b.classList.toggle('active', b.dataset.type === 'Inicial');
+      });
+    }
+    if (typeInput) typeInput.value = 'Inicial';
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+      formTitle.textContent = `Novo registro - Inicial`;
+    }
+  }
+
+  updateDayTabs();
+  render();
+});
+cancelEditButton.addEventListener('click', cancelEdit);
+if (logoutButton) {
+  logoutButton.addEventListener('click', () => {
+    localStorage.removeItem('authenticated');
+    window.location.href = 'index.html';
+  });
+}
+installButton.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installButton.hidden = true;
+  if (choice.outcome === 'accepted') {
+    console.log('Usuário aceitou o atalho');
+  }
+});
+insurerForm.addEventListener('submit', saveInsurer);
+cancelInsurerEditButton.addEventListener('click', cancelInsurerEdit);
+
+if (oficinaForm) {
+  oficinaForm.addEventListener('submit', saveOficina);
+}
+if (cancelOficinaEditButton) {
+  cancelOficinaEditButton.addEventListener('click', cancelOficinaEdit);
+}
+if (clearWeekButton) {
+  clearWeekButton.addEventListener('click', () => {
+    if (window.confirm('Deseja apagar os registros da semana atual? Eles continuarão no relatório mensal.')) {
+      items.forEach((item) => {
+        item.clearedFromWeek = true;
+      });
+      saveItems();
+      render();
+    }
+  });
+}
+
+if (clearMonthButton) {
+  clearMonthButton.addEventListener('click', () => {
+    if (window.confirm('Deseja apagar permanentemente todos os registros de todas as vistorias e supervisões?')) {
+      items = [];
+      supervisoes = [];
+      saveItems();
+      saveSupervisoes();
+      render();
+      renderSupervisaoReport();
+    }
+  });
+}
+
+if (vistoriaTypeTabs) {
+  vistoriaTypeTabs.addEventListener('click', (event) => {
+    const btn = event.target;
+    if (!btn.matches('.tab-btn')) return;
+    selectedType = btn.dataset.type;
+    vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.type === selectedType);
+    });
+    if (typeInput) typeInput.value = selectedType;
+    
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+      formTitle.textContent = `Novo registro - ${selectedType}`;
+    }
+    
+    renderDynamicSurveyFields();
+    render();
+  });
+}
+
+if (supervisaoForm) {
+  supervisaoForm.addEventListener('submit', saveSupervisao);
+}
+
+if (cancelSupervisaoEditButton) {
+  cancelSupervisaoEditButton.addEventListener('click', cancelSupervisaoEdit);
+}
+
+if (supervisaoPartsPendingButtons) {
+  supervisaoPartsPendingButtons.addEventListener('click', (event) => {
+    const btn = event.target;
+    if (!btn.matches('.type-btn')) return;
+    const value = btn.dataset.value;
+    if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = value;
+    supervisaoPartsPendingButtons.querySelectorAll('.type-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.value === value);
+    });
+    
+    if (supervisaoPartsDetailsContainer) {
+      supervisaoPartsDetailsContainer.style.display = value === 'Sim' ? 'block' : 'none';
+      if (value === 'Sim') {
+        if (supervisaoPartsInput) supervisaoPartsInput.required = true;
+        if (supervisaoArrivalInput) supervisaoArrivalInput.required = true;
+      } else {
+        if (supervisaoPartsInput) supervisaoPartsInput.required = false;
+        if (supervisaoArrivalInput) supervisaoArrivalInput.required = false;
+      }
+    }
+  });
+}
+
+
+
+if (supervisaoOficinaFilterContainer) {
+  supervisaoOficinaFilterContainer.addEventListener('click', (event) => {
+    const btn = event.target;
+    if (!btn.matches('.type-btn')) return;
+    selectedSupervisaoOficina = btn.dataset.filterOficina;
+    supervisaoOficinaFilterContainer.querySelectorAll('.type-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.filterOficina === selectedSupervisaoOficina);
+    });
+    renderSupervisaoReport();
+  });
+}
+
+if (shareSupervisaoTextButton) {
+  shareSupervisaoTextButton.addEventListener('click', () => {
+    const filtered = getFilteredSupervisoes();
+    const text = formatAllSupervisoesText(filtered);
+    shareSupervisaoText(text, 'Relatório de Supervisão');
+  });
+}
+
+if (copySupervisaoTextButton) {
+  copySupervisaoTextButton.addEventListener('click', () => {
+    const filtered = getFilteredSupervisoes();
+    const text = formatAllSupervisoesText(filtered);
+    copySupervisaoTextToClipboard(text);
+  });
+}
+
+function formatPlateInput() {
+  // No-op (plate and model are combined)
+}
+
+function normalizePlate(value) {
+  return value ? value.toUpperCase().trim() : '';
+}
+
+function isValidPlate(value) {
+  return value && value.trim().length > 0;
+}
+
+function updateFormDisplay() {
+  const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
+  const isSupervisao = selectedDay === 'Supervisão';
+  const isSeguradoras = selectedDay === 'Seguradoras';
+  const isOficinas = selectedDay === 'Oficinas';
+  const isTotalSemana = selectedDay === 'Total da semana';
+  const isTodasVistorias = selectedDay === 'Todas as vistorias';
+
+  const formCardEl = document.getElementById('formCard');
+  const recordsCardEl = document.getElementById('recordsCard');
+  const vistoriaTypeTabsCardEl = document.getElementById('vistoriaTypeTabsCard');
+  const supervisaoFormCardEl = document.getElementById('supervisaoFormCard');
+  const supervisaoRecordsCardEl = document.getElementById('supervisaoRecordsCard');
+  const insurerCardEl = document.getElementById('insurerCard');
+  const oficinaCardEl = document.getElementById('oficinaCard');
+  const summaryGridEl = document.getElementById('summaryGrid');
+
+  if (formCardEl) {
+    formCardEl.hidden = !isWeekday;
+    formCardEl.style.display = isWeekday ? 'block' : 'none';
+  }
+  if (recordsCardEl) {
+    recordsCardEl.hidden = !(isWeekday || isTotalSemana || isTodasVistorias);
+    recordsCardEl.style.display = (isWeekday || isTotalSemana || isTodasVistorias) ? 'block' : 'none';
+  }
+  if (vistoriaTypeTabsCardEl) {
+    vistoriaTypeTabsCardEl.hidden = !isWeekday;
+    vistoriaTypeTabsCardEl.style.display = isWeekday ? 'block' : 'none';
+  }
+
+  if (supervisaoFormCardEl) {
+    supervisaoFormCardEl.hidden = !isSupervisao;
+    supervisaoFormCardEl.style.display = isSupervisao ? 'block' : 'none';
+  }
+  if (supervisaoRecordsCardEl) {
+    supervisaoRecordsCardEl.hidden = !isSupervisao;
+    supervisaoRecordsCardEl.style.display = isSupervisao ? 'block' : 'none';
+  }
+
+  if (insurerCardEl) {
+    insurerCardEl.hidden = !isSeguradoras;
+    insurerCardEl.style.display = isSeguradoras ? 'block' : 'none';
+  }
+  if (oficinaCardEl) {
+    oficinaCardEl.hidden = !isOficinas;
+    oficinaCardEl.style.display = isOficinas ? 'block' : 'none';
+  }
+  if (summaryGridEl) {
+    summaryGridEl.style.display = (isTotalSemana || isTodasVistorias) ? 'grid' : 'none';
+  }
+}
+
+function updateFormState() {
+  updateFormDisplay();
+}
+
+function updateDayTabs() {
+  const dayTabsEl = document.getElementById('dayTabs');
+  if (dayTabsEl) {
+    dayTabsEl.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.day === selectedDay);
+    });
+  }
+  updateFormDisplay();
+}
+
+function updateTypeButtonsHighlight() {
+  if (vistoriaTypeTabs) {
+    vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.type === (selectedType || 'Inicial'));
+    });
+  }
+}
+
+function updateInsurerButtonsHighlight() {
+  // Safe stub
+}
+
+function cancelEdit() {
+  editingId = null;
+  form.reset();
+  if (providerSelect) providerSelect.value = '';
+  if (typeInput) typeInput.value = selectedType || 'Inicial';
+  updateTypeButtonsHighlight();
+  updateInsurerButtonsHighlight();
+  updateFormState();
+  updateFormDisplay();
+}
+
+function cancelInsurerEdit() {
+  editingInsurerId = null;
+  insurerForm.reset();
+  cancelInsurerEditButton.hidden = true;
+}
+
+function updateHomeSummary() {
+  const summaryGridEl = document.getElementById('homeSummaryGrid');
+  if (!summaryGridEl) return;
+  const statsItems = items.filter(item => item.clearedFromWeek !== true);
+  const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+  const uniqueDays = new Set(statsItems.map((item) => item.day)).size;
+  const lastRecord = statsItems.length ? (statsItems[0].date ? formatDateString(statsItems[0].date) : (statsItems[0].createdAt || '—')) : '—';
+
+  summaryGridEl.innerHTML = `
+    <article class="summary-item" style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 1.3rem; color: #1e40af; display: block;">${statsItems.length}</strong>
+      <span style="font-size: 0.78rem; color: #3b82f6; font-weight: 700; text-transform: uppercase;">vistorias</span>
+    </article>
+    <article class="summary-item" style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 1.2rem; color: #065f46; display: block;">R$ ${totalValue.toFixed(2).replace('.', ',')}</strong>
+      <span style="font-size: 0.78rem; color: #10b981; font-weight: 700; text-transform: uppercase;">valor total</span>
+    </article>
+    <article class="summary-item" style="background: #fef3c7; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 1.3rem; color: #92400e; display: block;">${uniqueDays}</strong>
+      <span style="font-size: 0.78rem; color: #d97706; font-weight: 700; text-transform: uppercase;">dias preenchidos</span>
+    </article>
+    <article class="summary-item" style="background: #f3e8ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 0.95rem; color: #6b21a8; display: block; word-break: break-word;">${lastRecord}</strong>
+      <span style="font-size: 0.78rem; color: #9333ea; font-weight: 700; text-transform: uppercase;">último registro</span>
+    </article>
+  `;
+}
+
+function showWelcomeScreen() {
+  const welcomeScreenEl = document.getElementById('welcomeScreen');
+  const homeSummaryCardEl = document.getElementById('homeSummaryCard');
+  const appHeaderEl = document.getElementById('appHeader');
+  const appContentEl = document.getElementById('appContent');
+
+  if (welcomeScreenEl) {
+    welcomeScreenEl.hidden = false;
+    welcomeScreenEl.style.display = 'block';
+  }
+  if (homeSummaryCardEl) {
+    homeSummaryCardEl.hidden = false;
+    homeSummaryCardEl.style.display = 'block';
+  }
+  if (appHeaderEl) appHeaderEl.style.display = 'flex';
+  if (appContentEl) {
+    appContentEl.hidden = true;
+    appContentEl.style.display = 'none';
+  }
+  updateHomeSummary();
+}
+
+function getAutomaticDayOfWeek() {
+  const dayIndex = new Date().getDay();
+  const map = {
+    1: 'Segunda',
+    2: 'Terça',
+    3: 'Quarta',
+    4: 'Quinta',
+    5: 'Sexta'
+  };
+  return map[dayIndex] || 'Segunda';
+}
+
+function handleMenuButtonClick(targetDay) {
+  const welcomeScreenEl = document.getElementById('welcomeScreen');
+  const homeSummaryCardEl = document.getElementById('homeSummaryCard');
+  const appHeaderEl = document.getElementById('appHeader');
+  const appContentEl = document.getElementById('appContent');
+
+  if (targetDay === 'Vistorias') {
+    selectedDay = getAutomaticDayOfWeek();
+  } else {
+    selectedDay = targetDay;
+  }
+  
+  if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
+    selectedType = 'Inicial';
+    const typeTabsEl = document.getElementById('vistoriaTypeTabs');
+    if (typeTabsEl) {
+      typeTabsEl.querySelectorAll('.tab-btn').forEach((b) => {
+        b.classList.toggle('active', b.dataset.type === 'Inicial');
+      });
+    }
+    const typeInputEl = document.getElementById('typeInput');
+    if (typeInputEl) typeInputEl.value = 'Inicial';
+    const formTitleEl = document.getElementById('formTitle');
+    if (formTitleEl) {
+      formTitleEl.textContent = `Novo registro - Inicial`;
+    }
+  }
+  
+  if (welcomeScreenEl) {
+    welcomeScreenEl.hidden = true;
+    welcomeScreenEl.style.display = 'none';
+  }
+  if (homeSummaryCardEl) {
+    homeSummaryCardEl.hidden = true;
+    homeSummaryCardEl.style.display = 'none';
+  }
+  if (appHeaderEl) appHeaderEl.style.display = 'none';
+  if (appContentEl) {
+    appContentEl.hidden = false;
+    appContentEl.style.display = 'block';
+  }
+
+  updateDayTabs();
+  render();
+  if (selectedDay === 'Supervisão') {
+    populateSupervisaoOficinaSelect();
+    populateSupervisaoOficinaFilter();
+    populateSupervisaoStageSelect();
+    renderSupervisaoReport();
+  } else if (selectedDay === 'Seguradoras') {
+    renderInsurers();
+  } else if (selectedDay === 'Oficinas') {
+    renderOficinas();
+  }
+
+  updatePageTitleHeader();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+window.openMenuSection = function(targetDay) {
+  handleMenuButtonClick(targetDay);
+};
+
+window.backToHomeMenu = function() {
+  selectedOficinaForTodasVistorias = null;
+  showWelcomeScreen();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.homeClearWeek = function() {
+  const verification = window.prompt(
+    '⚠️ CONFIRMAÇÃO:\n\n' +
+    'Deseja limpar os registros da semana atual? Eles continuarão no relatório de "Todas as Vistorias".\n\n' +
+    'Para confirmar, digite a palavra LIMPAR abaixo:'
+  );
+  if (verification && verification.trim().toUpperCase() === 'LIMPAR') {
+    items.forEach((item) => {
+      item.clearedFromWeek = true;
+    });
+    saveItems();
+    updateHomeSummary();
+    render();
+  }
+};
+
+window.openSystemSettings = function() {
+  const modal = document.getElementById('systemSettingsModal');
+  if (modal) modal.style.display = 'flex';
+};
+
+window.closeSystemSettings = function() {
+  const modal = document.getElementById('systemSettingsModal');
+  if (modal) modal.style.display = 'none';
+};
+
+function attachMenuListeners() {
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.menu-btn');
+    if (btn) {
+      const targetDay = btn.dataset.day;
+      if (targetDay) {
+        handleMenuButtonClick(targetDay);
+      }
+    }
+  });
+
+  if (backToMenuButton) {
+    backToMenuButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      selectedOficinaForTodasVistorias = null;
+      showWelcomeScreen();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+}
+
+function initializeApp() {
+  if (appInitialized) return;
+  appInitialized = true;
+
+  try {
+    ensureAuthentication();
+    registerServiceWorker();
+    updateFormState();
+    populateProviderSelect();
+    render();
+    renderInsurers();
+    renderOficinas();
+  } catch (error) {
+    console.error('Erro ao iniciar o app:', error);
+  }
+}
+
+function initAppWithDOM() {
+  initializeApp();
+  showWelcomeScreen();
+  attachMenuListeners();
+  attachGlobalEventListeners();
+}
+
+if (localStorage.getItem('authenticated') !== 'true') {
+  window.location.href = 'index.html';
+} else {
+  registerServiceWorker();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAppWithDOM);
+  } else {
+    initAppWithDOM();
+  }
+}
+
+function saveItem(event) {
+  event.preventDefault();
+
+  const date = getTodayDateValue();
+  const day = getSelectedSaveDay();
+  const plate = normalizePlate(plateInput.value.trim());
+  const providerId = providerSelect.value;
+  const selectedInsurer = insurers.find((insurer) => insurer.id === providerId);
+  const provider = selectedInsurer ? selectedInsurer.name : '';
+  const value = selectedInsurer ? selectedInsurer.price : parseFloat(valueInput.value) || 0;
+  const type = typeInput ? typeInput.value : 'Inicial';
+
+  // Read oficina
+  const oficinaSelect = document.getElementById('itemOficinaSelect');
+  const oficinaId = oficinaSelect ? oficinaSelect.value : '';
+  const selectedOficina = oficinas.find(o => o.id === oficinaId);
+  const oficinaName = selectedOficina ? selectedOficina.name : '';
+
+  if (!date || !day || !plate || !providerId || !oficinaId) {
+    alert('Por favor, preencha todos os campos obrigatórios, incluindo a oficina.');
+    return;
+  }
+  if (!isValidPlate(plate)) return;
+
+  // Gather details dynamically
+  const details = {};
+  if (dynamicFieldsContainer) {
+    const inputs = dynamicFieldsContainer.querySelectorAll('input, select, textarea');
+    inputs.forEach((input) => {
+      if (input.name && input.name !== 'oficinaId') {
+        details[input.name] = input.value;
+      }
+    });
+  }
+
+  if (editingId) {
+    items = items.map((item) => item.id === editingId ? { 
+      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details 
+    } : item);
+  } else {
+    items.unshift({
+      id: Date.now().toString(),
+      date,
+      day,
+      plate,
+      provider,
+      providerId,
+      value,
+      type,
+      oficinaId,
+      oficinaName,
+      details,
+      createdAt: new Date().toLocaleString('pt-BR')
+    });
+  }
+
+  saveItems();
+  form.reset();
+  if (providerSelect) providerSelect.value = '';
+  if (typeInput) typeInput.value = selectedType || 'Inicial';
+  updateTypeButtonsHighlight();
+  updateInsurerButtonsHighlight();
+  editingId = null;
+  updateFormState();
+  updateFormDisplay();
+  render();
+  updateLocalAndServerData();
+}
+
+function saveInsurer(event) {
+  event.preventDefault();
+
+  const name = insurerNameInput.value.trim();
+  // accept comma as decimal separator; default to 0 when empty
+  const raw = (insurerValueInput.value || '').toString().trim();
+  const normalized = raw === '' ? '0' : raw.replace(',', '.');
+  const price = parseFloat(normalized);
+  if (!name) return;
+  if (!Number.isFinite(price) || price < 0) return;
+
+  if (editingInsurerId) {
+    insurers = insurers.map((insurer) => insurer.id === editingInsurerId ? { ...insurer, name, price } : insurer);
+  } else {
+    insurers.push({
+      id: Date.now().toString(),
+      name,
+      price
+    });
+  }
+
+  saveInsurers();
+  insurerForm.reset();
+  editingInsurerId = null;
+  cancelInsurerEditButton.hidden = true;
+  renderInsurers();
+  populateProviderSelect();
+  // keep user on Seguradoras tab after saving
+  selectedDay = 'Seguradoras';
+  updateDayTabs();
+  if (insurerForm) insurerForm.hidden = false;
+  if (insurerCard) insurerCard.hidden = false;
+  if (formCard) formCard.hidden = true;
+  if (recordsCard) recordsCard.hidden = true;
+  if (reportCard) reportCard.hidden = true;
+  render();
+  updateLocalAndServerData();
+}
+
+function render() {
+  const query = searchInput.value.toLowerCase();
+  const isTodasVistorias = selectedDay === 'Todas as vistorias';
+
+  if (summaryGrid) {
+    // Show summaryGrid only on "Mês vigente" (which is now replaced, but keep compatibility or hide it)
+    summaryGrid.style.display = 'none';
+  }
+
+  if (isTodasVistorias) {
+    clearSearchButton.hidden = !query;
+    installButton.hidden = !deferredPrompt;
+
+    if (selectedOficinaForTodasVistorias === null) {
+      if (reportCard) reportCard.hidden = true;
+      if (formCard) formCard.hidden = true;
+      if (recordsCard) recordsCard.hidden = false;
+      
+      const filteredOficinas = oficinas.filter(o => 
+        o.name.toLowerCase().includes(query)
+      );
+
+      if (!filteredOficinas.length) {
+        itemList.innerHTML = '<li class="empty">Nenhuma oficina cadastrada ou encontrada.</li>';
+        return;
+      }
+      
+      itemList.innerHTML = `
+        <li style="list-style: none; grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
+          <h3 style="margin: 0; color: #1e40af; font-size: 1rem; font-weight: 700;">Selecione uma oficina:</h3>
+          <button id="tabClearAllButton" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 999px; cursor: pointer;">
+            🧹 Limpar Tudo
+          </button>
+        </li>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; width: 100%;">
+          ${filteredOficinas.map(o => {
+            const isLongName = o.name && o.name.length > 20;
+            const extraStyle = isLongName ? 'font-size: 0.7rem; padding: 14px 6px; white-space: normal; word-break: break-word;' : '';
+            return `
+              <button class="menu-btn" type="button" data-oficina-btn-id="${o.id}" style="width: 100%; text-align: center; padding: 14px 12px; font-weight: 700; border-radius: 14px; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; cursor: pointer; transition: all 0.2s; ${extraStyle}">
+                ${escapeHtml(o.name)}
+              </button>
+            `;
+          }).join('')}
+        </div>
+      `;
+      
+      const clearAllBtn = itemList.querySelector('#tabClearAllButton');
+      if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', () => {
+          const verification = window.prompt(
+            '⚠️ AVISO DE SEGURANÇA:\n\n' +
+            'Esta ação irá apagar PERMANENTEMENTE todos os registros cadastrados (vistorias e supervisões) de todas as oficinas.\n' +
+            'Esta ação não poderá ser desfeita.\n\n' +
+            'Para confirmar que deseja prosseguir, digite a palavra APAGAR no campo abaixo:'
+          );
+          if (verification && verification.trim().toUpperCase() === 'APAGAR') {
+            items = [];
+            supervisoes = [];
+            saveItems();
+            saveSupervisoes();
+            selectedOficinaForTodasVistorias = null;
+            render();
+            renderSupervisaoReport();
+          }
+        });
+      }
+      
+      itemList.querySelectorAll('[data-oficina-btn-id]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedOficinaForTodasVistorias = btn.dataset.oficinaBtnId;
+          selectedTodasVistoriasFilter = 'Vistorias';
+          render();
+        });
+      });
+      return;
+    } else {
+      const o = oficinas.find(oficina => oficina.id === selectedOficinaForTodasVistorias) || { name: 'Sem oficina' };
+      
+      const filteredVistorias = items.filter(item => {
+        if (item.oficinaId !== selectedOficinaForTodasVistorias) return false;
+        if (query) {
+          return `${item.date} ${item.day} ${item.plate} ${item.provider} ${item.type || ''}`.toLowerCase().includes(query);
+        }
+        return true;
+      });
+      
+      const filteredSupervisoes = supervisoes.filter(s => {
+        if (s.oficinaId !== selectedOficinaForTodasVistorias) return false;
+        if (query) {
+          return `${s.date} ${s.day} ${s.vehicle} ${s.attended} ${s.stage}`.toLowerCase().includes(query);
+        }
+        return true;
+      });
+      
+      let listToDisplay = [];
+      if (selectedTodasVistoriasFilter === 'Vistorias') {
+        listToDisplay = filteredVistorias.map(i => ({ ...i, isSupervisao: false }));
+        listToDisplay.sort((a, b) => b.id.localeCompare(a.id));
+      } else {
+        listToDisplay = filteredSupervisoes.map(s => ({ ...s, isSupervisao: true }));
+        listToDisplay.sort((a, b) => {
+          const timeA = a.updatedAtTime || Number(a.id) || 0;
+          const timeB = b.updatedAtTime || Number(b.id) || 0;
+          return timeB - timeA;
+        });
+      }
+      
+      let headerHtml = `
+        <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
+            <strong style="color: #15803d; font-size: 0.95rem;">Oficina: ${escapeHtml(o.name)}</strong>
+            <button id="backToOficinasList" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 999px; cursor: pointer;">
+              ← Voltar
+            </button>
+          </div>
+          <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+              Vistorias
+            </button>
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+              Supervisões
+            </button>
+          </div>
+        </li>
+      `;
+      
+      const badgeClasses = {
+        'Inicial': 'badge-inicial',
+        'Roubo Recuperado': 'badge-roubo',
+        'Incêndio': 'badge-incendio',
+        'Enchente': 'badge-enchente',
+        'Moto': 'badge-moto',
+        'Complemento': 'badge-complemento',
+        'Pós entrega': 'badge-pos',
+        'Vistoria Rio log': 'badge-riolog'
+      };
+
+      const itemsHtml = listToDisplay.map((entry) => {
+        if (entry.isSupervisao) {
+          const isLongVehicle = entry.vehicle && entry.vehicle.length > 20;
+          const mainInfoStyle = isLongVehicle ? 'style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;"' : '';
+          const badgeStyle = isLongVehicle ? 'style="width: 100% !important; max-width: 100% !important; min-width: 100% !important; justify-content: flex-start !important; padding: 5px 8px !important; box-sizing: border-box;"' : '';
+          const badgeTextStyle = isLongVehicle ? 'style="white-space: normal !important; word-break: break-word;"' : '';
+
+          return `
+            <li class="item-card compact-item-card">
+              <div class="item-main-info" ${mainInfoStyle}>
+                <div class="plate-badge compact-plate-badge" ${badgeStyle}>
+                  <span class="plate-badge-text" ${badgeTextStyle}>${escapeHtml(entry.vehicle || 'Supervisão')}</span>
+                </div>
+                <div class="item-details">
+                  <strong class="item-provider">Atendido: ${escapeHtml(entry.attended || '—')}</strong>
+                  <span class="item-meta">· ${escapeHtml(formatDateString(entry.date))}</span>
+                  <span class="badge-supervisao" style="margin-left: 6px;">
+                    Supervisão: ${escapeHtml(entry.stage || '')}
+                  </span>
+                </div>
+              </div>
+              <div class="actions vertical-actions">
+                <button class="action-btn" type="button" data-super-action="share-whatsapp" data-id="${entry.id}">💬 Compartilhar vistoria</button>
+                <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">📸 Fotos</button>
+                <button class="action-btn" type="button" data-super-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
+                <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
+                <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
+              </div>
+            </li>
+          `;
+        } else {
+          const badgeClass = badgeClasses[entry.type || 'Inicial'] || 'badge-inicial';
+          const isLongPlate = entry.plate && entry.plate.length > 20;
+          const mainInfoStyle = isLongPlate ? 'style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;"' : '';
+          const badgeStyle = isLongPlate ? 'style="width: 100% !important; max-width: 100% !important; min-width: 100% !important; justify-content: flex-start !important; padding: 5px 8px !important; box-sizing: border-box;"' : '';
+          const badgeTextStyle = isLongPlate ? 'style="white-space: normal !important; word-break: break-word;"' : '';
+
+          return `
+            <li class="item-card compact-item-card">
+              <div class="item-main-info" ${mainInfoStyle}>
+                <div class="plate-badge compact-plate-badge" ${badgeStyle}>
+                  <span class="plate-badge-text" ${badgeTextStyle}>${escapeHtml(entry.plate)}</span>
+                </div>
+                <div class="item-details">
+                  <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
+                  <span class="item-meta">· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
+                  <span class="item-meta">· ${escapeHtml(entry.day)}</span>
+                  <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
+                </div>
+              </div>
+              <div class="actions vertical-actions">
+                <button class="action-btn" type="button" data-action="share-whatsapp" data-id="${entry.id}">💬 Compartilhar vistoria</button>
+                <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">📸 Fotos</button>
+                <button class="action-btn" type="button" data-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
+                <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
+                <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
+              </div>
+            </li>
+          `;
+        }
+      }).join('');
+      
+      itemList.innerHTML = headerHtml + (listToDisplay.length ? itemsHtml : `<li class="empty">Nenhum registro de ${selectedTodasVistoriasFilter.toLowerCase()} encontrado para esta oficina.</li>`);
+      
+      const backBtn = itemList.querySelector('#backToOficinasList');
+      if (backBtn) {
+        backBtn.addEventListener('click', () => {
+          selectedOficinaForTodasVistorias = null;
+          render();
+        });
+      }
+      
+      const toggleVistoriasBtn = itemList.querySelector('#toggleFilterVistorias');
+      const toggleSupervisoesBtn = itemList.querySelector('#toggleFilterSupervisoes');
+      if (toggleVistoriasBtn) {
+        toggleVistoriasBtn.addEventListener('click', () => {
+          selectedTodasVistoriasFilter = 'Vistorias';
+          render();
+        });
+      }
+      if (toggleSupervisoesBtn) {
+        toggleSupervisoesBtn.addEventListener('click', () => {
+          selectedTodasVistoriasFilter = 'Supervisões';
+          render();
+        });
+      }
+      
+      itemList.querySelectorAll('[data-action]').forEach((button) => {
+        button.addEventListener('click', () => handleAction(button.dataset.action, button.dataset.id));
+      });
+      itemList.querySelectorAll('[data-super-action]').forEach((button) => {
+        button.addEventListener('click', () => handleSupervisaoAction(button.dataset.superAction, button.dataset.id));
+      });
+      return;
+    }
+  }
+
+  // Normal day filtering for regular vistorias
+  const filtered = items.filter((item) => {
+    const isTotalWeek = selectedDay === 'Total da semana';
+    const matchesQuery = `${item.date} ${item.day} ${item.plate} ${item.provider}`.toLowerCase().includes(query);
+    if (!matchesQuery) return false;
+
+    if (isTotalWeek) {
+      return item.clearedFromWeek !== true;
+    }
+    
+    // Filter by day (showing all vistorias done on that day)
+    const sameDay = item.day === selectedDay;
+    return sameDay && item.clearedFromWeek !== true;
+  });
+
+  clearSearchButton.hidden = !query;
+  installButton.hidden = !deferredPrompt;
+
+  const statsItems = items.filter(item => item.clearedFromWeek !== true);
+  const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+  const uniqueDays = new Set(statsItems.map((item) => item.day)).size;
+
+  summaryGrid.innerHTML = `
+    <article class="summary-item">
+      <strong>${statsItems.length}</strong>
+      <span>vistorias</span>
+    </article>
+    <article class="summary-item">
+      <strong>R$ ${totalValue.toFixed(2).replace('.', ',')}</strong>
+      <span>valor total</span>
+    </article>
+    <article class="summary-item">
+      <strong>${uniqueDays}</strong>
+      <span>dias preenchidos</span>
+    </article>
+    <article class="summary-item">
+      <strong>${statsItems.length ? escapeHtml(statsItems[0].createdAt) : '—'}</strong>
+      <span>último registro</span>
+    </article>
+  `;
+
+  if (!filtered.length) {
+    itemList.innerHTML = '<li class="empty">Nenhum registro encontrado.</li>';
+    renderReport(filtered);
+    return;
+  }
+
+  const badgeClasses = {
+    'Inicial': 'badge-inicial',
+    'Roubo Recuperado': 'badge-roubo',
+    'Incêndio': 'badge-incendio',
+    'Enchente': 'badge-enchente',
+    'Moto': 'badge-moto',
+    'Complemento': 'badge-complemento',
+    'Pós entrega': 'badge-pos',
+    'Vistoria Rio log': 'badge-riolog'
+  };
+
+  itemList.innerHTML = filtered.map((item) => {
+    const badgeClass = badgeClasses[item.type || 'Inicial'] || 'badge-inicial';
+    return `
+      <li class="item-card compact-item-card">
+        <div class="item-main-info">
+          <div class="plate-badge compact-plate-badge">
+            <span class="plate-badge-text">${escapeHtml(item.plate)}</span>
+          </div>
+          <div class="item-details">
+            <strong class="item-provider">${escapeHtml(item.provider || 'Sem seguradora')}</strong>
+            <span class="item-meta">· ${escapeHtml(formatDateString(item.date))}</span>
+            <strong class="item-value">· R$ ${escapeHtml(Number(item.value).toFixed(2).replace('.', ','))}</strong>
+            <span class="${badgeClass}" style="margin-left: 6px;">
+              ${escapeHtml(item.type || 'Inicial')}
+            </span>
+            ${item.oficinaName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(item.oficinaName)}</strong></div>` : ''}
+          </div>
+        </div>
+        <div class="actions vertical-actions">
+          <button class="action-btn" type="button" data-action="share-whatsapp" data-id="${item.id}">💬 Compartilhar vistoria</button>
+          <button class="action-btn" type="button" data-action="photos" data-id="${item.id}">📸 Fotos</button>
+          <button class="action-btn" type="button" data-action="open-folder" data-id="${item.id}">📂 Pasta</button>
+          <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
+          <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
+        </div>
+      </li>
+    `;
+  }).join('');
+
+  itemList.querySelectorAll('[data-action]').forEach((button) => {
+    button.addEventListener('click', () => handleAction(button.dataset.action, button.dataset.id));
+  });
+
+  renderReport(filtered);
+}
+
+function renderReport(filteredItems) {
+  const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  const totals = days.map((day) => {
+    const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
+    itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
+
+    const platesHtml = itemsForDay.length
+      ? itemsForDay.map((item, index) => '<div style="padding: 3px 0; border-bottom: 1px dashed #cbd5e1; font-weight: 500;">' + (index + 1) + '. ' + escapeHtml(item.plate) + '</div>').join('')
+      : '-';
+    return {
+      day,
+      visits: itemsForDay.length,
+      platesHtml,
+      value: itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0)
+    };
+  });
+
+  reportBody.innerHTML = totals.map(({ day, visits, platesHtml, value }) => `
+    <tr>
+      <td data-label="Dia" style="font-weight: 600;">${escapeHtml(day)}</td>
+      <td data-label="Nº Vistorias" style="font-weight: 600;">${visits}</td>
+      <td data-label="Vistorias (Placas)" style="word-break: break-word;">${platesHtml}</td>
+      <td data-label="Valor Total" style="font-weight: 600; white-space: nowrap;">R$ ${value.toFixed(2).replace('.', ',')}</td>
+    </tr>
+  `).join('');
+
+  const totalVisits = totals.reduce((sum, d) => sum + d.visits, 0);
+  const totalValue = totals.reduce((sum, d) => sum + d.value, 0);
+  weeklyVisits.textContent = totalVisits;
+  weeklyValue.textContent = `R$ ${totalValue.toFixed(2).replace('.', ',')}`;
+}
+
+function getSurveyText(id) {
+  const item = items.find(entry => entry.id === id);
+  if (!item) return '';
+
+  const dateParts = item.date ? item.date.split('-') : [];
+  const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : item.date;
+
+  const details = item.details || {};
+
+  // Checklist helper
+  const getCheckmark = (val, field) => {
+    const isSim = (val || '').toLowerCase() === 'sim';
+    if (field === 'motorFunciona') {
+      return isSim ? 'Sim(x ) Não(   )' : 'Sim(  ) Não(x   )';
+    }
+    if (field === 'estepe') {
+      return isSim ? 'Sim ( x) Não ( )' : 'Sim ( ) Não ( x)';
+    }
+    if (field === 'triangulo') {
+      return isSim ? 'Sim (x ) Não (   )' : 'Sim ( ) Não ( x )';
+    }
+    return isSim ? 'Sim (x ) Não ( )' : 'Sim ( ) Não (x )';
+  };
+
+  const radioVal = details.radio === 'Original' ? 'original' : (details.radioBrand || 'Outra');
+
+  let sections = [];
+
+  if (item.type === 'Incêndio') {
+    sections.push(`Incêndio`);
+    sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
+    
+    let checklist = [];
+    checklist.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
+    checklist.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
+    checklist.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
+    checklist.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
+    checklist.push(`MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}`);
+    checklist.push(`TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}`);
+    checklist.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}`);
+    checklist.push(`RÁDIO / MARCA:${radioVal}`);
+    checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
+    checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
+    sections.push(checklist.join('\n'));
+
+    let fireDetails = [];
+    if (details.origemIncendio) fireDetails.push(`Ponto de Origem do Incêndio : ${details.origemIncendio}`);
+    if (details.sistemaCombustivel) fireDetails.push(`Avaliação do Sistema de Combustível e Fluidos : ${details.sistemaCombustivel}`);
+    if (details.sistemaEletrico) fireDetails.push(`Avaliação do Sistema Elétrico : ${details.sistemaEletrico}`);
+    if (details.residuosExtincao) fireDetails.push(`Resíduos de Extinção do Incêndio : ${getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao')}`);
+    if (details.tanqueAfetado) fireDetails.push(`Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}`);
+    if (fireDetails.length > 0) {
+      sections.push(fireDetails.join('\n'));
+    }
+
+    if (details.obs) {
+      sections.push(`Observações Complementares : ${details.obs}`);
+    }
+  } else {
+    // Other survey types
+    sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
+    
+    let checklist = [];
+    checklist.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
+    checklist.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
+    checklist.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
+    
+    if ('estepe' in details) {
+      checklist.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
+      checklist.push(`MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}`);
+      checklist.push(`TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}`);
+      checklist.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}`);
+      checklist.push(`RÁDIO / MARCA:${radioVal}`);
+      checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
+      checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
+    }
+
+    if (item.type === 'Roubo Recuperado' && details.obsRoubo) {
+      checklist.push(`Observações Roubo: ${details.obsRoubo}`);
+    }
+    if (item.type === 'Enchente') {
+      const yesNo = (val) => val === 'Sim' ? 'Sim' : 'Não';
+      if (details.aguaOleo) checklist.push(`Vestígios de água no óleo: ${yesNo(details.aguaOleo)}`);
+      if (details.aguaVelas) checklist.push(`Vestígios de água nas velas: ${yesNo(details.aguaVelas)}`);
+      if (details.aguaFarois) checklist.push(`Vestígios de água nos faróis: ${yesNo(details.aguaFarois)}`);
+      if (details.aguaLanternas) checklist.push(`Vestígios de água nas lanternas: ${yesNo(details.aguaLanternas)}`);
+      if (details.aguaFiltro) checklist.push(`Vestígios de água no filtro: ${yesNo(details.aguaFiltro)}`);
+      if (details.motorTravado) checklist.push(`Motor travado: ${yesNo(details.motorTravado)}`);
+      if (details.alturaAgua) checklist.push(`Altura da água: ${details.alturaAgua}`);
+    }
+    if ((item.type === 'Complemento' || item.type === 'Pós entrega') && details.conteudoLivre) {
+      checklist.push(`Conteúdo: ${details.conteudoLivre}`);
+    }
+    
+    sections.push(checklist.join('\n'));
+
+    const obsVal = details.obs || details.obsRoubo || details.obsIncendio || details.obsEnchente || '';
+    if (obsVal) {
+      sections.push(`Obs.: ${obsVal}`);
+    }
+  }
+
+  if (item.type === 'Vistoria Rio log') {
+    if (details.avarias) {
+      sections.push(`Avarias\n${details.avarias}`);
+    } else {
+      sections.push(`Avarias`);
+    }
+  } else {
+    // Universal fields (Trocas & Reparos)
+    if (details.trocas) {
+      sections.push(`Trocas\n${details.trocas}`);
+    } else if (item.type === 'Incêndio') {
+      sections.push(`Trocas`);
+    }
+
+    if (details.reparos) {
+      sections.push(`Reparos\n${details.reparos}`);
+    } else if (item.type === 'Incêndio') {
+      sections.push(`Reparos`);
+    }
+  }
+
+  return sections.join('\n\n');
+}
+
+function shareSurveyText(id) {
+  const text = getSurveyText(id);
+  if (!text) return;
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.shareText === 'function') {
+    window.AndroidInterface.shareText('Compartilhamento de Vistoria', text);
+  } else if (navigator.share) {
+    navigator.share({
+      title: 'Compartilhamento de Vistoria',
+      text: text
+    }).catch(err => {
+      if (err.name === 'AbortError') return;
+      console.warn('Erro ao compartilhar pelo Web Share API, copiando para a área de transferência...', err);
+      copyTextToClipboard(text);
+    });
+  } else {
+    copyTextToClipboard(text);
+  }
+}
+
+function copySurveyText(id) {
+  const text = getSurveyText(id);
+  if (!text) return;
+  copyTextToClipboard(text);
+}
+
+function copyTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {
+      fallbackCopyText(text);
+    });
+  } else {
+    fallbackCopyText(text);
+  }
+}
+
+async function shareReportTextOnly(id) {
+  const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
+  if (!item) {
+    alert('Registro não encontrado!');
+    return;
+  }
+  const vehicleName = (item.plate || item.vehicle || '').trim();
+  if (!vehicleName) {
+    alert("Nome do veículo ou placa inválido!");
+    return;
+  }
+
+  const isInspection = items.some(entry => entry.id === id);
+  let reportText = isInspection ? getSurveyText(id) : formatSingleSupervisaoText(item);
+  if (!reportText || !reportText.trim()) {
+    reportText = `Vistoria do veículo: ${vehicleName}`;
+  }
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.shareText === 'function') {
+    window.AndroidInterface.shareText(`Relatório: ${vehicleName}`, reportText);
+    return;
+  }
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Relatório: ' + vehicleName, text: reportText });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.warn('navigator.share falhou:', err);
+    }
+  }
+
+  copyTextToClipboard(reportText);
+  try {
+    const encodedText = encodeURIComponent(reportText);
+    const waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+    window.open(waUrl, '_blank');
+  } catch (e) {
+    alert('Relatório copiado para a área de transferência!');
+  }
+}
+window.shareReportTextOnly = shareReportTextOnly;
+
+function handleAction(action, id) {
+  if (action === 'open-folder') {
+    openInspectionFolderForId(id);
+    return;
+  }
+  if (action === 'photos') {
+    openPhotoManagerForId(id);
+    return;
+  }
+  if (action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-text' || action === 'share-report-text') {
+    shareVistoriaWhatsApp(id);
+    return;
+  }
+  if (action === 'delete') {
+    if (window.confirm('Deseja excluir este registro de vistoria?')) {
+      items = items.filter((item) => item.id !== id);
+      saveItems();
+      render();
+    }
+    return;
+  }
+
+  const item = items.find((entry) => entry.id === id);
+  if (!item) return;
+
+  editingId = item.id;
+  plateInput.value = item.plate || '';
+  providerSelect.value = item.providerId || '';
+  valueInput.value = item.value || '';
+  
+  selectedType = item.type || 'Inicial';
+  if (typeInput) typeInput.value = selectedType;
+  
+  if (vistoriaTypeTabs) {
+    vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.type === selectedType);
+    });
+  }
+  
+  const formTitle = document.getElementById('formTitle');
+  if (formTitle) {
+    formTitle.textContent = `Editar registro - ${selectedType}`;
+  }
+  
+  // Render dynamic fields before populating them
+  renderDynamicSurveyFields();
+
+  if (item.oficinaId) {
+    const oficinaSelect = document.getElementById('itemOficinaSelect');
+    if (oficinaSelect) oficinaSelect.value = item.oficinaId;
+  }
+
+  if (item.details) {
+    Object.keys(item.details).forEach((key) => {
+      const input = dynamicFieldsContainer.querySelector(`[name="${key}"]`);
+      if (input) {
+        input.value = item.details[key];
+        
+        const container = input.closest('.type-buttons-container');
+        if (container) {
+          container.querySelectorAll('.type-btn').forEach((b) => {
+            b.classList.toggle('active', b.dataset.value === item.details[key]);
+          });
+        }
+        
+        if (key === 'radio') {
+          const brandInput = document.getElementById('input_radio_brand');
+          if (brandInput) {
+            brandInput.style.display = item.details[key] === 'Outra' ? 'block' : 'none';
+            brandInput.required = item.details[key] === 'Outra';
+          }
+        }
+      }
+    });
+  }
+
+  updateTypeButtonsHighlight();
+  updateInsurerButtonsHighlight();
+  updateFormState();
+
+  const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
+  if (!isWeekday) {
+    selectedDay = item.day || 'Segunda';
+    updateDayTabs();
+    if (welcomeScreen) welcomeScreen.hidden = true;
+    if (homeSummaryCard) homeSummaryCard.hidden = true;
+    if (appHeader) appHeader.style.display = 'none';
+    if (appContent) appContent.hidden = false;
+  }
+
+  plateInput.focus();
+}
+
+function updateDayTabs() {
+  dayTabs.querySelectorAll('.tab-btn').forEach((button) => {
+    button.classList.toggle('active', button.dataset.day === selectedDay);
+  });
+  updateFormDisplay();
+}
+
+function updatePageTitleHeader() {
+  const elem = document.getElementById('currentPageTitle');
+  if (!elem) return;
+  let titleText = `${selectedDay}-feira`;
+  if (selectedDay === 'Seguradoras') titleText = 'Seguradoras';
+  else if (selectedDay === 'Oficinas') titleText = 'Oficinas';
+  else if (selectedDay === 'Total da semana') titleText = 'Total da Semana';
+  else if (selectedDay === 'Todas as vistorias') titleText = 'Todas as Vistorias';
+  else if (selectedDay === 'Supervisão') titleText = 'Supervisão';
+
+  elem.innerHTML = titleText;
+  elem.textContent = titleText;
+}
+
+function updateFormDisplay() {
+  const currentDate = new Date();
+  const dateValue = getTodayDateValue();
+  const currentDay = getSelectedSaveDay();
+  const isInsurerPane = selectedDay === 'Seguradoras';
+  const isOficinaPane = selectedDay === 'Oficinas';
+
+  if (currentDateLabel) {
+    currentDateLabel.textContent = formatDateForDisplay(currentDate);
+  }
+  if (currentDayLabel) {
+    currentDayLabel.textContent = currentDay;
+  }
+  if (dateInput) {
+    dateInput.value = dateValue;
+  }
+  if (dayInput) {
+    dayInput.value = currentDay;
+  }
+
+  updatePageTitleHeader();
+
+  if (formTitle) {
+    if (isInsurerPane) {
+      formTitle.textContent = 'Cadastre seguradoras';
+    } else if (isOficinaPane) {
+      formTitle.textContent = 'Cadastre oficinas';
+    } else {
+      formTitle.textContent = `Novo registro - ${selectedType}`;
+    }
+  }
+  
+  if (insurerForm) insurerForm.hidden = selectedDay !== 'Seguradoras';
+  if (insurerCard) insurerCard.hidden = selectedDay !== 'Seguradoras';
+  if (noInsurersNote) noInsurersNote.hidden = selectedDay !== 'Seguradoras';
+  
+  if (oficinaForm) oficinaForm.hidden = selectedDay !== 'Oficinas';
+  if (oficinaCard) oficinaCard.hidden = selectedDay !== 'Oficinas';
+
+  const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
+  if (formCard) formCard.hidden = !isWeekday;
+  if (recordsCard) recordsCard.hidden = !isWeekday && selectedDay !== 'Todas as vistorias';
+  if (reportCard) reportCard.hidden = selectedDay !== 'Total da semana';
+  
+  if (vistoriaTypeTabsCard) {
+    vistoriaTypeTabsCard.style.display = isWeekday ? 'block' : 'none';
+  }
+  
+  if (supervisaoFormCard) supervisaoFormCard.hidden = selectedDay !== 'Supervisão';
+  if (supervisaoRecordsCard) supervisaoRecordsCard.hidden = selectedDay !== 'Supervisão';
+
+  if (clearWeekButton && clearMonthButton) {
+    if (selectedDay === 'Todas as vistorias') {
+      clearWeekButton.style.display = 'none';
+      clearMonthButton.style.display = 'inline-block';
+    } else if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Total da semana'].includes(selectedDay)) {
+      clearWeekButton.style.display = 'inline-block';
+      clearMonthButton.style.display = 'none';
+    } else {
+      clearWeekButton.style.display = 'none';
+      clearMonthButton.style.display = 'none';
+    }
+  }
+
+  if (isWeekday) {
+    renderDynamicSurveyFields();
+  }
+
+  if (selectedDay === 'Supervisão') {
+    populateSupervisaoOficinaSelect();
+    populateSupervisaoOficinaFilter();
+    populateSupervisaoStageSelect();
+    renderSupervisaoReport();
+  }
+
+  populateProviderSelect();
+  updateInsurerButtonsHighlight();
+}
+
+function populateProviderSelect() {
+  if (!insurerButtonsContainer) return;
+
+  insurerButtonsContainer.innerHTML = '';
+  if (!insurers.length) {
+    noInsurersNote.hidden = false;
+    if (providerSelect) providerSelect.value = '';
+    return;
+  }
+
+  noInsurersNote.hidden = true;
+
+  insurers.forEach((insurer) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'insurer-btn';
+    btn.dataset.id = insurer.id;
+    btn.textContent = insurer.name;
+    btn.addEventListener('click', () => {
+      selectInsurer(insurer);
+    });
+    insurerButtonsContainer.appendChild(btn);
+  });
+}
+
+function selectInsurer(insurer) {
+  if (providerSelect) {
+    providerSelect.value = insurer.id;
+  }
+  if (valueInput) {
+    valueInput.value = insurer.price.toFixed(2);
+  }
+  updateInsurerButtonsHighlight();
+}
+
+function updateInsurerButtonsHighlight() {
+  if (!insurerButtonsContainer || !providerSelect) return;
+  const selectedId = providerSelect.value;
+  insurerButtonsContainer.querySelectorAll('.insurer-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.id === selectedId);
+  });
+}
+
+function renderInsurers() {
+  if (!insurerList) return;
+
+  insurerList.innerHTML = insurers.length
+    ? insurers.map((insurer) => `
+      <li class="item-card">
+        <header>
+          <div>
+            <strong>${escapeHtml(insurer.name)}</strong>
+            <div class="meta">R$ ${insurer.price.toFixed(2).replace('.', ',')}</div>
+          </div>
+          <div class="actions">
+            <button class="action-btn" type="button" data-action="edit-insurer" data-id="${insurer.id}">Editar</button>
+            <button class="action-btn" type="button" data-action="delete-insurer" data-id="${insurer.id}">Excluir</button>
+          </div>
+        </header>
+      </li>
+    `).join('')
+    : '<li class="empty">Nenhuma seguradora cadastrada.</li>';
+
+  insurerList.querySelectorAll('[data-action]').forEach((button) => {
+    button.addEventListener('click', () => handleInsurerAction(button.dataset.action, button.dataset.id));
+  });
+}
+
+function handleInsurerAction(action, id) {
+  if (action === 'delete-insurer') {
+    insurers = insurers.filter((insurer) => insurer.id !== id);
+    saveInsurers();
+    renderInsurers();
+    populateProviderSelect();
+    return;
+  }
+
+  const insurer = insurers.find((entry) => entry.id === id);
+  if (!insurer) return;
+
+  editingInsurerId = insurer.id;
+  insurerNameInput.value = insurer.name;
+  insurerValueInput.value = insurer.price.toFixed(2);
+  cancelInsurerEditButton.hidden = false;
+}
+
+function loadOficinas() {
+  const raw = localStorage.getItem('web-system-oficinas-v1');
+  const arr = raw ? safeParseJson(raw, []) : [];
+  return arr.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+}
+
+function saveOficinas() {
+  oficinas.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+  localStorage.setItem('web-system-oficinas-v1', JSON.stringify(oficinas));
+}
+
+function saveOficina(event) {
+  event.preventDefault();
+
+  const name = oficinaNameInput.value.trim();
+  if (!name) return;
+
+  if (editingOficinaId) {
+    oficinas = oficinas.map((oficina) => oficina.id === editingOficinaId ? { ...oficina, name } : oficina);
+  } else {
+    oficinas.push({
+      id: Date.now().toString(),
+      name
+    });
+  }
+
+  saveOficinas();
+  oficinaForm.reset();
+  editingOficinaId = null;
+  cancelOficinaEditButton.hidden = true;
+  renderOficinas();
+  
+  if (selectedDay === 'Supervisão') {
+    populateSupervisaoOficinaSelect();
+    populateSupervisaoOficinaFilter();
+  }
+  
+  selectedDay = 'Oficinas';
+  updateDayTabs();
+}
+
+function cancelOficinaEdit() {
+  editingOficinaId = null;
+  oficinaForm.reset();
+  cancelOficinaEditButton.hidden = true;
+}
+
+function renderOficinas() {
+  if (!oficinaList) return;
+
+  oficinaList.innerHTML = oficinas.length
+    ? oficinas.map((oficina) => `
+      <li class="item-card">
+        <header>
+          <div>
+            <strong>${escapeHtml(oficina.name)}</strong>
+          </div>
+          <div class="actions">
+            <button class="action-btn" type="button" data-action="edit-oficina" data-id="${oficina.id}">Editar</button>
+            <button class="action-btn" type="button" data-action="delete-oficina" data-id="${oficina.id}">Excluir</button>
+          </div>
+        </header>
+      </li>
+    `).join('')
+    : '<li class="empty">Nenhuma oficina cadastrada.</li>';
+
+  oficinaList.querySelectorAll('[data-action]').forEach((button) => {
+    button.addEventListener('click', () => handleOficinaAction(button.dataset.action, button.dataset.id));
+  });
+}
+
+function handleOficinaAction(action, id) {
+  if (action === 'delete-oficina') {
+    if (window.confirm('Deseja excluir esta oficina?')) {
+      oficinas = oficinas.filter((oficina) => oficina.id !== id);
+      saveOficinas();
+      renderOficinas();
+    }
+    return;
+  }
+
+  const oficina = oficinas.find((entry) => entry.id === id);
+  if (!oficina) return;
+
+  editingOficinaId = oficina.id;
+  oficinaNameInput.value = oficina.name;
+  cancelOficinaEditButton.hidden = false;
+  oficinaNameInput.focus();
+}
+
+function renderDynamicSurveyFields() {
+  if (!dynamicFieldsContainer) return;
+
+  const officeOptions = oficinas.map(o => `<option value="${o.id}">${escapeHtml(o.name)}</option>`).join('');
+  const officeDropdownHtml = `
+    <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+        <span>Oficina</span>
+        <a href="#" id="quickAddOficina" style="color: #2563eb; font-size: 0.8rem; font-weight: 700; text-decoration: none;">+ Cadastrar Nova</a>
+      </div>
+      <select id="itemOficinaSelect" name="oficinaId" required>
+        <option value="" disabled selected>${oficinas.length ? 'Selecione a oficina...' : 'Nenhuma oficina cadastrada'}</option>
+        ${officeOptions}
+      </select>
+      ${!oficinas.length ? '<span style="color:#ef4444; font-size:0.75rem; margin-top:4px; display:block;">Cadastre uma oficina no menu antes de prosseguir.</span>' : ''}
+    </label>
+  `;
+
+  let fieldsHtml = '';
+
+  const commonChecklistHtml = `
+    <div class="form-toggle-field">
+      <span class="status-label">Rebocado?</span>
+      <div class="type-buttons-container" data-input-id="input_rebocado">
+        <button type="button" class="type-btn" data-value="Sim">Sim</button>
+        <button type="button" class="type-btn active" data-value="Não">Não</button>
+      </div>
+      <input type="hidden" id="input_rebocado" name="rebocado" value="Não" />
+    </div>
+
+    <div class="form-toggle-field">
+      <span class="status-label">Motor funciona?</span>
+      <div class="type-buttons-container" data-input-id="input_motor">
+        <button type="button" class="type-btn" data-value="Sim">Sim</button>
+        <button type="button" class="type-btn active" data-value="Não">Não</button>
+      </div>
+      <input type="hidden" id="input_motor" name="motorFunciona" value="Não" />
+    </div>
+  `;
+
+  const vehicleExtraChecklistHtml = `
+    <div class="form-toggle-field">
+      <span class="status-label">Veículo com estepe?</span>
+      <div class="type-buttons-container" data-input-id="input_estepe">
+        <button type="button" class="type-btn" data-value="Sim">Sim</button>
+        <button type="button" class="type-btn active" data-value="Não">Não</button>
+      </div>
+      <input type="hidden" id="input_estepe" name="estepe" value="Não" />
+    </div>
+
+    <div class="form-toggle-field">
+      <span class="status-label">Macaco?</span>
+      <div class="type-buttons-container" data-input-id="input_macaco">
+        <button type="button" class="type-btn" data-value="Sim">Sim</button>
+        <button type="button" class="type-btn active" data-value="Não">Não</button>
+      </div>
+      <input type="hidden" id="input_macaco" name="macaco" value="Não" />
+    </div>
+
+    <div class="form-toggle-field">
+      <span class="status-label">Triângulo?</span>
+      <div class="type-buttons-container" data-input-id="input_triangulo">
+        <button type="button" class="type-btn" data-value="Sim">Sim</button>
+        <button type="button" class="type-btn active" data-value="Não">Não</button>
+      </div>
+      <input type="hidden" id="input_triangulo" name="triangulo" value="Não" />
+    </div>
+
+    <div class="form-toggle-field">
+      <span class="status-label">Chave de roda?</span>
+      <div class="type-buttons-container" data-input-id="input_chave">
+        <button type="button" class="type-btn" data-value="Sim">Sim</button>
+        <button type="button" class="type-btn active" data-value="Não">Não</button>
+      </div>
+      <input type="hidden" id="input_chave" name="chaveRoda" value="Não" />
+    </div>
+
+    <div class="form-toggle-field" style="grid-column: 1 / -1;">
+      <span class="status-label">Rádio / Marca</span>
+      <div class="type-buttons-container radio-toggle" data-input-id="input_radio" style="margin-bottom: 8px;">
+        <button type="button" class="type-btn active" data-value="Original">Original</button>
+        <button type="button" class="type-btn" data-value="Outra">Outra</button>
+      </div>
+      <input type="hidden" id="input_radio" name="radio" value="Original" />
+      <input type="text" id="input_radio_brand" name="radioBrand" placeholder="Digite a marca do rádio" style="display: none;" />
+    </div>
+
+    <div class="form-toggle-field">
+      <span class="status-label">Parabrisa</span>
+      <div class="type-buttons-container" data-input-id="input_parabrisa">
+        <button type="button" class="type-btn active" data-value="Bom">Bom</button>
+        <button type="button" class="type-btn" data-value="Ruim">Ruim</button>
+      </div>
+      <input type="hidden" id="input_parabrisa" name="parabrisa" value="Bom" />
+    </div>
+
+    <label>
+      Bateria / Marca
+      <input type="text" name="bateria" placeholder="Marca da bateria" />
+    </label>
+  `;
+
+  const obsHtml = `
+    <label style="grid-column: 1 / -1;">
+      Observações (Obs.)
+      <textarea name="obs" rows="3" placeholder="Ex: tinta tricoat"></textarea>
+    </label>
+  `;
+
+  const trocasReparosHtml = `
+    <label style="grid-column: 1 / -1;">
+      Trocas (uma peça por linha)
+      <textarea name="trocas" rows="3" placeholder="Ex:&#10;Lateral LE&#10;Porta traseira LE"></textarea>
+    </label>
+    <label style="grid-column: 1 / -1;">
+      Reparos (uma peça por linha)
+      <textarea name="reparos" rows="3" placeholder="Ex:&#10;Coluna LE do teto&#10;Caixa de ar LE"></textarea>
+    </label>
+  `;
+
+  const extraFieldsHtml = obsHtml + trocasReparosHtml;
+
+  if (selectedType === 'Inicial') {
+    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
+  } else if (selectedType === 'Moto') {
+    fieldsHtml = commonChecklistHtml + extraFieldsHtml;
+  } else if (selectedType === 'Roubo Recuperado') {
+    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
+  } else if (selectedType === 'Incêndio') {
+    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + obsHtml + `
+      <label style="grid-column: 1 / -1;">
+        Ponto de Origem do Incêndio
+        <input type="text" name="origemIncendio" placeholder="Ex: Compartimento do motor" />
+      </label>
+      
+      <div class="form-toggle-field" style="grid-column: 1 / -1;">
+        <span class="status-label">Avaliação do Sistema de Combustível e Fluidos</span>
+        <div class="type-buttons-container" data-input-id="input_sistema_combustivel">
+          <button type="button" class="type-btn active" data-value="Ok">Ok</button>
+          <button type="button" class="type-btn" data-value="Parcialmente Avariado">Parcialmente Avariado</button>
+          <button type="button" class="type-btn" data-value="Totalmente Avariado">Totalmente Avariado</button>
+        </div>
+        <input type="hidden" id="input_sistema_combustivel" name="sistemaCombustivel" value="Ok" />
+      </div>
+
+      <div class="form-toggle-field" style="grid-column: 1 / -1;">
+        <span class="status-label">Avaliação do Sistema Elétrico</span>
+        <div class="type-buttons-container" data-input-id="input_sistema_eletrico">
+          <button type="button" class="type-btn active" data-value="Ok">Ok</button>
+          <button type="button" class="type-btn" data-value="Parcialmente Avariado">Parcialmente Avariado</button>
+          <button type="button" class="type-btn" data-value="Totalmente Avariado">Totalmente Avariado</button>
+        </div>
+        <input type="hidden" id="input_sistema_eletrico" name="sistemaEletrico" value="Ok" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Resíduos de Extinção do Incêndio?</span>
+        <div class="type-buttons-container" data-input-id="input_residuos">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+        </div>
+        <input type="hidden" id="input_residuos" name="residuosExtincao" value="Não" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Tanque de combustível foi afetado?</span>
+        <div class="type-buttons-container" data-input-id="input_tanque">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+        </div>
+        <input type="hidden" id="input_tanque" name="tanqueAfetado" value="Não" />
+      </div>
+    ` + trocasReparosHtml;
+  } else if (selectedType === 'Enchente') {
+    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + `
+      <div class="form-toggle-field">
+        <span class="status-label">Vestígios de água no óleo do motor?</span>
+        <div class="type-buttons-container" data-input-id="input_oleo">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+        </div>
+        <input type="hidden" id="input_oleo" name="aguaOleo" value="Não" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Vestígios de água nas velas?</span>
+        <div class="type-buttons-container" data-input-id="input_velas">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+        </div>
+        <input type="hidden" id="input_velas" name="aguaVelas" value="Não" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Vestígios de água nos faróis?</span>
+        <div class="type-buttons-container" data-input-id="input_farois">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+        </div>
+        <input type="hidden" id="input_farois" name="aguaFarois" value="Não" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Vestígios de água nas lanternas?</span>
+        <div class="type-buttons-container" data-input-id="input_lanternas">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+        </div>
+        <input type="hidden" id="input_lanternas" name="aguaLanternas" value="Não" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Vestígios de água no filtro?</span>
+        <div class="type-buttons-container" data-input-id="input_filtro">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+        </div>
+        <input type="hidden" id="input_filtro" name="aguaFiltro" value="Não" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Motor travado?</span>
+        <div class="type-buttons-container" data-input-id="input_travado">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+        </div>
+        <input type="hidden" id="input_travado" name="motorTravado" value="Não" />
+      </div>
+
+      <label>
+        Altura da água
+        <input type="text" name="alturaAgua" placeholder="Ex: Acima dos bancos" />
+      </label>
+    ` + extraFieldsHtml;
+  } else if (selectedType === 'Vistoria Rio log') {
+    const avariasHtml = `
+      <label style="grid-column: 1 / -1;">
+        Avarias (uma por linha)
+        <textarea name="avarias" rows="4" placeholder="Ex:&#10;Para-choque dianteiro avariado&#10;Farol LE quebrado"></textarea>
+      </label>
+    `;
+    fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + obsHtml + avariasHtml;
+  } else if (selectedType === 'Complemento' || selectedType === 'Pós entrega') {
+    fieldsHtml = `
+      <label style="grid-column: 1 / -1;">
+        Conteúdo do Relatório
+        <textarea name="conteudoLivre" rows="5" required placeholder="Digite o conteúdo livre para o relatório..."></textarea>
+      </label>
+    ` + extraFieldsHtml;
+  }
+
+  dynamicFieldsContainer.innerHTML = officeDropdownHtml + fieldsHtml;
+
+  const quickAdd = dynamicFieldsContainer.querySelector('#quickAddOficina');
+  if (quickAdd) {
+    quickAdd.addEventListener('click', (e) => {
+      e.preventDefault();
+      const name = window.prompt('Digite o nome da nova oficina:');
+      if (name && name.trim()) {
+        const cleanedName = name.trim();
+        const exists = oficinas.some(o => o.name.toLowerCase() === cleanedName.toLowerCase());
+        if (exists) {
+          alert('Esta oficina já está cadastrada!');
+          return;
+        }
+        const newOficina = {
+          id: Date.now().toString(),
+          name: cleanedName
+        };
+        oficinas.push(newOficina);
+        saveOficinas();
+        renderOficinas();
+        
+        renderDynamicSurveyFields();
+        const selectEl = document.getElementById('itemOficinaSelect');
+        if (selectEl) {
+          selectEl.value = newOficina.id;
+        }
+      }
+    });
+  }
+
+  // Bind events for dynamic elements
+  dynamicFieldsContainer.querySelectorAll('.type-buttons-container .type-btn').forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      const container = btn.closest('.type-buttons-container');
+      const inputId = container.dataset.inputId;
+      const input = document.getElementById(inputId);
+      const value = btn.dataset.value;
+
+      if (input) input.value = value;
+
+      container.querySelectorAll('.type-btn').forEach((b) => {
+        b.classList.toggle('active', b.dataset.value === value);
+      });
+
+      if (container.classList.contains('radio-toggle')) {
+        const brandInput = document.getElementById('input_radio_brand');
+        if (brandInput) {
+          brandInput.style.display = value === 'Outra' ? 'block' : 'none';
+          brandInput.required = value === 'Outra';
+        }
+      }
+    });
+  });
+}
+
+function populateSupervisaoOficinaSelect() {
+  if (!supervisaoOficinaSelect) return;
+  const currentVal = supervisaoOficinaSelect.value;
+  const options = oficinas.map(o => `<option value="${o.id}">${escapeHtml(o.name)}</option>`).join('');
+  supervisaoOficinaSelect.innerHTML = `<option value="" disabled selected>${oficinas.length ? 'Selecione a oficina...' : 'Nenhuma oficina cadastrada'}</option>` + options;
+  if (currentVal && oficinas.some(o => o.id === currentVal)) {
+    supervisaoOficinaSelect.value = currentVal;
+  }
+}
+
+function populateSupervisaoOficinaFilter() {
+  if (!supervisaoOficinaFilterContainer) return;
+  
+  let buttonsHtml = `<button type="button" class="type-btn${selectedSupervisaoOficina === 'Todas' ? ' active' : ''}" data-filter-oficina="Todas">Todas</button>`;
+  oficinas.forEach((oficina) => {
+    buttonsHtml += `<button type="button" class="type-btn${selectedSupervisaoOficina === oficina.id ? ' active' : ''}" data-filter-oficina="${oficina.id}">${escapeHtml(oficina.name)}</button>`;
+  });
+  
+  supervisaoOficinaFilterContainer.innerHTML = buttonsHtml;
+}
+
+function populateSupervisaoStageSelect() {
+  if (!supervisaoStageInput) return;
+  const currentVal = supervisaoStageInput.value;
+  const options = stages.map(st => `<option value="${st}">${escapeHtml(st)}</option>`).join('');
+  supervisaoStageInput.innerHTML = `<option value="" disabled selected>Selecione a etapa...</option>` + options;
+  if (currentVal && stages.includes(currentVal)) {
+    supervisaoStageInput.value = currentVal;
+  }
+}
+
+
+function updateFormState() {
+  if (editingId) {
+    cancelEditButton.hidden = false;
+    form.querySelector('button[type="submit"]').textContent = 'Atualizar';
+  } else {
+    cancelEditButton.hidden = true;
+    form.querySelector('button[type="submit"]').textContent = 'Salvar';
+  }
+}
+
+async function startSync() {
+  await loadServerData();
+  if (syncIntervalId) return;
+  syncIntervalId = setInterval(loadServerData, SYNC_POLL_MS);
+}
+
+async function loadServerData() {
+  try {
+    const response = await fetch('/api/data', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Servidor local não disponível');
+    const data = await response.json();
+    if (Array.isArray(data.items) && Array.isArray(data.insurers)) {
+      items = data.items;
+      insurers = data.insurers;
+      saveItems();
+      saveInsurers();
+      serverSync = true;
+      updateSyncStatus('Sincronizado com servidor local');
+      render();
+      renderInsurers();
+      populateProviderSelect();
+      return;
+    }
+    throw new Error('Dados do servidor inválidos');
+  } catch (error) {
+    serverSync = false;
+    updateSyncStatus('Serviço local indisponível; usando dados locais');
+  }
+}
+
+async function syncDataToServer() {
+  try {
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, insurers })
+    });
+    updateSyncStatus('Dados enviados para servidor local');
+  } catch (error) {
+    serverSync = false;
+    updateSyncStatus('Falha na sincronização local');
+  }
+}
+
+function getWeekdayName(dateObj) {
+  const dayIndex = (dateObj || new Date()).getDay();
+  const map = {
+    1: 'Segunda',
+    2: 'Terça',
+    3: 'Quarta',
+    4: 'Quinta',
+    5: 'Sexta'
+  };
+  return map[dayIndex] || 'Segunda';
+}
+
+function formatDateString(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  } catch (e) {
+    return dateStr || '—';
+  }
+}
+
+function formatDateForDisplay(dateStr) {
+  return formatDateString(dateStr);
+}
+
+function getTodayDateValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getSelectedSaveDay() {
+  const weekdays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+  if (weekdays.includes(selectedDay)) {
+    return selectedDay;
+  }
+  return getWeekdayName(new Date());
+}
+
+function getWeekdayName(date) {
+  const weekdayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  return weekdayNames[date.getDay()];
+}
+
+function formatDateForDisplay(date) {
+  return date.toLocaleDateString('pt-BR');
+}
+
+function formatDateString(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
+}
+
+function safeParseJson(raw, fallback) {
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn('Falha ao analisar JSON do localStorage:', error);
+    return fallback;
+  }
+}
+
+function loadItems() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  return raw ? safeParseJson(raw, []) : [];
+}
+
+function saveItems() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+
+function loadInsurers() {
+  const raw = localStorage.getItem('web-system-insurers-v1');
+  return raw ? safeParseJson(raw, []) : [];
+}
+
+function saveInsurers() {
+  localStorage.setItem('web-system-insurers-v1', JSON.stringify(insurers));
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function updateTypeButtonsHighlight() {
+  // No-op (type is managed by sub-tabs)
+}
+
+function loadSupervisoes() {
+  const raw = localStorage.getItem('web-system-supervisoes-v1');
+  return raw ? safeParseJson(raw, []) : [];
+}
+
+function saveSupervisoes() {
+  localStorage.setItem('web-system-supervisoes-v1', JSON.stringify(supervisoes));
+}
+
+function saveSupervisao(event) {
+  event.preventDefault();
+
+  const vehicle = supervisaoVehicleInput.value.trim();
+  const plate = vehicle; // unified vehicle & plate
+  const attended = supervisaoAttendedInput.value.trim();
+  const stage = supervisaoStageInput.value;
+  const partsPending = supervisaoPartsPendingInput.value;
+  const parts = partsPending === 'Sim' ? supervisaoPartsInput.value.trim() : '';
+  const arrival = partsPending === 'Sim' ? supervisaoArrivalInput.value.trim() : '';
+  const other = supervisaoOtherInput.value.trim();
+  const finish = supervisaoFinishInput.value.trim();
+
+  // Read oficina
+  const oficinaId = supervisaoOficinaSelect.value;
+  const selectedOficina = oficinas.find(o => o.id === oficinaId);
+  const oficinaName = selectedOficina ? selectedOficina.name : '';
+
+  if (!vehicle || !attended || !stage || !oficinaId) {
+    alert('Por favor, preencha todos os campos obrigatórios.');
+    return;
+  }
+
+  if (editingSupervisaoId) {
+    supervisoes = supervisoes.map((s) => s.id === editingSupervisaoId ? { 
+      ...s, 
+      date: getTodayDateValue(),
+      day: getWeekdayName(new Date()),
+      vehicle, plate, attended, stage, partsPending, parts, arrival, other, finish, oficinaId, oficinaName,
+      updatedAt: new Date().toLocaleString('pt-BR'),
+      updatedAtTime: Date.now()
+    } : s);
+  } else {
+    supervisoes.unshift({
+      id: Date.now().toString(),
+      date: getTodayDateValue(),
+      day: getWeekdayName(new Date()),
+      vehicle,
+      plate,
+      attended,
+      stage,
+      partsPending,
+      parts,
+      arrival,
+      other,
+      finish,
+      oficinaId,
+      oficinaName,
+      createdAt: new Date().toLocaleString('pt-BR'),
+      updatedAt: new Date().toLocaleString('pt-BR'),
+      updatedAtTime: Date.now()
+    });
+  }
+
+  saveSupervisoes();
+  supervisaoForm.reset();
+  if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = 'Não';
+  if (supervisaoPartsPendingButtons) {
+    supervisaoPartsPendingButtons.querySelectorAll('.type-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.value === 'Não');
+    });
+  }
+  if (supervisaoPartsDetailsContainer) supervisaoPartsDetailsContainer.style.display = 'none';
+  
+  editingSupervisaoId = null;
+  if (cancelSupervisaoEditButton) cancelSupervisaoEditButton.hidden = true;
+  if (saveSupervisaoButton) saveSupervisaoButton.textContent = 'Salvar';
+  
+  renderSupervisaoReport();
+  render();
+}
+
+function cancelSupervisaoEdit() {
+  editingSupervisaoId = null;
+  supervisaoForm.reset();
+  if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = 'Não';
+  if (supervisaoPartsPendingButtons) {
+    supervisaoPartsPendingButtons.querySelectorAll('.type-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.value === 'Não');
+    });
+  }
+  if (supervisaoPartsDetailsContainer) supervisaoPartsDetailsContainer.style.display = 'none';
+  if (cancelSupervisaoEditButton) cancelSupervisaoEditButton.hidden = true;
+  if (saveSupervisaoButton) saveSupervisaoButton.textContent = 'Salvar';
+}
+
+function renderSupervisaoReport() {
+  if (!supervisaoReportContent) return;
+
+  const filtered = supervisoes.filter((s) => {
+    if (selectedSupervisaoOficina !== 'Todas' && s.oficinaId !== selectedSupervisaoOficina) return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    supervisaoReportContent.innerHTML = '<tr><td colspan="7" class="empty">Nenhum registro de supervisão encontrado.</td></tr>';
+    return;
+  }
+
+  // Sort by updated time descending
+  filtered.sort((a, b) => {
+    const timeA = a.updatedAtTime || Number(a.id) || 0;
+    const timeB = b.updatedAtTime || Number(b.id) || 0;
+    return timeB - timeA;
+  });
+
+  supervisaoReportContent.innerHTML = filtered.map((s) => {
+    let partsPendingHtml = '';
+    if (s.partsPending === 'Sim') {
+      partsPendingHtml = `<span class="badge-roubo">Sim: ${escapeHtml(s.parts || '—')}</span>`;
+    } else {
+      partsPendingHtml = `<span class="badge-pos">Não</span>`;
+    }
+
+    const stageClasses = {
+      'Aguardando peças fora de serviço': 'badge-roubo',
+      'Em posse do proprietário': 'badge-inicial',
+      'Em lanternagem': 'badge-incendio',
+      'Em funilaria': 'badge-incendio',
+      'Em preparação de pintura': 'badge-enchente',
+      'Em pintura': 'badge-enchente',
+      'Em montagem': 'badge-moto',
+      'Testes finais': 'badge-moto',
+      'Finalizado e entregue': 'badge-pos',
+      'Finalizado': 'badge-pos'
+    };
+    const stageClass = stageClasses[s.stage] || 'badge-inicial';
+
+    let prevEst = `Finalização: ${escapeHtml(s.finish || '—')}`;
+    if (s.partsPending === 'Sim') {
+      prevEst += `<br><small style="color:#6b7280;">Peças: ${escapeHtml(s.arrival || '—')}</small>`;
+    }
+
+    return `
+      <tr>
+        <td data-label="Veículo" style="font-weight: 600;">${escapeHtml(s.vehicle)}</td>
+        <td data-label="Oficina" style="font-weight: 500;">${escapeHtml(s.oficinaName || 'Sem oficina')}</td>
+        <td data-label="Atendido por">${escapeHtml(s.attended)}</td>
+        <td data-label="Status">
+          <span class="${stageClass}">${escapeHtml(s.stage)}</span>
+        </td>
+        <td data-label="Pendência Peças">${partsPendingHtml}</td>
+        <td data-label="Previsão/Estimativa">${prevEst}</td>
+        <td data-label="Ações">
+          <div class="actions">
+            <button class="action-btn" type="button" data-super-action="share-whatsapp" data-id="${s.id}">💬 Compartilhar vistoria</button>
+            <button class="action-btn" type="button" data-super-action="photos" data-id="${s.id}">📸 Fotos</button>
+            <button class="action-btn" type="button" data-super-action="open-folder" data-id="${s.id}">📂 Pasta</button>
+            <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
+            <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  supervisaoReportContent.querySelectorAll('[data-super-action]').forEach((button) => {
+    button.addEventListener('click', () => handleSupervisaoAction(button.dataset.superAction, button.dataset.id));
+  });
+}
+
+function handleSupervisaoAction(action, id) {
+  if (action === 'open-folder') {
+    openInspectionFolderForId(id);
+    return;
+  }
+  if (action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-report-text' || action === 'share-photos') {
+    shareVistoriaWhatsApp(id);
+    return;
+  }
+  if (action === 'photos') {
+    openPhotoManagerForId(id);
+    return;
+  }
+  if (action === 'delete') {
+    if (window.confirm('Deseja excluir este registro de supervisão?')) {
+      supervisoes = supervisoes.filter((s) => s.id !== id);
+      saveSupervisoes();
+      renderSupervisaoReport();
+      render();
+    }
+    return;
+  }
+
+  const s = supervisoes.find((entry) => entry.id === id);
+  if (!s) return;
+
+  if (action === 'share-text') {
+    const text = formatSingleSupervisaoText(s);
+    shareSupervisaoText(text, `Supervisão - ${s.vehicle || ''}`);
+    return;
+  }
+
+  if (selectedDay !== 'Supervisão') {
+    selectedDay = 'Supervisão';
+    updateDayTabs();
+    if (welcomeScreen) welcomeScreen.hidden = true;
+    if (homeSummaryCard) homeSummaryCard.hidden = true;
+    if (appContent) appContent.hidden = false;
+  }
+
+  // Ensure select options are generated in the DOM
+  populateSupervisaoOficinaSelect();
+  populateSupervisaoStageSelect();
+
+  editingSupervisaoId = s.id;
+  supervisaoVehicleInput.value = s.vehicle || '';
+  if (supervisaoOficinaSelect) supervisaoOficinaSelect.value = s.oficinaId || '';
+  supervisaoAttendedInput.value = s.attended || '';
+  if (supervisaoStageInput) supervisaoStageInput.value = s.stage || '';
+  
+  const pending = s.partsPending || 'Não';
+  if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = pending;
+  if (supervisaoPartsPendingButtons) {
+    supervisaoPartsPendingButtons.querySelectorAll('.type-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.value === pending);
+    });
+  }
+
+  if (supervisaoPartsDetailsContainer) {
+    supervisaoPartsDetailsContainer.style.display = pending === 'Sim' ? 'block' : 'none';
+  }
+  supervisaoPartsInput.value = s.parts || '';
+  supervisaoArrivalInput.value = s.arrival || '';
+  supervisaoOtherInput.value = s.other || '';
+  supervisaoFinishInput.value = s.finish || '';
+
+  if (cancelSupervisaoEditButton) cancelSupervisaoEditButton.hidden = false;
+  if (saveSupervisaoButton) saveSupervisaoButton.textContent = 'Atualizar';
+
+  supervisaoVehicleInput.focus();
+}
+
+function formatSingleSupervisaoText(s) {
+  let sections = ['Supervisão'];
+
+  if (s.vehicle && s.vehicle.trim()) {
+    sections.push(`Veículo: ${s.vehicle.trim()}`);
+  }
+
+  let details = [];
+
+  const dateVal = s.date || getTodayDateValue();
+  if (dateVal && dateVal.trim()) {
+    details.push(`Data: ${formatDateString(dateVal.trim())}`);
+  }
+
+  if (s.oficinaName && s.oficinaName.trim()) {
+    details.push(`Oficina: ${s.oficinaName.trim()}`);
+  }
+
+  if (s.attended && s.attended.trim()) {
+    details.push(`Atendido por : ${s.attended.trim()}`);
+  }
+
+  if (s.stage && s.stage.trim()) {
+    details.push(`Em que parte do serviço esta?: ${s.stage.trim()}`);
+  }
+
+  if (s.partsPending && s.partsPending.trim()) {
+    const isPending = s.partsPending === 'Sim';
+    const partsPendingText = isPending ? '( X ) sim  (   ) não' : '(   ) sim  ( X ) não';
+    details.push(`Pendências de peças?: ${partsPendingText}`);
+
+    if (isPending) {
+      if (s.parts && s.parts.trim()) {
+        details.push(`Quais?: ${s.parts.trim()}`);
+      }
+      if (s.arrival && s.arrival.trim()) {
+        details.push(`Previsão de chegada?: ${s.arrival.trim()}`);
+      }
+    }
+  }
+
+  if (s.other && s.other.trim()) {
+    details.push(`Alguma outra pendência?: ${s.other.trim()}`);
+  }
+
+  if (details.length > 0) {
+    sections.push(details.join('\n'));
+  }
+
+  if (s.finish && s.finish.trim()) {
+    sections.push(`Estimativa de finalização do veículo?: ${s.finish.trim()}`);
+  }
+
+  return sections.join('\n\n');
+}
+
+function getFilteredSupervisoes() {
+  const filtered = supervisoes.filter((s) => {
+    if (selectedSupervisaoStage !== 'Todos' && s.stage !== selectedSupervisaoStage) return false;
+    if (selectedSupervisaoOficina !== 'Todas' && s.oficinaId !== selectedSupervisaoOficina) return false;
+    return true;
+  });
+  filtered.sort((a, b) => {
+    const timeA = a.updatedAtTime || Number(a.id) || 0;
+    const timeB = b.updatedAtTime || Number(b.id) || 0;
+    return timeB - timeA;
+  });
+  return filtered;
+}
+
+function formatAllSupervisoesText(filteredList) {
+  if (!filteredList || filteredList.length === 0) {
+    return 'Nenhum registro de supervisão encontrado.';
+  }
+  return filteredList.map((s) => formatSingleSupervisaoText(s)).join('\n\n----------------------------------------\n\n');
+}
+
+async function shareSupervisaoText(text, title = 'Relatório de Supervisão') {
+  if (window.AndroidInterface && typeof window.AndroidInterface.shareText === 'function') {
+    window.AndroidInterface.shareText(title, text);
+    return;
+  }
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: title,
+        text: text
+      });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.warn('Erro ao compartilhar via navigator.share:', err);
+    }
+  }
+  copySupervisaoTextToClipboard(text);
+}
+
+function copySupervisaoTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {
+      fallbackCopyText(text);
+    });
+  } else {
+    fallbackCopyText(text);
+  }
+}
+
+function fallbackCopyText(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand('copy');
+  } catch (e) {
+    console.warn('Não foi possível copiar o texto:', e);
+  }
+  document.body.removeChild(textarea);
+}
+
+function generateSupervisaoReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('landscape');
+
+  const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(37, 99, 235); // #2563eb
+  doc.text("Gestão de Vistoria - Relatório de Supervisão", pageWidth / 2, 20, { align: "center" });
+
+  // Subtitle
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(75, 93, 118); // #4b5d76
+  const todayStr = new Date().toLocaleDateString('pt-BR');
+  doc.text(`Gerado em ${todayStr} | Status: ${selectedSupervisaoStage} | Oficina: ${selectedSupervisaoOficina === 'Todas' ? 'Todas' : (oficinas.find(o => o.id === selectedSupervisaoOficina)?.name || '')}`, pageWidth / 2, 28, { align: "center" });
+
+  // Draw line
+  doc.setDrawColor(215, 226, 240);
+  doc.setLineWidth(0.5);
+  doc.line(14, 34, pageWidth - 14, 34);
+
+  // Filter and sort items
+  const filtered = getFilteredSupervisoes();
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(16, 37, 66);
+  doc.text(`Total de Veículos em Supervisão: ${filtered.length}`, 14, 42);
+
+  // Prepare table data
+  const tableRows = filtered.map((s) => {
+    let pendingPartsText = s.partsPending === 'Sim' ? `Sim: ${s.parts || '—'}` : 'Não';
+    let prevEstText = `Finalização: ${s.finish || '—'}`;
+    if (s.partsPending === 'Sim') {
+      prevEstText += `\nChegada Peças: ${s.arrival || '—'}`;
+    }
+    return [
+      s.vehicle,
+      s.oficinaName || 'Sem oficina',
+      s.attended,
+      s.stage,
+      pendingPartsText,
+      prevEstText,
+      s.other || '—'
+    ];
+  });
+
+  // Generate Table using jsPDF-AutoTable
+  doc.autoTable({
+    startY: 48,
+    head: [['Veículo', 'Oficina', 'Atendido por', 'Status', 'Pendência Peças', 'Previsão/Estimativa', 'Outras Pendências']],
+    body: tableRows,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [37, 99, 235],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    styles: {
+      font: 'helvetica',
+      fontSize: 9,
+      cellPadding: 4
+    }
+  });
+
+  const filename = `relatorio_supervisao_${new Date().toISOString().slice(0, 10)}.pdf`;
+  try {
+    if (window.AndroidInterface && typeof window.AndroidInterface.sharePdf === 'function') {
+      const base64Pdf = doc.output('datauristring').split(',')[1];
+      window.AndroidInterface.sharePdf(filename, base64Pdf);
+    } else {
+      const pdfBlob = doc.output('blob');
+      const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: 'Relatório de Supervisão de Vistorias',
+          text: 'Segue em anexo o relatório de supervisão.'
+        }).catch(err => {
+          console.warn('Erro ao abrir diálogo de compartilhamento:', err);
+          doc.save(filename);
+        });
+      } else {
+        doc.save(filename);
+      }
+    }
+  } catch (error) {
+    console.error('Falha ao compartilhar PDF:', error);
+    if (!(window.AndroidInterface && typeof window.AndroidInterface.sharePdf === 'function')) {
+      doc.save(filename);
+    }
+  }
+}
+
+function generateWeeklyReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('portrait');
+
+  const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(37, 99, 235);
+  doc.text("Gestão de Vistorias - Relatório Semanal", pageWidth / 2, 20, { align: "center" });
+
+  // Subtitle
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(75, 93, 118);
+  const todayStr = new Date().toLocaleDateString('pt-BR');
+  doc.text(`Gerado em ${todayStr}`, pageWidth / 2, 27, { align: "center" });
+
+  // Line
+  doc.setDrawColor(215, 226, 240);
+  doc.setLineWidth(0.5);
+  doc.line(14, 32, pageWidth - 14, 32);
+
+  const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  
+  let grandTotalVisits = 0;
+  let grandTotalValue = 0;
+
+  const tableRows = [];
+  days.forEach((day) => {
+    // Get items for this day
+    const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
+    
+    // Sort in ascending order by id/creation time
+    itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
+
+    grandTotalVisits += itemsForDay.length;
+    const dayValue = itemsForDay.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+    grandTotalValue += dayValue;
+
+    // Format vistorias on numbered lines in ascending order: "1. ABC-1234", "2. DEF-5678", ...
+    let numberedPlatesText = '—';
+    if (itemsForDay.length > 0) {
+      numberedPlatesText = itemsForDay.map((item, index) => `${index + 1}. ${item.plate}${item.type ? ` (${item.type})` : ''}`).join('\n');
+    }
+
+    tableRows.push([
+      `${day}-feira`,
+      itemsForDay.length.toString(),
+      numberedPlatesText,
+      `R$ ${dayValue.toFixed(2).replace('.', ',')}`
+    ]);
+  });
+
+  // Add Totals row
+  tableRows.push([
+    'Totais',
+    grandTotalVisits.toString(),
+    '—',
+    `R$ ${grandTotalValue.toFixed(2).replace('.', ',')}`
+  ]);
+
+  // Generate Table using jsPDF-AutoTable
+  doc.autoTable({
+    startY: 38,
+    head: [['Dia', 'Vistorias', 'Placas (Ordenadas)', 'Total Valor']],
+    body: tableRows,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [37, 99, 235],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    styles: {
+      font: 'helvetica',
+      fontSize: 9.5,
+      cellPadding: 5
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 35 },
+      1: { halign: 'center', cellWidth: 25 },
+      2: { cellWidth: 'auto' },
+      3: { fontStyle: 'bold', halign: 'right', cellWidth: 35 }
+    }
+  });
+
+  const filename = `relatorio_semanal_${new Date().toISOString().slice(0, 10)}.pdf`;
+  try {
+    if (window.AndroidInterface && typeof window.AndroidInterface.sharePdf === 'function') {
+      const base64Pdf = doc.output('datauristring').split(',')[1];
+      window.AndroidInterface.sharePdf(filename, base64Pdf);
+    } else {
+      const pdfBlob = doc.output('blob');
+      const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: 'Relatório Semanal de Vistorias',
+          text: 'Segue em anexo o relatório semanal de vistorias em PDF.'
+        }).catch(err => {
+          if (err.name === 'AbortError') return;
+          console.warn('Erro ao abrir diálogo de compartilhamento:', err);
+          doc.save(filename);
+        });
+      } else {
+        doc.save(filename);
+      }
+    }
+  } catch (error) {
+    console.error('Falha ao gerar/compartilhar PDF:', error);
+    if (!(window.AndroidInterface && typeof window.AndroidInterface.sharePdf === 'function')) {
+      doc.save(filename);
+    }
+  }
+}
+
+
+// ==========================================
+// PHOTO SYSTEM IMPLEMENTATION
+// ==========================================
+
+let activePhotoVehicleName = ''; 
+let activePhotoId = '';          
+let db = null;
+let dbRequest = null;
+if (typeof window !== 'undefined' && 'indexedDB' in window && window.indexedDB) {
+  try {
+    dbRequest = window.indexedDB.open('PhotoSystemDB', 1);
+    dbRequest.onupgradeneeded = function(e) {
+      const localDb = e.target.result;
+      if (!localDb.objectStoreNames.contains('directories')) {
+        localDb.createObjectStore('directories');
+      }
+      if (!localDb.objectStoreNames.contains('photos')) {
+        localDb.createObjectStore('photos', { keyPath: 'id' });
+      }
+    };
+    dbRequest.onsuccess = function(e) {
+      db = e.target.result;
+      loadStoredDirectoryHandle();
+      
+      // Clear any leftovers on startup to prevent camera loop
+      localStorage.removeItem('active_photo_id');
+      localStorage.removeItem('active_photo_vehicle_name');
+      localStorage.removeItem('waiting_camera_return');
+    };
+  } catch (err) {
+    console.warn('indexedDB não disponível neste ambiente:', err);
+  }
+}
+
+async function loadStoredDirectoryHandle() {
+  if (!db) return;
+  const tx = db.transaction('directories', 'readonly');
+  const store = tx.objectStore('directories');
+  const getReq = store.get('root_handle');
+  getReq.onsuccess = async function() {
+    if (getReq.result) {
+      directoryHandle = getReq.result;
+      console.log('Restored directory handle from IndexedDB');
+      updateDesktopPathUI();
+    }
+  };
+}
+
+function saveDirectoryHandle(handle) {
+  if (!db) return;
+  const tx = db.transaction('directories', 'readwrite');
+  const store = tx.objectStore('directories');
+  store.put(handle, 'root_handle');
+}
+
+const systemSettingsModal = document.getElementById('systemSettingsModal');
+const photoManagerModal = document.getElementById('photoManagerModal');
+const selectDesktopDirButton = document.getElementById('selectDesktopDirButton');
+const selectedDesktopPathLabel = document.getElementById('selectedDesktopPathLabel');
+const closeSystemSettingsBtn = document.getElementById('closeSystemSettingsBtn');
+const systemSettingsBtn = document.getElementById('systemSettingsBtn');
+const selectStorageFolderBtn = document.getElementById('selectStorageFolderBtn');
+const selectedFolderLabel = document.getElementById('selectedFolderLabel');
+const capturePhotoButton = document.getElementById('capturePhotoButton');
+const exportPhotosZipButton = document.getElementById('exportPhotosZipButton');
+const openPhotoSettingsBtn = document.getElementById('openPhotoSettingsBtn');
+const photoGridContainer = document.getElementById('photoGridContainer');
+const closePhotoManagerButton = document.getElementById('closePhotoManagerButton');
+const photoSystemFileInput = document.getElementById('photoSystemFileInput');
+const photoSystemCameraInput = document.getElementById('photoSystemCameraInput');
+const desktopDirPickerContainer = document.getElementById('desktopDirPickerContainer');
+
+if ('showDirectoryPicker' in window) {
+  if (desktopDirPickerContainer) desktopDirPickerContainer.style.display = 'block';
+}
+
+function updateDesktopPathUI() {
+  if (selectedDesktopPathLabel && directoryHandle) {
+    selectedDesktopPathLabel.textContent = `Pasta vinculada: ${directoryHandle.name}`;
+  }
+}
+
+if (selectDesktopDirButton) {
+  selectDesktopDirButton.addEventListener('click', async () => {
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      directoryHandle = handle;
+      saveDirectoryHandle(handle);
+      updateDesktopPathUI();
+    } catch (err) {
+      console.error('Directory picker cancelled or failed:', err);
+    }
+  });
+}
+
+function updateFolderLabelUI() {
+  let friendlyName = localStorage.getItem('photo_folder_name_friendly');
+  if (window.AndroidInterface && typeof window.AndroidInterface.getSelectedFolderName === 'function') {
+    const androidFolder = window.AndroidInterface.getSelectedFolderName();
+    if (androidFolder && androidFolder !== 'Pictures/Vistorias (Padrão)' && androidFolder !== 'Pasta Selecionada') {
+      friendlyName = androidFolder;
+      localStorage.setItem('photo_folder_name_friendly', androidFolder);
+    }
+  }
+  if (selectedFolderLabel) {
+    if (friendlyName && friendlyName !== 'Pictures/Vistorias (Padrão)' && friendlyName !== 'Pasta Selecionada') {
+      selectedFolderLabel.textContent = `Pasta selecionada: ${friendlyName}`;
+    } else {
+      selectedFolderLabel.textContent = 'Pasta selecionada: Pictures/Vistorias (Padrão)';
+    }
+  }
+}
+
+function openSystemSettings() {
+  updateFolderLabelUI();
+  updatePreferredCameraUI();
+  if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
+}
+
+function updatePreferredCameraUI() {
+  const preferredCameraLabel = document.getElementById('preferredCameraLabel');
+  const clearCameraBtn = document.getElementById('clearCameraBtn');
+  if (!preferredCameraLabel) return;
+
+  let label = 'Nenhuma';
+  const saved = localStorage.getItem('preferred_camera_label');
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.getPreferredCameraLabel === 'function') {
+    const androidLabel = window.AndroidInterface.getPreferredCameraLabel();
+    if (androidLabel && androidLabel !== 'Nenhuma') {
+      label = androidLabel;
+      localStorage.setItem('preferred_camera_label', androidLabel);
+    } else if (saved && saved !== 'Nenhuma') {
+      label = saved;
+    }
+  } else {
+    if (saved) label = saved;
+  }
+
+  preferredCameraLabel.style.display = 'block';
+  preferredCameraLabel.textContent = "Câmera preferida: " + label;
+  
+  if (clearCameraBtn) {
+    clearCameraBtn.style.display = (label && label !== 'Nenhuma') ? 'inline-block' : 'none';
+  }
+}
+
+const selectCameraBtn = document.getElementById('selectCameraBtn');
+if (selectCameraBtn) {
+  selectCameraBtn.addEventListener('click', () => {
+    if (window.AndroidInterface && typeof window.AndroidInterface.selectPreferredCamera === 'function') {
+      window.AndroidInterface.selectPreferredCamera();
+    } else {
+      alert("A seleção de câmera preferida está disponível no app Android.");
+    }
+  });
+}
+
+const clearCameraBtn = document.getElementById('clearCameraBtn');
+if (clearCameraBtn) {
+  clearCameraBtn.addEventListener('click', () => {
+    localStorage.removeItem('preferred_camera_label');
+    if (window.AndroidInterface && typeof window.AndroidInterface.clearPreferredCamera === 'function') {
+      window.AndroidInterface.clearPreferredCamera();
+    }
+    updatePreferredCameraUI();
+  });
+}
+
+if (systemSettingsBtn) {
+  systemSettingsBtn.addEventListener('click', openSystemSettings);
+}
+if (openPhotoSettingsBtn) {
+  openPhotoSettingsBtn.addEventListener('click', openSystemSettings);
+}
+
+if (closeSystemSettingsBtn && systemSettingsModal) {
+  closeSystemSettingsBtn.addEventListener('click', () => {
+    systemSettingsModal.style.display = 'none';
+  });
+}
+
+if (selectStorageFolderBtn) {
+  if (window.AndroidInterface && typeof window.AndroidInterface.selectStorageFolder === 'function') {
+    selectStorageFolderBtn.style.display = 'block';
+    selectStorageFolderBtn.addEventListener('click', () => {
+      window.AndroidInterface.selectStorageFolder();
+    });
+  } else {
+    selectStorageFolderBtn.style.display = 'none';
+  }
+}
+
+window.onStorageFolderSelected = function(folderName) {
+  if (selectedFolderLabel) {
+    selectedFolderLabel.textContent = `Pasta selecionada: ${folderName}`;
+  }
+  localStorage.setItem('photo_folder_name_friendly', folderName);
+};
+
+if (closePhotoManagerButton) {
+  closePhotoManagerButton.addEventListener('click', () => {
+    // Close the modal without deleting stored photos from IndexedDB
+    if (photoManagerModal) photoManagerModal.style.display = 'none';
+    activePhotoVehicleName = '';
+    activePhotoId = '';
+    localStorage.removeItem('active_photo_id');
+    localStorage.removeItem('active_photo_vehicle_name');
+    if (photoGridContainer) photoGridContainer.innerHTML = '';
+  });
+}
+
+function openInspectionFolderForId(id) {
+  const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
+  if (!item) {
+    alert('Erro: Registro não encontrado!');
+    return;
+  }
+  const vehicleName = item.plate || item.vehicle;
+  if (!vehicleName || !vehicleName.trim()) {
+    alert('Nome do veículo ou placa inválido!');
+    return;
+  }
+  if (window.AndroidInterface && typeof window.AndroidInterface.openInspectionFolder === 'function') {
+    window.AndroidInterface.openInspectionFolder(vehicleName.trim());
+  } else {
+    alert("Esta funcionalidade de acessar a pasta só está disponível no aplicativo Android.");
+  }
+}
+
+function openPhotoManagerForId(id) {
+  const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
+  if (!item) {
+    alert('Erro: Registro não encontrado!');
+    return;
+  }
+  const vehicleName = item.plate || item.vehicle;
+  if (!vehicleName || !vehicleName.trim()) {
+    alert('Por favor, preencha o campo "Veículo (Modelo e Placa)" antes de acessar as fotos.');
+    return;
+  }
+  openPhotoManagerForVehicle(id, vehicleName.trim());
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result.split(',')[1];
+      resolve(base64String);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function base64ToBlob(base64, mimeType = 'image/jpeg') {
+  const cleanBase64 = base64.includes(',') ? base64.split(',')[1] : base64;
+  const byteCharacters = atob(cleanBase64);
+  const byteArrays = [];
+  for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+    const slice = byteCharacters.slice(offset, offset + 512);
+    const byteNumbers = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+  return new Blob(byteArrays, { type: mimeType });
+}
+
+// Compartilha fotos + relatório. Se não há fotos, compartilha só o relatório.
+async function shareVistoriaWhatsApp(id) {
+  const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
+  if (!item) {
+    alert('Registro não encontrado!');
+    return;
+  }
+  const vehicleName = (item.plate || item.vehicle || '').trim();
+  if (!vehicleName) {
+    alert("Nome do veículo ou placa inválido!");
+    return;
+  }
+
+  const isInspection = items.some(entry => entry.id === id);
+  let reportText = isInspection ? getSurveyText(id) : formatSingleSupervisaoText(item);
+  if (!reportText || !reportText.trim()) {
+    reportText = `Vistoria do veículo: ${vehicleName}`;
+  }
+
+  copyTextToClipboard(reportText);
+
+  if (window.AndroidInterface) {
+    try {
+      const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
+      if (storedPhotos && storedPhotos.length > 0) {
+        for (const p of storedPhotos) {
+          if (p.rawBlob) {
+            const base64 = await blobToBase64(p.rawBlob);
+            if (base64) {
+              const rawData = base64.includes(',') ? base64.split(',')[1] : base64;
+              if (typeof window.AndroidInterface.savePhotoSync === 'function') {
+                window.AndroidInterface.savePhotoSync(vehicleName, p.name, rawData);
+              } else if (typeof window.AndroidInterface.savePhoto === 'function') {
+                window.AndroidInterface.savePhoto(vehicleName, p.name, rawData);
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Erro ao sincronizar fotos web para Android antes do envio WhatsApp:", e);
+    }
+
+    if (typeof window.AndroidInterface.shareVistoriaWhatsApp === 'function') {
+      window.AndroidInterface.shareVistoriaWhatsApp(vehicleName, reportText);
+      return;
+    } else if (typeof window.AndroidInterface.startShareWithDate === 'function') {
+      window.AndroidInterface.startShareWithDate(vehicleName, reportText, '');
+      return;
+    }
+  }
+
+  try {
+    const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
+    let filesToShare = [];
+    if (storedPhotos && storedPhotos.length > 0) {
+      for (const p of storedPhotos) {
+        if (p.rawBlob) {
+          let mimeType = p.rawBlob.type;
+          if (!mimeType || mimeType === 'application/octet-stream') {
+            const isVid = /\.(mp4|3gp|mov|mkv|webm)$/i.test(p.name);
+            mimeType = isVid ? 'video/mp4' : 'image/jpeg';
+          }
+          filesToShare.push(new File([p.rawBlob], p.name, { type: mimeType }));
+        }
+      }
+    }
+
+    if (navigator.share) {
+      const shareData = {
+        title: 'Vistoria: ' + vehicleName,
+        text: reportText
+      };
+
+      if (filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
+        shareData.files = filesToShare;
+      }
+
+      await navigator.share(shareData);
+      return;
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    console.warn('navigator.share falhou, utilizando fallback de texto/WhatsApp:', err);
+  }
+
+  try {
+    const encodedText = encodeURIComponent(reportText);
+    const waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+    window.open(waUrl, '_blank');
+  } catch (e) {
+    alert('Relatório copiado para a área de transferência!');
+  }
+}
+
+// Mantido para compatibilidade interna
+async function sharePhotosForSurvey(id) {
+  shareVistoria(id);
+}
+
+function openPhotoManagerForVehicle(id, vehicleName) {
+  activePhotoId = id;
+  activePhotoVehicleName = vehicleName;
+  localStorage.setItem('active_photo_id', id);
+  localStorage.setItem('active_photo_vehicle_name', vehicleName);
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
+    window.AndroidInterface.launchCameraCapture(vehicleName);
+  } else if (photoSystemCameraInput) {
+    photoSystemCameraInput.click();
+  } else {
+    const titleEl = document.getElementById('photoManagerTitle');
+    if (titleEl) titleEl.textContent = `Fotos - ${vehicleName}`;
+    if (photoManagerModal) photoManagerModal.style.display = 'flex';
+    loadPhotosForActiveVehicle();
+  }
+}
+
+async function loadPhotosForActiveVehicle() {
+  if (photoGridContainer) {
+    photoGridContainer.innerHTML = '<div class="empty-photos">Carregando fotos...</div>';
+  }
+  
+  const photos = await getStoredPhotosForVehicle(activePhotoVehicleName);
+  renderPhotoGrid(photos);
+}
+
+function isVideoFile(filename, rawBlob) {
+  if (rawBlob && rawBlob.type && rawBlob.type.startsWith('video/')) return true;
+  if (filename) {
+    const lower = filename.toLowerCase();
+    return lower.endsWith('.mp4') || lower.endsWith('.3gp') || lower.endsWith('.mov') || lower.endsWith('.mkv') || lower.endsWith('.webm');
+  }
+  return false;
+}
+
+function renderPhotoGrid(photos) {
+  if (!photoGridContainer) return;
+  
+  if (!photos || photos.length === 0) {
+    photoGridContainer.innerHTML = '<div class="empty-photos">Nenhuma foto adicionada para esta vistoria.</div>';
+    return;
+  }
+  
+  photoGridContainer.innerHTML = photos.map(photo => {
+    const isVid = isVideoFile(photo.name, photo.rawBlob);
+    if (isVid) {
+      return `
+        <div class="photo-item" style="position: relative;">
+          <video src="${photo.url}" controls style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px;"></video>
+          <button class="delete-photo" onclick="deletePhotoEvent('${photo.name}')" type="button">×</button>
+        </div>
+      `;
+    }
+    return `
+      <div class="photo-item">
+        <img src="${photo.url}" alt="Vistoria" onclick="viewFullImage('${photo.url}', false)" style="cursor: pointer;" />
+        <button class="delete-photo" onclick="deletePhotoEvent('${photo.name}')" type="button">×</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function viewFullImage(url, isVid) {
+  const overlay = document.createElement('div');
+  overlay.className = 'photo-modal-overlay';
+  overlay.style.cursor = 'pointer';
+  overlay.onclick = () => document.body.removeChild(overlay);
+  
+  if (isVid) {
+    const vid = document.createElement('video');
+    vid.src = url;
+    vid.controls = true;
+    vid.autoplay = true;
+    vid.style.maxWidth = '95%';
+    vid.style.maxHeight = '95%';
+    vid.style.borderRadius = '16px';
+    overlay.appendChild(vid);
+  } else {
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.maxWidth = '95%';
+    img.style.maxHeight = '95%';
+    img.style.borderRadius = '16px';
+    img.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.5)';
+    overlay.appendChild(img);
+  }
+  
+  document.body.appendChild(overlay);
+}
+
+function getDb() {
+  return new Promise((resolve) => {
+    if (db) return resolve(db);
+    const check = setInterval(() => {
+      if (db) {
+        clearInterval(check);
+        resolve(db);
+      }
+    }, 50);
+  });
+}
+
+async function getStoredPhotosForVehicle(vehicleName) {
+  const localDb = await getDb();
+  return new Promise((resolve) => {
+    const tx = localDb.transaction('photos', 'readonly');
+    const store = tx.objectStore('photos');
+    const index = store.openCursor();
+    const results = [];
+    index.onsuccess = function(e) {
+      const cursor = e.target.result;
+      if (cursor) {
+        const val = cursor.value;
+        if (val.visitId === vehicleName) {
+          const url = URL.createObjectURL(val.blob);
+          results.push({ name: val.name, url: url, rawBlob: val.blob });
+        }
+        cursor.continue();
+      } else {
+        resolve(results);
+      }
+    };
+  });
+}
+
+async function savePhotoToDb(vehicleName, name, blob) {
+  const localDb = await getDb();
+  return new Promise((resolve) => {
+    const tx = localDb.transaction('photos', 'readwrite');
+    const store = tx.objectStore('photos');
+    const id = `${vehicleName}_${name}`;
+    store.put({ id: id, visitId: vehicleName, name: name, blob: blob });
+    tx.oncomplete = () => resolve();
+  });
+}
+
+async function removePhotoFromDb(vehicleName, name) {
+  const localDb = await getDb();
+  return new Promise((resolve) => {
+    const tx = localDb.transaction('photos', 'readwrite');
+    const store = tx.objectStore('photos');
+    const id = `${vehicleName}_${name}`;
+    store.delete(id);
+    tx.oncomplete = () => resolve();
+  });
+}
+
+if (capturePhotoButton) {
+  capturePhotoButton.addEventListener('click', () => {
+    if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
+      window.AndroidInterface.launchCameraCapture(activePhotoVehicleName);
+    } else if (photoSystemCameraInput) {
+      photoSystemCameraInput.click();
+    }
+  });
+}
+
+window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64Data) {
+  try {
+    if (vehicleName) {
+      activePhotoVehicleName = vehicleName;
+      localStorage.setItem('active_photo_vehicle_name', vehicleName);
+    }
+    
+    if (filename && vehicleName) {
+      const isVid = /\.(mp4|3gp|mov|mkv|webm)$/i.test(filename);
+      if (base64Data) {
+        try {
+          const blob = base64ToBlob(base64Data, isVid ? 'video/mp4' : 'image/jpeg');
+          await savePhotoToDb(vehicleName, filename, blob);
+        } catch (err) {
+          console.warn("Erro ao registrar mídia capturada no IndexedDB:", err);
+        }
+      }
+    }
+
+    if (typeof loadPhotosForActiveVehicle === 'function') {
+      loadPhotosForActiveVehicle();
+    }
+
+    if (localStorage.getItem('waiting_camera_return') === 'true') {
+      localStorage.removeItem('waiting_camera_return');
+    }
+  } catch (e) {
+    console.error("Erro ao processar mídia capturada do Android:", e);
+  }
+};
+
+window.onPhotoSaveFailed = function(errorMsg) {
+  alert("Erro ao salvar foto no celular: " + errorMsg);
+};
+
+if (photoSystemFileInput) {
+  photoSystemFileInput.addEventListener('change', (e) => handlePhotoFilesSelected(e.target.files));
+}
+if (photoSystemCameraInput) {
+  photoSystemCameraInput.addEventListener('change', (e) => handlePhotoFilesSelected(e.target.files));
+}
+
+async function handlePhotoFilesSelected(files) {
+  if (!files || files.length === 0) return;
+  
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const timestamp = Date.now();
+    const isVid = file.type.startsWith('video/') || /\.(mp4|3gp|mov|mkv|webm)$/i.test(file.name);
+    let ext = 'jpg';
+    if (isVid) {
+      const parts = file.name.split('.');
+      ext = parts.length > 1 ? parts.pop().toLowerCase() : 'mp4';
+    }
+    const prefix = isVid ? 'video' : 'foto';
+    const filename = `${prefix}_${timestamp}_${i}.${ext}`;
+    
+    await savePhotoToDb(activePhotoVehicleName, filename, file);
+    
+    // Salvar no Android se disponível na WebView (evitando crash OOM em vídeos grandes)
+    if (window.AndroidInterface && typeof window.AndroidInterface.savePhoto === 'function') {
+      try {
+        if (!isVid || file.size < 5 * 1024 * 1024) {
+          const base64Data = await readBlobAsBase64(file);
+          window.AndroidInterface.savePhoto(activePhotoVehicleName, filename, base64Data, "Vistorias");
+        }
+      } catch (err) {
+        console.error('Error saving file to Android via interface:', err);
+      }
+    }
+    
+    if (directoryHandle) {
+      try {
+        const config = getPhotoConfig();
+        const baseFolder = await directoryHandle.getDirectoryHandle(config.folderName || 'Vistorias', { create: true });
+        const vehicleFolder = await baseFolder.getDirectoryHandle(activePhotoVehicleName, { create: true });
+        const fileHandle = await vehicleFolder.getFileHandle(filename, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(file);
+        await writable.close();
+        console.log(`Saved ${filename} to local filesystem.`);
+      } catch (err) {
+        console.error('Failed to write to local directory handle:', err);
+      }
+    }
+  }
+  
+  loadPhotosForActiveVehicle();
+}
+
+window.deletePhotoEvent = async function(name) {
+  if (confirm('Deseja realmente excluir esta foto?')) {
+    await removePhotoFromDb(activePhotoVehicleName, name);
+    loadPhotosForActiveVehicle();
+  }
+};
+
+function readBlobAsBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = (e) => reject(e);
+    reader.readAsDataURL(blob);
+  });
+}
+
+const savePhotosToFolderBtn = document.getElementById('savePhotosToFolderBtn');
+if (savePhotosToFolderBtn) {
+  savePhotosToFolderBtn.addEventListener('click', async () => {
+    const photos = await getStoredPhotosForVehicle(activePhotoVehicleName);
+    if (!photos || photos.length === 0) {
+      alert('Nenhuma foto para salvar nesta vistoria.');
+      return;
+    }
+    
+    if (window.AndroidInterface && typeof window.AndroidInterface.savePhoto === 'function') {
+      let savedCount = 0;
+      for (const photo of photos) {
+        try {
+          const base64Data = await readBlobAsBase64(photo.rawBlob);
+          window.AndroidInterface.savePhoto(activePhotoVehicleName, photo.name, base64Data, "Vistorias");
+          savedCount++;
+        } catch (e) {
+          console.error("Erro ao ler foto para base64:", e);
+        }
+      }
+    } else {
+      alert('Dispositivo Android não detectado ou recurso indisponível.');
+    }
+  });
+}
+
+// Attach listener to Inclusion Form photos button
+const formPhotosBtn = document.getElementById('formPhotosButton');
+if (formPhotosBtn) {
+  formPhotosBtn.addEventListener('click', () => {
+    const plateValue = plateInput.value.trim();
+    if (!plateValue) {
+      alert('Por favor, preencha o campo "Veículo (Modelo e Placa)" antes de tirar fotos.');
+      return;
+    }
+    openPhotoManagerForVehicle(editingId || 'new_form_item', plateValue);
+  });
+}
+
+// Attach listener to Supervision Form photos button
+const supervisaoFormPhotosBtn = document.getElementById('supervisaoFormPhotosButton');
+if (supervisaoFormPhotosBtn) {
+  supervisaoFormPhotosBtn.addEventListener('click', () => {
+    const vehicleValue = supervisaoVehicleInput.value.trim();
+    if (!vehicleValue) {
+      alert('Por favor, preencha o campo "Veículo (Modelo e Placa)" antes de tirar fotos.');
+      return;
+    }
+    openPhotoManagerForVehicle(editingSupervisaoId || 'new_supervisao_item', vehicleValue);
+  });
+}
+
+// ==========================================
+// SYSTEM BACKUP & RESTORE IMPLEMENTATION
+// ==========================================
+
+function downloadJsonFile(filename, jsonString) {
+  if (window.AndroidInterface && typeof window.AndroidInterface.exportBackup === 'function') {
+    window.AndroidInterface.exportBackup(filename, jsonString);
+    return;
+  }
+
+  if ('showSaveFilePicker' in window) {
+    window.showSaveFilePicker({
+      suggestedName: filename,
+      types: [{
+        description: 'Arquivo JSON de Backup',
+        accept: { 'application/json': ['.json'] }
+      }]
+    }).then(async (handle) => {
+      const writable = await handle.createWritable();
+      await writable.write(jsonString);
+      await writable.close();
+      alert('Backup salvo com sucesso no local escolhido!');
+    }).catch((err) => {
+      if (err.name === 'AbortError') return; // usuário cancelou
+      console.warn('showSaveFilePicker falhou, utilizando fallback:', err);
+      fallbackDownloadJson(filename, jsonString);
+    });
+    return;
+  }
+
+  fallbackDownloadJson(filename, jsonString);
+}
+
+function fallbackDownloadJson(filename, jsonString) {
+  try {
+    if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+      const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        try {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        } catch (e) {}
+      }, 1500);
+      return;
+    }
+  } catch (e) {
+    console.warn('createObjectURL falhou, usando fallback Data URI:', e);
+  }
+
+  try {
+    const encodedData = encodeURIComponent(jsonString);
+    const dataUrl = 'data:application/json;charset=utf-8,' + encodedData;
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = filename;
+    link.target = '_blank';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      try { document.body.removeChild(link); } catch (e) {}
+    }, 1000);
+  } catch (err) {
+    alert('Erro ao gerar arquivo de backup: ' + err.message);
+  }
+}
+
+let currentBackupJsonString = '';
+let currentBackupFilename = '';
+
+async function triggerExportBackup() {
+  try {
+    const backup = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      backup[key] = localStorage.getItem(key);
+    }
+    
+    currentBackupJsonString = JSON.stringify(backup, null, 2);
+    currentBackupFilename = `backup_sistema_vistoria_${new Date().toISOString().slice(0, 10)}.json`;
+
+    const backupExportModal = document.getElementById('backupExportModal');
+    const backupTextarea = document.getElementById('backupTextarea');
+    if (backupExportModal && backupTextarea) {
+      backupTextarea.value = currentBackupJsonString;
+      backupExportModal.style.display = 'flex';
+    } else {
+      downloadJsonFile(currentBackupFilename, currentBackupJsonString);
+    }
+  } catch (err) {
+    alert('Erro ao exportar backup: ' + err.message);
+  }
+}
+
+function closeBackupExportModal() {
+  const backupExportModal = document.getElementById('backupExportModal');
+  if (backupExportModal) backupExportModal.style.display = 'none';
+}
+
+function openPasteImportModal() {
+  const backupPasteImportModal = document.getElementById('backupPasteImportModal');
+  const pasteBackupTextarea = document.getElementById('pasteBackupTextarea');
+  if (pasteBackupTextarea) pasteBackupTextarea.value = '';
+  if (backupPasteImportModal) backupPasteImportModal.style.display = 'flex';
+}
+
+function closePasteImportModal() {
+  const backupPasteImportModal = document.getElementById('backupPasteImportModal');
+  if (backupPasteImportModal) backupPasteImportModal.style.display = 'none';
+}
+
+function repairTruncatedJson(str) {
+  if (!str) throw new Error('O texto de backup informado está vazio.');
+  str = str.trim();
+  try {
+    const directParse = JSON.parse(str);
+    if (directParse && typeof directParse === 'object') return directParse;
+  } catch (e) {
+    console.warn('JSON.parse direto falhou, iniciando reparo automático...', e);
+  }
+
+  let fixedStr = str;
+  // Se houver aspas não fechadas, fecha aspas no final
+  let quoteCount = 0;
+  for (let i = 0; i < fixedStr.length; i++) {
+    if (fixedStr[i] === '"' && (i === 0 || fixedStr[i-1] !== '\\')) {
+      quoteCount++;
+    }
+  }
+  if (quoteCount % 2 !== 0) {
+    fixedStr += '"';
+  }
+
+  // Remove pontuações truncadas no final
+  fixedStr = fixedStr.replace(/[,:]\s*"?$/, '');
+
+  // Conta chaves e colchetes abertos
+  let openBraces = 0;
+  let openBrackets = 0;
+  let inString = false;
+  for (let i = 0; i < fixedStr.length; i++) {
+    const ch = fixedStr[i];
+    if (ch === '"' && (i === 0 || fixedStr[i-1] !== '\\')) {
+      inString = !inString;
+    }
+    if (!inString) {
+      if (ch === '{') openBraces++;
+      if (ch === '}') openBraces--;
+      if (ch === '[') openBrackets++;
+      if (ch === ']') openBrackets--;
+    }
+  }
+
+  while (openBrackets > 0) {
+    fixedStr += ']';
+    openBrackets--;
+  }
+  while (openBraces > 0) {
+    fixedStr += '}';
+    openBraces--;
+  }
+
+  try {
+    const parsed = JSON.parse(fixedStr);
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch (e) {
+    console.warn('Reparo automático de estrutura falhou, extraindo chaves via expressões regulares...', e);
+  }
+
+  // Extrator por Regex para resgatar o máximo de chaves do localStorage salvas
+  const result = {};
+  const kvRegex = /"([^"\\]+)"\s*:\s*("(?:[^"\\]|\\.)*"|true|false|null|-?\d+(?:\.\d+)?)/g;
+  let match;
+  while ((match = kvRegex.exec(str)) !== null) {
+    try {
+      const k = match[1];
+      const v = JSON.parse(match[2]);
+      result[k] = v;
+    } catch(err) {}
+  }
+
+  if (Object.keys(result).length > 0) {
+    return result;
+  }
+
+  throw new Error('Não foi possível ler o código do backup. Certifique-se de colar o código completo.');
+}
+
+function restoreBackupFromJsonString(jsonString) {
+  if (!jsonString || !jsonString.trim()) {
+    alert('Por favor, cole o código do backup no campo de texto.');
+    return;
+  }
+  try {
+    const data = repairTruncatedJson(jsonString);
+    if (confirm('Deseja realmente restaurar este backup? Isso substituirá os dados atuais do sistema.')) {
+      let restoredKeys = 0;
+      localStorage.clear();
+      Object.keys(data).forEach(key => {
+        localStorage.setItem(key, data[key]);
+        restoredKeys++;
+      });
+      alert(`✅ Backup importado com sucesso! (${restoredKeys} chaves restauradas). O sistema será recarregado.`);
+      window.location.reload();
+    }
+  } catch (err) {
+    alert('Erro ao restaurar backup: ' + err.message);
+  }
+}
+
+function triggerImportBackup() {
+  const dashboardBackupFileInput = document.getElementById('dashboardBackupFileInput');
+  if (dashboardBackupFileInput) {
+    dashboardBackupFileInput.click();
+  }
+}
+
+window.triggerExportBackup = triggerExportBackup;
+window.triggerImportBackup = triggerImportBackup;
+window.exportBackup = triggerExportBackup;
+window.importBackup = triggerImportBackup;
+window.closeBackupExportModal = closeBackupExportModal;
+window.openPasteImportModal = openPasteImportModal;
+window.closePasteImportModal = closePasteImportModal;
+
+const exportBackupBtn = document.getElementById('exportBackupBtn');
+const importBackupBtn = document.getElementById('importBackupBtn');
+const dashboardBackupFileInput = document.getElementById('dashboardBackupFileInput');
+const copyBackupTextBtn = document.getElementById('copyBackupTextBtn');
+const downloadBackupFileBtn = document.getElementById('downloadBackupFileBtn');
+const shareBackupTextBtn = document.getElementById('shareBackupTextBtn');
+const submitPasteBackupBtn = document.getElementById('submitPasteBackupBtn');
+
+if (exportBackupBtn) {
+  exportBackupBtn.addEventListener('click', triggerExportBackup);
+}
+
+if (copyBackupTextBtn) {
+  copyBackupTextBtn.addEventListener('click', () => {
+    if (!currentBackupJsonString) return;
+    copyTextToClipboard(currentBackupJsonString);
+    alert('✅ Código do backup copiado com sucesso! Você pode colar no WhatsApp, bloco de notas ou e-mail.');
+  });
+}
+
+if (downloadBackupFileBtn) {
+  downloadBackupFileBtn.addEventListener('click', () => {
+    if (!currentBackupJsonString || !currentBackupFilename) return;
+    downloadJsonFile(currentBackupFilename, currentBackupJsonString);
+  });
+}
+
+if (shareBackupTextBtn) {
+  shareBackupTextBtn.addEventListener('click', async () => {
+    if (!currentBackupJsonString) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Backup do Sistema de Vistoria',
+          text: currentBackupJsonString
+        });
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+    copyTextToClipboard(currentBackupJsonString);
+    try {
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(currentBackupJsonString)}`;
+      window.open(waUrl, '_blank');
+    } catch (e) {
+      alert('Código do backup copiado para a área de transferência!');
+    }
+  });
+}
+
+if (submitPasteBackupBtn) {
+  submitPasteBackupBtn.addEventListener('click', () => {
+    const pasteBackupTextarea = document.getElementById('pasteBackupTextarea');
+    if (pasteBackupTextarea) {
+      restoreBackupFromJsonString(pasteBackupTextarea.value);
+    }
+  });
+}
+
+if (importBackupBtn && dashboardBackupFileInput) {
+  importBackupBtn.addEventListener('click', triggerImportBackup);
+
+  dashboardBackupFileInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (confirm('Deseja realmente importar o backup? Isso substituirá todas as informações atuais do sistema.')) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        restoreBackupFromJsonString(e.target.result);
+      };
+      reader.readAsText(file);
+    }
+  });
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (window.AndroidInterface && typeof window.AndroidInterface.onPageLoaded === 'function') {
+      window.AndroidInterface.onPageLoaded();
+    }
+    // Não limpa active_photo_vehicle_name para não perder contexto
+    // caso o usuário feche a câmera sem tirar foto.
+  }
+});
+
+window.onAndroidBackButtonPressed = function() {
+  const systemSettingsModal = document.getElementById('systemSettingsModal');
+  if (systemSettingsModal && systemSettingsModal.style.display === 'flex') {
+    systemSettingsModal.style.display = 'none';
+    return true;
+  }
+  
+  const photoManagerModal = document.getElementById('photoManagerModal');
+  if (photoManagerModal && photoManagerModal.style.display === 'flex') {
+    const closePhotoManagerButton = document.getElementById('closePhotoManagerButton');
+    if (closePhotoManagerButton) closePhotoManagerButton.click();
+    return true;
+  }
+
+  const appContent = document.getElementById('appContent');
+  const backToMenuButton = document.getElementById('backToMenuButton');
+  if (appContent && appContent.style.display !== 'none' && backToMenuButton) {
+    backToMenuButton.click();
+    return true;
+  }
+
+  return false;
+};
+
+
+window.gerarPastaNova = function() {
+  const plateInput = document.getElementById('plateInput');
+  const vehicleName = plateInput ? plateInput.value : '';
+  if (!vehicleName || !vehicleName.trim()) {
+    alert('Por favor, preencha o Modelo e Placa do veículo primeiro.');
+    return;
+  }
+  if (window.AndroidInterface && typeof window.AndroidInterface.createInspectionFolder === 'function') {
+    window.AndroidInterface.createInspectionFolder(vehicleName.trim());
+  } else {
+    alert('Esta funcionalidade de gerar a pasta só está disponível no aplicativo Android.');
+  }
+};
+
+window.gerarPastaNovaSupervisao = function() {
+  const input = document.getElementById('supervisaoVehicleInput');
+  const vehicleName = input ? input.value : '';
+  if (!vehicleName || !vehicleName.trim()) {
+    alert('Por favor, preencha o Modelo e Placa do veículo primeiro.');
+    return;
+  }
+  if (window.AndroidInterface && typeof window.AndroidInterface.createInspectionFolder === 'function') {
+    window.AndroidInterface.createInspectionFolder(vehicleName.trim());
+  } else {
+    alert('Esta funcionalidade de gerar a pasta só está disponível no aplicativo Android.');
+  }
+};

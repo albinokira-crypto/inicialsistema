@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#2563eb" />
+    <title>Gestão de Vistorias</title>
+    <script>
+      (function() {
+        try {
+          const APP_VERSION = 'v107_vistorias_root_default_folder';
+          if (localStorage.getItem('app_version') !== APP_VERSION) {
+            localStorage.setItem('app_version', APP_VERSION);
+            if ('caches' in window) {
+              caches.keys().then(function(names) {
+                for (let name of names) caches.delete(name);
+              }).catch(function(){});
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="styles.css?v=92" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- jsPDF and jsPDF-AutoTable CDNs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  </head>
+  <body>
+    <main class="app">
+      <header class="hero" id="appHeader">
+        <div>
+          <p class="eyebrow">Gestão de Vistorias</p>
+          <h1>Controle de Vistorias</h1>
+          <p>Registre e acompanhe informações de vistorias com acesso seguro pelo celular ou desktop.</p>
+        </div>
+        <div class="hero-actions" style="display: flex; gap: 8px;">
+          <button id="installButton" class="primary-btn" type="button" hidden>Instalar atalho</button>
+          <button id="systemSettingsBtn" onclick="openSystemSettings()" style="background: white; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 6px;">⚙️ Configurações</button>
+        </div>
+      </header>
+
+      <!-- MENU PRINCIPAL CARD -->
+      <section class="card menu-card" id="welcomeScreen">
+        <h2>Selecione uma opção</h2>
+        <div class="menu-grid">
+          <button class="menu-btn" type="button" data-day="Vistorias" onclick="openMenuSection('Vistorias')" style="background: #2563eb; color: white; font-weight: 800;">Vistorias</button>
+          <button class="menu-btn special-btn-supervisao" type="button" data-day="Supervisão" onclick="openMenuSection('Supervisão')">Supervisão</button>
+          <button class="menu-btn special-btn-seguradora" type="button" data-day="Seguradoras" onclick="openMenuSection('Seguradoras')">Seguradoras</button>
+          <button class="menu-btn special-btn-seguradora" type="button" data-day="Oficinas" onclick="openMenuSection('Oficinas')">Oficinas</button>
+          <button class="menu-btn special-btn-total" type="button" data-day="Total da semana" onclick="openMenuSection('Total da semana')">Total da Semana</button>
+          <button class="menu-btn special-btn-total" type="button" data-day="Todas as vistorias" onclick="openMenuSection('Todas as vistorias')">Todas as Vistorias</button>
+        </div>
+        <div style="margin-top: 18px; display: flex; gap: 8px; width: 100%;">
+          <button id="homeClearWeekButton" class="ghost-btn" type="button" onclick="homeClearWeek()" style="flex: 1; padding: 12px; font-weight: 700; color: #b91c1c; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; cursor: pointer;">
+            🧹 Limpar Semana
+          </button>
+          <button id="homeLogoutButton" class="ghost-btn" type="button" onclick="homeLogout()" style="flex: 1; padding: 12px; font-weight: 700; color: #4b5d76; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 12px; cursor: pointer;">
+            Sair
+          </button>
+          <input type="file" id="dashboardBackupFileInput" accept=".json" style="display: none;" />
+        </div>
+      </section>
+
+      <!-- CARD DE RESUMO NA HOME -->
+      <section class="card" id="homeSummaryCard" style="margin-top: 14px; padding: 16px; text-align: center;">
+        <h2 style="margin-bottom: 12px; color: #1e40af; font-size: 1.05rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">Resumo da Semana</h2>
+        <div class="summary-grid" id="homeSummaryGrid"></div>
+      </section>
+
+      <div id="appContent" hidden>
+        <div class="card view-header-card" style="display: flex; align-items: center; width: 100%; padding: 12px 14px; margin-top: 32px; margin-bottom: 14px; box-sizing: border-box; background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+          <button id="backToMenuButton" class="ghost-btn" type="button" onclick="backToHomeMenu()" style="font-size: 0.78rem; padding: 6px 12px; flex: 0 0 auto; white-space: nowrap; font-weight: 700; background: #eef4ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 999px;">
+            ← Voltar ao Menu
+          </button>
+        </div>
+
+        <section class="summary-grid" id="summaryGrid" style="display: none;"></section>
+
+        <section class="card tabs-card" style="display: none;">
+          <div id="dayTabs" class="tabs">
+            <button class="tab-btn" type="button" data-day="Segunda">Segunda</button>
+            <button class="tab-btn" type="button" data-day="Terça">Terça</button>
+            <button class="tab-btn" type="button" data-day="Quarta">Quarta</button>
+            <button class="tab-btn" type="button" data-day="Quinta">Quinta</button>
+            <button class="tab-btn" type="button" data-day="Sexta">Sexta</button>
+            <button class="tab-btn" type="button" data-day="Supervisão">Supervisão</button>
+            <button class="tab-btn active" type="button" data-day="Seguradoras">Seguradoras</button>
+            <button class="tab-btn" type="button" data-day="Oficinas">Oficinas</button>
+            <button class="tab-btn" type="button" data-day="Total da semana">Total da semana</button>
+            <button class="tab-btn" type="button" data-day="Todas as vistorias">Todas as vistorias</button>
+          </div>
+        </section>
+
+        <section class="card tabs-card" id="vistoriaTypeTabsCard" style="margin-top: 10px;">
+          <div id="vistoriaTypeTabs" class="tabs">
+            <button class="tab-btn active" type="button" data-type="Inicial">Inicial</button>
+            <button class="tab-btn" type="button" data-type="Roubo Recuperado">Roubo Recuperado</button>
+            <button class="tab-btn" type="button" data-type="Incêndio">Incêndio</button>
+            <button class="tab-btn" type="button" data-type="Enchente">Enchente</button>
+            <button class="tab-btn" type="button" data-type="Moto">Moto</button>
+            <button class="tab-btn" type="button" data-type="Complemento">Complemento</button>
+            <button class="tab-btn" type="button" data-type="Pós entrega">Pós entrega</button>
+            <button class="tab-btn" type="button" data-type="Vistoria Rio log">Vistoria Rio log</button>
+          </div>
+        </section>
+
+      <section class="card" id="formCard">
+        <h2 id="formTitle">Novo registro</h2>
+
+        <form id="itemForm" class="form-grid">
+          <div class="form-status-grid">
+            <div>
+              <span class="status-label">Data do registro</span>
+              <div class="display-field" id="currentDateLabel"></div>
+            </div>
+            <div>
+              <span class="status-label">Dia da semana</span>
+              <div class="display-field" id="currentDayLabel"></div>
+            </div>
+          </div>
+          <input id="dateInput" name="date" type="hidden" />
+          <input id="dayInput" name="day" type="hidden" />
+          <label>
+            Veículo (Modelo e Placa)
+            <div style="display: flex; gap: 8px; align-items: stretch;">
+              <input id="plateInput" name="plate" type="text" required placeholder="Ex: TIGGO 7 HYBRID PRO MAX DRIVE 1.5 TURBO HÍBRIDO 2025 SRR-4G96" style="flex: 8; margin: 0; min-width: 0;" />
+              <button id="gerarPastaBtn" class="ghost-btn" type="button" onclick="gerarPastaNova()" style="display: none !important; flex: 2; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; border-radius: 12px; font-weight: 700; padding: 8px 4px; margin: 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.75rem; line-height: 1;">
+                <span style="font-size: 1.1rem; margin-bottom: 2px;">📁</span>
+                Gerar
+              </button>
+            </div>
+          </label>
+          <input type="hidden" id="typeInput" name="type" value="Inicial" />
+          <label>
+            Seguradora
+            <div id="insurerButtonsContainer" class="insurer-buttons-container"></div>
+            <input type="hidden" id="providerSelect" name="provider" required />
+          </label>
+          <label>
+            Valor da vistoria
+            <input id="valueInput" name="value" type="number" step="0.01" min="0" readonly />
+          </label>
+          <div id="dynamicFieldsContainer" style="grid-column: 1 / -1; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; display: grid; gap: 12px;"></div>
+          <div class="form-actions">
+            <button id="saveVisitButton" class="primary-btn" type="submit">Salvar</button>
+            <button id="formPhotosButton" class="ghost-btn" type="button" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 12px; font-weight: 700; padding: 12px 16px;">📸 Fotos</button>
+            <button id="cancelEditButton" class="ghost-btn" type="button" hidden>Cancelar</button>
+          </div>
+          <p class="field-note" id="noInsurersNote" hidden>Cadastre uma seguradora na aba de seguradoras antes de registrar o vistoria.</p>
+        </form>
+
+        <!-- insurer form moved to its own card (see below) -->
+      </section>
+
+      <section class="card" id="recordsCard">
+        <div class="toolbar">
+          <h2>Registros</h2>
+          <div class="search-actions">
+            <input id="searchInput" type="search" placeholder="Pesquisar por placa, seguradora ou dia" />
+            <button id="clearSearchButton" class="ghost-btn" type="button" hidden>Limpar</button>
+          </div>
+        </div>
+        <ul id="itemList" class="item-list"></ul>
+      </section>
+
+      <section class="card" id="insurerCard">
+        <h2>Seguradoras</h2>
+        <p style="margin-bottom:12px; color:#4b5563;">Cadastre a seguradora abaixo para usar no registro de vistoria.</p>
+        <form id="insurerForm" class="form-grid" hidden>
+          <label>
+            Seguradora
+            <input id="insurerNameInput" type="text" required placeholder="Ex.: Porto Seguro" />
+          </label>
+          <label>
+            Valor por vistoria
+            <input id="insurerValueInput" type="number" step="0.01" min="0" placeholder="0,00" />
+          </label>
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">Salvar seguradora</button>
+            <button id="cancelInsurerEditButton" class="ghost-btn" type="button" hidden>Cancelar</button>
+          </div>
+        </form>
+
+        <h3 style="margin-top:12px">Seguradoras cadastradas</h3>
+        <ul id="insurerList" class="item-list"></ul>
+      </section>
+
+      <section class="card" id="oficinaCard" hidden>
+        <h2>Oficinas</h2>
+        <p style="margin-bottom:12px; color:#4b5563;">Cadastre a oficina abaixo para usar no registro de vistoria e supervisão.</p>
+        <form id="oficinaForm" class="form-grid" hidden>
+          <label>
+            Nome da Oficina
+            <input id="oficinaNameInput" type="text" required placeholder="Ex.: Oficina Centro" />
+          </label>
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">Salvar oficina</button>
+            <button id="cancelOficinaEditButton" class="ghost-btn" type="button" hidden>Cancelar</button>
+          </div>
+        </form>
+
+        <h3 style="margin-top:12px">Oficinas cadastradas</h3>
+        <ul id="oficinaList" class="item-list"></ul>
+      </section>
+
+      <section class="card" id="reportCard">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <h2>Relatório semanal</h2>
+          <button id="sharePdfButton" class="primary-btn" type="button">Compartilhar Relatório (PDF)</button>
+        </div>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Dia</th>
+              <th>Vistorias</th>
+              <th>Placas</th>
+              <th>Total valor</th>
+            </tr>
+          </thead>
+          <tbody id="reportBody"></tbody>
+          <tfoot>
+            <tr>
+              <th>Totais:</th>
+              <th id="weeklyVisits">0</th>
+              <th>—</th>
+              <th id="weeklyValue">0</th>
+            </tr>
+          </tfoot>
+        </table>
+      </section>
+
+      <section class="card" id="supervisaoFormCard" hidden>
+        <h2 id="supervisaoFormTitle">Novo Registro de Supervisão</h2>
+        <form id="supervisaoForm" class="form-grid">
+          <label>
+            Veículo (Modelo e Placa)
+            <div style="display: flex; gap: 8px; align-items: stretch;">
+              <input id="supervisaoVehicleInput" name="vehicle" type="text" required placeholder="Ex: TIGGO 7 HYBRID PRO MAX DRIVE 1.5 TURBO HÍBRIDO 2025 SRR-4G96" style="flex: 8; margin: 0; min-width: 0;" />
+              <button id="gerarPastaSupervisaoBtn" class="ghost-btn" type="button" onclick="gerarPastaNovaSupervisao()" style="display: none !important; flex: 2; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; border-radius: 12px; font-weight: 700; padding: 8px 4px; margin: 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.75rem; line-height: 1;">
+                <span style="font-size: 1.1rem; margin-bottom: 2px;">📁</span>
+                Gerar
+              </button>
+            </div>
+          </label>
+          <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+              <span>Oficina</span>
+              <a href="#" id="supervisaoQuickAddOficina" style="color: #2563eb; font-size: 0.8rem; font-weight: 700; text-decoration: none;">+ Cadastrar Nova</a>
+            </div>
+            <select id="supervisaoOficinaSelect" name="oficinaId" required>
+              <option value="" disabled selected>Selecione a oficina...</option>
+              <!-- Dynamically populated -->
+            </select>
+          </label>
+          <label>
+            Atendido por :
+            <input id="supervisaoAttendedInput" name="attended" type="text" required placeholder="Ex: Alexandre" />
+          </label>
+          
+          <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+              <span>Em que parte do serviço esta?:</span>
+              <a href="#" id="supervisaoQuickAddStage" style="color: #2563eb; font-size: 0.8rem; font-weight: 700; text-decoration: none;">+ Cadastrar Nova</a>
+            </div>
+            <select id="supervisaoStageInput" name="stage" required>
+              <option value="" disabled selected>Selecione a etapa...</option>
+              <!-- Dynamically populated -->
+            </select>
+          </label>
+
+          <label>
+            Pendências de peças?:
+            <div id="supervisaoPartsPendingButtons" class="type-buttons-container">
+              <button type="button" class="type-btn" data-value="Sim">Sim</button>
+              <button type="button" class="type-btn active" data-value="Não">Não</button>
+            </div>
+            <input type="hidden" id="supervisaoPartsPendingInput" name="partsPending" value="Não" />
+          </label>
+
+          <div id="supervisaoPartsDetailsContainer" style="display: none;">
+            <label>
+              Quais?:
+              <input id="supervisaoPartsInput" name="parts" type="text" placeholder="Ex: guia LD" />
+            </label>
+            <label>
+              Previsão de chegada?: (em dias úteis)
+              <input id="supervisaoArrivalInput" name="arrival" type="text" placeholder="Ex: 2 dias úteis" />
+            </label>
+          </div>
+
+          <label>
+            Alguma outra pendência?:
+            <input id="supervisaoOtherInput" name="other" type="text" placeholder="Descreva outra pendência se houver" />
+          </label>
+
+          <label>
+            Estimativa de finalização do veículo?:
+            <input id="supervisaoFinishInput" name="finish" type="text" placeholder="Ex: 10 dias úteis" />
+          </label>
+
+          <div class="form-actions">
+            <button id="saveSupervisaoButton" class="primary-btn" type="submit">Salvar</button>
+            <button id="supervisaoFormPhotosButton" class="ghost-btn" type="button" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 12px; font-weight: 700; padding: 12px 16px;">📸 Fotos</button>
+            <button id="cancelSupervisaoEditButton" class="ghost-btn" type="button" hidden>Cancelar</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" id="supervisaoRecordsCard" hidden>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <h2>Registros de Supervisão</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="shareSupervisaoTextButton" class="primary-btn" type="button">📱 Compartilhar Relatório (Texto)</button>
+            <button id="copySupervisaoTextButton" class="ghost-btn" type="button">📋 Copiar Texto</button>
+          </div>
+        </div>
+        
+        <div class="filter-group" style="margin-bottom: 20px;">
+          <span class="status-label" style="margin-bottom: 6px;">Filtrar por Oficina</span>
+          <div id="supervisaoOficinaFilterContainer" class="type-buttons-container" style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <div class="table-responsive" style="overflow-x: auto;">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Veículo (Modelo e Placa)</th>
+                <th>Oficina</th>
+                <th>Atendido por</th>
+                <th>Status</th>
+                <th>Pendência Peças?</th>
+                <th>Previsão/Estimativa</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="supervisaoReportContent">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+      </div>
+    </main>
+
+    <!-- SYSTEM CONFIGURATION MODAL -->
+    <div id="systemSettingsModal" class="photo-modal-overlay" style="display: none;">
+      <div class="photo-modal" style="max-width: 450px;">
+        <h3>Configurações do Sistema</h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+          <button id="selectStorageFolderBtn" class="primary-btn" type="button" style="padding: 12px; font-weight: 700; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 12px; cursor: pointer; width: 100%;">
+            📂 Selecionar Pasta no Celular
+          </button>
+          <p id="selectedFolderLabel" style="font-size: 0.85rem; color: #4b5563; margin-top: -4px; margin-bottom: 4px; font-weight: bold; text-align: center;">Nenhuma pasta selecionada (usando padrão)</p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px; border-top: 1.5px dashed #e2e8f0; padding-top: 16px;">
+          <p style="font-size: 0.85rem; color: #4b5563; margin-bottom: 4px; font-weight: bold;">
+            Configuração de Fotos
+          </p>
+          <p id="preferredCameraLabel" style="font-size: 0.85rem; color: #4b5563; margin-top: 2px; margin-bottom: 2px; font-weight: bold; text-align: center;">Câmera preferida: Nenhuma</p>
+          <button id="selectCameraBtn" class="primary-btn" type="button" style="padding: 10px; font-weight: 700; background: #2563eb; color: white; border: none; border-radius: 12px; cursor: pointer; width: 100%;">
+            📷 Selecionar Câmera Preferida
+          </button>
+          <button id="clearCameraBtn" class="cancel-btn" type="button" style="padding: 10px; font-weight: 700; background: #ef4444; color: white; border: none; border-radius: 12px; cursor: pointer; width: 100%; display: none;">
+            ❌ Limpar Câmera Preferida
+          </button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px; border-top: 1.5px dashed #e2e8f0; padding-top: 16px;">
+          <p style="font-size: 0.85rem; color: #4b5563; margin-bottom: 4px; font-weight: bold;">
+            Backup do Sistema
+          </p>
+          
+          <button id="exportBackupBtn" class="ghost-btn" type="button" onclick="triggerExportBackup()" style="padding: 10px; font-weight: 700; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; cursor: pointer; width: 100%;">
+            📤 Exportar Backup (JSON)
+          </button>
+          
+          <button id="importBackupBtn" class="ghost-btn" type="button" onclick="triggerImportBackup()" style="padding: 10px; font-weight: 700; color: #10b981; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; cursor: pointer; width: 100%;">
+            📥 Importar Backup (Arquivo JSON)
+          </button>
+          
+          <button id="importPasteBackupBtn" class="ghost-btn" type="button" onclick="openPasteImportModal()" style="padding: 10px; font-weight: 700; color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 12px; cursor: pointer; width: 100%;">
+            📋 Colar Código de Backup (Texto)
+          </button>
+          
+          <input type="file" id="dashboardBackupFileInput" accept=".json" style="display: none;" />
+        </div>
+
+        <div class="photo-modal-actions" style="margin-top: 24px;">
+          <button id="closeSystemSettingsBtn" class="cancel-btn" type="button" onclick="closeSystemSettings()" style="width: 100%;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACKUP EXPORT OPTIONS MODAL -->
+    <div id="backupExportModal" class="photo-modal-overlay" style="display: none;">
+      <div class="photo-modal" style="max-width: 500px;">
+        <h3>📤 Exportar Backup do Sistema</h3>
+        <p style="font-size: 0.85rem; color: #4b5563; margin-top: 8px; margin-bottom: 16px;">
+          Escolha como deseja salvar ou transferir o seu backup:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button id="copyBackupTextBtn" class="primary-btn" type="button" style="padding: 12px; font-weight: 700; background: #2563eb; color: white; border: none; border-radius: 12px; cursor: pointer;">
+            📋 Copiar Código do Backup (Recomendado)
+          </button>
+          
+          <button id="downloadBackupFileBtn" class="ghost-btn" type="button" style="padding: 12px; font-weight: 700; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; cursor: pointer;">
+            💾 Baixar Arquivo JSON
+          </button>
+
+          <button id="shareBackupTextBtn" class="ghost-btn" type="button" style="padding: 12px; font-weight: 700; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; cursor: pointer;">
+            📱 Compartilhar Backup (Texto / WhatsApp)
+          </button>
+        </div>
+
+        <div style="margin-top: 16px;">
+          <label style="font-size: 0.8rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 4px;">Código do Backup:</label>
+          <textarea id="backupTextarea" readonly style="width: 100%; height: 100px; font-family: monospace; font-size: 0.75rem; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; resize: none;"></textarea>
+        </div>
+
+        <div class="photo-modal-actions" style="margin-top: 16px;">
+          <button class="cancel-btn" type="button" onclick="closeBackupExportModal()" style="width: 100%;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACKUP PASTE IMPORT MODAL -->
+    <div id="backupPasteImportModal" class="photo-modal-overlay" style="display: none;">
+      <div class="photo-modal" style="max-width: 500px;">
+        <h3>📥 Restaurar Backup por Texto</h3>
+        <p style="font-size: 0.85rem; color: #4b5563; margin-top: 8px; margin-bottom: 12px;">
+          Cole abaixo o código de backup gerado anteriormente para restaurar todas as suas informações:
+        </p>
+
+        <textarea id="pasteBackupTextarea" placeholder="Cole o código do backup aqui..." style="width: 100%; height: 140px; font-family: monospace; font-size: 0.75rem; padding: 10px; border-radius: 10px; border: 1.5px solid #94a3b8; background: #ffffff; resize: vertical;"></textarea>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+          <button id="submitPasteBackupBtn" class="primary-btn" type="button" style="padding: 12px; font-weight: 700; background: #16a34a; color: white; border: none; border-radius: 12px; cursor: pointer;">
+            ✅ Restaurar Dados Agora
+          </button>
+        </div>
+
+        <div class="photo-modal-actions" style="margin-top: 16px;">
+          <button class="cancel-btn" type="button" onclick="closePasteImportModal()" style="width: 100%;">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- PHOTO MANAGER MODAL -->
+    <div id="photoManagerModal" class="photo-modal-overlay" style="display: none;">
+      <div class="photo-modal" style="max-width: 600px;">
+        <h3 id="photoManagerTitle">Gerenciador de Fotos</h3>
+        
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="capturePhotoButton" class="primary-btn" type="button" style="flex: 1; min-width: 130px; padding: 12px; font-weight: 700; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;">
+            📸 Tirar Foto
+          </button>
+        </div>
+
+        <div class="photo-grid" id="photoGridContainer">
+          <div class="empty-photos">Nenhuma foto adicionada para esta vistoria.</div>
+        </div>
+
+        <div class="photo-modal-actions">
+          <button id="closePhotoManagerButton" class="cancel-btn" type="button">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVISIBLE FILE INPUTS FOR CAMERA -->
+    <input type="file" id="photoSystemFileInput" accept="image/*,video/*" multiple style="display: none;" />
+    <input type="file" id="photoSystemCameraInput" accept="image/*,video/*" capture="environment" style="display: none;" />
+
+    <!-- JSZIP CDN for client-side ZIP packaging -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="app.js?v=107"></script>
+  </body>
+</html>
