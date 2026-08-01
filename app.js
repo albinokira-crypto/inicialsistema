@@ -1294,17 +1294,38 @@ function getSurveyText(id) {
 
   // Checklist helper
   const getCheckmark = (val, field) => {
-    const isSim = (val || '').toLowerCase() === 'sim';
+    const v = (val || '').toLowerCase();
+    const isSim = v === 'sim';
+    const isNao = v === 'não' || v === 'nao';
+    const isNi = v === 'n/i';
+
     if (field === 'motorFunciona') {
-      return isSim ? 'Sim(x ) Não(   )' : 'Sim(  ) Não(x   )';
+      if (isSim) return 'Sim(x ) Não(   ) N/I(   )';
+      if (isNao) return 'Sim(  ) Não(x   ) N/I(   )';
+      return 'Sim(  ) Não(   ) N/I(x  )';
     }
     if (field === 'estepe') {
-      return isSim ? 'Sim ( x) Não ( )' : 'Sim ( ) Não ( x)';
+      if (isSim) return 'Sim ( x) Não ( ) N/I ( )';
+      if (isNao) return 'Sim ( ) Não ( x) N/I ( )';
+      return 'Sim ( ) Não ( ) N/I ( x)';
     }
     if (field === 'triangulo') {
-      return isSim ? 'Sim (x ) Não (   )' : 'Sim ( ) Não ( x )';
+      if (isSim) return 'Sim (x ) Não (   ) N/I (   )';
+      if (isNao) return 'Sim ( ) Não ( x ) N/I (   )';
+      return 'Sim ( ) Não (   ) N/I ( x )';
     }
-    return isSim ? 'Sim (x ) Não ( )' : 'Sim ( ) Não (x )';
+    if (field === 'chaveVeiculo' || field === 'arCondicionado') {
+      if (isSim) return 'Sim (x ) Não ( ) N/I ( )';
+      if (isNao) return 'Sim ( ) Não (x ) N/I ( )';
+      return 'Sim ( ) Não ( ) N/I (x )';
+    }
+    if (field === 'numeroMotor') {
+      return isSim ? 'Sim (x ) Não ( )' : 'Sim ( ) Não (x )';
+    }
+    // Default format supporting N/I
+    if (isSim) return 'Sim (x ) Não ( ) N/I ( )';
+    if (isNao) return 'Sim ( ) Não (x ) N/I ( )';
+    return 'Sim ( ) Não ( ) N/I (x )';
   };
 
   const radioVal = details.radio === 'Original' ? 'original' : (details.radioBrand || 'Outra');
@@ -1318,7 +1339,9 @@ function getSurveyText(id) {
     let checklist = [];
     checklist.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
     checklist.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
+    checklist.push(`VEICULO COM CHAVE?: ${getCheckmark(details.chaveVeiculo || 'N/I', 'chaveVeiculo')}`);
     checklist.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
+    checklist.push(`AR CONDICIONADO?: ${getCheckmark(details.arCondicionado || 'N/I', 'arCondicionado')}`);
     checklist.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
     checklist.push(`MACACO?: ${getCheckmark(details.macaco || 'Não', 'macaco')}`);
     checklist.push(`TRIÂNGULO ?: ${getCheckmark(details.triangulo || 'Não', 'triangulo')}`);
@@ -1326,6 +1349,7 @@ function getSurveyText(id) {
     checklist.push(`RÁDIO / MARCA:${radioVal}`);
     checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
     checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
+    checklist.push(`NÚMERO DO MOTOR?: ${getCheckmark(details.numeroMotor || 'Sim', 'numeroMotor')}`);
     sections.push(checklist.join('\n'));
 
     let fireDetails = [];
@@ -1348,7 +1372,9 @@ function getSurveyText(id) {
     let checklist = [];
     checklist.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
     checklist.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não', 'rebocado')}`);
+    checklist.push(`VEICULO COM CHAVE?: ${getCheckmark(details.chaveVeiculo || 'N/I', 'chaveVeiculo')}`);
     checklist.push(`MOTOR FUNCIONA?: ${getCheckmark(details.motorFunciona || 'Não', 'motorFunciona')}`);
+    checklist.push(`AR CONDICIONADO?: ${getCheckmark(details.arCondicionado || 'N/I', 'arCondicionado')}`);
     
     if ('estepe' in details) {
       checklist.push(`VEICULO COM ESTEPE?: ${getCheckmark(details.estepe || 'Não', 'estepe')}`);
@@ -1358,6 +1384,7 @@ function getSurveyText(id) {
       checklist.push(`RÁDIO / MARCA:${radioVal}`);
       checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
       checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
+      checklist.push(`NÚMERO DO MOTOR?: ${getCheckmark(details.numeroMotor || 'Sim', 'numeroMotor')}`);
     }
 
     if (item.type === 'Roubo Recuperado' && details.obsRoubo) {
@@ -1884,8 +1911,19 @@ function renderDynamicSurveyFields() {
       <div class="type-buttons-container" data-input-id="input_rebocado">
         <button type="button" class="type-btn" data-value="Sim">Sim</button>
         <button type="button" class="type-btn active" data-value="Não">Não</button>
+        <button type="button" class="type-btn" data-value="N/I">N/I</button>
       </div>
       <input type="hidden" id="input_rebocado" name="rebocado" value="Não" />
+    </div>
+
+    <div class="form-toggle-field">
+      <span class="status-label">Veículo com chave?</span>
+      <div class="type-buttons-container" data-input-id="input_chave_veiculo">
+        <button type="button" class="type-btn" data-value="Sim">Sim</button>
+        <button type="button" class="type-btn" data-value="Não">Não</button>
+        <button type="button" class="type-btn active" data-value="N/I">N/I</button>
+      </div>
+      <input type="hidden" id="input_chave_veiculo" name="chaveVeiculo" value="N/I" />
     </div>
 
     <div class="form-toggle-field">
@@ -1893,8 +1931,19 @@ function renderDynamicSurveyFields() {
       <div class="type-buttons-container" data-input-id="input_motor">
         <button type="button" class="type-btn" data-value="Sim">Sim</button>
         <button type="button" class="type-btn active" data-value="Não">Não</button>
+        <button type="button" class="type-btn" data-value="N/I">N/I</button>
       </div>
       <input type="hidden" id="input_motor" name="motorFunciona" value="Não" />
+    </div>
+
+    <div class="form-toggle-field">
+      <span class="status-label">Ar Condicionado?</span>
+      <div class="type-buttons-container" data-input-id="input_ar_condicionado">
+        <button type="button" class="type-btn" data-value="Sim">Sim</button>
+        <button type="button" class="type-btn" data-value="Não">Não</button>
+        <button type="button" class="type-btn active" data-value="N/I">N/I</button>
+      </div>
+      <input type="hidden" id="input_ar_condicionado" name="arCondicionado" value="N/I" />
     </div>
   `;
 
@@ -1904,6 +1953,7 @@ function renderDynamicSurveyFields() {
       <div class="type-buttons-container" data-input-id="input_estepe">
         <button type="button" class="type-btn" data-value="Sim">Sim</button>
         <button type="button" class="type-btn active" data-value="Não">Não</button>
+        <button type="button" class="type-btn" data-value="N/I">N/I</button>
       </div>
       <input type="hidden" id="input_estepe" name="estepe" value="Não" />
     </div>
@@ -1913,6 +1963,7 @@ function renderDynamicSurveyFields() {
       <div class="type-buttons-container" data-input-id="input_macaco">
         <button type="button" class="type-btn" data-value="Sim">Sim</button>
         <button type="button" class="type-btn active" data-value="Não">Não</button>
+        <button type="button" class="type-btn" data-value="N/I">N/I</button>
       </div>
       <input type="hidden" id="input_macaco" name="macaco" value="Não" />
     </div>
@@ -1922,6 +1973,7 @@ function renderDynamicSurveyFields() {
       <div class="type-buttons-container" data-input-id="input_triangulo">
         <button type="button" class="type-btn" data-value="Sim">Sim</button>
         <button type="button" class="type-btn active" data-value="Não">Não</button>
+        <button type="button" class="type-btn" data-value="N/I">N/I</button>
       </div>
       <input type="hidden" id="input_triangulo" name="triangulo" value="Não" />
     </div>
@@ -1931,6 +1983,7 @@ function renderDynamicSurveyFields() {
       <div class="type-buttons-container" data-input-id="input_chave">
         <button type="button" class="type-btn" data-value="Sim">Sim</button>
         <button type="button" class="type-btn active" data-value="Não">Não</button>
+        <button type="button" class="type-btn" data-value="N/I">N/I</button>
       </div>
       <input type="hidden" id="input_chave" name="chaveRoda" value="Não" />
     </div>
@@ -1940,6 +1993,7 @@ function renderDynamicSurveyFields() {
       <div class="type-buttons-container radio-toggle" data-input-id="input_radio" style="margin-bottom: 8px;">
         <button type="button" class="type-btn active" data-value="Original">Original</button>
         <button type="button" class="type-btn" data-value="Outra">Outra</button>
+        <button type="button" class="type-btn" data-value="N/I">N/I</button>
       </div>
       <input type="hidden" id="input_radio" name="radio" value="Original" />
       <input type="text" id="input_radio_brand" name="radioBrand" placeholder="Digite a marca do rádio" style="display: none;" />
@@ -1950,6 +2004,7 @@ function renderDynamicSurveyFields() {
       <div class="type-buttons-container" data-input-id="input_parabrisa">
         <button type="button" class="type-btn active" data-value="Bom">Bom</button>
         <button type="button" class="type-btn" data-value="Ruim">Ruim</button>
+        <button type="button" class="type-btn" data-value="N/I">N/I</button>
       </div>
       <input type="hidden" id="input_parabrisa" name="parabrisa" value="Bom" />
     </div>
@@ -1958,6 +2013,15 @@ function renderDynamicSurveyFields() {
       Bateria / Marca
       <input type="text" name="bateria" placeholder="Marca da bateria" />
     </label>
+
+    <div class="form-toggle-field" style="grid-column: 1 / -1;">
+      <span class="status-label">Número do Motor?</span>
+      <div class="type-buttons-container" data-input-id="input_numero_motor">
+        <button type="button" class="type-btn active" data-value="Sim">Sim</button>
+        <button type="button" class="type-btn" data-value="Não">Não</button>
+      </div>
+      <input type="hidden" id="input_numero_motor" name="numeroMotor" value="Sim" />
+    </div>
   `;
 
   const obsHtml = `
@@ -1999,6 +2063,7 @@ function renderDynamicSurveyFields() {
           <button type="button" class="type-btn active" data-value="Ok">Ok</button>
           <button type="button" class="type-btn" data-value="Parcialmente Avariado">Parcialmente Avariado</button>
           <button type="button" class="type-btn" data-value="Totalmente Avariado">Totalmente Avariado</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
         </div>
         <input type="hidden" id="input_sistema_combustivel" name="sistemaCombustivel" value="Ok" />
       </div>
@@ -2009,6 +2074,7 @@ function renderDynamicSurveyFields() {
           <button type="button" class="type-btn active" data-value="Ok">Ok</button>
           <button type="button" class="type-btn" data-value="Parcialmente Avariado">Parcialmente Avariado</button>
           <button type="button" class="type-btn" data-value="Totalmente Avariado">Totalmente Avariado</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
         </div>
         <input type="hidden" id="input_sistema_eletrico" name="sistemaEletrico" value="Ok" />
       </div>
@@ -2018,6 +2084,7 @@ function renderDynamicSurveyFields() {
         <div class="type-buttons-container" data-input-id="input_residuos">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
           <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
         </div>
         <input type="hidden" id="input_residuos" name="residuosExtincao" value="Não" />
       </div>
@@ -2027,6 +2094,7 @@ function renderDynamicSurveyFields() {
         <div class="type-buttons-container" data-input-id="input_tanque">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
           <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
         </div>
         <input type="hidden" id="input_tanque" name="tanqueAfetado" value="Não" />
       </div>
@@ -2038,6 +2106,7 @@ function renderDynamicSurveyFields() {
         <div class="type-buttons-container" data-input-id="input_oleo">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
           <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
         </div>
         <input type="hidden" id="input_oleo" name="aguaOleo" value="Não" />
       </div>
@@ -2047,6 +2116,7 @@ function renderDynamicSurveyFields() {
         <div class="type-buttons-container" data-input-id="input_velas">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
           <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
         </div>
         <input type="hidden" id="input_velas" name="aguaVelas" value="Não" />
       </div>
@@ -2056,6 +2126,7 @@ function renderDynamicSurveyFields() {
         <div class="type-buttons-container" data-input-id="input_farois">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
           <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
         </div>
         <input type="hidden" id="input_farois" name="aguaFarois" value="Não" />
       </div>
@@ -2065,6 +2136,7 @@ function renderDynamicSurveyFields() {
         <div class="type-buttons-container" data-input-id="input_lanternas">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
           <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
         </div>
         <input type="hidden" id="input_lanternas" name="aguaLanternas" value="Não" />
       </div>
@@ -2074,6 +2146,7 @@ function renderDynamicSurveyFields() {
         <div class="type-buttons-container" data-input-id="input_filtro">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
           <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
         </div>
         <input type="hidden" id="input_filtro" name="aguaFiltro" value="Não" />
       </div>
@@ -2083,6 +2156,7 @@ function renderDynamicSurveyFields() {
         <div class="type-buttons-container" data-input-id="input_travado">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
           <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
         </div>
         <input type="hidden" id="input_travado" name="motorTravado" value="Não" />
       </div>
@@ -2159,6 +2233,39 @@ function renderDynamicSurveyFields() {
         if (brandInput) {
           brandInput.style.display = value === 'Outra' ? 'block' : 'none';
           brandInput.required = value === 'Outra';
+        }
+      }
+
+      // Custom rule 1: If motor doesn't work, set arCondicionado to "Não"
+      if (inputId === 'input_motor' && value === 'Não') {
+        const arInput = document.getElementById('input_ar_condicionado');
+        if (arInput) {
+          arInput.value = 'Não';
+          const arContainer = dynamicFieldsContainer.querySelector('.type-buttons-container[data-input-id="input_ar_condicionado"]');
+          if (arContainer) {
+            arContainer.querySelectorAll('.type-btn').forEach((b) => {
+              b.classList.toggle('active', b.dataset.value === 'Não');
+            });
+          }
+        }
+      }
+
+      // Custom rule 2: If numeroMotor is "Não", add default text to obs field
+      if (inputId === 'input_numero_motor') {
+        const obsTextarea = dynamicFieldsContainer.querySelector('textarea[name="obs"]');
+        if (obsTextarea) {
+          const msg = "Número do motor Inacessível, devido a natureza do evento conforme mostra em vídeo enviado.";
+          if (value === 'Não') {
+            if (!obsTextarea.value.includes(msg)) {
+              if (obsTextarea.value.trim() === '') {
+                obsTextarea.value = msg;
+              } else {
+                obsTextarea.value += "\n" + msg;
+              }
+            }
+          } else if (value === 'Sim') {
+            obsTextarea.value = obsTextarea.value.replace(msg, "").replace(/\n+/g, "\n").trim();
+          }
         }
       }
     });
