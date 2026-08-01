@@ -1620,7 +1620,8 @@ function updatePageTitleHeader() {
   const elem = document.getElementById('currentPageTitle');
   if (!elem) return;
   let titleText = `${selectedDay}-feira`;
-  if (selectedDay === 'Seguradoras') titleText = 'Seguradoras';
+  if (selectedDay === 'Sábado') titleText = 'Sábado';
+  else if (selectedDay === 'Seguradoras') titleText = 'Seguradoras';
   else if (selectedDay === 'Oficinas') titleText = 'Oficinas';
   else if (selectedDay === 'Total da semana') titleText = 'Total da Semana';
   else if (selectedDay === 'Todas as vistorias') titleText = 'Todas as Vistorias';
@@ -2953,6 +2954,11 @@ function generateWeeklyReportPDF() {
     // Get items for this day
     const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
     
+    // Only include Sábado if there is at least one registry
+    if (day === 'Sábado' && itemsForDay.length === 0) {
+      return;
+    }
+
     // Sort in ascending order by id/creation time
     itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
 
@@ -2966,8 +2972,10 @@ function generateWeeklyReportPDF() {
       numberedPlatesText = itemsForDay.map((item, index) => `${index + 1}. ${item.plate}${item.type ? ` (${item.type})` : ''}`).join('\n');
     }
 
+    const dayDisplayName = day === 'Sábado' ? 'Sábado' : `${day}-feira`;
+
     tableRows.push([
-      `${day}-feira`,
+      dayDisplayName,
       itemsForDay.length.toString(),
       numberedPlatesText,
       `R$ ${dayValue.toFixed(2).replace('.', ',')}`

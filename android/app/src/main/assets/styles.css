@@ -1041,15 +1041,6 @@ html, body {
     box-sizing: border-box !important;
   }
 
-  .type-buttons-container {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    gap: 6px !important;
-    box-sizing: border-box !important;
-  }
-
   .insurer-btn {
     width: 100% !important;
     min-width: 0 !important;
@@ -1063,7 +1054,35 @@ html, body {
     text-overflow: ellipsis !important;
   }
 
+  .type-buttons-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  .form-toggle-field .type-buttons-container {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+  }
+
   .type-btn {
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 8px 10px !important;
+    font-size: 0.8rem !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+  }
+
+  .form-toggle-field .type-btn {
     flex: 1 1 0% !important;
     width: auto !important;
     min-width: 0 !important;
