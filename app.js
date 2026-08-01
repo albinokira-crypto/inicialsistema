@@ -1547,7 +1547,7 @@ function handleAction(action, id) {
       if (input) {
         input.value = item.details[key];
         
-        const container = input.closest('.type-buttons-container');
+        const container = input.id ? dynamicFieldsContainer.querySelector(`.type-buttons-container[data-input-id="${input.id}"]`) : null;
         if (container) {
           container.querySelectorAll('.type-btn').forEach((b) => {
             b.classList.toggle('active', b.dataset.value === item.details[key]);
