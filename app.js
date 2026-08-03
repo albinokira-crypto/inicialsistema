@@ -82,6 +82,8 @@ const oficinaForm = document.getElementById('oficinaForm');
 const oficinaNameInput = document.getElementById('oficinaNameInput');
 const cancelOficinaEditButton = document.getElementById('cancelOficinaEditButton');
 const oficinaList = document.getElementById('oficinaList');
+const oficinaResponsaveisContainer = document.getElementById('oficinaResponsaveisContainer');
+const addResponsavelBtn = document.getElementById('addResponsavelBtn');
 
 // Supervisão Elements
 const supervisaoFormCard = document.getElementById('supervisaoFormCard');
@@ -262,7 +264,8 @@ function attachGlobalEventListeners() {
         }
         const newOficina = {
           id: Date.now().toString(),
-          name: cleanedName
+          name: cleanedName,
+          responsaveis: []
         };
         oficinas.push(newOficina);
         saveOficinas();
@@ -387,6 +390,16 @@ if (oficinaForm) {
 }
 if (cancelOficinaEditButton) {
   cancelOficinaEditButton.addEventListener('click', cancelOficinaEdit);
+}
+if (addResponsavelBtn) {
+  addResponsavelBtn.addEventListener('click', () => {
+    addResponsavelRow();
+  });
+}
+if (supervisaoOficinaSelect) {
+  supervisaoOficinaSelect.addEventListener('change', () => {
+    populateSupervisaoAttendedSelect();
+  });
 }
 if (clearWeekButton) {
   clearWeekButton.addEventListener('click', () => {
@@ -1809,23 +1822,73 @@ function saveOficinas() {
   localStorage.setItem('web-system-oficinas-v1', JSON.stringify(oficinas));
 }
 
+function getResponsaveisFromForm() {
+  if (!oficinaResponsaveisContainer) return [];
+  const inputs = oficinaResponsaveisContainer.querySelectorAll('.oficina-responsavel-input');
+  const responsaveis = [];
+  inputs.forEach((input) => {
+    const val = input.value.trim();
+    if (val) responsaveis.push(val);
+  });
+  return responsaveis;
+}
+
+function addResponsavelRow(value) {
+  if (!oficinaResponsaveisContainer) return;
+  const row = document.createElement('div');
+  row.className = 'responsavel-row';
+  row.style.cssText = 'display: flex; gap: 6px; align-items: center;';
+  row.innerHTML = `
+    <input class="oficina-responsavel-input" type="text" placeholder="Nome do responsável" style="flex: 1;" value="${value ? escapeHtml(value) : ''}" />
+    <button type="button" class="ghost-btn remove-responsavel-btn" style="padding: 6px 10px; font-size: 0.85rem; color: #ef4444; border: 1px solid #fca5a5; border-radius: 8px; background: #fef2f2; min-width: auto;" onclick="this.parentElement.remove()">✕</button>
+  `;
+  oficinaResponsaveisContainer.appendChild(row);
+  updateRemoveButtonsVisibility();
+}
+
+function updateRemoveButtonsVisibility() {
+  if (!oficinaResponsaveisContainer) return;
+  const rows = oficinaResponsaveisContainer.querySelectorAll('.responsavel-row');
+  rows.forEach((row) => {
+    const removeBtn = row.querySelector('.remove-responsavel-btn');
+    if (removeBtn) {
+      removeBtn.style.display = rows.length > 1 ? 'inline-block' : 'none';
+    }
+  });
+}
+
+function setResponsaveisForm(responsaveis) {
+  if (!oficinaResponsaveisContainer) return;
+  oficinaResponsaveisContainer.innerHTML = '';
+  if (!responsaveis || responsaveis.length === 0) {
+    addResponsavelRow('');
+  } else {
+    responsaveis.forEach((r) => addResponsavelRow(r));
+  }
+  updateRemoveButtonsVisibility();
+}
+
 function saveOficina(event) {
   event.preventDefault();
 
   const name = oficinaNameInput.value.trim();
   if (!name) return;
 
+  const responsaveis = getResponsaveisFromForm();
+
   if (editingOficinaId) {
-    oficinas = oficinas.map((oficina) => oficina.id === editingOficinaId ? { ...oficina, name } : oficina);
+    oficinas = oficinas.map((oficina) => oficina.id === editingOficinaId ? { ...oficina, name, responsaveis } : oficina);
   } else {
     oficinas.push({
       id: Date.now().toString(),
-      name
+      name,
+      responsaveis
     });
   }
 
   saveOficinas();
   oficinaForm.reset();
+  setResponsaveisForm([]);
   editingOficinaId = null;
   cancelOficinaEditButton.hidden = true;
   renderOficinas();
@@ -1842,6 +1905,7 @@ function saveOficina(event) {
 function cancelOficinaEdit() {
   editingOficinaId = null;
   oficinaForm.reset();
+  setResponsaveisForm([]);
   cancelOficinaEditButton.hidden = true;
 }
 
@@ -1849,11 +1913,17 @@ function renderOficinas() {
   if (!oficinaList) return;
 
   oficinaList.innerHTML = oficinas.length
-    ? oficinas.map((oficina) => `
+    ? oficinas.map((oficina) => {
+      const responsaveisArr = oficina.responsaveis || [];
+      const responsaveisHtml = responsaveisArr.length
+        ? `<div style="margin-top: 4px; font-size: 0.8rem; color: #4b5563;">Responsáveis: ${responsaveisArr.map(r => escapeHtml(r)).join(', ')}</div>`
+        : '<div style="margin-top: 4px; font-size: 0.8rem; color: #9ca3af; font-style: italic;">Nenhum responsável cadastrado</div>';
+      return `
       <li class="item-card">
         <header>
           <div>
             <strong>${escapeHtml(oficina.name)}</strong>
+            ${responsaveisHtml}
           </div>
           <div class="actions">
             <button class="action-btn" type="button" data-action="edit-oficina" data-id="${oficina.id}">Editar</button>
@@ -1861,7 +1931,8 @@ function renderOficinas() {
           </div>
         </header>
       </li>
-    `).join('')
+    `;
+    }).join('')
     : '<li class="empty">Nenhuma oficina cadastrada.</li>';
 
   oficinaList.querySelectorAll('[data-action]').forEach((button) => {
@@ -1884,6 +1955,7 @@ function handleOficinaAction(action, id) {
 
   editingOficinaId = oficina.id;
   oficinaNameInput.value = oficina.name;
+  setResponsaveisForm(oficina.responsaveis || []);
   cancelOficinaEditButton.hidden = false;
   oficinaNameInput.focus();
 }
@@ -2285,6 +2357,46 @@ function populateSupervisaoOficinaSelect() {
   if (currentVal && oficinas.some(o => o.id === currentVal)) {
     supervisaoOficinaSelect.value = currentVal;
   }
+  populateSupervisaoAttendedSelect();
+}
+
+function populateSupervisaoAttendedSelect(preserveValue) {
+  if (!supervisaoAttendedInput) return;
+  const oficinaId = supervisaoOficinaSelect ? supervisaoOficinaSelect.value : '';
+  const selectedOficina = oficinas.find(o => o.id === oficinaId);
+  const responsaveis = selectedOficina ? (selectedOficina.responsaveis || []) : [];
+  const currentVal = preserveValue || supervisaoAttendedInput.value;
+
+  if (responsaveis.length > 0) {
+    const options = responsaveis.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+    supervisaoAttendedInput.innerHTML = `<option value="" disabled selected>Selecione o responsável...</option>` + options + `<option value="__outro__">Outro (digitar)</option>`;
+    if (currentVal && responsaveis.includes(currentVal)) {
+      supervisaoAttendedInput.value = currentVal;
+    } else if (currentVal && currentVal !== '' && currentVal !== '__outro__') {
+      // If value came from old records with free text, add as option
+      supervisaoAttendedInput.innerHTML = `<option value="" disabled>Selecione o responsável...</option>` + `<option value="${escapeHtml(currentVal)}" selected>${escapeHtml(currentVal)}</option>` + options + `<option value="__outro__">Outro (digitar)</option>`;
+    }
+  } else {
+    supervisaoAttendedInput.innerHTML = `<option value="" disabled selected>${oficinaId ? 'Nenhum responsável cadastrado' : 'Selecione a oficina primeiro...'}</option><option value="__outro__">Outro (digitar)</option>`;
+  }
+
+  // Handle "Outro" option: prompt for free text
+  supervisaoAttendedInput.onchange = function() {
+    if (supervisaoAttendedInput.value === '__outro__') {
+      const customName = window.prompt('Digite o nome de quem atendeu:');
+      if (customName && customName.trim()) {
+        const trimmed = customName.trim();
+        // Add as a temporary option
+        const opt = document.createElement('option');
+        opt.value = trimmed;
+        opt.textContent = trimmed;
+        opt.selected = true;
+        supervisaoAttendedInput.insertBefore(opt, supervisaoAttendedInput.querySelector('option[value="__outro__"]'));
+      } else {
+        supervisaoAttendedInput.value = '';
+      }
+    }
+  };
 }
 
 function populateSupervisaoOficinaFilter() {
@@ -2679,7 +2791,8 @@ function handleSupervisaoAction(action, id) {
   editingSupervisaoId = s.id;
   supervisaoVehicleInput.value = s.vehicle || '';
   if (supervisaoOficinaSelect) supervisaoOficinaSelect.value = s.oficinaId || '';
-  supervisaoAttendedInput.value = s.attended || '';
+  populateSupervisaoAttendedSelect(s.attended || '');
+  if (supervisaoAttendedInput) supervisaoAttendedInput.value = s.attended || '';
   if (supervisaoStageInput) supervisaoStageInput.value = s.stage || '';
   
   const pending = s.partsPending || 'Não';
