@@ -8,7 +8,7 @@
     <script>
       (function() {
         try {
-          const APP_VERSION = 'v107_vistorias_root_default_folder';
+          const APP_VERSION = 'v108_oficina_responsaveis';
           if (localStorage.getItem('app_version') !== APP_VERSION) {
             localStorage.setItem('app_version', APP_VERSION);
             if ('caches' in window) {
@@ -197,6 +197,18 @@
             Nome da Oficina
             <input id="oficinaNameInput" type="text" required placeholder="Ex.: Oficina Centro" />
           </label>
+          <label>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+              <span>Responsáveis da Oficina</span>
+            </div>
+            <div id="oficinaResponsaveisContainer" style="display: flex; flex-direction: column; gap: 8px;">
+              <div class="responsavel-row" style="display: flex; gap: 6px; align-items: center;">
+                <input class="oficina-responsavel-input" type="text" placeholder="Nome do responsável" style="flex: 1;" />
+                <button type="button" class="ghost-btn remove-responsavel-btn" style="padding: 6px 10px; font-size: 0.85rem; color: #ef4444; border: 1px solid #fca5a5; border-radius: 8px; background: #fef2f2; min-width: auto; display: none;" onclick="this.parentElement.remove()">✕</button>
+              </div>
+            </div>
+            <button type="button" id="addResponsavelBtn" class="ghost-btn" style="margin-top: 6px; padding: 6px 12px; font-size: 0.8rem; color: #2563eb; border: 1px solid #bfdbfe; border-radius: 8px; background: #eff6ff; font-weight: 700;">+ Adicionar outro responsável</button>
+          </label>
           <div class="form-actions">
             <button class="primary-btn" type="submit">Salvar oficina</button>
             <button id="cancelOficinaEditButton" class="ghost-btn" type="button" hidden>Cancelar</button>
@@ -256,9 +268,14 @@
               <!-- Dynamically populated -->
             </select>
           </label>
-          <label>
-            Atendido por :
-            <input id="supervisaoAttendedInput" name="attended" type="text" required placeholder="Ex: Alexandre" />
+          <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+              <span>Atendido por :</span>
+            </div>
+            <select id="supervisaoAttendedInput" name="attended" required>
+              <option value="" disabled selected>Selecione o responsável...</option>
+              <!-- Dynamically populated based on selected oficina -->
+            </select>
           </label>
           
           <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
@@ -483,6 +500,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=107"></script>
+    <script src="app.js?v=108"></script>
   </body>
 </html>
