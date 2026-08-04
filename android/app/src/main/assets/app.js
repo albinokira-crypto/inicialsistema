@@ -1305,40 +1305,13 @@ function getSurveyText(id) {
 
   const details = item.details || {};
 
-  // Checklist helper
-  const getCheckmark = (val, field) => {
-    const v = (val || '').toLowerCase();
-    const isSim = v === 'sim';
-    const isNao = v === 'não' || v === 'nao';
-    const isNi = v === 'n/i';
-
-    if (field === 'motorFunciona') {
-      if (isSim) return 'Sim(x ) Não(   ) N/I(   )';
-      if (isNao) return 'Sim(  ) Não(x   ) N/I(   )';
-      return 'Sim(  ) Não(   ) N/I(x  )';
-    }
-    if (field === 'estepe') {
-      if (isSim) return 'Sim ( x) Não ( ) N/I ( )';
-      if (isNao) return 'Sim ( ) Não ( x) N/I ( )';
-      return 'Sim ( ) Não ( ) N/I ( x)';
-    }
-    if (field === 'triangulo') {
-      if (isSim) return 'Sim (x ) Não (   ) N/I (   )';
-      if (isNao) return 'Sim ( ) Não ( x ) N/I (   )';
-      return 'Sim ( ) Não (   ) N/I ( x )';
-    }
-    if (field === 'chaveVeiculo' || field === 'arCondicionado') {
-      if (isSim) return 'Sim (x ) Não ( ) N/I ( )';
-      if (isNao) return 'Sim ( ) Não (x ) N/I ( )';
-      return 'Sim ( ) Não ( ) N/I (x )';
-    }
-    if (field === 'numeroMotor') {
-      return isSim ? 'Sim (x ) Não ( )' : 'Sim ( ) Não (x )';
-    }
-    // Default format supporting N/I
-    if (isSim) return 'Sim (x ) Não ( ) N/I ( )';
-    if (isNao) return 'Sim ( ) Não (x ) N/I ( )';
-    return 'Sim ( ) Não ( ) N/I (x )';
+  // Checklist helper: retorna apenas a opção selecionada
+  const getCheckmark = (val) => {
+    const v = (val || '').toLowerCase().trim();
+    if (v === 'sim') return 'Sim';
+    if (v === 'não' || v === 'nao') return 'Não';
+    if (v === 'n/i') return 'N/I';
+    return val || 'Não';
   };
 
   const radioVal = details.radio === 'Original' ? 'original' : (details.radioBrand || 'Outra');
@@ -2873,7 +2846,7 @@ function formatSingleSupervisaoText(s) {
 
   if (s.partsPending && s.partsPending.trim()) {
     const isPending = s.partsPending === 'Sim';
-    const partsPendingText = isPending ? '( X ) sim  (   ) não' : '(   ) sim  ( X ) não';
+    const partsPendingText = isPending ? 'Sim' : 'Não';
     details.push(`Pendências de peças?: ${partsPendingText}`);
 
     if (isPending) {
