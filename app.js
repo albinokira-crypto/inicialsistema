@@ -1837,14 +1837,20 @@ function addResponsavelRow(value) {
   if (!oficinaResponsaveisContainer) return;
   const row = document.createElement('div');
   row.className = 'responsavel-row';
-  row.style.cssText = 'display: flex; gap: 6px; align-items: center;';
+  row.style.cssText = 'display: flex; gap: 6px; align-items: center; width: 100%;';
   row.innerHTML = `
-    <input class="oficina-responsavel-input" type="text" placeholder="Nome do responsável" style="flex: 1;" value="${value ? escapeHtml(value) : ''}" />
-    <button type="button" class="ghost-btn remove-responsavel-btn" style="padding: 6px 10px; font-size: 0.85rem; color: #ef4444; border: 1px solid #fca5a5; border-radius: 8px; background: #fef2f2; min-width: auto;" onclick="this.parentElement.remove()">✕</button>
+    <input class="oficina-responsavel-input" type="text" placeholder="Nome do responsável" style="flex: 1; min-width: 0; width: 100%;" value="${value ? escapeHtml(value) : ''}" />
+    <button type="button" class="remove-responsavel-btn" style="padding: 6px 10px; font-size: 0.85rem; color: #ef4444; border: 1px solid #fca5a5; border-radius: 8px; background: #fef2f2; min-width: auto; flex-shrink: 0; cursor: pointer;" onclick="this.parentElement.remove(); updateRemoveButtons()">✕</button>
   `;
   oficinaResponsaveisContainer.appendChild(row);
+  const inp = row.querySelector('.oficina-responsavel-input');
+  if (inp) inp.focus();
   updateRemoveButtonsVisibility();
 }
+
+window.updateRemoveButtons = function() {
+  if (typeof updateRemoveButtonsVisibility === 'function') updateRemoveButtonsVisibility();
+};
 
 function updateRemoveButtonsVisibility() {
   if (!oficinaResponsaveisContainer) return;
@@ -2348,7 +2354,6 @@ function renderDynamicSurveyFields() {
     });
   });
 }
-
 function populateSupervisaoOficinaSelect() {
   if (!supervisaoOficinaSelect) return;
   const currentVal = supervisaoOficinaSelect.value;
@@ -2362,21 +2367,41 @@ function populateSupervisaoOficinaSelect() {
 
 function populateSupervisaoAttendedSelect(preserveValue) {
   if (!supervisaoAttendedInput) return;
+  const readonlyInput = document.getElementById('supervisaoAttendedReadonly');
   const oficinaId = supervisaoOficinaSelect ? supervisaoOficinaSelect.value : '';
   const selectedOficina = oficinas.find(o => o.id === oficinaId);
   const responsaveis = selectedOficina ? (selectedOficina.responsaveis || []) : [];
   const currentVal = preserveValue || supervisaoAttendedInput.value;
 
-  if (responsaveis.length > 0) {
+  // === 1 responsavel: preenche automaticamente, sem select ===
+  if (responsaveis.length === 1) {
+    supervisaoAttendedInput.style.display = 'none';
+    supervisaoAttendedInput.removeAttribute('required');
+    if (readonlyInput) {
+      readonlyInput.style.display = '';
+      readonlyInput.value = responsaveis[0];
+    }
+    return;
+  }
+
+  // === 2+ responsaveis ou nenhum: exibe o select ===
+  supervisaoAttendedInput.style.display = '';
+  supervisaoAttendedInput.setAttribute('required', '');
+  if (readonlyInput) {
+    readonlyInput.style.display = 'none';
+    readonlyInput.value = '';
+  }
+
+  if (responsaveis.length > 1) {
     const options = responsaveis.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
     supervisaoAttendedInput.innerHTML = `<option value="" disabled selected>Selecione o responsável...</option>` + options + `<option value="__outro__">Outro (digitar)</option>`;
     if (currentVal && responsaveis.includes(currentVal)) {
       supervisaoAttendedInput.value = currentVal;
     } else if (currentVal && currentVal !== '' && currentVal !== '__outro__') {
-      // If value came from old records with free text, add as option
       supervisaoAttendedInput.innerHTML = `<option value="" disabled>Selecione o responsável...</option>` + `<option value="${escapeHtml(currentVal)}" selected>${escapeHtml(currentVal)}</option>` + options + `<option value="__outro__">Outro (digitar)</option>`;
     }
   } else {
+    // Nenhum responsavel cadastrado
     supervisaoAttendedInput.innerHTML = `<option value="" disabled selected>${oficinaId ? 'Nenhum responsável cadastrado' : 'Selecione a oficina primeiro...'}</option><option value="__outro__">Outro (digitar)</option>`;
   }
 
@@ -2386,7 +2411,6 @@ function populateSupervisaoAttendedSelect(preserveValue) {
       const customName = window.prompt('Digite o nome de quem atendeu:');
       if (customName && customName.trim()) {
         const trimmed = customName.trim();
-        // Add as a temporary option
         const opt = document.createElement('option');
         opt.value = trimmed;
         opt.textContent = trimmed;
@@ -2588,7 +2612,11 @@ function saveSupervisao(event) {
 
   const vehicle = supervisaoVehicleInput.value.trim();
   const plate = vehicle; // unified vehicle & plate
-  const attended = supervisaoAttendedInput.value.trim();
+  // Lê do campo correto: readonly (1 responsavel) ou select (2+ ou nenhum)
+  const readonlyAttended = document.getElementById('supervisaoAttendedReadonly');
+  const attended = (readonlyAttended && readonlyAttended.style.display !== 'none')
+    ? readonlyAttended.value.trim()
+    : supervisaoAttendedInput.value.trim();
   const stage = supervisaoStageInput.value;
   const partsPending = supervisaoPartsPendingInput.value;
   const parts = partsPending === 'Sim' ? supervisaoPartsInput.value.trim() : '';

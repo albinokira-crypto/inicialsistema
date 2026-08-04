@@ -197,18 +197,16 @@
             Nome da Oficina
             <input id="oficinaNameInput" type="text" required placeholder="Ex.: Oficina Centro" />
           </label>
-          <label>
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
-              <span>Responsáveis da Oficina</span>
-            </div>
-            <div id="oficinaResponsaveisContainer" style="display: flex; flex-direction: column; gap: 8px;">
-              <div class="responsavel-row" style="display: flex; gap: 6px; align-items: center;">
-                <input class="oficina-responsavel-input" type="text" placeholder="Nome do responsável" style="flex: 1;" />
-                <button type="button" class="ghost-btn remove-responsavel-btn" style="padding: 6px 10px; font-size: 0.85rem; color: #ef4444; border: 1px solid #fca5a5; border-radius: 8px; background: #fef2f2; min-width: auto; display: none;" onclick="this.parentElement.remove()">✕</button>
+          <div style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
+            <span style="font-size: 0.9rem; font-weight: 600; color: #374151;">Responsáveis da Oficina</span>
+            <div id="oficinaResponsaveisContainer" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+              <div class="responsavel-row" style="display: flex; gap: 6px; align-items: center; width: 100%;">
+                <input class="oficina-responsavel-input" type="text" placeholder="Nome do responsável" style="flex: 1; min-width: 0; width: 100%;" />
+                <button type="button" class="ghost-btn remove-responsavel-btn" style="padding: 6px 10px; font-size: 0.85rem; color: #ef4444; border: 1px solid #fca5a5; border-radius: 8px; background: #fef2f2; min-width: auto; flex-shrink: 0; display: none;" onclick="this.parentElement.remove()">✕</button>
               </div>
             </div>
-            <button type="button" id="addResponsavelBtn" class="ghost-btn" style="margin-top: 6px; padding: 6px 12px; font-size: 0.8rem; color: #2563eb; border: 1px solid #bfdbfe; border-radius: 8px; background: #eff6ff; font-weight: 700;">+ Adicionar outro responsável</button>
-          </label>
+            <button type="button" id="addResponsavelBtn" style="margin-top: 4px; padding: 8px 14px; font-size: 0.85rem; color: #2563eb; border: 1px solid #bfdbfe; border-radius: 8px; background: #eff6ff; font-weight: 700; cursor: pointer; text-align: left; width: 100%;">+ Adicionar outro responsável</button>
+          </div>
           <div class="form-actions">
             <button class="primary-btn" type="submit">Salvar oficina</button>
             <button id="cancelOficinaEditButton" class="ghost-btn" type="button" hidden>Cancelar</button>
@@ -272,10 +270,15 @@
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
               <span>Atendido por :</span>
             </div>
+            <!-- Select: exibido quando há 2+ responsáveis -->
             <select id="supervisaoAttendedInput" name="attended" required>
               <option value="" disabled selected>Selecione o responsável...</option>
               <!-- Dynamically populated based on selected oficina -->
             </select>
+            <!-- Input readonly: exibido quando há exatamente 1 responsável (preenchido automaticamente) -->
+            <input id="supervisaoAttendedReadonly" type="text" readonly
+              style="display: none; background: #f3f4f6; cursor: default; color: #374151; font-weight: 600;"
+              placeholder="Responsável" />
           </label>
           
           <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
