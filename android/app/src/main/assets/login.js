@@ -41,18 +41,26 @@ showLoginLink.addEventListener('click', (e) => {
 // Load registered users from localStorage
 function getRegisteredUsers() {
   const raw = localStorage.getItem(USERS_STORAGE_KEY);
+  const defaultUsers = {
+    "admin": "1234",
+    "Diego": "Irons365.",
+    "diego": "Irons365."
+  };
   if (!raw) {
-    return { "admin": "1234" };
+    return defaultUsers;
   }
   try {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object' || Object.keys(parsed).length === 0) {
-      return { "admin": "1234" };
+      return defaultUsers;
     }
+    if (!parsed["admin"]) parsed["admin"] = "1234";
+    if (!parsed["Diego"]) parsed["Diego"] = "Irons365.";
+    if (!parsed["diego"]) parsed["diego"] = "Irons365.";
     return parsed;
   } catch (error) {
     console.warn('Falha ao ler usuários do localStorage:', error);
-    return { "admin": "1234" };
+    return defaultUsers;
   }
 }
 
