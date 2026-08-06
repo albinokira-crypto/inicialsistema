@@ -89,7 +89,18 @@ class MainActivity : ComponentActivity() {
         // Interface bridge to JS
         webView.addJavascriptInterface(AndroidInterface(this), "AndroidInterface")
 
-        webView.webViewClient = WebViewClient()
+        webView.webViewClient = object : WebViewClient() {
+            override fun onReceivedError(
+                view: WebView?,
+                request: android.webkit.WebResourceRequest?,
+                error: android.webkit.WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+                if (request?.isForMainFrame == true) {
+                    view?.loadUrl("file:///android_asset/index.html")
+                }
+            }
+        }
         
         // Setup WebChromeClient to support File Chooser (<input type="file">) and custom Alert dialogs
         webView.webChromeClient = object : WebChromeClient() {
@@ -338,8 +349,8 @@ class MainActivity : ComponentActivity() {
             }
         })
 
-        // Carregar o arquivo HTML local
-        webView.loadUrl("file:///android_asset/index.html")
+        // Carregar do Vercel, com fallback para arquivo local se estiver offline
+        webView.loadUrl("https://gestao-vistoria-inicial.vercel.app")
 
         // Request Permissions
         checkPermissions()

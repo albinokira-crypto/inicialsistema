@@ -2241,6 +2241,26 @@ function renderDynamicSurveyFields() {
 
   dynamicFieldsContainer.innerHTML = officeDropdownHtml + fieldsHtml;
 
+  // Selecionar automaticamente a oficina "Rio Log" para "Vistoria Rio log"
+  if (selectedType === 'Vistoria Rio log') {
+    let rioLogOficina = oficinas.find(o => o.name.toLowerCase() === 'rio log');
+    if (!rioLogOficina) {
+      rioLogOficina = {
+        id: Date.now().toString(),
+        name: 'Rio Log'
+      };
+      oficinas.push(rioLogOficina);
+      saveOficinas();
+      renderOficinas();
+      renderDynamicSurveyFields();
+      return;
+    }
+    const selectEl = document.getElementById('itemOficinaSelect');
+    if (selectEl) {
+      selectEl.value = rioLogOficina.id;
+    }
+  }
+
   const quickAdd = dynamicFieldsContainer.querySelector('#quickAddOficina');
   if (quickAdd) {
     quickAdd.addEventListener('click', (e) => {
