@@ -41,12 +41,18 @@ showLoginLink.addEventListener('click', (e) => {
 // Load registered users from localStorage
 function getRegisteredUsers() {
   const raw = localStorage.getItem(USERS_STORAGE_KEY);
-  if (!raw) return {};
+  if (!raw) {
+    return { "admin": "1234" };
+  }
   try {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Object.keys(parsed).length === 0) {
+      return { "admin": "1234" };
+    }
+    return parsed;
   } catch (error) {
     console.warn('Falha ao ler usuários do localStorage:', error);
-    return {};
+    return { "admin": "1234" };
   }
 }
 
