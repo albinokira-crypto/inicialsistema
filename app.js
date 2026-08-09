@@ -1267,7 +1267,7 @@ function render() {
 function renderReport(filteredItems) {
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   const totals = days.map((day) => {
-    const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
+    const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true && (Number(item.value) || 0) > 0);
     itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
 
     const platesHtml = itemsForDay.length
@@ -3090,7 +3090,7 @@ function generateWeeklyReportPDF() {
   const tableRows = [];
   days.forEach((day) => {
     // Get items for this day
-    const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
+    const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true && (Number(item.value) || 0) > 0);
     
     // Only include day if there is at least one registry
     if (itemsForDay.length === 0) {
