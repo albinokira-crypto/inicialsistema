@@ -2690,6 +2690,35 @@ function cancelSupervisaoEdit() {
   if (saveSupervisaoButton) saveSupervisaoButton.textContent = 'Salvar';
 }
 
+function formatSupervisaoDate(s) {
+  if (s.updatedAt) {
+    return s.updatedAt.replace(/(:\d{2}):\d{2}/, '$1');
+  }
+  if (s.createdAt) {
+    return s.createdAt.replace(/(:\d{2}):\d{2}/, '$1');
+  }
+  if (s.updatedAtTime) {
+    const d = new Date(s.updatedAtTime);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+  }
+  if (s.id && !isNaN(Number(s.id))) {
+    const d = new Date(Number(s.id));
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+  }
+  if (s.date) {
+    const parts = s.date.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return s.date;
+  }
+  return '—';
+}
+
 function renderSupervisaoReport() {
   if (!supervisaoReportContent) return;
 
@@ -2699,7 +2728,7 @@ function renderSupervisaoReport() {
   });
 
   if (!filtered.length) {
-    supervisaoReportContent.innerHTML = '<tr><td colspan="7" class="empty">Nenhum registro de supervisão encontrado.</td></tr>';
+    supervisaoReportContent.innerHTML = '<tr><td colspan="8" class="empty">Nenhum registro de supervisão encontrado.</td></tr>';
     return;
   }
 
@@ -2737,6 +2766,8 @@ function renderSupervisaoReport() {
       prevEst += `<br><small style="color:#6b7280;">Peças: ${escapeHtml(s.arrival || '—')}</small>`;
     }
 
+    const updatedDateStr = formatSupervisaoDate(s);
+
     return `
       <tr>
         <td data-label="Veículo" style="font-weight: 600;">${escapeHtml(s.vehicle)}</td>
@@ -2747,6 +2778,7 @@ function renderSupervisaoReport() {
         </td>
         <td data-label="Pendência Peças">${partsPendingHtml}</td>
         <td data-label="Previsão/Estimativa">${prevEst}</td>
+        <td data-label="Última Atualização" style="font-size: 0.85rem; color: #4b5563;">${escapeHtml(updatedDateStr)}</td>
         <td data-label="Ações">
           <div class="actions">
             <button class="action-btn" type="button" data-super-action="share-whatsapp" data-id="${s.id}">💬 Compartilhar vistoria</button>
