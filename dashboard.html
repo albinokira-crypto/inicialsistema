@@ -153,15 +153,14 @@
           <p class="field-note" id="noInsurersNote" hidden>Cadastre uma seguradora na aba de seguradoras antes de registrar o vistoria.</p>
         </form>
 
-        <!-- insurer form moved to its own card (see below) -->
-      </section>
-
       <section class="card" id="recordsCard">
-        <div class="toolbar">
-          <h2>Registros</h2>
-          <div class="search-actions">
-            <input id="searchInput" type="search" placeholder="🔍 Pesquisar por placa, seguradora, oficina ou dia..." />
-            <button id="clearSearchButton" class="ghost-btn" type="button" hidden>Limpar</button>
+        <div class="toolbar" style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <h2 style="margin: 0;">Registros</h2>
+            <button id="clearSearchButton" class="ghost-btn" type="button" hidden style="padding: 6px 12px; font-size: 0.85rem;">Limpar busca</button>
+          </div>
+          <div style="width: 100%;">
+            <input id="searchInput" type="text" placeholder="🔍 Digite para pesquisar placa, veículo, oficina..." style="width: 100%; padding: 12px 14px; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 12px; background: white; color: #1e293b; font-weight: 500; outline: none; box-shadow: 0 1px 3px rgba(0,0,0,0.05); box-sizing: border-box;" />
           </div>
         </div>
         <ul id="itemList" class="item-list"></ul>
@@ -331,21 +330,12 @@
       </section>
 
       <section class="card" id="supervisaoRecordsCard" hidden>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-          <h2>Registros de Supervisão</h2>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button id="shareSupervisaoTextButton" class="primary-btn" type="button">📱 Compartilhar Relatório (Texto)</button>
-            <button id="copySupervisaoTextButton" class="ghost-btn" type="button">📋 Copiar Texto</button>
-          </div>
-        </div>
-        
-        <div class="filter-group" style="margin-bottom: 20px;">
-          <label class="status-label" style="margin-bottom: 6px; display: block; font-weight: 600; color: #1e293b;">Pesquisar e Filtrar Supervisão</label>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <input id="supervisaoSearchInput" type="search" placeholder="🔍 Digite a oficina ou veículo..." style="flex: 2; min-width: 180px; padding: 12px 14px; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 12px; background: white; color: #1e293b; font-weight: 500; outline: none; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" />
-            <select id="supervisaoOficinaFilterSelect" style="flex: 1; min-width: 150px; padding: 12px 14px; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 12px; background: white; color: #1e293b; font-weight: 600; outline: none; box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer; appearance: auto;">
-              <option value="Todas">🏢 Todas as Oficinas</option>
-            </select>
+        <div class="filter-group" style="margin-bottom: 16px;">
+          <div style="position: relative; width: 100%;">
+            <input id="supervisaoSearchInput" type="text" list="supervisaoOficinasDatalist" placeholder="🔍 Digite para buscar oficina ou veículo..." style="width: 100%; padding: 12px 14px; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 12px; background: white; color: #1e293b; font-weight: 500; outline: none; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" />
+            <datalist id="supervisaoOficinasDatalist">
+              <!-- Dynamically populated -->
+            </datalist>
           </div>
         </div>
 
@@ -506,6 +496,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=113"></script>
+    <script src="app.js?v=114"></script>
   </body>
 </html>

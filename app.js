@@ -956,12 +956,99 @@ function render() {
       if (formCard) formCard.hidden = true;
       if (recordsCard) recordsCard.hidden = false;
       
-      const filteredOficinas = oficinas.filter(o => 
-        o.name.toLowerCase().includes(query)
-      );
+      if (query.trim() !== '') {
+        const queryTrimmed = query.trim().toLowerCase();
+        
+        const globalVistorias = items.map(i => ({ ...i, isSupervisao: false })).filter(item => {
+          return `${item.date} ${item.day} ${item.plate} ${item.provider} ${item.oficinaName || ''} ${item.type || ''}`.toLowerCase().includes(queryTrimmed);
+        });
+
+        const globalSupervisoes = supervisoes.map(s => ({ ...s, isSupervisao: true })).filter(s => {
+          return `${s.date} ${s.day} ${s.vehicle} ${s.oficinaName || ''} ${s.attended || ''} ${s.stage || ''}`.toLowerCase().includes(queryTrimmed);
+        });
+
+        const globalList = [...globalVistorias, ...globalSupervisoes];
+        
+        if (!globalList.length) {
+          itemList.innerHTML = `<li class="empty">Nenhum registro encontrado para "${escapeHtml(query)}".</li>`;
+          return;
+        }
+
+        const badgeClasses = {
+          'Inicial': 'badge-inicial',
+          'Roubo Recuperado': 'badge-roubo',
+          'Incêndio': 'badge-incendio',
+          'Enchente': 'badge-enchente',
+          'Moto': 'badge-moto',
+          'Complemento': 'badge-complemento',
+          'Pós entrega': 'badge-pos',
+          'Vistoria Rio log': 'badge-riolog'
+        };
+
+        const itemsHtml = globalList.map((entry) => {
+          if (entry.isSupervisao) {
+            return `
+              <li class="item-card compact-item-card">
+                <div class="item-main-info" style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;">
+                  <div class="plate-badge compact-plate-badge" style="width: 100% !important; justify-content: flex-start !important;">
+                    <span class="plate-badge-text">${escapeHtml(entry.vehicle || 'Supervisão')}</span>
+                  </div>
+                  <div class="item-details">
+                    <strong class="item-provider">Oficina: ${escapeHtml(entry.oficinaName || 'Sem oficina')}</strong>
+                    <span class="item-meta">· Atendido por: ${escapeHtml(entry.attended || '—')}</span>
+                    <span class="badge-supervisao" style="margin-left: 6px;">${escapeHtml(entry.stage || '')}</span>
+                  </div>
+                </div>
+                <div class="actions vertical-actions">
+                  <button class="action-btn" type="button" data-super-action="share-whatsapp" data-id="${entry.id}">💬 Compartilhar vistoria</button>
+                  <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">📸 Fotos</button>
+                  <button class="action-btn" type="button" data-super-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
+                  <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
+                  <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
+                </div>
+              </li>
+            `;
+          } else {
+            const badgeClass = badgeClasses[entry.type || 'Inicial'] || 'badge-inicial';
+            return `
+              <li class="item-card compact-item-card">
+                <div class="item-main-info">
+                  <div class="plate-badge compact-plate-badge">
+                    <span class="plate-badge-text">${escapeHtml(entry.plate)}</span>
+                  </div>
+                  <div class="item-details">
+                    <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
+                    <span class="item-meta">· Oficina: ${escapeHtml(entry.oficinaName || 'Sem oficina')}</span>
+                    <span class="item-meta">· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
+                    <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
+                  </div>
+                </div>
+                <div class="actions vertical-actions">
+                  <button class="action-btn" type="button" data-action="share-whatsapp" data-id="${entry.id}">💬 Compartilhar vistoria</button>
+                  <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">📸 Fotos</button>
+                  <button class="action-btn" type="button" data-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
+                  <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
+                  <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
+                </div>
+              </li>
+            `;
+          }
+        }).join('');
+
+        itemList.innerHTML = itemsHtml;
+        itemList.querySelectorAll('[data-action]').forEach((button) => {
+          button.addEventListener('click', () => handleAction(button.dataset.action, button.dataset.id));
+        });
+        itemList.querySelectorAll('[data-super-action]').forEach((button) => {
+          button.addEventListener('click', () => handleSupervisaoAction(button.dataset.superAction, button.dataset.id));
+        });
+        return;
+      }
+
+      const filteredOficinas = oficinas;
 
       if (!filteredOficinas.length) {
-        itemList.innerHTML = '<li class="empty">Nenhuma oficina cadastrada ou encontrada.</li>';
+        itemList.innerHTML = '<li class="empty">Nenhuma oficina cadastrada.</li>';
         return;
       }
       
@@ -2420,25 +2507,14 @@ function populateSupervisaoAttendedSelect(preserveValue) {
 }
 
 function populateSupervisaoOficinaFilter() {
-  const filterSelect = document.getElementById('supervisaoOficinaFilterSelect');
-  if (!filterSelect) return;
-  
-  const currentVal = selectedSupervisaoOficina;
-  let optionsHtml = `<option value="Todas"${currentVal === 'Todas' ? ' selected' : ''}>🏢 Todas as Oficinas (${supervisoes.length})</option>`;
+  const datalist = document.getElementById('supervisaoOficinasDatalist');
+  if (!datalist) return;
   
   const sortedOficinas = [...oficinas].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
   
-  sortedOficinas.forEach((oficina) => {
-    const count = supervisoes.filter(s => s.oficinaId === oficina.id).length;
-    optionsHtml += `<option value="${oficina.id}"${currentVal === oficina.id ? ' selected' : ''}>${escapeHtml(oficina.name)}${count > 0 ? ` (${count})` : ''}</option>`;
-  });
-  
-  filterSelect.innerHTML = optionsHtml;
-  
-  filterSelect.onchange = function() {
-    selectedSupervisaoOficina = this.value;
-    renderSupervisaoReport();
-  };
+  datalist.innerHTML = sortedOficinas.map((oficina) => {
+    return `<option value="${escapeHtml(oficina.name)}"></option>`;
+  }).join('');
 }
 
 function populateSupervisaoStageSelect() {
