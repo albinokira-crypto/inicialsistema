@@ -479,14 +479,10 @@ if (supervisaoPartsPendingButtons) {
 
 
 
-if (supervisaoOficinaFilterContainer) {
-  supervisaoOficinaFilterContainer.addEventListener('click', (event) => {
-    const btn = event.target;
-    if (!btn.matches('.type-btn')) return;
-    selectedSupervisaoOficina = btn.dataset.filterOficina;
-    supervisaoOficinaFilterContainer.querySelectorAll('.type-btn').forEach((b) => {
-      b.classList.toggle('active', b.dataset.filterOficina === selectedSupervisaoOficina);
-    });
+const supervisaoOficinaFilterSelectEl = document.getElementById('supervisaoOficinaFilterSelect');
+if (supervisaoOficinaFilterSelectEl) {
+  supervisaoOficinaFilterSelectEl.addEventListener('change', (e) => {
+    selectedSupervisaoOficina = e.target.value;
     renderSupervisaoReport();
   });
 }
@@ -2417,14 +2413,25 @@ function populateSupervisaoAttendedSelect(preserveValue) {
 }
 
 function populateSupervisaoOficinaFilter() {
-  if (!supervisaoOficinaFilterContainer) return;
+  const filterSelect = document.getElementById('supervisaoOficinaFilterSelect');
+  if (!filterSelect) return;
   
-  let buttonsHtml = `<button type="button" class="type-btn${selectedSupervisaoOficina === 'Todas' ? ' active' : ''}" data-filter-oficina="Todas">Todas</button>`;
-  oficinas.forEach((oficina) => {
-    buttonsHtml += `<button type="button" class="type-btn${selectedSupervisaoOficina === oficina.id ? ' active' : ''}" data-filter-oficina="${oficina.id}">${escapeHtml(oficina.name)}</button>`;
+  const currentVal = selectedSupervisaoOficina;
+  let optionsHtml = `<option value="Todas"${currentVal === 'Todas' ? ' selected' : ''}>🏢 Todas as Oficinas (${supervisoes.length})</option>`;
+  
+  const sortedOficinas = [...oficinas].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+  
+  sortedOficinas.forEach((oficina) => {
+    const count = supervisoes.filter(s => s.oficinaId === oficina.id).length;
+    optionsHtml += `<option value="${oficina.id}"${currentVal === oficina.id ? ' selected' : ''}>${escapeHtml(oficina.name)}${count > 0 ? ` (${count})` : ''}</option>`;
   });
   
-  supervisaoOficinaFilterContainer.innerHTML = buttonsHtml;
+  filterSelect.innerHTML = optionsHtml;
+  
+  filterSelect.onchange = function() {
+    selectedSupervisaoOficina = this.value;
+    renderSupervisaoReport();
+  };
 }
 
 function populateSupervisaoStageSelect() {

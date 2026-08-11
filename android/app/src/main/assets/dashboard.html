@@ -340,9 +340,11 @@
         </div>
         
         <div class="filter-group" style="margin-bottom: 20px;">
-          <span class="status-label" style="margin-bottom: 6px;">Filtrar por Oficina</span>
-          <div id="supervisaoOficinaFilterContainer" class="type-buttons-container" style="display: flex; flex-wrap: wrap; gap: 6px;">
-            <!-- Dynamically populated -->
+          <label for="supervisaoOficinaFilterSelect" class="status-label" style="margin-bottom: 6px; display: block; font-weight: 600; color: #1e293b;">Filtrar por Oficina</label>
+          <div style="position: relative;">
+            <select id="supervisaoOficinaFilterSelect" style="width: 100%; padding: 12px 14px; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 12px; background: white; color: #1e293b; font-weight: 600; outline: none; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; appearance: auto;">
+              <option value="Todas">🏢 Todas as Oficinas</option>
+            </select>
           </div>
         </div>
 
@@ -503,6 +505,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=111"></script>
+    <script src="app.js?v=112"></script>
   </body>
 </html>
