@@ -2728,7 +2728,7 @@ function renderSupervisaoReport() {
   });
 
   if (!filtered.length) {
-    supervisaoReportContent.innerHTML = '<tr><td colspan="8" class="empty">Nenhum registro de supervisão encontrado.</td></tr>';
+    supervisaoReportContent.innerHTML = '<tr><td colspan="7" class="empty">Nenhum registro de supervisão encontrado.</td></tr>';
     return;
   }
 
@@ -2770,7 +2770,10 @@ function renderSupervisaoReport() {
 
     return `
       <tr>
-        <td data-label="Veículo" style="font-weight: 600;">${escapeHtml(s.vehicle)}</td>
+        <td data-label="Veículo">
+          <div style="font-size: 0.75rem; font-weight: 600; color: #2563eb; margin-bottom: 3px;">📅 ${escapeHtml(updatedDateStr)}</div>
+          <div style="font-weight: 600; color: #111827;">${escapeHtml(s.vehicle)}</div>
+        </td>
         <td data-label="Oficina" style="font-weight: 500;">${escapeHtml(s.oficinaName || 'Sem oficina')}</td>
         <td data-label="Atendido por">${escapeHtml(s.attended)}</td>
         <td data-label="Status">
@@ -2778,7 +2781,6 @@ function renderSupervisaoReport() {
         </td>
         <td data-label="Pendência Peças">${partsPendingHtml}</td>
         <td data-label="Previsão/Estimativa">${prevEst}</td>
-        <td data-label="Última Atualização" style="font-size: 0.85rem; color: #4b5563;">${escapeHtml(updatedDateStr)}</td>
         <td data-label="Ações">
           <div class="actions">
             <button class="action-btn" type="button" data-super-action="share-whatsapp" data-id="${s.id}">💬 Compartilhar vistoria</button>
