@@ -479,19 +479,96 @@ if (supervisaoPartsPendingButtons) {
 
 
 
-const supervisaoOficinaFilterSelectEl = document.getElementById('supervisaoOficinaFilterSelect');
-if (supervisaoOficinaFilterSelectEl) {
-  supervisaoOficinaFilterSelectEl.addEventListener('change', (e) => {
-    selectedSupervisaoOficina = e.target.value;
-    renderSupervisaoReport();
+function setupCustomAutocomplete(inputEl, suggestionsEl, getSuggestionsFn, onSelectFn) {
+  if (!inputEl || !suggestionsEl) return;
+
+  function renderSuggestions() {
+    const val = inputEl.value.trim().toLowerCase();
+    const matches = getSuggestionsFn(val);
+
+    if (!matches || !matches.length) {
+      suggestionsEl.style.display = 'none';
+      return;
+    }
+
+    suggestionsEl.innerHTML = matches.map(item => `
+      <div class="custom-autocomplete-item" data-val="${escapeHtml(item.value)}" style="padding: 12px 16px; color: #0f172a; font-weight: 700; font-size: 0.95rem; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #ffffff; transition: background 0.15s ease;">
+        <span>🏢 ${escapeHtml(item.label)}</span>
+        ${item.count !== undefined ? `<span style="font-size: 0.8rem; background: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 999px; font-weight: 600;">${item.count}</span>` : ''}
+      </div>
+    `).join('');
+
+    suggestionsEl.style.display = 'block';
+
+    suggestionsEl.querySelectorAll('.custom-autocomplete-item').forEach(el => {
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const selectedVal = el.dataset.val;
+        inputEl.value = selectedVal;
+        suggestionsEl.style.display = 'none';
+        onSelectFn(selectedVal);
+      });
+    });
+  }
+
+  inputEl.addEventListener('focus', renderSuggestions);
+  inputEl.addEventListener('input', renderSuggestions);
+
+  document.addEventListener('click', (e) => {
+    if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target)) {
+      suggestionsEl.style.display = 'none';
+    }
   });
 }
 
 const supervisaoSearchInputEl = document.getElementById('supervisaoSearchInput');
+const supervisaoSearchSuggestionsEl = document.getElementById('supervisaoSearchSuggestions');
+
 if (supervisaoSearchInputEl) {
   supervisaoSearchInputEl.addEventListener('input', () => {
     renderSupervisaoReport();
   });
+
+  if (supervisaoSearchSuggestionsEl) {
+    setupCustomAutocomplete(
+      supervisaoSearchInputEl,
+      supervisaoSearchSuggestionsEl,
+      (val) => {
+        const sorted = [...oficinas].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+        return sorted
+          .filter(o => !val || (o.name || '').toLowerCase().includes(val))
+          .map(o => {
+            const count = supervisoes.filter(s => s.oficinaId === o.id).length;
+            return { label: o.name, value: o.name, count };
+          });
+      },
+      (selectedVal) => {
+        renderSupervisaoReport();
+      }
+    );
+  }
+}
+
+const mainSearchSuggestionsEl = document.getElementById('mainSearchSuggestions');
+if (searchInput && mainSearchSuggestionsEl) {
+  setupCustomAutocomplete(
+    searchInput,
+    mainSearchSuggestionsEl,
+    (val) => {
+      const sorted = [...oficinas].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+      return sorted
+        .filter(o => !val || (o.name || '').toLowerCase().includes(val))
+        .map(o => {
+          const countVistorias = items.filter(i => i.oficinaId === o.id).length;
+          const countSupervisoes = supervisoes.filter(s => s.oficinaId === o.id).length;
+          const totalCount = countVistorias + countSupervisoes;
+          return { label: o.name, value: o.name, count: totalCount };
+        });
+    },
+    (selectedVal) => {
+      render();
+    }
+  );
 }
 
 if (shareSupervisaoTextButton) {
