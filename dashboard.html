@@ -160,7 +160,7 @@
         <div class="toolbar">
           <h2>Registros</h2>
           <div class="search-actions">
-            <input id="searchInput" type="search" placeholder="Pesquisar por placa, seguradora ou dia" />
+            <input id="searchInput" type="search" placeholder="🔍 Pesquisar por placa, seguradora, oficina ou dia..." />
             <button id="clearSearchButton" class="ghost-btn" type="button" hidden>Limpar</button>
           </div>
         </div>
@@ -340,9 +340,10 @@
         </div>
         
         <div class="filter-group" style="margin-bottom: 20px;">
-          <label for="supervisaoOficinaFilterSelect" class="status-label" style="margin-bottom: 6px; display: block; font-weight: 600; color: #1e293b;">Filtrar por Oficina</label>
-          <div style="position: relative;">
-            <select id="supervisaoOficinaFilterSelect" style="width: 100%; padding: 12px 14px; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 12px; background: white; color: #1e293b; font-weight: 600; outline: none; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; appearance: auto;">
+          <label class="status-label" style="margin-bottom: 6px; display: block; font-weight: 600; color: #1e293b;">Pesquisar e Filtrar Supervisão</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <input id="supervisaoSearchInput" type="search" placeholder="🔍 Digite a oficina ou veículo..." style="flex: 2; min-width: 180px; padding: 12px 14px; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 12px; background: white; color: #1e293b; font-weight: 500; outline: none; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" />
+            <select id="supervisaoOficinaFilterSelect" style="flex: 1; min-width: 150px; padding: 12px 14px; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 12px; background: white; color: #1e293b; font-weight: 600; outline: none; box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer; appearance: auto;">
               <option value="Todas">🏢 Todas as Oficinas</option>
             </select>
           </div>
@@ -505,6 +506,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=112"></script>
+    <script src="app.js?v=113"></script>
   </body>
 </html>

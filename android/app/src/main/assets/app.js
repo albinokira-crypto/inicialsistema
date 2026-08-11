@@ -487,6 +487,13 @@ if (supervisaoOficinaFilterSelectEl) {
   });
 }
 
+const supervisaoSearchInputEl = document.getElementById('supervisaoSearchInput');
+if (supervisaoSearchInputEl) {
+  supervisaoSearchInputEl.addEventListener('input', () => {
+    renderSupervisaoReport();
+  });
+}
+
 if (shareSupervisaoTextButton) {
   shareSupervisaoTextButton.addEventListener('click', () => {
     const filtered = getFilteredSupervisoes();
@@ -1169,7 +1176,7 @@ function render() {
   // Normal day filtering for regular vistorias
   const filtered = items.filter((item) => {
     const isTotalWeek = selectedDay === 'Total da semana';
-    const matchesQuery = `${item.date} ${item.day} ${item.plate} ${item.provider}`.toLowerCase().includes(query);
+    const matchesQuery = `${item.date} ${item.day} ${item.plate} ${item.provider} ${item.oficinaName || ''} ${item.type || ''}`.toLowerCase().includes(query);
     if (!matchesQuery) return false;
 
     if (isTotalWeek) {
@@ -2729,8 +2736,14 @@ function formatSupervisaoDate(s) {
 function renderSupervisaoReport() {
   if (!supervisaoReportContent) return;
 
+  const searchVal = (document.getElementById('supervisaoSearchInput')?.value || '').toLowerCase().trim();
+
   const filtered = supervisoes.filter((s) => {
     if (selectedSupervisaoOficina !== 'Todas' && s.oficinaId !== selectedSupervisaoOficina) return false;
+    if (searchVal) {
+      const matchStr = `${s.vehicle} ${s.oficinaName} ${s.attended} ${s.stage} ${s.parts} ${s.finish} ${s.other} ${formatSupervisaoDate(s)}`.toLowerCase();
+      if (!matchStr.includes(searchVal)) return false;
+    }
     return true;
   });
 
