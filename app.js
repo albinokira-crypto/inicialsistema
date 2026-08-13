@@ -337,6 +337,53 @@ function updateSyncStatus(message) {
 }
 
 
+function clearAllSearchInputs() {
+  if (searchInput) {
+    searchInput.value = '';
+  }
+  const mainSearchSuggestionsEl = document.getElementById('mainSearchSuggestions');
+  if (mainSearchSuggestionsEl) {
+    mainSearchSuggestionsEl.style.display = 'none';
+  }
+  const supervisaoSearchInputEl = document.getElementById('supervisaoSearchInput');
+  if (supervisaoSearchInputEl) {
+    supervisaoSearchInputEl.value = '';
+  }
+  if (clearSearchButton) {
+    clearSearchButton.hidden = true;
+  }
+}
+
+function formatRecordDateOrLastModified(entry) {
+  if (!entry) return '—';
+  if (entry.updatedAt) {
+    return entry.updatedAt.replace(/(:\d{2}):\d{2}/, '$1');
+  }
+  if (entry.createdAt) {
+    return entry.createdAt.replace(/(:\d{2}):\d{2}/, '$1');
+  }
+  if (entry.updatedAtTime) {
+    const d = new Date(entry.updatedAtTime);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+  }
+  if (entry.id && !isNaN(Number(entry.id)) && Number(entry.id) > 1600000000000) {
+    const d = new Date(Number(entry.id));
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+  }
+  if (entry.date) {
+    const parts = entry.date.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return entry.date;
+  }
+  return '—';
+}
+
 form.addEventListener('submit', saveItem);
 searchInput.addEventListener('input', render);
 clearSearchButton.addEventListener('click', () => {
@@ -346,6 +393,7 @@ clearSearchButton.addEventListener('click', () => {
 dayTabs.addEventListener('click', (event) => {
   const target = event.target;
   if (!target.matches('.tab-btn')) return;
+  clearAllSearchInputs();
   selectedDay = target.dataset.day;
   
   if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
@@ -430,6 +478,7 @@ if (vistoriaTypeTabs) {
   vistoriaTypeTabs.addEventListener('click', (event) => {
     const btn = event.target;
     if (!btn.matches('.tab-btn')) return;
+    clearAllSearchInputs();
     selectedType = btn.dataset.type;
     vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.type === selectedType);
@@ -723,6 +772,7 @@ function updateHomeSummary() {
 }
 
 function showWelcomeScreen() {
+  clearAllSearchInputs();
   const welcomeScreenEl = document.getElementById('welcomeScreen');
   const homeSummaryCardEl = document.getElementById('homeSummaryCard');
   const appHeaderEl = document.getElementById('appHeader');
@@ -757,6 +807,7 @@ function getAutomaticDayOfWeek() {
 }
 
 function handleMenuButtonClick(targetDay) {
+  clearAllSearchInputs();
   const welcomeScreenEl = document.getElementById('welcomeScreen');
   const homeSummaryCardEl = document.getElementById('homeSummaryCard');
   const appHeaderEl = document.getElementById('appHeader');
@@ -820,6 +871,7 @@ window.openMenuSection = function(targetDay) {
 };
 
 window.backToHomeMenu = function() {
+  clearAllSearchInputs();
   selectedOficinaForTodasVistorias = null;
   showWelcomeScreen();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -942,13 +994,18 @@ function saveItem(event) {
     });
   }
 
+  const nowStr = new Date().toLocaleString('pt-BR');
+  const nowTime = Date.now();
+
   if (editingId) {
     items = items.map((item) => item.id === editingId ? { 
-      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details 
+      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details,
+      updatedAt: nowStr,
+      updatedAtTime: nowTime
     } : item);
   } else {
     items.unshift({
-      id: Date.now().toString(),
+      id: nowTime.toString(),
       date,
       day,
       plate,
@@ -959,7 +1016,9 @@ function saveItem(event) {
       oficinaId,
       oficinaName,
       details,
-      createdAt: new Date().toLocaleString('pt-BR')
+      createdAt: nowStr,
+      updatedAt: nowStr,
+      updatedAtTime: nowTime
     });
   }
 
@@ -1073,6 +1132,7 @@ function render() {
                   <div class="item-details">
                     <strong class="item-provider">Oficina: ${escapeHtml(entry.oficinaName || 'Sem oficina')}</strong>
                     <span class="item-meta">· Atendido por: ${escapeHtml(entry.attended || '—')}</span>
+                    <span class="item-meta">· 🕒 ${escapeHtml(formatRecordDateOrLastModified(entry))}</span>
                     <span class="badge-supervisao" style="margin-left: 6px;">${escapeHtml(entry.stage || '')}</span>
                   </div>
                 </div>
@@ -1097,6 +1157,7 @@ function render() {
                     <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
                     <span class="item-meta">· Oficina: ${escapeHtml(entry.oficinaName || 'Sem oficina')}</span>
                     <span class="item-meta">· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
+                    <span class="item-meta">· 🕒 ${escapeHtml(formatRecordDateOrLastModified(entry))}</span>
                     <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
                   </div>
                 </div>
@@ -1255,7 +1316,7 @@ function render() {
                 </div>
                 <div class="item-details">
                   <strong class="item-provider">Atendido: ${escapeHtml(entry.attended || '—')}</strong>
-                  <span class="item-meta">· ${escapeHtml(formatDateString(entry.date))}</span>
+                  <span class="item-meta">· 🕒 ${escapeHtml(formatRecordDateOrLastModified(entry))}</span>
                   <span class="badge-supervisao" style="margin-left: 6px;">
                     Supervisão: ${escapeHtml(entry.stage || '')}
                   </span>
@@ -1286,7 +1347,7 @@ function render() {
                 <div class="item-details">
                   <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
                   <span class="item-meta">· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
-                  <span class="item-meta">· ${escapeHtml(entry.day)}</span>
+                  <span class="item-meta">· 🕒 ${escapeHtml(formatRecordDateOrLastModified(entry))}</span>
                   <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
                 </div>
               </div>
@@ -1307,6 +1368,7 @@ function render() {
       const backBtn = itemList.querySelector('#backToOficinasList');
       if (backBtn) {
         backBtn.addEventListener('click', () => {
+          clearAllSearchInputs();
           selectedOficinaForTodasVistorias = null;
           render();
         });
@@ -1316,12 +1378,14 @@ function render() {
       const toggleSupervisoesBtn = itemList.querySelector('#toggleFilterSupervisoes');
       if (toggleVistoriasBtn) {
         toggleVistoriasBtn.addEventListener('click', () => {
+          clearAllSearchInputs();
           selectedTodasVistoriasFilter = 'Vistorias';
           render();
         });
       }
       if (toggleSupervisoesBtn) {
         toggleSupervisoesBtn.addEventListener('click', () => {
+          clearAllSearchInputs();
           selectedTodasVistoriasFilter = 'Supervisões';
           render();
         });
