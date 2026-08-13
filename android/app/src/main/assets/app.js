@@ -262,10 +262,15 @@ function attachGlobalEventListeners() {
           alert('Esta oficina já está cadastrada!');
           return;
         }
+        const resp = window.prompt('Digite o nome do responsável pela oficina (opcional):');
+        const responsaveis = [];
+        if (resp && resp.trim()) {
+          responsaveis.push(resp.trim());
+        }
         const newOficina = {
           id: Date.now().toString(),
           name: cleanedName,
-          responsaveis: []
+          responsaveis: responsaveis
         };
         oficinas.push(newOficina);
         saveOficinas();
@@ -273,6 +278,7 @@ function attachGlobalEventListeners() {
         populateSupervisaoOficinaSelect();
         if (supervisaoOficinaSelect) {
           supervisaoOficinaSelect.value = newOficina.id;
+          populateSupervisaoAttendedSelect();
         }
       }
     });
@@ -2504,13 +2510,20 @@ function renderDynamicSurveyFields() {
           alert('Esta oficina já está cadastrada!');
           return;
         }
+        const resp = window.prompt('Digite o nome do responsável pela oficina (opcional):');
+        const responsaveis = [];
+        if (resp && resp.trim()) {
+          responsaveis.push(resp.trim());
+        }
         const newOficina = {
           id: Date.now().toString(),
-          name: cleanedName
+          name: cleanedName,
+          responsaveis: responsaveis
         };
         oficinas.push(newOficina);
         saveOficinas();
         renderOficinas();
+        populateSupervisaoOficinaSelect();
         
         renderDynamicSurveyFields();
         const selectEl = document.getElementById('itemOficinaSelect');
@@ -2640,6 +2653,18 @@ function populateSupervisaoAttendedSelect(preserveValue) {
         opt.textContent = trimmed;
         opt.selected = true;
         supervisaoAttendedInput.insertBefore(opt, supervisaoAttendedInput.querySelector('option[value="__outro__"]'));
+
+        // Auto-save as responsável for selected oficina
+        const oficinaId = supervisaoOficinaSelect ? supervisaoOficinaSelect.value : '';
+        const selectedOficina = oficinas.find(o => o.id === oficinaId);
+        if (selectedOficina) {
+          if (!selectedOficina.responsaveis) selectedOficina.responsaveis = [];
+          if (!selectedOficina.responsaveis.includes(trimmed)) {
+            selectedOficina.responsaveis.push(trimmed);
+            saveOficinas();
+            renderOficinas();
+          }
+        }
       } else {
         supervisaoAttendedInput.value = '';
       }
@@ -2667,6 +2692,49 @@ function populateSupervisaoStageSelect() {
     supervisaoStageInput.value = currentVal;
   }
 }
+
+function openStageManagerModal() {
+  const modal = document.getElementById('stageManagerModal');
+  if (!modal) return;
+  renderStageManagerList();
+  modal.style.display = 'flex';
+}
+window.openStageManagerModal = openStageManagerModal;
+
+function closeStageManagerModal() {
+  const modal = document.getElementById('stageManagerModal');
+  if (modal) modal.style.display = 'none';
+}
+window.closeStageManagerModal = closeStageManagerModal;
+
+function renderStageManagerList() {
+  const list = document.getElementById('stageManagerList');
+  if (!list) return;
+
+  if (!stages.length) {
+    list.innerHTML = '<li style="text-align: center; color: #94a3b8; padding: 12px;">Nenhuma etapa cadastrada.</li>';
+    return;
+  }
+
+  list.innerHTML = stages.map((st) => `
+    <li style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <span style="font-weight: 600; color: #1e293b; font-size: 0.9rem;">${escapeHtml(st)}</span>
+      <button type="button" onclick="deleteStage('${escapeHtml(st).replace(/'/g, "\\'")}')" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 6px; padding: 4px 10px; font-weight: 700; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
+        ❌ Excluir
+      </button>
+    </li>
+  `).join('');
+}
+
+function deleteStage(stageName) {
+  if (window.confirm(`Deseja realmente excluir a etapa "${stageName}"?`)) {
+    stages = stages.filter(st => st !== stageName);
+    saveStages();
+    populateSupervisaoStageSelect();
+    renderStageManagerList();
+  }
+}
+window.deleteStage = deleteStage;
 
 
 function updateFormState() {

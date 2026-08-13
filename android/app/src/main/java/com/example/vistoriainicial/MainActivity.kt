@@ -384,7 +384,7 @@ class MainActivity : ComponentActivity() {
 
     private fun scanPhysicalCameraFolder(startTime: Long): Int {
         var importedCount = 0
-        if (startTime == 0L || System.currentTimeMillis() - startTime > 300_000) return 0
+        if (startTime == 0L || System.currentTimeMillis() - startTime > 10_800_000) return 0
         val dcim = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
         val movies = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
         val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
@@ -495,7 +495,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun queryMediaStoreForNewMedia(startTime: Long, isVideo: Boolean): Int {
-        if (startTime == 0L || System.currentTimeMillis() - startTime > 300_000) return 0
+        if (startTime == 0L || System.currentTimeMillis() - startTime > 10_800_000) return 0
         val uri = if (isVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
             MediaStore.MediaColumns._ID,

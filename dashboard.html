@@ -286,7 +286,10 @@
           <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
               <span>Em que parte do serviço esta?:</span>
-              <a href="#" id="supervisaoQuickAddStage" style="color: #2563eb; font-size: 0.8rem; font-weight: 700; text-decoration: none;">+ Cadastrar Nova</a>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <a href="#" id="supervisaoManageStages" onclick="openStageManagerModal(); return false;" style="color: #dc2626; font-size: 0.78rem; font-weight: 700; text-decoration: none;">❌ Excluir Etapa</a>
+                <a href="#" id="supervisaoQuickAddStage" style="color: #2563eb; font-size: 0.78rem; font-weight: 700; text-decoration: none;">+ Cadastrar Nova</a>
+              </div>
             </div>
             <select id="supervisaoStageInput" name="stage" required>
               <option value="" disabled selected>Selecione a etapa...</option>
@@ -470,6 +473,24 @@
     </div>
 
 
+
+    <!-- STAGE MANAGER MODAL -->
+    <div id="stageManagerModal" class="photo-modal-overlay" style="display: none;">
+      <div class="photo-modal" style="max-width: 480px; background: white; padding: 20px; border-radius: 16px;">
+        <h3 style="margin-top: 0; color: #1e293b; text-align: center;">⚙️ Excluir Etapas de Serviço</h3>
+        <p style="font-size: 0.85rem; color: #4b5563; margin-top: 8px; margin-bottom: 12px; text-align: center;">
+          Clique no ❌ ao lado da etapa que deseja excluir do sistema:
+        </p>
+
+        <ul id="stageManagerList" style="list-style: none; padding: 0; margin: 0; max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <!-- Dynamically populated with stage name + red X button -->
+        </ul>
+
+        <div class="photo-modal-actions" style="margin-top: 16px;">
+          <button class="cancel-btn" type="button" onclick="closeStageManagerModal()" style="width: 100%;">Fechar</button>
+        </div>
+      </div>
+    </div>
 
     <!-- PHOTO MANAGER MODAL -->
     <div id="photoManagerModal" class="photo-modal-overlay" style="display: none;">
