@@ -362,8 +362,8 @@ class MainActivity : ComponentActivity() {
             }
         })
 
-        // Carregar assets internos empacotados no APK
-        webView.loadUrl("file:///android_asset/index.html")
+        // Carregar sistema online (Vercel) com fallback automático para assets locais se offline
+        webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/index.html")
 
         // Request Permissions
         checkPermissions()
@@ -1490,7 +1490,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     val ext = sourceFile.extension.ifEmpty { "mp4" }
                     val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%03d.%s", i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
-                    targetFile.setLastModified(batchTime + 500L + (i * 500L))
+                    targetFile.setLastModified(batchTime)
                     preparedFiles.add(targetFile)
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -1567,14 +1567,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     type = shareType
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
                     putExtra(Intent.EXTRA_TEXT, reportText)
-                    putExtra("caption", reportText)
-                }
-                if (uris.isNotEmpty()) {
-                    val clip = android.content.ClipData.newRawUri("Vistoria", uris[0])
-                    for (i in 1 until uris.size) {
-                        clip.addItem(android.content.ClipData.Item(uris[i]))
-                    }
-                    clipData = clip
                 }
                 putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
