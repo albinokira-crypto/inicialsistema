@@ -85,6 +85,8 @@ class MainActivity : ComponentActivity() {
         settings.allowFileAccess = true
         settings.databaseEnabled = true
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        settings.cacheMode = WebSettings.LOAD_NO_CACHE
+        webView.clearCache(true)
 
         // Interface bridge to JS
         webView.addJavascriptInterface(AndroidInterface(this), "AndroidInterface")
@@ -1418,31 +1420,42 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
-            // 1. Ordenação natural dos arquivos encontrados
+            fun isVideoFile(f: java.io.File): Boolean {
+                val n = f.name.lowercase()
+                return n.endsWith(".mp4") || n.endsWith(".mov") || n.endsWith(".3gp") || n.endsWith(".mkv") || n.endsWith(".webm")
+            }
+
+            // 1. Ordenação natural dos arquivos encontrados: FOTOS PRIMEIRO, VÍDEOS DEPOIS
             val naturalOrderComparator = Comparator<java.io.File> { f1, f2 ->
-                val name1 = f1.name
-                val name2 = f2.name
-                val regex = Regex("(\\d+)|(\\D+)")
-                val tokens1 = regex.findAll(name1).map { it.value }.toList()
-                val tokens2 = regex.findAll(name2).map { it.value }.toList()
-                var cmp = 0
-                for (i in 0 until minOf(tokens1.size, tokens2.size)) {
-                    val t1 = tokens1[i]
-                    val t2 = tokens2[i]
-                    if (t1 != t2) {
-                        val n1 = t1.toLongOrNull()
-                        val n2 = t2.toLongOrNull()
-                        cmp = if (n1 != null && n2 != null) {
-                            n1.compareTo(n2)
-                        } else {
-                            t1.compareTo(t2, ignoreCase = true)
+                val isVid1 = isVideoFile(f1)
+                val isVid2 = isVideoFile(f2)
+                if (isVid1 != isVid2) {
+                    if (!isVid1 && isVid2) -1 else 1
+                } else {
+                    val name1 = f1.name
+                    val name2 = f2.name
+                    val regex = Regex("(\\d+)|(\\D+)")
+                    val tokens1 = regex.findAll(name1).map { it.value }.toList()
+                    val tokens2 = regex.findAll(name2).map { it.value }.toList()
+                    var cmp = 0
+                    for (i in 0 until minOf(tokens1.size, tokens2.size)) {
+                        val t1 = tokens1[i]
+                        val t2 = tokens2[i]
+                        if (t1 != t2) {
+                            val n1 = t1.toLongOrNull()
+                            val n2 = t2.toLongOrNull()
+                            cmp = if (n1 != null && n2 != null) {
+                                n1.compareTo(n2)
+                            } else {
+                                t1.compareTo(t2, ignoreCase = true)
+                            }
+                            if (cmp != 0) break
                         }
-                        if (cmp != 0) break
                     }
+                    if (cmp == 0) cmp = tokens1.size.compareTo(tokens2.size)
+                    if (cmp == 0) cmp = f1.lastModified().compareTo(f2.lastModified())
+                    cmp
                 }
-                if (cmp == 0) cmp = tokens1.size.compareTo(tokens2.size)
-                if (cmp == 0) cmp = f1.lastModified().compareTo(f2.lastModified())
-                cmp
             }
             filesToShare.sortWith(naturalOrderComparator)
 
