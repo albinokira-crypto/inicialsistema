@@ -1472,26 +1472,68 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 })
             val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
 
-            // Ajustar data dos vídeos para depois da última foto, garantindo que o WhatsApp não quebre o álbum de fotos ao meio
-            if (imageFiles.isNotEmpty() && videoFiles.isNotEmpty()) {
-                val maxPhotoTime = imageFiles.maxOf { it.lastModified() }
-                for (i in videoFiles.indices) {
-                    try {
-                        videoFiles[i].setLastModified(maxPhotoTime + 5000L + (i * 2000L))
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+            // Preparar pasta de cache com timestamps e EXIF sincronizados para forçar o WhatsApp a montar álbum único com o vídeo no final
+            val shareTempDir = java.io.File(activity.cacheDir, "share_temp")
+            try {
+                if (shareTempDir.exists()) shareTempDir.deleteRecursively()
+                shareTempDir.mkdirs()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            val preparedFiles = ArrayList<java.io.File>()
+            val baseTime = System.currentTimeMillis() - ((imageFiles.size + videoFiles.size + 15) * 1000L)
+            val sdf = java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss", java.util.Locale.US)
+
+            for (i in imageFiles.indices) {
+                val sourceFile = imageFiles[i]
+                try {
+                    val ext = sourceFile.extension.ifEmpty { "jpg" }
+                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "foto_%03d.%s", i, ext))
+                    sourceFile.copyTo(targetFile, overwrite = true)
+                    val imgTime = baseTime + (i * 1000L)
+                    targetFile.setLastModified(imgTime)
+                    if (ext.lowercase() == "jpg" || ext.lowercase() == "jpeg") {
+                        try {
+                            val exif = android.media.ExifInterface(targetFile.absolutePath)
+                            val dateStr = sdf.format(java.util.Date(imgTime))
+                            exif.setAttribute(android.media.ExifInterface.TAG_DATETIME, dateStr)
+                            exif.setAttribute(android.media.ExifInterface.TAG_DATETIME_ORIGINAL, dateStr)
+                            exif.setAttribute(android.media.ExifInterface.TAG_DATETIME_DIGITIZED, dateStr)
+                            exif.saveAttributes()
+                        } catch (ex: Exception) {
+                            ex.printStackTrace()
+                        }
                     }
+                    preparedFiles.add(targetFile)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    preparedFiles.add(sourceFile)
                 }
             }
 
-            val sortedFiles = ArrayList<java.io.File>()
-            sortedFiles.addAll(imageFiles)
-            sortedFiles.addAll(videoFiles)
-            sortedFiles.addAll(otherFiles)
+            for (i in videoFiles.indices) {
+                val sourceFile = videoFiles[i]
+                try {
+                    val ext = sourceFile.extension.ifEmpty { "mp4" }
+                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%03d.%s", i, ext))
+                    sourceFile.copyTo(targetFile, overwrite = true)
+                    val vidTime = baseTime + ((imageFiles.size + 10 + i) * 1000L)
+                    targetFile.setLastModified(vidTime)
+                    preparedFiles.add(targetFile)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    preparedFiles.add(sourceFile)
+                }
+            }
+
+            for (other in otherFiles) {
+                preparedFiles.add(other)
+            }
 
             val uris = ArrayList<Uri>()
             val addedUriStrings = HashSet<String>()
-            for (file in sortedFiles) {
+            for (file in preparedFiles) {
                 try {
                     val uri = androidx.core.content.FileProvider.getUriForFile(
                         activity,
