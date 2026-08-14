@@ -1226,12 +1226,12 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             tempShareFiles.clear()
-            val cacheDir = java.io.File(activity.cacheDir, "share_temp")
+            val safCacheDir = java.io.File(activity.cacheDir, "share_temp")
             try {
-                if (cacheDir.exists()) {
-                    cacheDir.deleteRecursively()
+                if (safCacheDir.exists()) {
+                    safCacheDir.deleteRecursively()
                 }
-                cacheDir.mkdirs()
+                safCacheDir.mkdirs()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -1293,7 +1293,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                                                     }
                                                 }
                                                 try {
-                                                    val tempFile = java.io.File(cacheDir, name)
+                                                    val tempFile = java.io.File(safCacheDir, name)
                                                     activity.contentResolver.openInputStream(file.uri)?.use { input ->
                                                         java.io.FileOutputStream(tempFile).use { output ->
                                                             input.copyTo(output)
