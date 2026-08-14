@@ -1523,7 +1523,8 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             val hasImages = imageFiles.isNotEmpty()
             val hasVideos = videoFiles.isNotEmpty()
-            val shareType = if (hasImages && hasVideos) "*/*" else if (hasVideos) "video/*" else "image/*"
+            // O WhatsApp rejeita MIME "*/*" no IntentFilter. Usamos "image/*" (suporta fotos + videos no MediaComposer) ou "video/*" (quando apenas videos)
+            val shareType = if (hasVideos && !hasImages) "video/*" else "image/*"
 
             val intent = Intent().apply {
                 setPackage(whatsappPkg)
