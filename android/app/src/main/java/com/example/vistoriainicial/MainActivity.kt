@@ -1458,53 +1458,11 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     cmp
                 }
             }
-            val imageExtensions = setOf("jpg", "jpeg", "png", "webp")
-            val videoExtensions = setOf("mp4", "mov", "3gp", "mkv", "webm")
-
-            val imageFiles = filesToShare.filter { it.extension.lowercase() in imageExtensions }
-                .sortedWith(naturalOrderComparator)
-            val videoFiles = filesToShare.filter { it.extension.lowercase() in videoExtensions }
-                .sortedWith(naturalOrderComparator)
-            val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
-
-            val preparedFiles = ArrayList<java.io.File>()
-            val batchTime = System.currentTimeMillis()
-
-            for (i in imageFiles.indices) {
-                val sourceFile = imageFiles[i]
-                try {
-                    val ext = sourceFile.extension.ifEmpty { "jpg" }
-                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "foto_%03d.%s", i, ext))
-                    sourceFile.copyTo(targetFile, overwrite = true)
-                    targetFile.setLastModified(batchTime)
-                    preparedFiles.add(targetFile)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    preparedFiles.add(sourceFile)
-                }
-            }
-
-            for (i in videoFiles.indices) {
-                val sourceFile = videoFiles[i]
-                try {
-                    val ext = sourceFile.extension.ifEmpty { "mp4" }
-                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%03d.%s", i, ext))
-                    sourceFile.copyTo(targetFile, overwrite = true)
-                    targetFile.setLastModified(batchTime)
-                    preparedFiles.add(targetFile)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    preparedFiles.add(sourceFile)
-                }
-            }
-
-            for (other in otherFiles) {
-                preparedFiles.add(other)
-            }
+            filesToShare.sortWith(naturalOrderComparator)
 
             val uris = ArrayList<Uri>()
             val addedUriStrings = HashSet<String>()
-            for (file in preparedFiles) {
+            for (file in filesToShare) {
                 try {
                     val uri = androidx.core.content.FileProvider.getUriForFile(
                         activity,
@@ -1543,13 +1501,14 @@ class AndroidInterface(private val activity: ComponentActivity) {
             if (uris.isEmpty()) {
                 Toast.makeText(activity, "Nenhuma foto/vídeo encontrado para $vehicleName. Enviando relatório de texto...", Toast.LENGTH_LONG).show()
             } else {
-                Toast.makeText(activity, "📋 Relatório copiado! Abrindo WhatsApp com ${uris.size} mídias em lote único...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias...", Toast.LENGTH_SHORT).show()
             }
 
-            val hasImages = imageFiles.isNotEmpty()
-            val hasVideos = videoFiles.isNotEmpty()
-            // O WhatsApp rejeita MIME "*/*" no IntentFilter. Usamos "image/*" (suporta fotos + videos no MediaComposer) ou "video/*" (quando apenas videos)
-            val shareType = if (hasVideos && !hasImages) "video/*" else "image/*"
+            val hasVideosOnly = filesToShare.all { f -> 
+                val name = f.name.lowercase()
+                name.endsWith(".mp4") || name.endsWith(".mov") || name.endsWith(".3gp") || name.endsWith(".mkv") || name.endsWith(".webm")
+            }
+            val shareType = if (hasVideosOnly) "video/*" else "image/*"
 
             val intent = Intent().apply {
                 setPackage(whatsappPkg)
@@ -1566,6 +1525,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     action = Intent.ACTION_SEND_MULTIPLE
                     type = shareType
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                    putExtra(Intent.EXTRA_TEXT, reportText)
                 }
                 if (uris.isNotEmpty()) {
                     val clip = android.content.ClipData.newRawUri("Vistoria", uris[0])
@@ -1575,7 +1535,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     clipData = clip
                 }
                 putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             }
 
             for (uri in uris) {
