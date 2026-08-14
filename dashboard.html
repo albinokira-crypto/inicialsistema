@@ -8,7 +8,7 @@
     <script>
       (function() {
         try {
-          const APP_VERSION = 'v109_oficina_responsaveis';
+          const APP_VERSION = 'v144_hide_settings';
           if (localStorage.getItem('app_version') !== APP_VERSION) {
             localStorage.setItem('app_version', APP_VERSION);
             if ('caches' in window) {
@@ -20,7 +20,7 @@
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=93" />
+    <link rel="stylesheet" href="styles.css?v=144" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -377,7 +377,7 @@
         <h3>Configurações do Sistema</h3>
         
         <!-- SELEÇÃO DE PASTA (INVISÍVEL) -->
-        <div style="display: none !important; flex-direction: column; gap: 12px; margin-top: 16px;">
+        <div id="folderSettingsSection" style="display: none !important; flex-direction: column; gap: 12px; margin-top: 16px;">
           <button id="selectStorageFolderBtn" class="primary-btn" type="button" style="padding: 12px; font-weight: 700; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 12px; cursor: pointer; width: 100%;">
             📂 Selecionar Pasta no Celular
           </button>
@@ -385,7 +385,7 @@
         </div>
 
         <!-- SELEÇÃO DE CÂMERA (INVISÍVEL) -->
-        <div style="display: none !important; flex-direction: column; gap: 12px; margin-top: 20px; border-top: 1.5px dashed #e2e8f0; padding-top: 16px;">
+        <div id="cameraSettingsSection" style="display: none !important; flex-direction: column; gap: 12px; margin-top: 20px; border-top: 1.5px dashed #e2e8f0; padding-top: 16px;">
           <p style="font-size: 0.85rem; color: #4b5563; margin-bottom: 4px; font-weight: bold;">
             Configuração de Fotos
           </p>
@@ -526,6 +526,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=109"></script>
+    <script src="app.js?v=144"></script>
   </body>
 </html>

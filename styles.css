@@ -1353,4 +1353,16 @@ html, body {
   font-size: 0.8rem;
 }
 
+/* Ocultar opções de pasta e câmera no modal de configurações */
+#folderSettingsSection,
+#cameraSettingsSection,
+#selectStorageFolderBtn,
+#selectedFolderLabel,
+#preferredCameraLabel,
+#selectCameraBtn,
+#clearCameraBtn {
+  display: none !important;
+}
+
+
 

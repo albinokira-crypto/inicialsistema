@@ -3341,6 +3341,10 @@ function updateFolderLabelUI() {
 }
 
 function openSystemSettings() {
+  const folderSection = document.getElementById('folderSettingsSection');
+  if (folderSection) folderSection.style.setProperty('display', 'none', 'important');
+  const cameraSection = document.getElementById('cameraSettingsSection');
+  if (cameraSection) cameraSection.style.setProperty('display', 'none', 'important');
   updateFolderLabelUI();
   updatePreferredCameraUI();
   if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
@@ -3366,11 +3370,10 @@ function updatePreferredCameraUI() {
     if (saved) label = saved;
   }
 
-  preferredCameraLabel.style.display = 'block';
   preferredCameraLabel.textContent = "Câmera preferida: " + label;
-  
+  preferredCameraLabel.style.display = 'none';
   if (clearCameraBtn) {
-    clearCameraBtn.style.display = (label && label !== 'Nenhuma') ? 'inline-block' : 'none';
+    clearCameraBtn.style.display = 'none';
   }
 }
 
