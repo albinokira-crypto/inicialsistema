@@ -1486,7 +1486,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 val sourceFile = imageFiles[i]
                 try {
                     val ext = sourceFile.extension.ifEmpty { "jpg" }
-                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "foto_%d_%03d.%s", sessionId, i, ext))
+                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "foto_%03d.%s", i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
                     val imgTime = baseTime + (i * 1000L)
                     targetFile.setLastModified(imgTime)
@@ -1513,7 +1513,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 val sourceFile = videoFiles[i]
                 try {
                     val ext = sourceFile.extension.ifEmpty { "mp4" }
-                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%d_%03d.%s", sessionId, i, ext))
+                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%03d.%s", i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
                     val vidTime = referenceEarliestTime + 5000L + (i * 2000L)
                     targetFile.setLastModified(vidTime)
@@ -1602,7 +1602,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     clipData = clip
                 }
                 putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
 
             for (uri in uris) {
