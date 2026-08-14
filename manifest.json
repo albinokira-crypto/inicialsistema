@@ -1,0 +1,33 @@
+{
+  "id": "tkst-alunos-app",
+  "name": "TKST Alunos - Portal de estudos",
+  "short_name": "TKST Alunos",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A0D14",
+  "theme_color": "#0A0D14",
+  "description": "Portal Oficial de Estudos e Graduações de Karatê Shotokan da TKST.",
+  "categories": ["education", "sports"],
+  "icons": [
+    {
+      "src": "assets/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
