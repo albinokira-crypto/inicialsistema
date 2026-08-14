@@ -2379,4 +2379,20 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
         }
     }
+
+    @JavascriptInterface
+    fun downloadApkUpdate(targetUrl: String? = null) {
+        activity.runOnUiThread {
+            try {
+                val url = if (!targetUrl.isNullOrEmpty()) targetUrl else "https://github.com/albinokira-crypto/inicialsistema/raw/master/VistoriaInicial_v1.21.apk"
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                activity.startActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                android.widget.Toast.makeText(activity, "Erro ao iniciar download: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 }
