@@ -376,14 +376,16 @@
       <div class="photo-modal" style="max-width: 450px;">
         <h3>Configurações do Sistema</h3>
         
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+        <!-- SELEÇÃO DE PASTA (INVISÍVEL) -->
+        <div style="display: none !important; flex-direction: column; gap: 12px; margin-top: 16px;">
           <button id="selectStorageFolderBtn" class="primary-btn" type="button" style="padding: 12px; font-weight: 700; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 12px; cursor: pointer; width: 100%;">
             📂 Selecionar Pasta no Celular
           </button>
           <p id="selectedFolderLabel" style="font-size: 0.85rem; color: #4b5563; margin-top: -4px; margin-bottom: 4px; font-weight: bold; text-align: center;">Nenhuma pasta selecionada (usando padrão)</p>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px; border-top: 1.5px dashed #e2e8f0; padding-top: 16px;">
+        <!-- SELEÇÃO DE CÂMERA (INVISÍVEL) -->
+        <div style="display: none !important; flex-direction: column; gap: 12px; margin-top: 20px; border-top: 1.5px dashed #e2e8f0; padding-top: 16px;">
           <p style="font-size: 0.85rem; color: #4b5563; margin-bottom: 4px; font-weight: bold;">
             Configuração de Fotos
           </p>
