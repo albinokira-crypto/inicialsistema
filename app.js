@@ -3820,6 +3820,7 @@ async function shareVistoriaWhatsApp(id) {
     try {
       const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
       if (storedPhotos && storedPhotos.length > 0) {
+        storedPhotos.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
         for (const p of storedPhotos) {
           if (p.rawBlob) {
             const base64 = await blobToBase64(p.rawBlob);
@@ -3851,6 +3852,7 @@ async function shareVistoriaWhatsApp(id) {
     const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
     let filesToShare = [];
     if (storedPhotos && storedPhotos.length > 0) {
+      storedPhotos.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
       for (const p of storedPhotos) {
         if (p.rawBlob) {
           let mimeType = p.rawBlob.type;
