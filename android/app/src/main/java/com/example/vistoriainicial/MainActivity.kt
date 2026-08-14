@@ -1521,8 +1521,9 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias em lote único...", Toast.LENGTH_SHORT).show()
             }
 
-            val hasVideosOnly = filesToShare.all { it.extension.lowercase() in videoExtensions }
-            val shareType = if (hasVideosOnly) "video/*" else "image/*"
+            val hasImages = imageFiles.isNotEmpty()
+            val hasVideos = videoFiles.isNotEmpty()
+            val shareType = if (hasImages && hasVideos) "*/*" else if (hasVideos) "video/*" else "image/*"
 
             val intent = Intent().apply {
                 setPackage(whatsappPkg)
