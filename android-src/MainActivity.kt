@@ -1462,25 +1462,15 @@ class AndroidInterface(private val activity: ComponentActivity) {
             val videoExtensions = setOf("mp4", "mov", "3gp", "mkv", "webm")
 
             val imageFiles = filesToShare.filter { it.extension.lowercase() in imageExtensions }
-                .sortedWith(Comparator { f1, f2 ->
-                    val timeCmp = f1.lastModified().compareTo(f2.lastModified())
-                    if (timeCmp != 0) timeCmp else naturalOrderComparator.compare(f1, f2)
-                })
+                .sortedWith(naturalOrderComparator)
             val videoFiles = filesToShare.filter { it.extension.lowercase() in videoExtensions }
-                .sortedWith(Comparator { f1, f2 ->
-                    val timeCmp = f1.lastModified().compareTo(f2.lastModified())
-                    if (timeCmp != 0) timeCmp else naturalOrderComparator.compare(f1, f2)
-                })
+                .sortedWith(naturalOrderComparator)
             val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
 
             val preparedFiles = ArrayList<java.io.File>()
-            val minVideoTime = if (videoFiles.isNotEmpty()) videoFiles.minOf { it.lastModified() } else System.currentTimeMillis()
-            val minPhotoTime = if (imageFiles.isNotEmpty()) imageFiles.minOf { it.lastModified() } else System.currentTimeMillis()
-            val referenceEarliestTime = minOf(minVideoTime, minPhotoTime)
-            
-            // Garantir que a base de horário de todas as fotos seja anterior ao vídeo mais antigo
-            val baseTime = referenceEarliestTime - ((imageFiles.size + 20) * 2000L)
+            val batchTime = System.currentTimeMillis()
             val sdf = java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss", java.util.Locale.US)
+            val dateStr = sdf.format(java.util.Date(batchTime))
 
             for (i in imageFiles.indices) {
                 val sourceFile = imageFiles[i]
@@ -1488,21 +1478,22 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     val ext = sourceFile.extension.ifEmpty { "jpg" }
                     val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "foto_%03d.%s", i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
-                    val imgTime = baseTime + (i * 2000L)
                     if (ext.lowercase() == "jpg" || ext.lowercase() == "jpeg") {
                         try {
                             val exif = android.media.ExifInterface(targetFile.absolutePath)
-                            val dateStr = sdf.format(java.util.Date(imgTime))
                             exif.setAttribute(android.media.ExifInterface.TAG_DATETIME, dateStr)
                             exif.setAttribute(android.media.ExifInterface.TAG_DATETIME_ORIGINAL, dateStr)
                             exif.setAttribute(android.media.ExifInterface.TAG_DATETIME_DIGITIZED, dateStr)
+                            exif.setAttribute("SubSecTime", String.format(java.util.Locale.US, "%03d", i))
+                            exif.setAttribute("SubSecTimeOriginal", String.format(java.util.Locale.US, "%03d", i))
+                            exif.setAttribute("SubSecTimeDigitized", String.format(java.util.Locale.US, "%03d", i))
                             exif.saveAttributes()
                         } catch (ex: Exception) {
                             ex.printStackTrace()
                         }
                     }
-                    // CRUCIAL: setLastModified DEVE ser chamado DEPOIS de saveAttributes() pois saveAttributes() sobrescreve a data do arquivo no disco
-                    targetFile.setLastModified(imgTime)
+                    // CRUCIAL: Todas as fotos ficam com o exato mesmo timestamp de arquivo no disco para o WhatsApp reconhecer como album unico inseparavel
+                    targetFile.setLastModified(batchTime)
                     preparedFiles.add(targetFile)
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -1516,8 +1507,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     val ext = sourceFile.extension.ifEmpty { "mp4" }
                     val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%03d.%s", i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
-                    val vidTime = baseTime + ((imageFiles.size + 1 + i) * 2000L)
-                    targetFile.setLastModified(vidTime)
+                    targetFile.setLastModified(batchTime + 1000L + (i * 1000L))
                     preparedFiles.add(targetFile)
                 } catch (e: Exception) {
                     e.printStackTrace()
