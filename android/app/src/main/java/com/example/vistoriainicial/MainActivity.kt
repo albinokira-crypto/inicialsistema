@@ -1468,32 +1468,13 @@ class AndroidInterface(private val activity: ComponentActivity) {
             val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
 
             val preparedFiles = ArrayList<java.io.File>()
-            val batchTime = System.currentTimeMillis()
-            val sdf = java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss", java.util.Locale.US)
-            val dateStr = sdf.format(java.util.Date(batchTime))
-
             for (i in imageFiles.indices) {
                 val sourceFile = imageFiles[i]
                 try {
                     val ext = sourceFile.extension.ifEmpty { "jpg" }
                     val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "foto_%03d.%s", i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
-                    if (ext.lowercase() == "jpg" || ext.lowercase() == "jpeg") {
-                        try {
-                            val exif = android.media.ExifInterface(targetFile.absolutePath)
-                            exif.setAttribute(android.media.ExifInterface.TAG_DATETIME, dateStr)
-                            exif.setAttribute(android.media.ExifInterface.TAG_DATETIME_ORIGINAL, dateStr)
-                            exif.setAttribute(android.media.ExifInterface.TAG_DATETIME_DIGITIZED, dateStr)
-                            exif.setAttribute("SubSecTime", String.format(java.util.Locale.US, "%03d", i))
-                            exif.setAttribute("SubSecTimeOriginal", String.format(java.util.Locale.US, "%03d", i))
-                            exif.setAttribute("SubSecTimeDigitized", String.format(java.util.Locale.US, "%03d", i))
-                            exif.saveAttributes()
-                        } catch (ex: Exception) {
-                            ex.printStackTrace()
-                        }
-                    }
-                    // CRUCIAL: Todas as fotos ficam com o exato mesmo timestamp de arquivo no disco para o WhatsApp reconhecer como album unico inseparavel
-                    targetFile.setLastModified(batchTime)
+                    targetFile.setLastModified(sourceFile.lastModified())
                     preparedFiles.add(targetFile)
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -1507,7 +1488,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     val ext = sourceFile.extension.ifEmpty { "mp4" }
                     val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%03d.%s", i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
-                    targetFile.setLastModified(batchTime + 1000L + (i * 1000L))
+                    targetFile.setLastModified(sourceFile.lastModified())
                     preparedFiles.add(targetFile)
                 } catch (e: Exception) {
                     e.printStackTrace()
