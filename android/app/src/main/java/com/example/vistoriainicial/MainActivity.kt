@@ -1460,8 +1460,16 @@ class AndroidInterface(private val activity: ComponentActivity) {
             val imageExtensions = setOf("jpg", "jpeg", "png", "webp")
             val videoExtensions = setOf("mp4", "mov", "3gp", "mkv", "webm")
 
-            val imageFiles = filesToShare.filter { it.extension.lowercase() in imageExtensions }.sortedWith(naturalOrderComparator)
-            val videoFiles = filesToShare.filter { it.extension.lowercase() in videoExtensions }.sortedWith(naturalOrderComparator)
+            val imageFiles = filesToShare.filter { it.extension.lowercase() in imageExtensions }
+                .sortedWith(Comparator { f1, f2 ->
+                    val timeCmp = f1.lastModified().compareTo(f2.lastModified())
+                    if (timeCmp != 0) timeCmp else naturalOrderComparator.compare(f1, f2)
+                })
+            val videoFiles = filesToShare.filter { it.extension.lowercase() in videoExtensions }
+                .sortedWith(Comparator { f1, f2 ->
+                    val timeCmp = f1.lastModified().compareTo(f2.lastModified())
+                    if (timeCmp != 0) timeCmp else naturalOrderComparator.compare(f1, f2)
+                })
             val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
 
             val sortedFiles = ArrayList<java.io.File>()
@@ -1513,9 +1521,8 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias em lote único...", Toast.LENGTH_SHORT).show()
             }
 
-            val hasImages = imageFiles.isNotEmpty()
-            val hasVideos = videoFiles.isNotEmpty()
-            val shareType = if (hasImages && hasVideos) "*/*" else if (hasVideos) "video/*" else "image/*"
+            val hasVideosOnly = filesToShare.all { it.extension.lowercase() in videoExtensions }
+            val shareType = if (hasVideosOnly) "video/*" else "image/*"
 
             val intent = Intent().apply {
                 setPackage(whatsappPkg)
