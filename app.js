@@ -3723,6 +3723,16 @@ window.onStorageFolderSelected = function(folderName) {
   localStorage.setItem('photo_folder_name_friendly', folderName);
 };
 
+function downloadLatestApk() {
+  const apkUrl = 'https://github.com/albinokira-crypto/inicialsistema/raw/master/VistoriaInicial.apk';
+  if (window.AndroidInterface && typeof window.AndroidInterface.downloadApkUpdate === 'function') {
+    window.AndroidInterface.downloadApkUpdate();
+  } else {
+    window.open(apkUrl, '_blank');
+  }
+}
+window.downloadLatestApk = downloadLatestApk;
+
 if (closePhotoManagerButton) {
   closePhotoManagerButton.addEventListener('click', () => {
     // Close the modal without deleting stored photos from IndexedDB

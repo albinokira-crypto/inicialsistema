@@ -89,6 +89,17 @@ class MainActivity : ComponentActivity() {
         // Interface bridge to JS
         webView.addJavascriptInterface(AndroidInterface(this), "AndroidInterface")
 
+        webView.setDownloadListener { url, _, _, _, _ ->
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         webView.webViewClient = object : WebViewClient() {
             override fun onReceivedError(
                 view: WebView?,
@@ -2086,6 +2097,22 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 mainAct.deleteOriginalPhoto(mainAct.sanitizeFilename(filename))
             }
         }.start()
+    }
+
+    @JavascriptInterface
+    fun downloadApkUpdate() {
+        activity.runOnUiThread {
+            try {
+                val apkUrl = "https://github.com/albinokira-crypto/inicialsistema/raw/master/VistoriaInicial.apk"
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(apkUrl)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                activity.startActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(activity, "Erro ao abrir link de atualização: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     @JavascriptInterface
