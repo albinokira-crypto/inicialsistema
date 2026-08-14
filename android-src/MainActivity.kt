@@ -1472,6 +1472,18 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 })
             val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
 
+            // Ajustar data dos vídeos para depois da última foto, garantindo que o WhatsApp não quebre o álbum de fotos ao meio
+            if (imageFiles.isNotEmpty() && videoFiles.isNotEmpty()) {
+                val maxPhotoTime = imageFiles.maxOf { it.lastModified() }
+                for (i in videoFiles.indices) {
+                    try {
+                        videoFiles[i].setLastModified(maxPhotoTime + 5000L + (i * 2000L))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+
             val sortedFiles = ArrayList<java.io.File>()
             sortedFiles.addAll(imageFiles)
             sortedFiles.addAll(videoFiles)
