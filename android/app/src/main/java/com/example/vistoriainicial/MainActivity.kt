@@ -1543,7 +1543,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
             if (uris.isEmpty()) {
                 Toast.makeText(activity, "Nenhuma foto/vídeo encontrado para $vehicleName. Enviando relatório de texto...", Toast.LENGTH_LONG).show()
             } else {
-                Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias em lote único...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, "📋 Relatório copiado! Abrindo WhatsApp com ${uris.size} mídias em lote único...", Toast.LENGTH_SHORT).show()
             }
 
             val hasImages = imageFiles.isNotEmpty()
@@ -1566,7 +1566,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     action = Intent.ACTION_SEND_MULTIPLE
                     type = shareType
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-                    putExtra(Intent.EXTRA_TEXT, reportText)
                 }
                 putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
