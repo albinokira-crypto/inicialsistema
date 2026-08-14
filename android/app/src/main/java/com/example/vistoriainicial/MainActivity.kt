@@ -1468,13 +1468,15 @@ class AndroidInterface(private val activity: ComponentActivity) {
             val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
 
             val preparedFiles = ArrayList<java.io.File>()
+            val batchTime = System.currentTimeMillis()
+
             for (i in imageFiles.indices) {
                 val sourceFile = imageFiles[i]
                 try {
                     val ext = sourceFile.extension.ifEmpty { "jpg" }
                     val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "foto_%03d.%s", i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
-                    targetFile.setLastModified(sourceFile.lastModified())
+                    targetFile.setLastModified(batchTime)
                     preparedFiles.add(targetFile)
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -1488,7 +1490,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     val ext = sourceFile.extension.ifEmpty { "mp4" }
                     val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%03d.%s", i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
-                    targetFile.setLastModified(sourceFile.lastModified())
+                    targetFile.setLastModified(batchTime + 500L + (i * 500L))
                     preparedFiles.add(targetFile)
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -1565,6 +1567,11 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     type = shareType
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
                     putExtra(Intent.EXTRA_TEXT, reportText)
+                    val texts = ArrayList<String>()
+                    for (u in uris) {
+                        texts.add(reportText)
+                    }
+                    putStringArrayListExtra(Intent.EXTRA_TEXT, texts)
                 }
                 if (uris.isNotEmpty()) {
                     val clip = android.content.ClipData.newRawUri("Vistoria", uris[0])
