@@ -1457,48 +1457,21 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     cmp
                 }
             }
-            filesToShare.sortWith(naturalOrderComparator)
+            val imageExtensions = setOf("jpg", "jpeg", "png", "webp")
+            val videoExtensions = setOf("mp4", "mov", "3gp", "mkv", "webm")
 
-            // 2. Cria pasta temporária limpa e copia arquivos com numeração e timestamps sequenciais estritos
-            tempShareFiles.clear()
-            val cacheDir = java.io.File(activity.cacheDir, "share_batch")
-            try {
-                if (cacheDir.exists()) {
-                    cacheDir.deleteRecursively()
-                }
-                cacheDir.mkdirs()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            val imageFiles = filesToShare.filter { it.extension.lowercase() in imageExtensions }.sortedWith(naturalOrderComparator)
+            val videoFiles = filesToShare.filter { it.extension.lowercase() in videoExtensions }.sortedWith(naturalOrderComparator)
+            val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
 
-            val sequentialFiles = ArrayList<java.io.File>()
-            val baseTime = 1700000000000L
-            for (i in 0 until filesToShare.size) {
-                val sourceFile = filesToShare[i]
-                try {
-                    val ext = sourceFile.extension.ifEmpty { "jpg" }
-                    val targetFile = java.io.File(cacheDir, String.format(java.util.Locale.US, "midia_%04d.%s", i, ext))
-                    sourceFile.inputStream().use { input ->
-                        java.io.FileOutputStream(targetFile).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    if (targetFile.exists() && targetFile.length() > 0) {
-                        targetFile.setLastModified(baseTime + (i * 1000L))
-                        sequentialFiles.add(targetFile)
-                        tempShareFiles.add(targetFile)
-                    } else {
-                        sequentialFiles.add(sourceFile)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    sequentialFiles.add(sourceFile)
-                }
-            }
+            val sortedFiles = ArrayList<java.io.File>()
+            sortedFiles.addAll(imageFiles)
+            sortedFiles.addAll(videoFiles)
+            sortedFiles.addAll(otherFiles)
 
             val uris = ArrayList<Uri>()
             val addedUriStrings = HashSet<String>()
-            for (file in sequentialFiles) {
+            for (file in sortedFiles) {
                 try {
                     val uri = androidx.core.content.FileProvider.getUriForFile(
                         activity,
@@ -1540,14 +1513,8 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias em lote único...", Toast.LENGTH_SHORT).show()
             }
 
-            val hasImages = sequentialFiles.any { f -> 
-                val name = f.name.lowercase()
-                name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png")
-            }
-            val hasVideos = sequentialFiles.any { f -> 
-                val name = f.name.lowercase()
-                name.endsWith(".mp4") || name.endsWith(".mov") || name.endsWith(".3gp") || name.endsWith(".mkv") || name.endsWith(".webm")
-            }
+            val hasImages = imageFiles.isNotEmpty()
+            val hasVideos = videoFiles.isNotEmpty()
             val shareType = if (hasImages && hasVideos) "*/*" else if (hasVideos) "video/*" else "image/*"
 
             val intent = Intent().apply {
@@ -1566,6 +1533,13 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     type = shareType
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
                     putExtra(Intent.EXTRA_TEXT, reportText)
+                }
+                if (uris.isNotEmpty()) {
+                    val clip = android.content.ClipData.newRawUri("Vistoria", uris[0])
+                    for (i in 1 until uris.size) {
+                        clip.addItem(android.content.ClipData.Item(uris[i]))
+                    }
+                    clipData = clip
                 }
                 putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)

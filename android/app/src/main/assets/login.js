@@ -347,7 +347,7 @@ if (submitPasteBackupLoginBtn) {
 }
 
 function downloadLatestApk() {
-  const apkUrl = 'https://github.com/albinokira-crypto/inicialsistema/raw/master/VistoriaInicial_v1.22.apk';
+  const apkUrl = 'https://github.com/albinokira-crypto/inicialsistema/raw/master/VistoriaInicial_v1.23.apk';
   if (window.AndroidInterface && typeof window.AndroidInterface.downloadApkUpdate === 'function') {
     window.AndroidInterface.downloadApkUpdate(apkUrl);
   } else {
