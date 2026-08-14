@@ -362,8 +362,8 @@ class MainActivity : ComponentActivity() {
             }
         })
 
-        // Carregar do Vercel, com fallback para arquivo local se estiver offline
-        webView.loadUrl("https://gestao-vistoria-inicial.vercel.app")
+        // Carregar assets internos empacotados no APK
+        webView.loadUrl("file:///android_asset/index.html")
 
         // Request Permissions
         checkPermissions()
