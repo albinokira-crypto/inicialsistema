@@ -345,3 +345,13 @@ if (submitPasteBackupLoginBtn) {
     }
   });
 }
+
+function downloadLatestApk() {
+  const apkUrl = 'https://github.com/albinokira-crypto/inicialsistema/raw/master/VistoriaInicial.apk';
+  if (window.AndroidInterface && typeof window.AndroidInterface.downloadApkUpdate === 'function') {
+    window.AndroidInterface.downloadApkUpdate();
+  } else {
+    window.location.href = apkUrl;
+  }
+}
+window.downloadLatestApk = downloadLatestApk;

@@ -1471,7 +1471,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                         }
                     }
                     if (targetFile.exists() && targetFile.length() > 0) {
-                        targetFile.setLastModified(baseTime + (i * 1000L))
+                        targetFile.setLastModified(baseTime)
                         sequentialFiles.add(targetFile)
                         tempShareFiles.add(targetFile)
                     } else {
@@ -1555,13 +1555,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     putExtra(Intent.EXTRA_TEXT, reportText)
                 }
                 putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
-                if (uris.isNotEmpty()) {
-                    val clip = android.content.ClipData.newRawUri("Vistoria", uris[0])
-                    for (i in 1 until uris.size) {
-                        clip.addItem(android.content.ClipData.Item(uris[i]))
-                    }
-                    clipData = clip
-                }
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             }
 

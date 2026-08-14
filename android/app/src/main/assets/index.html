@@ -8,7 +8,7 @@
     <script>
       (function() {
         try {
-          const APP_VERSION = 'v117_share_batch_fix';
+          const APP_VERSION = 'v118_single_batch_and_update_button';
           if (localStorage.getItem('app_version') !== APP_VERSION) {
             localStorage.setItem('app_version', APP_VERSION);
             if ('caches' in window) {
@@ -70,6 +70,9 @@
           </button>
           <button id="importPasteBackupLoginBtn" class="ghost-btn" type="button" style="padding: 10px 14px; font-size: 0.85rem; border: 1px solid #ddd6fe; color: #7c3aed; background: #f5f3ff; font-weight: 700; width: 100%; border-radius: 12px; cursor: pointer;">
             📋 Colar Código do Backup (Texto)
+          </button>
+          <button id="loginDownloadApkBtn" class="primary-btn" type="button" onclick="downloadLatestApk()" style="padding: 12px 14px; font-size: 0.9rem; background: linear-gradient(135deg, #16a34a, #15803d); color: white; font-weight: 700; width: 100%; border-radius: 12px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">
+            🚀 Baixar / Atualizar Aplicativo (APK)
           </button>
           <input type="file" id="backupFileInput" accept=".json" style="display: none;" />
         </div>
