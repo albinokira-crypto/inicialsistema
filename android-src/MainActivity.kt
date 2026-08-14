@@ -1418,40 +1418,74 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
-            // Ordenação natural e cronológica estrita para garantir lote único contínuo com legenda correta
+            // 1. Ordenação natural dos arquivos encontrados
             val naturalOrderComparator = Comparator<java.io.File> { f1, f2 ->
-                val time1 = f1.lastModified()
-                val time2 = f2.lastModified()
-                if (time1 != time2) {
-                    time1.compareTo(time2)
-                } else {
-                    val regex = Regex("(\\d+)|(\\D+)")
-                    val tokens1 = regex.findAll(f1.name).map { it.value }.toList()
-                    val tokens2 = regex.findAll(f2.name).map { it.value }.toList()
-                    var cmp = 0
-                    for (i in 0 until minOf(tokens1.size, tokens2.size)) {
-                        val t1 = tokens1[i]
-                        val t2 = tokens2[i]
-                        if (t1 != t2) {
-                            val n1 = t1.toLongOrNull()
-                            val n2 = t2.toLongOrNull()
-                            cmp = if (n1 != null && n2 != null) {
-                                n1.compareTo(n2)
-                            } else {
-                                t1.compareTo(t2, ignoreCase = true)
-                            }
-                            if (cmp != 0) break
+                val name1 = f1.name
+                val name2 = f2.name
+                val regex = Regex("(\\d+)|(\\D+)")
+                val tokens1 = regex.findAll(name1).map { it.value }.toList()
+                val tokens2 = regex.findAll(name2).map { it.value }.toList()
+                var cmp = 0
+                for (i in 0 until minOf(tokens1.size, tokens2.size)) {
+                    val t1 = tokens1[i]
+                    val t2 = tokens2[i]
+                    if (t1 != t2) {
+                        val n1 = t1.toLongOrNull()
+                        val n2 = t2.toLongOrNull()
+                        cmp = if (n1 != null && n2 != null) {
+                            n1.compareTo(n2)
+                        } else {
+                            t1.compareTo(t2, ignoreCase = true)
                         }
+                        if (cmp != 0) break
                     }
-                    if (cmp == 0) cmp = tokens1.size.compareTo(tokens2.size)
-                    cmp
                 }
+                if (cmp == 0) cmp = tokens1.size.compareTo(tokens2.size)
+                if (cmp == 0) cmp = f1.lastModified().compareTo(f2.lastModified())
+                cmp
             }
             filesToShare.sortWith(naturalOrderComparator)
 
+            // 2. Cria pasta temporária limpa e copia arquivos com numeração e timestamps sequenciais estritos
+            tempShareFiles.clear()
+            val cacheDir = java.io.File(activity.cacheDir, "share_batch")
+            try {
+                if (cacheDir.exists()) {
+                    cacheDir.deleteRecursively()
+                }
+                cacheDir.mkdirs()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            val sequentialFiles = ArrayList<java.io.File>()
+            val baseTime = 1700000000000L
+            for (i in 0 until filesToShare.size) {
+                val sourceFile = filesToShare[i]
+                try {
+                    val ext = sourceFile.extension.ifEmpty { "jpg" }
+                    val targetFile = java.io.File(cacheDir, String.format(java.util.Locale.US, "midia_%04d.%s", i, ext))
+                    sourceFile.inputStream().use { input ->
+                        java.io.FileOutputStream(targetFile).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    if (targetFile.exists() && targetFile.length() > 0) {
+                        targetFile.setLastModified(baseTime + (i * 1000L))
+                        sequentialFiles.add(targetFile)
+                        tempShareFiles.add(targetFile)
+                    } else {
+                        sequentialFiles.add(sourceFile)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    sequentialFiles.add(sourceFile)
+                }
+            }
+
             val uris = ArrayList<Uri>()
             val addedUriStrings = HashSet<String>()
-            for (file in filesToShare) {
+            for (file in sequentialFiles) {
                 try {
                     val uri = androidx.core.content.FileProvider.getUriForFile(
                         activity,
@@ -1490,14 +1524,14 @@ class AndroidInterface(private val activity: ComponentActivity) {
             if (uris.isEmpty()) {
                 Toast.makeText(activity, "Nenhuma foto/vídeo encontrado para $vehicleName. Enviando relatório de texto...", Toast.LENGTH_LONG).show()
             } else {
-                Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias em lote...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias em lote único...", Toast.LENGTH_SHORT).show()
             }
 
-            val hasImages = filesToShare.any { f -> 
+            val hasImages = sequentialFiles.any { f -> 
                 val name = f.name.lowercase()
                 name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png")
             }
-            val hasVideos = filesToShare.any { f -> 
+            val hasVideos = sequentialFiles.any { f -> 
                 val name = f.name.lowercase()
                 name.endsWith(".mp4") || name.endsWith(".mov") || name.endsWith(".3gp") || name.endsWith(".mkv") || name.endsWith(".webm")
             }
@@ -1520,6 +1554,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
                     putExtra(Intent.EXTRA_TEXT, reportText)
                 }
+                putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
                 if (uris.isNotEmpty()) {
                     val clip = android.content.ClipData.newRawUri("Vistoria", uris[0])
                     for (i in 1 until uris.size) {
