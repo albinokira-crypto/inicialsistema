@@ -1488,8 +1488,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     val ext = sourceFile.extension.ifEmpty { "jpg" }
                     val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "foto_%03d.%s", i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
-                    val imgTime = baseTime + (i * 1000L)
-                    targetFile.setLastModified(imgTime)
+                    val imgTime = baseTime + (i * 2000L)
                     if (ext.lowercase() == "jpg" || ext.lowercase() == "jpeg") {
                         try {
                             val exif = android.media.ExifInterface(targetFile.absolutePath)
@@ -1502,6 +1501,8 @@ class AndroidInterface(private val activity: ComponentActivity) {
                             ex.printStackTrace()
                         }
                     }
+                    // CRUCIAL: setLastModified DEVE ser chamado DEPOIS de saveAttributes() pois saveAttributes() sobrescreve a data do arquivo no disco
+                    targetFile.setLastModified(imgTime)
                     preparedFiles.add(targetFile)
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -1515,7 +1516,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     val ext = sourceFile.extension.ifEmpty { "mp4" }
                     val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%03d.%s", i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
-                    val vidTime = referenceEarliestTime + 5000L + (i * 2000L)
+                    val vidTime = baseTime + ((imageFiles.size + 1 + i) * 2000L)
                     targetFile.setLastModified(vidTime)
                     preparedFiles.add(targetFile)
                 } catch (e: Exception) {
