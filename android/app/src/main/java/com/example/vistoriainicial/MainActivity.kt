@@ -1482,7 +1482,12 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             val preparedFiles = ArrayList<java.io.File>()
-            val baseTime = System.currentTimeMillis() - ((imageFiles.size + videoFiles.size + 15) * 1000L)
+            val minVideoTime = if (videoFiles.isNotEmpty()) videoFiles.minOf { it.lastModified() } else System.currentTimeMillis()
+            val minPhotoTime = if (imageFiles.isNotEmpty()) imageFiles.minOf { it.lastModified() } else System.currentTimeMillis()
+            val referenceEarliestTime = minOf(minVideoTime, minPhotoTime)
+            
+            // Garantir que a base de horário de todas as fotos seja anterior ao vídeo mais antigo
+            val baseTime = referenceEarliestTime - ((imageFiles.size + 20) * 2000L)
             val sdf = java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss", java.util.Locale.US)
 
             for (i in imageFiles.indices) {
@@ -1518,7 +1523,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     val ext = sourceFile.extension.ifEmpty { "mp4" }
                     val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%03d.%s", i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
-                    val vidTime = baseTime + ((imageFiles.size + 10 + i) * 1000L)
+                    val vidTime = referenceEarliestTime + 5000L + (i * 2000L)
                     targetFile.setLastModified(vidTime)
                     preparedFiles.add(targetFile)
                 } catch (e: Exception) {
