@@ -85,22 +85,9 @@ class MainActivity : ComponentActivity() {
         settings.allowFileAccess = true
         settings.databaseEnabled = true
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-        settings.cacheMode = WebSettings.LOAD_NO_CACHE
-        webView.clearCache(true)
 
         // Interface bridge to JS
         webView.addJavascriptInterface(AndroidInterface(this), "AndroidInterface")
-
-        webView.setDownloadListener { url, _, _, _, _ ->
-            try {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                startActivity(intent)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
 
         webView.webViewClient = object : WebViewClient() {
             override fun onReceivedError(
@@ -362,8 +349,8 @@ class MainActivity : ComponentActivity() {
             }
         })
 
-        // Carregar sistema online (Vercel) com fallback automático para assets locais se offline
-        webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/index.html")
+        // Carregar do Vercel, com fallback para arquivo local se estiver offline
+        webView.loadUrl("https://gestao-vistoria-inicial.vercel.app")
 
         // Request Permissions
         checkPermissions()
@@ -397,7 +384,7 @@ class MainActivity : ComponentActivity() {
 
     private fun scanPhysicalCameraFolder(startTime: Long): Int {
         var importedCount = 0
-        if (startTime == 0L || System.currentTimeMillis() - startTime > 10_800_000) return 0
+        if (startTime == 0L || System.currentTimeMillis() - startTime > 300_000) return 0
         val dcim = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
         val movies = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
         val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
@@ -508,7 +495,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun queryMediaStoreForNewMedia(startTime: Long, isVideo: Boolean): Int {
-        if (startTime == 0L || System.currentTimeMillis() - startTime > 10_800_000) return 0
+        if (startTime == 0L || System.currentTimeMillis() - startTime > 300_000) return 0
         val uri = if (isVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
             MediaStore.MediaColumns._ID,
@@ -1225,15 +1212,13 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
-            val sessionId = System.currentTimeMillis()
-            val shareTempDir = java.io.File(activity.cacheDir, "share_$sessionId")
+            tempShareFiles.clear()
+            val cacheDir = java.io.File(activity.cacheDir, "share_temp")
             try {
-                activity.cacheDir.listFiles()?.forEach { f ->
-                    if (f.isDirectory && f.name.startsWith("share_") && f.name != "share_$sessionId") {
-                        f.deleteRecursively()
-                    }
+                if (cacheDir.exists()) {
+                    cacheDir.deleteRecursively()
                 }
-                shareTempDir.mkdirs()
+                cacheDir.mkdirs()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -1266,7 +1251,66 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             try {
-                // 1. Arquivos do SAF (se pasta personalizada foi selecionada)
+                // 1. Pictures/Vistorias/$cleanVehicleName
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val vistoriasDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
+                if (vistoriasDir.exists()) {
+                    val files = vistoriasDir.listFiles()
+                    if (files != null) {
+                        for (file in files) {
+                            checkAndAddFile(file)
+                        }
+                    }
+                }
+
+                // 2. Subdiretórios em Pictures/Vistorias/
+                val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
+                if (vistoriasBaseDir.exists()) {
+                    val subDirs = vistoriasBaseDir.listFiles { file -> file.isDirectory }
+                    if (subDirs != null) {
+                        val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
+                        for (dir in subDirs) {
+                            val dirNameLower = dir.name.lowercase().replace(" ", "").replace("-", "")
+                            if (dirNameLower.contains(cleanLower) || (cleanLower.length > 3 && dirNameLower.contains(cleanLower))) {
+                                val files = dir.listFiles()
+                                if (files != null) {
+                                    for (file in files) {
+                                        checkAndAddFile(file)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 3. Diretórios de Câmera padrão (DCIM/Camera, Pictures/Camera, DCIM/Vistorias)
+                val dcimDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+                val cameraDirs = listOf(
+                    java.io.File(dcimDir, "Camera"),
+                    java.io.File(dcimDir, "Vistorias/$cleanVehicleName"),
+                    java.io.File(picturesDir, "Camera"),
+                    activity.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                    activity.getExternalFilesDir(null)
+                )
+
+                val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
+                for (cDir in cameraDirs) {
+                    if (cDir != null && cDir.exists()) {
+                        val files = cDir.listFiles()
+                        if (files != null) {
+                            for (file in files) {
+                                if (file.isFile && file.length() > 0) {
+                                    val nameLower = file.name.lowercase()
+                                    if (nameLower.contains(cleanLower) || (cleanLower.length > 3 && nameLower.contains(cleanLower))) {
+                                        checkAndAddFile(file)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 4. Arquivos do SAF (se pasta personalizada foi selecionada)
                 val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
                 val savedUriStr = prefs.getString("selected_folder_uri", null)
                 if (savedUriStr != null) {
@@ -1295,7 +1339,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                                                     }
                                                 }
                                                 try {
-                                                    val tempFile = java.io.File(shareTempDir, "saf_" + name)
+                                                    val tempFile = java.io.File(cacheDir, name)
                                                     activity.contentResolver.openInputStream(file.uri)?.use { input ->
                                                         java.io.FileOutputStream(tempFile).use { output ->
                                                             input.copyTo(output)
@@ -1304,6 +1348,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                                                     if (tempFile.exists() && tempFile.length() > 0) {
                                                         addedNames.add(lowerName)
                                                         filesToShare.add(tempFile)
+                                                        tempShareFiles.add(tempFile)
                                                     }
                                                 } catch (e: Exception) {
                                                     e.printStackTrace()
@@ -1319,100 +1364,23 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     }
                 }
 
-                // 2. Pictures/Vistorias/$cleanVehicleName
-                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                val vistoriasDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
-                if (vistoriasDir.exists()) {
-                    val files = vistoriasDir.listFiles()
-                    if (files != null) {
-                        for (file in files) {
-                            checkAndAddFile(file)
-                        }
-                    }
-                }
-
-                // 3. /storage/emulated/0/Vistorias/$cleanVehicleName
-                val rootVistorias = java.io.File(Environment.getExternalStorageDirectory(), "Vistorias/$cleanVehicleName")
-                if (rootVistorias.exists()) {
-                    val files = rootVistorias.listFiles()
-                    if (files != null) {
-                        for (file in files) {
-                            checkAndAddFile(file)
-                        }
-                    }
-                }
-
-                // 4. Subdiretórios em Pictures/Vistorias/ e root Vistorias
-                val baseDirs = listOf(
-                    java.io.File(picturesDir, "Vistorias"),
-                    java.io.File(Environment.getExternalStorageDirectory(), "Vistorias")
-                )
-                val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
-                for (baseDir in baseDirs) {
-                    if (baseDir.exists()) {
-                        val subDirs = baseDir.listFiles { file -> file.isDirectory }
-                        if (subDirs != null) {
-                            for (dir in subDirs) {
-                                val dirNameLower = dir.name.lowercase().replace(" ", "").replace("-", "")
-                                if (dirNameLower == cleanLower || (cleanLower.length > 3 && dirNameLower.contains(cleanLower))) {
-                                    val files = dir.listFiles()
-                                    if (files != null) {
-                                        for (file in files) {
-                                            checkAndAddFile(file)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 5. External files dir
-                val extPicturesDir = activity.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-                if (extPicturesDir != null && extPicturesDir.exists()) {
-                    val extVistoriasDir = java.io.File(extPicturesDir, "Vistorias/$cleanVehicleName")
-                    if (extVistoriasDir.exists()) {
-                        val files = extVistoriasDir.listFiles()
-                        if (files != null) {
-                            for (file in files) {
-                                checkAndAddFile(file)
-                            }
-                        }
-                    }
-                }
-
-                // 6. Movies/Vistorias/$cleanVehicleName
-                val moviesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
-                val vistoriasMoviesDir = java.io.File(moviesDir, "Vistorias/$cleanVehicleName")
-                if (vistoriasMoviesDir.exists()) {
-                    val files = vistoriasMoviesDir.listFiles()
-                    if (files != null) {
-                        for (file in files) {
-                            checkAndAddFile(file)
-                        }
-                    }
-                }
-
-                // 7. Fallback: Se nenhuma mídia foi encontrada pela placa, varre mídias criadas nas últimas 48h em Pictures/Vistorias/
-                if (filesToShare.isEmpty() && picturesDir != null) {
+                // 5. Fallback: Se nenhuma mídia foi encontrada pela placa, varre mídias criadas nas últimas 48h em Pictures/Vistorias/
+                if (filesToShare.isEmpty() && vistoriasBaseDir.exists()) {
                     val now = System.currentTimeMillis()
                     val twoDaysAgo = now - (48 * 3600 * 1000L)
-                    val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
-                    if (vistoriasBaseDir.exists()) {
-                        val allFiles = vistoriasBaseDir.listFiles()
-                        if (allFiles != null) {
-                            for (file in allFiles) {
-                                if (file.isFile && file.length() > 0 && file.lastModified() >= twoDaysAgo) {
-                                    if (isSupervision) {
-                                        val fileDate = java.util.Date(file.lastModified())
-                                        val today = java.util.Date()
-                                        val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
-                                        if (fmt.format(fileDate) != fmt.format(today)) {
-                                            continue
-                                        }
+                    val allFiles = vistoriasBaseDir.listFiles()
+                    if (allFiles != null) {
+                        for (file in allFiles) {
+                            if (file.isFile && file.length() > 0 && file.lastModified() >= twoDaysAgo) {
+                                if (isSupervision) {
+                                    val fileDate = java.util.Date(file.lastModified())
+                                    val today = java.util.Date()
+                                    val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+                                    if (fmt.format(fileDate) != fmt.format(today)) {
+                                        continue
                                     }
-                                    checkAndAddFile(file)
                                 }
+                                checkAndAddFile(file)
                             }
                         }
                     }
@@ -1420,45 +1388,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-
-            fun isVideoFile(f: java.io.File): Boolean {
-                val n = f.name.lowercase()
-                return n.endsWith(".mp4") || n.endsWith(".mov") || n.endsWith(".3gp") || n.endsWith(".mkv") || n.endsWith(".webm")
-            }
-
-            // 1. Ordenação natural dos arquivos encontrados: FOTOS PRIMEIRO, VÍDEOS DEPOIS
-            val naturalOrderComparator = Comparator<java.io.File> { f1, f2 ->
-                val isVid1 = isVideoFile(f1)
-                val isVid2 = isVideoFile(f2)
-                if (isVid1 != isVid2) {
-                    if (!isVid1 && isVid2) -1 else 1
-                } else {
-                    val name1 = f1.name
-                    val name2 = f2.name
-                    val regex = Regex("(\\d+)|(\\D+)")
-                    val tokens1 = regex.findAll(name1).map { it.value }.toList()
-                    val tokens2 = regex.findAll(name2).map { it.value }.toList()
-                    var cmp = 0
-                    for (i in 0 until minOf(tokens1.size, tokens2.size)) {
-                        val t1 = tokens1[i]
-                        val t2 = tokens2[i]
-                        if (t1 != t2) {
-                            val n1 = t1.toLongOrNull()
-                            val n2 = t2.toLongOrNull()
-                            cmp = if (n1 != null && n2 != null) {
-                                n1.compareTo(n2)
-                            } else {
-                                t1.compareTo(t2, ignoreCase = true)
-                            }
-                            if (cmp != 0) break
-                        }
-                    }
-                    if (cmp == 0) cmp = tokens1.size.compareTo(tokens2.size)
-                    if (cmp == 0) cmp = f1.lastModified().compareTo(f2.lastModified())
-                    cmp
-                }
-            }
-            filesToShare.sortWith(naturalOrderComparator)
 
             val uris = ArrayList<Uri>()
             val addedUriStrings = HashSet<String>()
@@ -1534,7 +1463,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     }
                     clipData = clip
                 }
-                putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             }
 
@@ -2108,22 +2036,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
     }
 
     @JavascriptInterface
-    fun downloadApkUpdate() {
-        activity.runOnUiThread {
-            try {
-                val apkUrl = "https://github.com/albinokira-crypto/inicialsistema/raw/master/VistoriaInicial.apk"
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(apkUrl)).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                activity.startActivity(intent)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(activity, "Erro ao abrir link de atualização: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    @JavascriptInterface
     fun openInspectionFolder(vehicleName: String) {
         val mainAct = activity as MainActivity
         mainAct.runOnUiThread {
@@ -2343,22 +2255,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 }
             } else {
                 android.widget.Toast.makeText(activity, "Local de salvamento não configurado. Por favor, configure primeiro.", android.widget.Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    @JavascriptInterface
-    fun downloadApkUpdate(targetUrl: String? = null) {
-        activity.runOnUiThread {
-            try {
-                val url = if (!targetUrl.isNullOrEmpty()) targetUrl else "https://github.com/albinokira-crypto/inicialsistema/raw/master/VistoriaInicial_v1.21.apk"
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                activity.startActivity(intent)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                android.widget.Toast.makeText(activity, "Erro ao iniciar download: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
             }
         }
     }

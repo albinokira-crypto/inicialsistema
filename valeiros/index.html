@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Valeiros Guerrentes - Sistema de Gerenciamento</title>
+  <meta name="description" content="Um sistema completo de criação de fichas e gerenciamento de combate para Valeiros Guerrentes seguindo estritamente as regras oficiais do Livro do Jogador.">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/png" href="rpg-icon.png">
+  <link rel="apple-touch-icon" href="rpg-icon.png">
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- D&D 3.0 Rule Databases -->
+  <script src="data/races.js"></script>
+  <script src="data/classes.js"></script>
+  <script src="data/skills.js"></script>
+  <script src="data/feats.js"></script>
+  <script src="data/special_abilities.js"></script>
+  <script src="data/equipment.js"></script>
+  <script src="data/spells.js"></script>
+  <script src="data/monsters.js"></script>
+  <script src="data/deities.js"></script>
+</head>
+<body>
+  <!-- Authentication Container -->
+  <div id="login-container">
+    <div class="login-wrapper">
+      <div class="login-card">
+        <div class="login-logo">
+          <span class="logo-icon"><img class="system-logo-img" src="rpg-icon.png" alt="Logo"></span>
+          <h1 class="logo-text">Valeiros Guerrentes</h1>
+          <div class="logo-subtitle">Portal de Acesso</div>
+        </div>
+        
+        <!-- Login View -->
+        <div id="auth-view-login">
+          <h2 style="text-align: center; margin-bottom: 1.5rem; font-family: var(--font-header);">Identifique-se</h2>
+          <form onsubmit="event.preventDefault(); app.login();">
+            <div class="rpg-form-group">
+              <label class="rpg-label">Usuário</label>
+              <input type="text" id="auth-login-username" class="rpg-input" required placeholder="Digite seu usuário...">
+            </div>
+            <div class="rpg-form-group" style="margin-bottom: 1.5rem;">
+              <label class="rpg-label">Senha</label>
+              <input type="password" id="auth-login-password" class="rpg-input" required placeholder="Digite sua senha...">
+            </div>
+            <button type="submit" class="rpg-btn" style="width: 100%; padding: 10px; margin-bottom: 1rem;">Entrar na Mesa</button>
+          </form>
+          <p style="text-align: center; font-size: 0.85rem; color: var(--text-muted);">
+            Não tem registro? <a href="#" onclick="app.switchAuthView('register')" style="color: var(--accent-gold); text-decoration: none;">Cadastrar-se</a>
+          </p>
+        </div>
+
+        <!-- Register View -->
+        <div id="auth-view-register" style="display: none;">
+          <h2 style="text-align: center; margin-bottom: 1.5rem; font-family: var(--font-header);">Criar Registro</h2>
+          <form onsubmit="event.preventDefault(); app.register();">
+            <div class="rpg-form-group">
+              <label class="rpg-label">Novo Usuário</label>
+              <input type="text" id="auth-reg-username" class="rpg-input" required placeholder="Escolha um nome de usuário...">
+            </div>
+            <div class="rpg-form-group">
+              <label class="rpg-label">Senha</label>
+              <input type="password" id="auth-reg-password" class="rpg-input" required placeholder="Escolha uma senha...">
+            </div>
+            <input type="hidden" id="auth-reg-role" value="player">
+            <button type="submit" class="rpg-btn" style="width: 100%; padding: 10px; margin-bottom: 1rem;">Registrar e Entrar</button>
+          </form>
+          <p style="text-align: center; font-size: 0.85rem; color: var(--text-muted);">
+            Já possui registro? <a href="#" onclick="app.switchAuthView('login')" style="color: var(--accent-gold); text-decoration: none;">Fazer Login</a>
+          </p>
+        </div>
+
+        <!-- Firebase Setup View -->
+        <div id="auth-view-config" style="display: none;">
+          <h2 style="text-align: center; margin-bottom: 1.5rem; font-family: var(--font-header);">Configurar Firebase</h2>
+          <form onsubmit="event.preventDefault(); app.saveFirebaseConfig();">
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; text-align: center; line-height: 1.4;">
+              Cole o objeto de configuração (<code>firebaseConfig</code>) copiado do Console do Firebase:
+            </p>
+            <div class="rpg-form-group" style="margin-bottom: 1.5rem;">
+              <textarea id="auth-fb-config-text" class="rpg-input" style="width: 100%; height: 160px; font-family: monospace; font-size: 0.8rem; resize: vertical;" placeholder="const firebaseConfig = {&#10;  apiKey: &quot;...&quot;,&#10;  authDomain: &quot;...&quot;,&#10;  projectId: &quot;...&quot;,&#10;  ...&#10;};"></textarea>
+            </div>
+            <div id="firebase-config-error" style="display: none; color: #ff6666; font-size: 0.85rem; margin-bottom: 15px; text-align: center; background: rgba(255,0,0,0.1); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,0,0,0.3);"></div>
+            <button type="submit" class="rpg-btn" style="width: 100%; padding: 10px; margin-bottom: 1rem;">Conectar e Salvar</button>
+          </form>
+          <p style="text-align: center; font-size: 0.85rem; color: var(--text-muted);">
+            <a href="#" onclick="app.switchAuthView('login')" style="color: var(--accent-gold); text-decoration: none;">Voltar para o Login</a>
+          </p>
+        </div>
+        
+        <div id="auth-error-msg" style="display: none; color: #ff6666; font-size: 0.85rem; margin-top: 15px; text-align: center; background: rgba(255,0,0,0.1); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,0,0,0.3);">
+          Erro de login.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-container" style="display:none;">
+    
+    <!-- Navigation Header -->
+    <header class="app-header">
+      <div class="logo">
+        <button class="menu-toggle" onclick="app.toggleMenu()" aria-label="Menu" style="display: none; background: transparent; border: none; color: var(--accent-gold); font-size: 1.8rem; cursor: pointer; margin-right: 10px;">☰</button>
+        <div class="logo-icon"><img class="system-logo-img" src="rpg-icon.png" alt="Logo"></div>
+        <div>
+          <h1 class="logo-text">Valeiros Guerrentes</h1>
+        </div>
+      </div>
+      
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <nav class="nav-links">
+           <button id="btn-welcome" class="nav-btn active" onclick="app.switchTab('welcome')">Início</button>
+           <button id="btn-creator" class="nav-btn" onclick="app.switchTab('creator')">Criador de Personagem</button>
+           <button id="btn-sheets" class="nav-btn" onclick="app.switchTab('sheets')">Fichas Salvas</button>
+           <button id="btn-dm" class="nav-btn" onclick="app.switchTab('dm')">Ações de batalha</button>
+           <button id="btn-rules" class="nav-btn" onclick="app.switchTab('rules')">Compêndio 3.0</button>
+          <button id="btn-dice" class="nav-btn" onclick="app.switchTab('dice')">Mesa de Dados</button>
+          <button id="btn-logs" class="nav-btn" onclick="app.switchTab('logs')">Histórico</button>
+          <button id="btn-manage-players" class="nav-btn" onclick="app.switchTab('manage-players')" style="display: none;">Gerenciar Jogadores</button>
+          <button id="btn-enemy-creator" class="nav-btn" onclick="app.switchTab('enemy-creator')" style="display: none;">Criador de Inimigos</button>
+        </nav>
+        
+        <div class="user-profile-header" id="user-profile-header" style="display: flex; align-items: center; gap: 15px; border-left: 1px solid rgba(212,175,55,0.2); padding-left: 20px;">
+          <span id="user-display-name" style="font-size: 0.85rem; color: var(--accent-gold); font-family: var(--font-header);">Jogador: ...</span>
+          <button class="rpg-btn" style="padding: 4px 10px; font-size: 0.75rem; background: linear-gradient(135deg, var(--accent-red), #5a0000); border-color: var(--accent-red-hover);" onclick="app.logout()">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Panel -->
+    <main class="main-content">
+      
+      <!-- TAB 0: WELCOME SCREEN -->
+      <section id="tab-welcome" class="tab-content">
+        <div class="grid-2">
+          <!-- Chronicle Info Card -->
+          <div class="rpg-card">
+            <div class="card-title-container">
+              <h2>📜 Crônica Ativa</h2>
+              <button id="btn-edit-chronicle" class="rpg-btn rpg-btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; display: none;" onclick="app.editChronicle()">Editar</button>
+            </div>
+            <div id="chronicle-view-mode">
+              <h3 id="chronicle-title" style="font-size: 1.5rem; margin-bottom: 1rem; color: var(--accent-gold);">Carregando Crônica...</h3>
+              <p id="chronicle-desc" style="color: var(--text-parchment); line-height: 1.6; font-style: italic; white-space: pre-wrap;">Aguardando informações da campanha...</p>
+            </div>
+            <div id="chronicle-edit-mode" style="display: none;">
+              <div class="rpg-form-group">
+                <label class="rpg-label">Título da Crônica</label>
+                <input type="text" id="edit-chronicle-title" class="rpg-input" placeholder="Ex: O Retorno de Tiamat">
+              </div>
+              <div class="rpg-form-group">
+                <label class="rpg-label">Descrição / Sinopse</label>
+                <textarea id="edit-chronicle-desc" class="rpg-textarea" style="height: 120px;" placeholder="Conte um pouco sobre a campanha..."></textarea>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button class="rpg-btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="app.saveChronicle()">Salvar</button>
+                <button class="rpg-btn rpg-btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="app.cancelEditChronicle()">Cancelar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Members Card -->
+          <div class="rpg-card">
+            <div class="card-title-container">
+              <h2>👥 Membros da Mesa</h2>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+              <!-- Dungeon Master -->
+              <div>
+                <h3 style="font-size: 1.1rem; border-bottom: 1px solid rgba(212,175,55,0.1); padding-bottom: 5px; margin-bottom: 10px;">🛡️ Mestre / Narrador</h3>
+                <div id="welcome-dm-list" style="font-weight: bold; color: var(--accent-gold); font-size: 1rem;">Carregando Mestre...</div>
+              </div>
+              <!-- Players list -->
+              <div>
+                <h3 style="font-size: 1.1rem; border-bottom: 1px solid rgba(212,175,55,0.1); padding-bottom: 5px; margin-bottom: 10px;">⚔️ Aventureiros</h3>
+                <ul id="welcome-players-list" style="list-style: none; display: flex; flex-direction: column; gap: 8px; padding-left: 0;">
+                  <li style="color: var(--text-muted); font-style: italic;">Nenhum jogador cadastrado.</li>
+                </ul>
+              </div>
+
+              <!-- Install PWA Card -->
+              <div id="pwa-install-card" style="display: none; background: rgba(170, 124, 17, 0.05); border: 2px dashed rgba(170, 124, 17, 0.4); border-radius: var(--radius-md); padding: 15px; margin-top: 15px; text-align: center; font-family: 'Cinzel', serif;">
+                <h3 style="color: var(--accent-gold); font-size: 1rem; margin-top: 0; margin-bottom: 5px;">⚔️ Instalar Aplicativo</h3>
+                <p style="font-size: 0.8rem; color: var(--text-parchment); margin-bottom: 12px; font-family: 'Inter', sans-serif;">Adicione um atalho temático diretamente na sua tela inicial para acessar como um aplicativo!</p>
+                <button class="rpg-btn" id="btn-pwa-install" style="padding: 6px 15px; font-size: 0.8rem; background: linear-gradient(135deg, var(--accent-gold), #8a6200); border-color: var(--accent-gold-hover);">Instalar Atalho</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: MANAGE PLAYERS (DM ONLY) -->
+      <section id="tab-manage-players" class="tab-content" style="display:none;">
+        <div class="rpg-card">
+          <div class="card-title-container">
+            <h2>👥 Controle de Jogadores</h2>
+          </div>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">
+            Como Mestre, você pode gerenciar o status de acesso dos jogadores e remover contas permanentemente (o que também excluirá todas as suas fichas de personagem).
+          </p>
+          <div id="admin-actions-container" style="display: none; margin-bottom: 1.5rem; padding: 12px; border: 1px solid #ff4444; border-radius: 4px; background-color: rgba(255, 68, 68, 0.05);">
+            <h4 style="color: #ff4444; margin-top: 0; margin-bottom: 8px;">Painel do Administrador</h4>
+            <button class="rpg-btn rpg-btn-secondary" style="border-color: #ff4444; color: #ff4444; background: transparent; padding: 6px 12px; font-size: 0.85rem;" onclick="app.deleteAllLogins()">⚠️ Excluir Todos os Logins</button>
+          </div>
+          <div class="rpg-table-container">
+            <table class="rpg-table" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th style="text-align: left;">Jogador</th>
+                  <th>Senha</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="manage-players-table-body">
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--text-muted);">Carregando jogadores...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: ENEMY CREATOR (DM ONLY) -->
+      <section id="tab-enemy-creator" class="tab-content" style="display:none;">
+        <div class="rpg-card" style="max-width: 600px; margin: 0 auto; box-shadow: 0 8px 16px rgba(0,0,0,0.3); border: var(--border-gold);">
+          <div class="card-title-container" style="border-bottom: 1px solid rgba(212,175,55,0.25); padding-bottom: 10px; margin-bottom: 15px;">
+            <h2 id="enemy-creator-title" style="margin:0; font-family:var(--font-header); font-size:1.4rem;">👿 Criador de Inimigos</h2>
+          </div>
+          
+          <!-- Subtabs for mobile/card simplicity -->
+          <div style="display:flex; gap:8px; margin-bottom:15px; border-bottom:1px solid rgba(212,175,55,0.15); padding-bottom:12px;">
+            <button id="enemy-creator-btn-form" class="rpg-btn" style="flex:1; height: 32px; font-size: 0.82rem;" onclick="app.switchEnemyCreatorSubTab('form')">📝 Criar / Editar</button>
+            <button id="enemy-creator-btn-list" class="rpg-btn rpg-btn-secondary" style="flex:1; height: 32px; font-size: 0.82rem;" onclick="app.switchEnemyCreatorSubTab('list')">📖 Seus Monstros</button>
+          </div>
+
+          <!-- PANE 1: FORM -->
+          <div id="enemy-creator-pane-form" style="display:block;">
+            <form id="enemy-creator-form" onsubmit="event.preventDefault(); app.saveCustomMonster();">
+              <input type="hidden" id="enemy-id">
+              
+              <!-- Avatar Preview and Upload/URL at the top -->
+              <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px; background:rgba(0,0,0,0.15); padding:10px; border-radius:6px; border:1px solid rgba(212,175,55,0.15);">
+                <div style="width:48px; height:48px; border-radius:50%; border:1.5px solid var(--accent-gold); overflow:hidden; background:rgba(0,0,0,0.4); flex-shrink:0; display:flex; align-items:center; justify-content:center;">
+                  <img id="enemy-avatar-preview" src="rpg-icon.png" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div style="flex:1;">
+                  <label class="rpg-label" style="margin-bottom:4px; display:block; font-size:0.75rem;">Avatar (Carregar Arquivo ou URL)</label>
+                  <div style="display:flex; gap:6px;">
+                    <label class="rpg-btn rpg-btn-secondary" style="padding: 0 10px; height: 28px; line-height: 26px; font-size: 0.72rem; white-space: nowrap; overflow: hidden; position: relative; cursor: pointer; margin: 0; flex-shrink:0;">
+                      📁 Arquivo
+                      <input type="file" id="enemy-avatar-file" accept="image/*" style="position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;" onchange="app.onEnemyAvatarFileSelected(this)">
+                    </label>
+                    <input type="text" id="enemy-avatar-url" class="rpg-input" placeholder="Cole a URL da imagem..." style="flex:1; height:28px; font-size:0.75rem; padding:0 8px;" oninput="document.getElementById('enemy-avatar-preview').src = this.value || 'rpg-icon.png'">
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 10px; margin-bottom: 10px; width: 100%; align-items: flex-end;">
+                <div class="rpg-form-group" style="flex: 1; margin-bottom: 0;">
+                  <label class="rpg-label" style="height: 24px; display: flex; align-items: flex-end; margin-bottom: 4px; font-size: 0.68rem; line-height: 1.1; white-space: nowrap;">Nome do Monstro</label>
+                  <input type="text" id="enemy-name" class="rpg-input" required placeholder="Ex: Dragão de Fogo, Goblin Mago..." style="height:32px;">
+                </div>
+                <div class="rpg-form-group" style="width: 48px; flex-shrink: 0; margin-bottom: 0;">
+                  <label class="rpg-label" style="height: 24px; display: flex; align-items: flex-end; margin-bottom: 4px; font-size: 0.68rem; line-height: 1.1; white-space: nowrap; justify-content: center;">Nível</label>
+                  <input type="number" id="enemy-level" class="rpg-input" required min="1" max="99" placeholder="Ex: 5" style="height:32px; text-align:center; padding: 0 2px;">
+                </div>
+                <div class="rpg-form-group" style="width: 48px; flex-shrink: 0; margin-bottom: 0;">
+                  <label class="rpg-label" style="height: 24px; display: flex; align-items: flex-end; margin-bottom: 4px; font-size: 0.68rem; line-height: 1.1; white-space: nowrap; justify-content: center;">Ações</label>
+                  <input type="number" id="enemy-actions" class="rpg-input" required min="1" max="99" style="height:32px; text-align:center; padding: 0 2px;">
+                </div>
+              </div>
+
+              <!-- HP / CA / Iniciativa / RM columns aligned -->
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px;">
+                <div class="rpg-form-group" style="display:flex; flex-direction:column; justify-content:flex-end;">
+                  <label class="rpg-label" style="height: 24px; display: flex; align-items: flex-end; margin-bottom: 4px; font-size: 0.68rem; line-height: 1.1; white-space: nowrap;">HP</label>
+                  <input type="number" id="enemy-hp" class="rpg-input" required min="1" placeholder="HP" style="height:32px;">
+                </div>
+                <div class="rpg-form-group" style="display:flex; flex-direction:column; justify-content:flex-end;">
+                  <label class="rpg-label" style="height: 24px; display: flex; align-items: flex-end; margin-bottom: 4px; font-size: 0.68rem; line-height: 1.1; white-space: nowrap;">CA</label>
+                  <input type="number" id="enemy-ac" class="rpg-input" required min="0" placeholder="CA" style="height:32px;">
+                </div>
+                <div class="rpg-form-group" style="display:flex; flex-direction:column; justify-content:flex-end;">
+                  <label class="rpg-label" style="height: 24px; display: flex; align-items: flex-end; margin-bottom: 4px; font-size: 0.68rem; line-height: 1.1; white-space: nowrap;">Iniciativa</label>
+                  <input type="text" id="enemy-init" class="rpg-input" required placeholder="Ini" style="height:32px;" oninput="this.value = this.value.replace(/[^0-9-]/g, '')">
+                </div>
+                <div class="rpg-form-group" style="display:flex; flex-direction:column; justify-content:flex-end;">
+                  <label class="rpg-label" style="height: 24px; display: flex; align-items: flex-end; margin-bottom: 4px; font-size: 0.68rem; line-height: 1.1; white-space: nowrap;">RM</label>
+                  <input type="number" id="enemy-rm" class="rpg-input" min="0" placeholder="RM" style="height:32px;">
+                </div>
+              </div>
+
+              <!-- Saves columns -->
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;">
+                <div class="rpg-form-group">
+                  <label class="rpg-label">Fortitude</label>
+                  <input type="text" id="enemy-save-fort" class="rpg-input" placeholder="Fort" style="height:32px;" oninput="this.value = this.value.replace(/[^0-9-]/g, '')">
+                </div>
+                <div class="rpg-form-group">
+                  <label class="rpg-label">Reflexos</label>
+                  <input type="text" id="enemy-save-ref" class="rpg-input" placeholder="Ref" style="height:32px;" oninput="this.value = this.value.replace(/[^0-9-]/g, '')">
+                </div>
+                <div class="rpg-form-group">
+                  <label class="rpg-label">Vontade</label>
+                  <input type="text" id="enemy-save-will" class="rpg-input" placeholder="Von" style="height:32px;" oninput="this.value = this.value.replace(/[^0-9-]/g, '')">
+                </div>
+              </div>
+
+              <!-- Atributos -->
+              <div class="rpg-form-group" style="margin-bottom: 10px;">
+                <label class="rpg-label" style="margin-bottom: 4px; display:block; font-weight: bold; color: var(--accent-gold); font-size: 0.72rem;">Atributos</label>
+                <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; text-align: center;">
+                  <div>
+                    <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-bottom:2px;">FOR</span>
+                    <input type="number" id="enemy-attr-str" class="rpg-input" value="10" min="1" max="99" style="height:28px; text-align:center; padding:0; font-size:0.75rem;">
+                  </div>
+                  <div>
+                    <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-bottom:2px;">DES</span>
+                    <input type="number" id="enemy-attr-dex" class="rpg-input" value="10" min="1" max="99" style="height:28px; text-align:center; padding:0; font-size:0.75rem;">
+                  </div>
+                  <div>
+                    <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-bottom:2px;">CON</span>
+                    <input type="number" id="enemy-attr-con" class="rpg-input" value="10" min="1" max="99" style="height:28px; text-align:center; padding:0; font-size:0.75rem;">
+                  </div>
+                  <div>
+                    <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-bottom:2px;">INT</span>
+                    <input type="number" id="enemy-attr-int" class="rpg-input" value="10" min="1" max="99" style="height:28px; text-align:center; padding:0; font-size:0.75rem;">
+                  </div>
+                  <div>
+                    <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-bottom:2px;">SAB</span>
+                    <input type="number" id="enemy-attr-wis" class="rpg-input" value="10" min="1" max="99" style="height:28px; text-align:center; padding:0; font-size:0.75rem;">
+                  </div>
+                  <div>
+                    <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-bottom:2px;">CAR</span>
+                    <input type="number" id="enemy-attr-cha" class="rpg-input" value="10" min="1" max="99" style="height:28px; text-align:center; padding:0; font-size:0.75rem;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="rpg-form-group" style="margin-bottom: 10px; border: 1px solid rgba(212,175,55,0.15); padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.15);">
+                <label class="rpg-label" style="margin-bottom: 6px; display:block; font-weight: bold; color: var(--accent-gold);">Armas e Ataques</label>
+                
+                <!-- Row 1: Nome e Bônus de acerto -->
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-bottom: 6px;">
+                  <div>
+                    <span style="font-size:0.68rem; color:var(--text-muted); display:block; margin-bottom: 2px;">Nome do Ataque / Arma</span>
+                    <input type="text" id="enemy-weapon-name" list="weapon-suggestions" class="rpg-input" placeholder="Ex: Espada Longa, Mordida" style="height:28px; font-size:0.75rem;">
+                    <datalist id="weapon-suggestions"></datalist>
+                  </div>
+                  <div>
+                    <span style="font-size:0.68rem; color:var(--text-muted); display:block; margin-bottom: 2px;">Bônus de Acerto</span>
+                    <input type="number" id="enemy-weapon-atk" class="rpg-input" placeholder="Ex: 5" style="height:28px; font-size:0.75rem; text-align:center;">
+                  </div>
+                </div>
+
+                <!-- Row 2: Dano ( xDx ) / Bônus de dano / Bônus mágico -->
+                <div style="display: grid; grid-template-columns: 2fr 1.5fr 1.5fr; gap: 8px; margin-bottom: 6px;">
+                  <div>
+                    <span style="font-size:0.68rem; color:var(--text-muted); display:block; margin-bottom: 2px;">Dano (xDx)</span>
+                    <div style="display:flex; align-items:center; gap:4px;">
+                      <input type="number" id="enemy-weapon-dice-count" class="rpg-input" min="1" placeholder="Qtd" style="height:28px; width:45px; text-align:center; padding: 2px; font-size:0.75rem;">
+                      <span style="color:var(--text-muted); font-size:0.75rem;">d</span>
+                      <select id="enemy-weapon-dice-size" class="rpg-select" style="height:28px; flex:1; font-size:0.75rem; padding: 2px;">
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="6">6</option>
+                        <option value="8" selected>8</option>
+                        <option value="10">10</option>
+                        <option value="12">12</option>
+                        <option value="20">20</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <span style="font-size:0.68rem; color:var(--text-muted); display:block; margin-bottom: 2px;">Bônus Dano</span>
+                    <input type="number" id="enemy-weapon-dmg-bonus" class="rpg-input" placeholder="Ex: 3" style="height:28px; font-size:0.75rem; text-align:center;">
+                  </div>
+                  <div>
+                    <span style="font-size:0.68rem; color:var(--text-muted); display:block; margin-bottom: 2px;">Bônus Mágico</span>
+                    <input type="number" id="enemy-weapon-magic-bonus" class="rpg-input" placeholder="Ex: 1" style="height:28px; font-size:0.75rem; text-align:center;">
+                  </div>
+                </div>
+
+                <!-- Row 3: Efeito, Decisivo e Botão Add -->
+                <div style="display: flex; gap: 8px; align-items: flex-end;">
+                  <div style="flex: 1.5;">
+                    <span style="font-size:0.68rem; color:var(--text-muted); display:block; margin-bottom: 2px;">Efeito especial</span>
+                    <input type="text" id="enemy-weapon-effect" class="rpg-input" placeholder="Ex: fogo, veneno" style="height:28px; font-size:0.75rem;">
+                  </div>
+                  <div style="flex: 1;">
+                    <span style="font-size:0.68rem; color:var(--text-muted); display:block; margin-bottom: 2px;">Decisivo</span>
+                    <input type="text" id="enemy-weapon-crit" class="rpg-input" placeholder="Ex: 20/x2" value="20/x2" style="height:28px; font-size:0.75rem; text-align:center;">
+                  </div>
+                  <button type="button" class="rpg-btn" style="padding:0 14px; height:28px; font-size:0.75rem; background: linear-gradient(135deg, var(--accent-gold), #854d0e);" onclick="app.addEnemyCreatorWeapon()">+ Add</button>
+                </div>
+
+                <!-- Weapons List Tags -->
+                <div id="enemy-creator-weapons-list" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; min-height: 32px; padding: 6px; border: 1px dashed rgba(212,175,55,0.25); border-radius: 4px; background: rgba(0,0,0,0.25); align-items: center;">
+                  <span style="color:var(--text-muted); font-size:0.72rem; padding: 2px 4px;">Nenhuma arma ou ataque adicionado.</span>
+                </div>
+              </div>
+
+              <div class="rpg-form-group" style="margin-bottom: 10px;">
+                <label class="rpg-label" style="margin-bottom: 6px; display:block;">Magias Conhecidas</label>
+                <div style="display:flex; gap:6px;">
+                  <input type="text" id="enemy-spell-input" list="spell-suggestions" class="rpg-input" placeholder="Digite para buscar ou adicionar magia..." style="flex:1; height:32px; font-size:0.8rem;" onkeydown="if(event.key === 'Enter') { event.preventDefault(); app.addEnemyCreatorTypedSpell(); }">
+                  <datalist id="spell-suggestions"></datalist>
+                  <button type="button" class="rpg-btn" style="padding:0 12px; height:32px; font-size:0.75rem; background: linear-gradient(135deg, var(--accent-gold), #854d0e);" onclick="app.addEnemyCreatorTypedSpell()">+ Add</button>
+                </div>
+                <div id="enemy-creator-spells-list" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; min-height: 32px; padding: 6px; border: 1px dashed rgba(212,175,55,0.25); border-radius: 4px; background: rgba(0,0,0,0.25); align-items: center;">
+                  <span style="color:var(--text-muted); font-size:0.72rem; padding: 2px 4px;">Nenhuma magia adicionada.</span>
+                </div>
+              </div>
+
+              <div class="rpg-form-group" style="margin-bottom: 10px;">
+                <label class="rpg-label" style="margin-bottom: 6px; display:block;">Habilidades Especiais</label>
+                <div style="display:flex; gap:6px;">
+                  <input type="text" id="enemy-special-input" list="special-suggestions" class="rpg-input" placeholder="Digite para buscar ou adicionar habilidade..." style="flex:1; height:32px; font-size:0.8rem;" onkeydown="if(event.key === 'Enter') { event.preventDefault(); app.addEnemyCreatorTypedSpecial(); }">
+                  <datalist id="special-suggestions"></datalist>
+                  <button type="button" class="rpg-btn" style="padding:0 12px; height:32px; font-size:0.75rem; background: linear-gradient(135deg, var(--accent-gold), #854d0e);" onclick="app.addEnemyCreatorTypedSpecial()">+ Add</button>
+                </div>
+                <div id="enemy-creator-specials-list" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; min-height: 32px; padding: 6px; border: 1px dashed rgba(212,175,55,0.25); border-radius: 4px; background: rgba(0,0,0,0.25); align-items: center;">
+                  <span style="color:var(--text-muted); font-size:0.72rem; padding: 2px 4px;">Nenhuma habilidade especial adicionada.</span>
+                </div>
+              </div>
+
+              <!-- BUFFS SECTION -->
+              <div style="border: 1px solid rgba(212,175,55,0.2); padding: 10px; border-radius: 6px; background: rgba(0,0,0,0.15); margin-bottom: 10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <strong style="color:var(--accent-gold); font-size:0.85rem;">Buffs Pré-Configurados</strong>
+                  <button type="button" class="rpg-btn" style="padding:1px 6px; font-size:0.65rem;" onclick="app.addEnemyCreatorBuffRow()">+ Add Buff</button>
+                </div>
+                <div id="enemy-creator-buffs-list" style="display:flex; flex-direction:column; gap:6px;">
+                  <!-- Row items dynamically added here -->
+                </div>
+              </div>
+
+              <!-- DEBUFFS SECTION -->
+              <div style="border: 1px solid rgba(255,68,68,0.2); padding: 10px; border-radius: 6px; background: rgba(0,0,0,0.15); margin-bottom: 15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <strong style="color:#ff6666; font-size:0.85rem;">Debuffs Pré-Configurados</strong>
+                  <button type="button" class="rpg-btn" style="padding:1px 6px; font-size:0.65rem; border-color:#ff4444; color:#ff4444;" onclick="app.addEnemyCreatorDebuffRow()">+ Add Debuff</button>
+                </div>
+                <div id="enemy-creator-debuffs-list" style="display:flex; flex-direction:column; gap:6px;">
+                  <!-- Row items dynamically added here -->
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 10px;">
+                <button type="submit" class="rpg-btn" style="flex:1; background: linear-gradient(135deg, var(--accent-gold), #854d0e); height:36px;">💾 Salvar Monstro</button>
+                <button type="button" class="rpg-btn rpg-btn-secondary" style="flex:0.5; height:36px;" onclick="app.clearEnemyCreatorForm()">Limpar</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- PANE 2: LIST -->
+          <div id="enemy-creator-pane-list" style="display:none; flex-direction:column; gap:10px;">
+            <div>
+              <input type="text" id="enemy-list-search" class="rpg-input" placeholder="Pesquisar nos seus monstros..." oninput="app.renderCustomMonstersList()" style="height:32px;">
+            </div>
+
+            <div id="custom-monsters-list-container" style="max-height: 480px; overflow-y:auto; display:flex; flex-direction:column; gap:10px;">
+              <div style="text-align:center; padding: 2rem; color:var(--text-muted); font-size:0.85rem;">Nenhum monstro criado ainda.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 1: CHARACTER CREATOR -->
+      <section id="tab-creator" class="tab-content" style="display:none;">
+        <div id="official-sheet-creator-container">
+          <!-- Dynamically generated official editable character sheet -->
+        </div>
+      </section>
+
+      <!-- TAB 2: SAVED CHARACTERS LIST / SHEET VIEW -->
+      <section id="tab-sheets" class="tab-content" style="display:none;">
+        <div id="sheets-list-view">
+          <div class="rpg-card">
+            <div class="card-title-container">
+              <h2>Personagens Criados</h2>
+              <button class="rpg-btn" onclick="app.switchTab('creator')">Novo Personagem</button>
+            </div>
+            <div id="saved-sheets-container">
+              <!-- Dynamically populated or message if empty -->
+            </div>
+          </div>
+        </div>
+
+        <div id="sheet-detail-view" style="display:none;">
+          <!-- Dynamically generated active character sheet -->
+        </div>
+      </section>
+
+      <!-- TAB 3: BATTLE ACTIONS -->
+      <!-- TAB 3: BATTLE ACTIONS -->
+      <section id="tab-dm" class="tab-content" style="display:none;">
+        <!-- Aviso de Orientação para Celular -->
+        <div id="battle-orientation-warning" style="display: none; text-align: center; padding: 3rem 2rem; background: var(--bg-card); border: 2px dashed var(--accent-red); border-radius: var(--radius-md); max-width: 450px; margin: 2rem auto; font-family: var(--font-header); box-shadow: var(--shadow-premium);">
+          <div style="font-size: 3.5rem; margin-bottom: 1.5rem; color: var(--accent-red);">⚔️</div>
+          <h2 style="color: var(--accent-red); font-size: 1.8rem; margin-bottom: 1rem; font-family: var(--font-header);">Gire seu Celular</h2>
+          <p style="color: var(--text-parchment); font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem; font-family: var(--font-body);">
+            O Campo de Batalha de <strong>Valeiros Guerrentes</strong> exige mais espaço horizontal. Por favor, gire seu celular para o modo <strong>Paisagem (Horizontal / Deitado)</strong> para visualizar e interagir com o combate.
+          </p>
+          <div class="rotate-phone-anim" style="display: inline-block; animation: rotatePhone 2.5s infinite ease-in-out; color: var(--accent-gold); font-size: 3rem;">🔄</div>
+        </div>
+
+        <!-- Botão para voltar ao Menu Principal (já que o cabeçalho fica oculto) -->
+        <div class="battlefield-header-controls">
+          <button class="rpg-btn bf-back-btn" onclick="app.switchTab('welcome')">
+            ⬅️ Voltar ao Menu Principal
+          </button>
+          <div class="bf-title">
+            ⚔️ Campo de Batalha ⚔️
+          </div>
+          <div class="bf-badge" id="battlefield-mode-badge">
+            <!-- Renders dynamically -->
+          </div>
+        </div>
+
+        <!-- Container do Mestre -->
+        <div id="dm-view-container">
+          <div class="dm-layout">
+            <!-- Left Column: Monstros em Cena -->
+            <div class="rpg-card">
+              <div class="card-title-container" style="border-bottom: 1px solid rgba(170,124,17,0.15); padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <h2 style="margin: 0;">Monstros em Cena</h2>
+                <button class="rpg-btn" style="padding: 4px 12px; font-size: 0.8rem; height: 30px; background: linear-gradient(135deg, var(--accent-gold), #854d0e); text-transform: none;" onclick="app.toggleAddMonsterForm()">
+                  ⚔️ Adicionar Inimigo
+                </button>
+              </div>
+              
+              <!-- Quick Add Monster Form -->
+              <div id="dm-add-monster-form-container" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(170,124,17,0.25); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; flex-direction: column; gap: 10px;">
+                <h3 style="font-size:0.95rem; color:var(--accent-gold); margin:0; font-family:var(--font-header);">Adicionar Novo Monstro</h3>
+                
+                <!-- Tabs for manual / bestiary -->
+                <div style="display:flex; gap:8px;">
+                  <button id="dm-scene-monster-btn-bestiary" class="rpg-btn" style="flex:1; padding:6px; font-size:0.75rem; height:30px;" onclick="app.setSceneMonsterMode('bestiary')">Buscar no Bestiário</button>
+                  <button id="dm-scene-monster-btn-manual" class="rpg-btn rpg-btn-secondary" style="flex:1; padding:6px; font-size:0.75rem; height:30px;" onclick="app.setSceneMonsterMode('manual')">Criado pelo Mestre</button>
+                </div>
+
+                <!-- Custom Monster Inputs (Criado pelo Mestre) -->
+                <div id="dm-scene-monster-manual" style="display:none; flex-direction:column; gap:8px;">
+                  <div class="rpg-form-group" style="margin-bottom:5px;">
+                    <label class="rpg-label" style="font-size:0.7rem;">Buscar Monstro do Mestre</label>
+                    <input type="text" id="dm-scene-monster-custom-search" class="rpg-input" placeholder="Buscar nos criados pelo Mestre..." style="font-size:0.8rem; height:28px;" oninput="app.dmSceneFilterCustomMonsters(this.value)">
+                  </div>
+                  <div class="rpg-form-group" style="margin-bottom:5px;">
+                    <label class="rpg-label" style="font-size:0.7rem;">Selecionar Monstro do Mestre</label>
+                    <select id="dm-scene-monster-custom-select" class="rpg-select" style="font-size:0.8rem; height:28px; width:100%;" onchange="app.dmSceneOnSelectCustomMonster(this.value)">
+                      <option value="">-- Selecione o Monstro --</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Selected Custom Monster Summary Area -->
+                  <div id="dm-scene-monster-custom-summary" style="display:none; background: rgba(0,0,0,0.25); border: 1px dashed rgba(212,175,55,0.4); border-radius: 6px; padding: 12px; margin-top:5px; margin-bottom:10px; font-size:0.8rem; flex-direction:column; gap:8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);">
+                    <!-- Dynamically populated by app.dmSceneOnSelectCustomMonster -->
+                  </div>
+
+                  <button class="rpg-btn" style="width:100%; padding:6px; font-size:0.8rem; height:30px; margin-top:5px;" onclick="app.dmAddSceneMonsterCustom()">Adicionar do Mestre</button>
+                </div>
+
+                <!-- Bestiary Monster Search/Select -->
+                <div id="dm-scene-monster-bestiary" style="display:flex; flex-direction:column; gap:8px;">
+                  <div class="rpg-form-group" style="margin-bottom:5px;">
+                    <label class="rpg-label" style="font-size:0.7rem;">Buscar Criatura</label>
+                    <input type="text" id="dm-scene-monster-search" class="rpg-input" placeholder="Buscar no Bestiário (ex: Ogro)" style="font-size:0.8rem; height:28px;" oninput="app.dmSceneFilterMonsters(this.value)">
+                  </div>
+                  <div class="rpg-form-group" style="margin-bottom:5px;">
+                    <label class="rpg-label" style="font-size:0.7rem;">Selecionar Criatura</label>
+                    <select id="dm-scene-monster-select" class="rpg-select" style="font-size:0.8rem; height:28px; width:100%;" onchange="app.dmSceneOnSelectMonster(this.value)">
+                      <option value="">-- Selecione o Monstro --</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Selected Monster Summary Area -->
+                  <div id="dm-scene-monster-summary" style="display:none; background: rgba(0,0,0,0.25); border: 1px dashed rgba(212,175,55,0.4); border-radius: 6px; padding: 12px; margin-top:5px; margin-bottom:10px; font-size:0.8rem; flex-direction:column; gap:8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);">
+                    <!-- Dynamically populated by app.dmSceneOnSelectMonster -->
+                  </div>
+
+                  <button class="rpg-btn" style="width:100%; padding:6px; font-size:0.8rem; height:30px; margin-top:5px;" onclick="app.dmAddSceneMonsterBestiary()">Adicionar do Bestiário</button>
+                </div>
+              </div>
+
+              <!-- List of monsters in scene -->
+              <div id="dm-scene-monsters-list" style="display:flex; flex-direction:column; gap:12px; max-height: 500px; overflow-y: auto; padding-right:5px;">
+                <!-- Monsters list goes here -->
+              </div>
+            </div>
+
+            <!-- Right Column: Aventureiros em Combate -->
+            <div class="rpg-card">
+              <div class="card-title-container" style="border-bottom: 1px solid rgba(170,124,17,0.15); padding-bottom:10px; margin-bottom:15px;">
+                <h2>Aventureiros em Combate</h2>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                  <div style="display:flex; align-items:center; gap:5px;">
+                    <select id="dm-quick-select-player" class="rpg-select" style="padding:0.3rem 0.5rem; font-size:0.75rem; min-width: 140px;">
+                      <option value="">-- Adicionar Jogador --</option>
+                    </select>
+                    <button class="rpg-btn" style="padding: 0.3rem 0.4rem; font-size: 0.65rem; white-space: nowrap; border-color: var(--accent-gold);" onclick="app.dmAddQuickPlayer()">+ Aventureiro</button>
+                  </div>
+                </div>
+              </div>
+              
+              <div id="dm-combat-list" class="responsive-combat-list">
+                <!-- Players cards render here -->
+              </div>
+
+              <div style="display: flex; gap: 8px; margin-top: 1.2rem; justify-content: flex-end; border-top: 1px solid rgba(170,124,17,0.15); padding-top: 12px; flex-wrap: wrap;">
+                <button class="rpg-btn" style="padding: 5px 10px; font-size: 0.72rem; background: linear-gradient(135deg, var(--accent-gold), #854d0e);" onclick="app.dmSendBattleInvite()">⚔️ Enviar Convite de Batalha</button>
+                <button class="rpg-btn rpg-btn-secondary" style="padding: 5px 10px; font-size: 0.72rem; border-color: #ff4444; color: #ff4444;" onclick="app.dmClearCombat()">🧹 Limpar Combate</button>
+              </div>
+
+              <!-- Controle de Convites de Batalha (Mestre) -->
+              <div id="dm-invite-control-container" style="margin-top: 15px; border-top: 1px dashed rgba(170,124,17,0.15); padding-top: 15px;">
+                <!-- Renders dynamically in renderDMCombatTracker -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Container do Jogador -->
+        <div id="player-view-container" style="display:none;">
+          <!-- Populado dinamicamente via renderPlayerCombatTracker -->
+        </div>
+      </section>
+      </section>
+
+      <!-- TAB 4: RULE COMPENDIUM -->
+      <section id="tab-rules" class="tab-content" style="display:none;">
+        <div class="rpg-card">
+          <div class="card-title-container">
+            <h2>Compêndio de Regras - Valeiros Guerrentes</h2>
+            <div class="search-bar" style="margin: 0; width: 300px;">
+              <input type="text" id="rules-search-input" class="rpg-input" placeholder="Pesquisar perícias, talentos..." oninput="app.searchRules()">
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 15px; margin-bottom: 1.5rem; border-bottom:1px solid rgba(212,175,55,0.2); padding-bottom:10px;">
+            <button id="comp-btn-skills" class="nav-btn active" onclick="app.setCompendiumSubtab('skills')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Perícias 3.0</button>
+            <button id="comp-btn-feats" class="nav-btn" onclick="app.setCompendiumSubtab('feats')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Talentos</button>
+            <button id="comp-btn-spells" class="nav-btn" onclick="app.setCompendiumSubtab('spells')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Magias & Slots</button>
+            <button id="comp-btn-equipment" class="nav-btn" onclick="app.setCompendiumSubtab('equipment')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Equipamentos</button>
+            <button id="comp-btn-dmscreen" class="nav-btn" onclick="app.setCompendiumSubtab('dmscreen')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Escudo do Mestre</button>
+          </div>
+
+          <div id="compendium-viewport">
+            <!-- Dynamically loaded reference rules -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: DICE ROLLER -->
+      <section id="tab-dice" class="tab-content" style="display:none;">
+        <div class="rpg-card">
+          <div class="card-title-container">
+            <h2>Mesa de Dados Virtual</h2>
+            <button class="rpg-btn rpg-btn-secondary" style="border-color:#ff4444; color:#ff4444;" onclick="app.clearDiceLog()">Limpar Histórico</button>
+          </div>
+          
+          <div class="dice-tab-layout">
+            <div class="dice-selectors-panel">
+            <div class="rpg-form-group" style="margin-bottom: 15px;">
+              <label for="dice-character-select" class="rpg-label">Personagem Rolo (Opcional)</label>
+              <select id="dice-character-select" class="rpg-select" style="width: 100%;">
+                <option value="">-- Jogador Geral --</option>
+              </select>
+            </div>
+            <label class="rpg-label" style="margin-bottom: 10px; display: block;">Clique para Rolar:</label>
+              <div class="dice-grid">
+                <button class="die-btn-large" onclick="app.rollDie(4)">
+                  <span class="die-icon">🔺</span>
+                  <span class="die-name">d4</span>
+                </button>
+                <button class="die-btn-large" onclick="app.rollDie(6)">
+                  <span class="die-icon">🎲</span>
+                  <span class="die-name">d6</span>
+                </button>
+                <button class="die-btn-large" onclick="app.rollDie(8)">
+                  <span class="die-icon">💎</span>
+                  <span class="die-name">d8</span>
+                </button>
+                <button class="die-btn-large" onclick="app.rollDie(10)">
+                  <span class="die-icon">🧿</span>
+                  <span class="die-name">d10</span>
+                </button>
+                <button class="die-btn-large" onclick="app.rollDie(12)">
+                  <span class="die-icon">🛡️</span>
+                  <span class="die-name">d12</span>
+                </button>
+                <button class="die-btn-large" onclick="app.rollDie(20)">
+                  <span class="die-icon">⚔️</span>
+                  <span class="die-name">d20</span>
+                </button>
+                <button class="die-btn-large" onclick="app.rollDie(100)">
+                  <span class="die-icon">💯</span>
+                  <span class="die-name">d%</span>
+                </button>
+              </div>
+
+              <div style="margin-top: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="rpg-form-group">
+                  <label for="dice-qty-input" class="rpg-label">Qtd de Dados</label>
+                  <input type="number" id="dice-qty-input" class="rpg-input" style="width: 100%; text-align: center;" value="1" min="1" max="100">
+                </div>
+                <div class="rpg-form-group">
+                  <label for="dice-mod-input" class="rpg-label">Modificador (+/-)</label>
+                  <input type="number" id="dice-mod-input" class="rpg-input" style="width: 100%; text-align: center;" value="0">
+                </div>
+              </div>
+
+              <div style="margin-top: 1.5rem;">
+                <div class="rpg-form-group">
+                  <label for="custom-roll-input" class="rpg-label">Rolagem Customizada (ex: 3d6+2 ou 1d20-1)</label>
+                  <div style="display: flex; gap: 10px;">
+                    <input type="text" id="custom-roll-input" class="rpg-input" style="flex: 1;" placeholder="Ex: 2d10+4" onkeydown="if(event.key === 'Enter') app.rollCustomDice()">
+                    <button class="rpg-btn" onclick="app.rollCustomDice()">Rolar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dice-log-panel">
+              <label class="rpg-label" style="margin-bottom: 10px; display: block;">Histórico de Rolagens:</label>
+              <div class="roll-log-large" id="dice-roll-log">
+                <em>Nenhuma rolagem feita ainda nesta sessão. Clique nos dados ou digite uma fórmula para rolar!</em>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: AUDIT LOGS -->
+      <section id="tab-logs" class="tab-content" style="display:none;">
+        <div class="rpg-card">
+          <div class="card-title-container">
+            <h2>Histórico de Alterações</h2>
+            <button class="rpg-btn rpg-btn-secondary" style="border-color:#ff4444; color:#ff4444;" onclick="app.clearAuditLogs()">Limpar Histórico</button>
+          </div>
+          <div class="audit-log-container" style="margin-top: 1.5rem;">
+            <div id="audit-log-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 500px; overflow-y: auto; padding: 10px; border: 1px solid rgba(212,175,55,0.2); background: rgba(0,0,0,0.3); border-radius: 4px;">
+              <!-- Dynamically populated audit entries -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Modals Portals -->
+    <div id="modal-container" class="modal-overlay" style="display: none;" onclick="app.closeModal(event)">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <div id="modal-body-content">
+          <!-- Dynamically generated modal -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <!-- Firebase Config -->
+  <script src="js/firebase-config.js?v=20260806_11"></script>
+
+  <!-- Main JS Logic -->
+  <script src="js/app.js?v=20260810_02"></script>
+
+  <!-- PWA: mata o Service Worker antigo e limpa todos os caches -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      // Registra o SW de limpeza que vai se auto-destruir
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+      // Limpa todos os caches imediatamente também pelo lado do cliente
+      if (window.caches) {
+        caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+      }
+    }
+
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const installCard = document.getElementById('pwa-install-card');
+      if (installCard) {
+        installCard.style.display = 'block';
+      }
+    });
+
+    const installBtn = document.getElementById('btn-pwa-install');
+    if (installBtn) {
+      installBtn.addEventListener('click', () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+              console.log('Usuário aceitou a instalação do atalho.');
+            }
+            deferredPrompt = null;
+            const installCard = document.getElementById('pwa-install-card');
+            if (installCard) installCard.style.display = 'none';
+          });
+        }
+      });
+    }
+  </script>
+</body>
+</html>

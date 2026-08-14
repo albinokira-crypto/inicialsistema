@@ -262,15 +262,10 @@ function attachGlobalEventListeners() {
           alert('Esta oficina já está cadastrada!');
           return;
         }
-        const resp = window.prompt('Digite o nome do responsável pela oficina (opcional):');
-        const responsaveis = [];
-        if (resp && resp.trim()) {
-          responsaveis.push(resp.trim());
-        }
         const newOficina = {
           id: Date.now().toString(),
           name: cleanedName,
-          responsaveis: responsaveis
+          responsaveis: []
         };
         oficinas.push(newOficina);
         saveOficinas();
@@ -278,7 +273,6 @@ function attachGlobalEventListeners() {
         populateSupervisaoOficinaSelect();
         if (supervisaoOficinaSelect) {
           supervisaoOficinaSelect.value = newOficina.id;
-          populateSupervisaoAttendedSelect();
         }
       }
     });
@@ -305,6 +299,49 @@ function attachGlobalEventListeners() {
       }
     });
   }
+
+  function openStageManagerModal() {
+    const modal = document.getElementById('stageManagerModal');
+    if (!modal) return;
+    renderStageManagerList();
+    modal.style.display = 'flex';
+  }
+  window.openStageManagerModal = openStageManagerModal;
+
+  function closeStageManagerModal() {
+    const modal = document.getElementById('stageManagerModal');
+    if (modal) modal.style.display = 'none';
+  }
+  window.closeStageManagerModal = closeStageManagerModal;
+
+  function renderStageManagerList() {
+    const list = document.getElementById('stageManagerList');
+    if (!list) return;
+
+    if (!stages.length) {
+      list.innerHTML = '<li style="text-align: center; color: #94a3b8; padding: 12px;">Nenhuma etapa cadastrada.</li>';
+      return;
+    }
+
+    list.innerHTML = stages.map((st) => `
+      <li style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <span style="font-weight: 600; color: #1e293b; font-size: 0.9rem;">${escapeHtml(st)}</span>
+        <button type="button" onclick="deleteStage('${escapeHtml(st).replace(/'/g, "\\'")}')" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 6px; padding: 4px 10px; font-weight: 700; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
+          ❌ Excluir
+        </button>
+      </li>
+    `).join('');
+  }
+
+  function deleteStage(stageName) {
+    if (window.confirm(`Deseja realmente excluir a etapa "${stageName}"?`)) {
+      stages = stages.filter(st => st !== stageName);
+      saveStages();
+      populateSupervisaoStageSelect();
+      renderStageManagerList();
+    }
+  }
+  window.deleteStage = deleteStage;
 
   if (homeClearWeekButton) {
     homeClearWeekButton.addEventListener('click', () => {
@@ -343,53 +380,6 @@ function updateSyncStatus(message) {
 }
 
 
-function clearAllSearchInputs() {
-  if (searchInput) {
-    searchInput.value = '';
-  }
-  const mainSearchSuggestionsEl = document.getElementById('mainSearchSuggestions');
-  if (mainSearchSuggestionsEl) {
-    mainSearchSuggestionsEl.style.display = 'none';
-  }
-  const supervisaoSearchInputEl = document.getElementById('supervisaoSearchInput');
-  if (supervisaoSearchInputEl) {
-    supervisaoSearchInputEl.value = '';
-  }
-  if (clearSearchButton) {
-    clearSearchButton.hidden = true;
-  }
-}
-
-function formatRecordDateOrLastModified(entry) {
-  if (!entry) return '—';
-  if (entry.updatedAt) {
-    return entry.updatedAt.replace(/(:\d{2}):\d{2}/, '$1');
-  }
-  if (entry.createdAt) {
-    return entry.createdAt.replace(/(:\d{2}):\d{2}/, '$1');
-  }
-  if (entry.updatedAtTime) {
-    const d = new Date(entry.updatedAtTime);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    }
-  }
-  if (entry.id && !isNaN(Number(entry.id)) && Number(entry.id) > 1600000000000) {
-    const d = new Date(Number(entry.id));
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    }
-  }
-  if (entry.date) {
-    const parts = entry.date.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return entry.date;
-  }
-  return '—';
-}
-
 form.addEventListener('submit', saveItem);
 searchInput.addEventListener('input', render);
 clearSearchButton.addEventListener('click', () => {
@@ -399,7 +389,6 @@ clearSearchButton.addEventListener('click', () => {
 dayTabs.addEventListener('click', (event) => {
   const target = event.target;
   if (!target.matches('.tab-btn')) return;
-  clearAllSearchInputs();
   selectedDay = target.dataset.day;
   
   if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
@@ -484,7 +473,6 @@ if (vistoriaTypeTabs) {
   vistoriaTypeTabs.addEventListener('click', (event) => {
     const btn = event.target;
     if (!btn.matches('.tab-btn')) return;
-    clearAllSearchInputs();
     selectedType = btn.dataset.type;
     vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.type === selectedType);
@@ -534,96 +522,16 @@ if (supervisaoPartsPendingButtons) {
 
 
 
-function setupCustomAutocomplete(inputEl, suggestionsEl, getSuggestionsFn, onSelectFn) {
-  if (!inputEl || !suggestionsEl) return;
-
-  function renderSuggestions() {
-    const val = inputEl.value.trim().toLowerCase();
-    const matches = getSuggestionsFn(val);
-
-    if (!matches || !matches.length) {
-      suggestionsEl.style.display = 'none';
-      return;
-    }
-
-    suggestionsEl.innerHTML = matches.map(item => `
-      <div class="custom-autocomplete-item" data-val="${escapeHtml(item.value)}" style="padding: 12px 16px; color: #0f172a; font-weight: 700; font-size: 0.95rem; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #ffffff; transition: background 0.15s ease;">
-        <span>🏢 ${escapeHtml(item.label)}</span>
-        ${item.count !== undefined ? `<span style="font-size: 0.8rem; background: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 999px; font-weight: 600;">${item.count}</span>` : ''}
-      </div>
-    `).join('');
-
-    suggestionsEl.style.display = 'block';
-
-    suggestionsEl.querySelectorAll('.custom-autocomplete-item').forEach(el => {
-      el.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        const selectedVal = el.dataset.val;
-        inputEl.value = selectedVal;
-        suggestionsEl.style.display = 'none';
-        onSelectFn(selectedVal);
-      });
+if (supervisaoOficinaFilterContainer) {
+  supervisaoOficinaFilterContainer.addEventListener('click', (event) => {
+    const btn = event.target;
+    if (!btn.matches('.type-btn')) return;
+    selectedSupervisaoOficina = btn.dataset.filterOficina;
+    supervisaoOficinaFilterContainer.querySelectorAll('.type-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.filterOficina === selectedSupervisaoOficina);
     });
-  }
-
-  inputEl.addEventListener('focus', renderSuggestions);
-  inputEl.addEventListener('input', renderSuggestions);
-
-  document.addEventListener('click', (e) => {
-    if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target)) {
-      suggestionsEl.style.display = 'none';
-    }
-  });
-}
-
-const supervisaoSearchInputEl = document.getElementById('supervisaoSearchInput');
-const supervisaoSearchSuggestionsEl = document.getElementById('supervisaoSearchSuggestions');
-
-if (supervisaoSearchInputEl) {
-  supervisaoSearchInputEl.addEventListener('input', () => {
     renderSupervisaoReport();
   });
-
-  if (supervisaoSearchSuggestionsEl) {
-    setupCustomAutocomplete(
-      supervisaoSearchInputEl,
-      supervisaoSearchSuggestionsEl,
-      (val) => {
-        const sorted = [...oficinas].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
-        return sorted
-          .filter(o => !val || (o.name || '').toLowerCase().includes(val))
-          .map(o => {
-            const count = supervisoes.filter(s => s.oficinaId === o.id).length;
-            return { label: o.name, value: o.name, count };
-          });
-      },
-      (selectedVal) => {
-        renderSupervisaoReport();
-      }
-    );
-  }
-}
-
-const mainSearchSuggestionsEl = document.getElementById('mainSearchSuggestions');
-if (searchInput && mainSearchSuggestionsEl) {
-  setupCustomAutocomplete(
-    searchInput,
-    mainSearchSuggestionsEl,
-    (val) => {
-      const sorted = [...oficinas].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
-      return sorted
-        .filter(o => !val || (o.name || '').toLowerCase().includes(val))
-        .map(o => {
-          const countVistorias = items.filter(i => i.oficinaId === o.id).length;
-          const countSupervisoes = supervisoes.filter(s => s.oficinaId === o.id).length;
-          const totalCount = countVistorias + countSupervisoes;
-          return { label: o.name, value: o.name, count: totalCount };
-        });
-    },
-    (selectedVal) => {
-      render();
-    }
-  );
 }
 
 if (shareSupervisaoTextButton) {
@@ -778,7 +686,6 @@ function updateHomeSummary() {
 }
 
 function showWelcomeScreen() {
-  clearAllSearchInputs();
   const welcomeScreenEl = document.getElementById('welcomeScreen');
   const homeSummaryCardEl = document.getElementById('homeSummaryCard');
   const appHeaderEl = document.getElementById('appHeader');
@@ -813,7 +720,6 @@ function getAutomaticDayOfWeek() {
 }
 
 function handleMenuButtonClick(targetDay) {
-  clearAllSearchInputs();
   const welcomeScreenEl = document.getElementById('welcomeScreen');
   const homeSummaryCardEl = document.getElementById('homeSummaryCard');
   const appHeaderEl = document.getElementById('appHeader');
@@ -877,7 +783,6 @@ window.openMenuSection = function(targetDay) {
 };
 
 window.backToHomeMenu = function() {
-  clearAllSearchInputs();
   selectedOficinaForTodasVistorias = null;
   showWelcomeScreen();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1000,18 +905,13 @@ function saveItem(event) {
     });
   }
 
-  const nowStr = new Date().toLocaleString('pt-BR');
-  const nowTime = Date.now();
-
   if (editingId) {
     items = items.map((item) => item.id === editingId ? { 
-      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details,
-      updatedAt: nowStr,
-      updatedAtTime: nowTime
+      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details 
     } : item);
   } else {
     items.unshift({
-      id: nowTime.toString(),
+      id: Date.now().toString(),
       date,
       day,
       plate,
@@ -1022,9 +922,7 @@ function saveItem(event) {
       oficinaId,
       oficinaName,
       details,
-      createdAt: nowStr,
-      updatedAt: nowStr,
-      updatedAtTime: nowTime
+      createdAt: new Date().toLocaleString('pt-BR')
     });
   }
 
@@ -1098,101 +996,12 @@ function render() {
       if (formCard) formCard.hidden = true;
       if (recordsCard) recordsCard.hidden = false;
       
-      if (query.trim() !== '') {
-        const queryTrimmed = query.trim().toLowerCase();
-        
-        const globalVistorias = items.map(i => ({ ...i, isSupervisao: false })).filter(item => {
-          return `${item.date} ${item.day} ${item.plate} ${item.provider} ${item.oficinaName || ''} ${item.type || ''}`.toLowerCase().includes(queryTrimmed);
-        });
-
-        const globalSupervisoes = supervisoes.map(s => ({ ...s, isSupervisao: true })).filter(s => {
-          return `${s.date} ${s.day} ${s.vehicle} ${s.oficinaName || ''} ${s.attended || ''} ${s.stage || ''}`.toLowerCase().includes(queryTrimmed);
-        });
-
-        const globalList = [...globalVistorias, ...globalSupervisoes];
-        
-        if (!globalList.length) {
-          itemList.innerHTML = `<li class="empty">Nenhum registro encontrado para "${escapeHtml(query)}".</li>`;
-          return;
-        }
-
-        const badgeClasses = {
-          'Inicial': 'badge-inicial',
-          'Roubo Recuperado': 'badge-roubo',
-          'Incêndio': 'badge-incendio',
-          'Enchente': 'badge-enchente',
-          'Moto': 'badge-moto',
-          'Complemento': 'badge-complemento',
-          'Pós entrega': 'badge-pos',
-          'Vistoria Rio log': 'badge-riolog'
-        };
-
-        const itemsHtml = globalList.map((entry) => {
-          if (entry.isSupervisao) {
-            return `
-              <li class="item-card compact-item-card">
-                <div class="item-main-info" style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;">
-                  <div class="plate-badge compact-plate-badge" style="width: 100% !important; justify-content: flex-start !important;">
-                    <span class="plate-badge-text">${escapeHtml(entry.vehicle || 'Supervisão')}</span>
-                  </div>
-                  <div class="item-details">
-                    <strong class="item-provider">Oficina: ${escapeHtml(entry.oficinaName || 'Sem oficina')}</strong>
-                    <span class="item-meta">· Atendido por: ${escapeHtml(entry.attended || '—')}</span>
-                    <span class="item-meta">· 🕒 ${escapeHtml(formatRecordDateOrLastModified(entry))}</span>
-                    <span class="badge-supervisao" style="margin-left: 6px;">${escapeHtml(entry.stage || '')}</span>
-                  </div>
-                </div>
-                <div class="actions vertical-actions">
-                  <button class="action-btn" type="button" data-super-action="share-whatsapp" data-id="${entry.id}">💬 Compartilhar vistoria</button>
-                  <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">📸 Fotos</button>
-                  <button class="action-btn" type="button" data-super-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
-                  <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
-                  <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
-                </div>
-              </li>
-            `;
-          } else {
-            const badgeClass = badgeClasses[entry.type || 'Inicial'] || 'badge-inicial';
-            return `
-              <li class="item-card compact-item-card">
-                <div class="item-main-info">
-                  <div class="plate-badge compact-plate-badge">
-                    <span class="plate-badge-text">${escapeHtml(entry.plate)}</span>
-                  </div>
-                  <div class="item-details">
-                    <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
-                    <span class="item-meta">· Oficina: ${escapeHtml(entry.oficinaName || 'Sem oficina')}</span>
-                    <span class="item-meta">· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
-                    <span class="item-meta">· 🕒 ${escapeHtml(formatRecordDateOrLastModified(entry))}</span>
-                    <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
-                  </div>
-                </div>
-                <div class="actions vertical-actions">
-                  <button class="action-btn" type="button" data-action="share-whatsapp" data-id="${entry.id}">💬 Compartilhar vistoria</button>
-                  <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">📸 Fotos</button>
-                  <button class="action-btn" type="button" data-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
-                  <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
-                  <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
-                </div>
-              </li>
-            `;
-          }
-        }).join('');
-
-        itemList.innerHTML = itemsHtml;
-        itemList.querySelectorAll('[data-action]').forEach((button) => {
-          button.addEventListener('click', () => handleAction(button.dataset.action, button.dataset.id));
-        });
-        itemList.querySelectorAll('[data-super-action]').forEach((button) => {
-          button.addEventListener('click', () => handleSupervisaoAction(button.dataset.superAction, button.dataset.id));
-        });
-        return;
-      }
-
-      const filteredOficinas = oficinas;
+      const filteredOficinas = oficinas.filter(o => 
+        o.name.toLowerCase().includes(query)
+      );
 
       if (!filteredOficinas.length) {
-        itemList.innerHTML = '<li class="empty">Nenhuma oficina cadastrada.</li>';
+        itemList.innerHTML = '<li class="empty">Nenhuma oficina cadastrada ou encontrada.</li>';
         return;
       }
       
@@ -1322,7 +1131,7 @@ function render() {
                 </div>
                 <div class="item-details">
                   <strong class="item-provider">Atendido: ${escapeHtml(entry.attended || '—')}</strong>
-                  <span class="item-meta">· 🕒 ${escapeHtml(formatRecordDateOrLastModified(entry))}</span>
+                  <span class="item-meta">· ${escapeHtml(formatDateString(entry.date))}</span>
                   <span class="badge-supervisao" style="margin-left: 6px;">
                     Supervisão: ${escapeHtml(entry.stage || '')}
                   </span>
@@ -1353,7 +1162,7 @@ function render() {
                 <div class="item-details">
                   <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
                   <span class="item-meta">· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
-                  <span class="item-meta">· 🕒 ${escapeHtml(formatRecordDateOrLastModified(entry))}</span>
+                  <span class="item-meta">· ${escapeHtml(entry.day)}</span>
                   <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
                 </div>
               </div>
@@ -1374,7 +1183,6 @@ function render() {
       const backBtn = itemList.querySelector('#backToOficinasList');
       if (backBtn) {
         backBtn.addEventListener('click', () => {
-          clearAllSearchInputs();
           selectedOficinaForTodasVistorias = null;
           render();
         });
@@ -1384,14 +1192,12 @@ function render() {
       const toggleSupervisoesBtn = itemList.querySelector('#toggleFilterSupervisoes');
       if (toggleVistoriasBtn) {
         toggleVistoriasBtn.addEventListener('click', () => {
-          clearAllSearchInputs();
           selectedTodasVistoriasFilter = 'Vistorias';
           render();
         });
       }
       if (toggleSupervisoesBtn) {
         toggleSupervisoesBtn.addEventListener('click', () => {
-          clearAllSearchInputs();
           selectedTodasVistoriasFilter = 'Supervisões';
           render();
         });
@@ -1410,7 +1216,7 @@ function render() {
   // Normal day filtering for regular vistorias
   const filtered = items.filter((item) => {
     const isTotalWeek = selectedDay === 'Total da semana';
-    const matchesQuery = `${item.date} ${item.day} ${item.plate} ${item.provider} ${item.oficinaName || ''} ${item.type || ''}`.toLowerCase().includes(query);
+    const matchesQuery = `${item.date} ${item.day} ${item.plate} ${item.provider}`.toLowerCase().includes(query);
     if (!matchesQuery) return false;
 
     if (isTotalWeek) {
@@ -1504,7 +1310,7 @@ function render() {
 function renderReport(filteredItems) {
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   const totals = days.map((day) => {
-    const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true && (Number(item.value) || 0) > 0);
+    const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
     itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
 
     const platesHtml = itemsForDay.length
@@ -2510,20 +2316,13 @@ function renderDynamicSurveyFields() {
           alert('Esta oficina já está cadastrada!');
           return;
         }
-        const resp = window.prompt('Digite o nome do responsável pela oficina (opcional):');
-        const responsaveis = [];
-        if (resp && resp.trim()) {
-          responsaveis.push(resp.trim());
-        }
         const newOficina = {
           id: Date.now().toString(),
-          name: cleanedName,
-          responsaveis: responsaveis
+          name: cleanedName
         };
         oficinas.push(newOficina);
         saveOficinas();
         renderOficinas();
-        populateSupervisaoOficinaSelect();
         
         renderDynamicSurveyFields();
         const selectEl = document.getElementById('itemOficinaSelect');
@@ -2653,18 +2452,6 @@ function populateSupervisaoAttendedSelect(preserveValue) {
         opt.textContent = trimmed;
         opt.selected = true;
         supervisaoAttendedInput.insertBefore(opt, supervisaoAttendedInput.querySelector('option[value="__outro__"]'));
-
-        // Auto-save as responsável for selected oficina
-        const oficinaId = supervisaoOficinaSelect ? supervisaoOficinaSelect.value : '';
-        const selectedOficina = oficinas.find(o => o.id === oficinaId);
-        if (selectedOficina) {
-          if (!selectedOficina.responsaveis) selectedOficina.responsaveis = [];
-          if (!selectedOficina.responsaveis.includes(trimmed)) {
-            selectedOficina.responsaveis.push(trimmed);
-            saveOficinas();
-            renderOficinas();
-          }
-        }
       } else {
         supervisaoAttendedInput.value = '';
       }
@@ -2673,14 +2460,14 @@ function populateSupervisaoAttendedSelect(preserveValue) {
 }
 
 function populateSupervisaoOficinaFilter() {
-  const datalist = document.getElementById('supervisaoOficinasDatalist');
-  if (!datalist) return;
+  if (!supervisaoOficinaFilterContainer) return;
   
-  const sortedOficinas = [...oficinas].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+  let buttonsHtml = `<button type="button" class="type-btn${selectedSupervisaoOficina === 'Todas' ? ' active' : ''}" data-filter-oficina="Todas">Todas</button>`;
+  oficinas.forEach((oficina) => {
+    buttonsHtml += `<button type="button" class="type-btn${selectedSupervisaoOficina === oficina.id ? ' active' : ''}" data-filter-oficina="${oficina.id}">${escapeHtml(oficina.name)}</button>`;
+  });
   
-  datalist.innerHTML = sortedOficinas.map((oficina) => {
-    return `<option value="${escapeHtml(oficina.name)}"></option>`;
-  }).join('');
+  supervisaoOficinaFilterContainer.innerHTML = buttonsHtml;
 }
 
 function populateSupervisaoStageSelect() {
@@ -2692,49 +2479,6 @@ function populateSupervisaoStageSelect() {
     supervisaoStageInput.value = currentVal;
   }
 }
-
-function openStageManagerModal() {
-  const modal = document.getElementById('stageManagerModal');
-  if (!modal) return;
-  renderStageManagerList();
-  modal.style.display = 'flex';
-}
-window.openStageManagerModal = openStageManagerModal;
-
-function closeStageManagerModal() {
-  const modal = document.getElementById('stageManagerModal');
-  if (modal) modal.style.display = 'none';
-}
-window.closeStageManagerModal = closeStageManagerModal;
-
-function renderStageManagerList() {
-  const list = document.getElementById('stageManagerList');
-  if (!list) return;
-
-  if (!stages.length) {
-    list.innerHTML = '<li style="text-align: center; color: #94a3b8; padding: 12px;">Nenhuma etapa cadastrada.</li>';
-    return;
-  }
-
-  list.innerHTML = stages.map((st) => `
-    <li style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-      <span style="font-weight: 600; color: #1e293b; font-size: 0.9rem;">${escapeHtml(st)}</span>
-      <button type="button" onclick="deleteStage('${escapeHtml(st).replace(/'/g, "\\'")}')" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 6px; padding: 4px 10px; font-weight: 700; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
-        ❌ Excluir
-      </button>
-    </li>
-  `).join('');
-}
-
-function deleteStage(stageName) {
-  if (window.confirm(`Deseja realmente excluir a etapa "${stageName}"?`)) {
-    stages = stages.filter(st => st !== stageName);
-    saveStages();
-    populateSupervisaoStageSelect();
-    renderStageManagerList();
-  }
-}
-window.deleteStage = deleteStage;
 
 
 function updateFormState() {
@@ -2989,46 +2733,11 @@ function cancelSupervisaoEdit() {
   if (saveSupervisaoButton) saveSupervisaoButton.textContent = 'Salvar';
 }
 
-function formatSupervisaoDate(s) {
-  if (s.updatedAt) {
-    return s.updatedAt.replace(/(:\d{2}):\d{2}/, '$1');
-  }
-  if (s.createdAt) {
-    return s.createdAt.replace(/(:\d{2}):\d{2}/, '$1');
-  }
-  if (s.updatedAtTime) {
-    const d = new Date(s.updatedAtTime);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    }
-  }
-  if (s.id && !isNaN(Number(s.id))) {
-    const d = new Date(Number(s.id));
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    }
-  }
-  if (s.date) {
-    const parts = s.date.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return s.date;
-  }
-  return '—';
-}
-
 function renderSupervisaoReport() {
   if (!supervisaoReportContent) return;
 
-  const searchVal = (document.getElementById('supervisaoSearchInput')?.value || '').toLowerCase().trim();
-
   const filtered = supervisoes.filter((s) => {
     if (selectedSupervisaoOficina !== 'Todas' && s.oficinaId !== selectedSupervisaoOficina) return false;
-    if (searchVal) {
-      const matchStr = `${s.vehicle} ${s.oficinaName} ${s.attended} ${s.stage} ${s.parts} ${s.finish} ${s.other} ${formatSupervisaoDate(s)}`.toLowerCase();
-      if (!matchStr.includes(searchVal)) return false;
-    }
     return true;
   });
 
@@ -3071,14 +2780,9 @@ function renderSupervisaoReport() {
       prevEst += `<br><small style="color:#6b7280;">Peças: ${escapeHtml(s.arrival || '—')}</small>`;
     }
 
-    const updatedDateStr = formatSupervisaoDate(s);
-
     return `
       <tr>
-        <td data-label="Veículo">
-          <div style="font-size: 0.75rem; font-weight: 600; color: #2563eb; margin-bottom: 3px;">📅 ${escapeHtml(updatedDateStr)}</div>
-          <div style="font-weight: 600; color: #111827;">${escapeHtml(s.vehicle)}</div>
-        </td>
+        <td data-label="Veículo" style="font-weight: 600;">${escapeHtml(s.vehicle)}</td>
         <td data-label="Oficina" style="font-weight: 500;">${escapeHtml(s.oficinaName || 'Sem oficina')}</td>
         <td data-label="Atendido por">${escapeHtml(s.attended)}</td>
         <td data-label="Status">
@@ -3723,16 +3427,6 @@ window.onStorageFolderSelected = function(folderName) {
   localStorage.setItem('photo_folder_name_friendly', folderName);
 };
 
-function downloadLatestApk() {
-  const apkUrl = 'https://github.com/albinokira-crypto/inicialsistema/raw/master/VistoriaInicial_v1.40.apk';
-  if (window.AndroidInterface && typeof window.AndroidInterface.downloadApkUpdate === 'function') {
-    window.AndroidInterface.downloadApkUpdate(apkUrl);
-  } else {
-    window.open(apkUrl, '_blank');
-  }
-}
-window.downloadLatestApk = downloadLatestApk;
-
 if (closePhotoManagerButton) {
   closePhotoManagerButton.addEventListener('click', () => {
     // Close the modal without deleting stored photos from IndexedDB
@@ -3830,7 +3524,6 @@ async function shareVistoriaWhatsApp(id) {
     try {
       const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
       if (storedPhotos && storedPhotos.length > 0) {
-        storedPhotos.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
         for (const p of storedPhotos) {
           if (p.rawBlob) {
             const base64 = await blobToBase64(p.rawBlob);
@@ -3862,7 +3555,6 @@ async function shareVistoriaWhatsApp(id) {
     const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
     let filesToShare = [];
     if (storedPhotos && storedPhotos.length > 0) {
-      storedPhotos.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
       for (const p of storedPhotos) {
         if (p.rawBlob) {
           let mimeType = p.rawBlob.type;
