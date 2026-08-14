@@ -1225,13 +1225,15 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
-            tempShareFiles.clear()
-            val safCacheDir = java.io.File(activity.cacheDir, "share_temp")
+            val sessionId = System.currentTimeMillis()
+            val shareTempDir = java.io.File(activity.cacheDir, "share_$sessionId")
             try {
-                if (safCacheDir.exists()) {
-                    safCacheDir.deleteRecursively()
+                activity.cacheDir.listFiles()?.forEach { f ->
+                    if (f.isDirectory && f.name.startsWith("share_") && f.name != "share_$sessionId") {
+                        f.deleteRecursively()
+                    }
                 }
-                safCacheDir.mkdirs()
+                shareTempDir.mkdirs()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -1293,7 +1295,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                                                     }
                                                 }
                                                 try {
-                                                    val tempFile = java.io.File(safCacheDir, name)
+                                                    val tempFile = java.io.File(shareTempDir, "saf_" + name)
                                                     activity.contentResolver.openInputStream(file.uri)?.use { input ->
                                                         java.io.FileOutputStream(tempFile).use { output ->
                                                             input.copyTo(output)
@@ -1302,7 +1304,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                                                     if (tempFile.exists() && tempFile.length() > 0) {
                                                         addedNames.add(lowerName)
                                                         filesToShare.add(tempFile)
-                                                        tempShareFiles.add(tempFile)
                                                     }
                                                 } catch (e: Exception) {
                                                     e.printStackTrace()
@@ -1472,15 +1473,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 })
             val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
 
-            // Preparar pasta de cache com timestamps e EXIF sincronizados para forçar o WhatsApp a montar álbum único com o vídeo no final
-            val shareTempDir = java.io.File(activity.cacheDir, "share_temp")
-            try {
-                if (shareTempDir.exists()) shareTempDir.deleteRecursively()
-                shareTempDir.mkdirs()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
             val preparedFiles = ArrayList<java.io.File>()
             val minVideoTime = if (videoFiles.isNotEmpty()) videoFiles.minOf { it.lastModified() } else System.currentTimeMillis()
             val minPhotoTime = if (imageFiles.isNotEmpty()) imageFiles.minOf { it.lastModified() } else System.currentTimeMillis()
@@ -1494,7 +1486,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 val sourceFile = imageFiles[i]
                 try {
                     val ext = sourceFile.extension.ifEmpty { "jpg" }
-                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "foto_%03d.%s", i, ext))
+                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "foto_%d_%03d.%s", sessionId, i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
                     val imgTime = baseTime + (i * 1000L)
                     targetFile.setLastModified(imgTime)
@@ -1521,7 +1513,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 val sourceFile = videoFiles[i]
                 try {
                     val ext = sourceFile.extension.ifEmpty { "mp4" }
-                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%03d.%s", i, ext))
+                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%d_%03d.%s", sessionId, i, ext))
                     sourceFile.copyTo(targetFile, overwrite = true)
                     val vidTime = referenceEarliestTime + 5000L + (i * 2000L)
                     targetFile.setLastModified(vidTime)
