@@ -1430,7 +1430,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
             if (uris.isEmpty()) {
                 Toast.makeText(activity, "Nenhuma foto/vídeo encontrado para $vehicleName. Enviando relatório de texto...", Toast.LENGTH_LONG).show()
             } else {
-                Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, "📋 Relatório copiado! Abrindo WhatsApp com ${uris.size} mídias em lote único...", Toast.LENGTH_SHORT).show()
             }
 
             val hasVideosOnly = filesToShare.all { f -> 
@@ -1454,7 +1454,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     action = Intent.ACTION_SEND_MULTIPLE
                     type = shareType
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-                    putExtra(Intent.EXTRA_TEXT, reportText)
                 }
                 if (uris.isNotEmpty()) {
                     val clip = android.content.ClipData.newRawUri("Vistoria", uris[0])
@@ -1795,11 +1794,13 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     type = shareType
                     if (uris.size == 1) {
                         putExtra(Intent.EXTRA_STREAM, uris[0])
-                    } else {
+                        putExtra(Intent.EXTRA_TEXT, reportText)
+                    } else if (uris.size > 1) {
                         putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                    } else {
+                        putExtra(Intent.EXTRA_TEXT, reportText)
                     }
                     putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
-                    putExtra(Intent.EXTRA_TEXT, reportText)
                     if (uris.isNotEmpty()) {
                         clipData = android.content.ClipData.newRawUri("Vistoria", uris[0])
                         for (i in 1 until uris.size) {
