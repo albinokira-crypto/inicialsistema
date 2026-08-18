@@ -1176,6 +1176,23 @@ class AndroidInterface(private val activity: ComponentActivity) {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        try {
+            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
+            if (vistoriasBaseDir.exists()) {
+                val subDirs = vistoriasBaseDir.listFiles { file -> file.isDirectory }
+                if (subDirs != null) {
+                    for (dir in subDirs) {
+                        val tempDir = java.io.File(dir, ".share_temp")
+                        if (tempDir.exists()) {
+                            tempDir.deleteRecursively()
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     @JavascriptInterface
@@ -1405,15 +1422,81 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 })
             val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
 
-            // Compartilhar os arquivos originais diretamente para que o WhatsApp agrupe como lote único
-            val sortedFiles = ArrayList<java.io.File>()
-            sortedFiles.addAll(imageFiles)
-            sortedFiles.addAll(videoFiles)
-            sortedFiles.addAll(otherFiles)
+            // Copiar todos os arquivos para uma pasta temporária pública oculta (.share_temp)
+            // Isso garante que todas as mídias compartilhem a mesma raiz de URI pública no FileProvider,
+            // permitindo que o WhatsApp agrupe como álbum/lote único sem fragmentar por caminhos diferentes.
+            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val shareTempDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName/.share_temp")
+            try {
+                if (shareTempDir.exists()) {
+                    shareTempDir.deleteRecursively()
+                }
+                shareTempDir.mkdirs()
+                // Criar arquivo .nomedia para ocultar a pasta temporária do scanner de galeria do celular
+                java.io.File(shareTempDir, ".nomedia").createNewFile()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            val preparedFiles = ArrayList<java.io.File>()
+            val sessionId = System.currentTimeMillis()
+            val minVideoTime = if (videoFiles.isNotEmpty()) videoFiles.minOf { it.lastModified() } else sessionId
+            val minPhotoTime = if (imageFiles.isNotEmpty()) imageFiles.minOf { it.lastModified() } else sessionId
+            val referenceEarliestTime = minOf(minVideoTime, minPhotoTime)
+            
+            // Garantir que a base de horário de todas as fotos seja anterior ao vídeo mais antigo
+            val baseTime = referenceEarliestTime - ((imageFiles.size + 20) * 2000L)
+            val sdf = java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss", java.util.Locale.US)
+
+            for (i in imageFiles.indices) {
+                val sourceFile = imageFiles[i]
+                try {
+                    val ext = sourceFile.extension.ifEmpty { "jpg" }
+                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "foto_%d_%03d.%s", sessionId, i, ext))
+                    sourceFile.copyTo(targetFile, overwrite = true)
+                    val imgTime = baseTime + (i * 1000L)
+                    targetFile.setLastModified(imgTime)
+                    if (ext.lowercase() == "jpg" || ext.lowercase() == "jpeg") {
+                        try {
+                            val exif = android.media.ExifInterface(targetFile.absolutePath)
+                            val dateStr = sdf.format(java.util.Date(imgTime))
+                            exif.setAttribute(android.media.ExifInterface.TAG_DATETIME, dateStr)
+                            exif.setAttribute(android.media.ExifInterface.TAG_DATETIME_ORIGINAL, dateStr)
+                            exif.setAttribute(android.media.ExifInterface.TAG_DATETIME_DIGITIZED, dateStr)
+                            exif.saveAttributes()
+                        } catch (ex: Exception) {
+                            ex.printStackTrace()
+                        }
+                    }
+                    preparedFiles.add(targetFile)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    preparedFiles.add(sourceFile)
+                }
+            }
+
+            for (i in videoFiles.indices) {
+                val sourceFile = videoFiles[i]
+                try {
+                    val ext = sourceFile.extension.ifEmpty { "mp4" }
+                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%d_%03d.%s", sessionId, i, ext))
+                    sourceFile.copyTo(targetFile, overwrite = true)
+                    val vidTime = referenceEarliestTime + 5000L + (i * 2000L)
+                    targetFile.setLastModified(vidTime)
+                    preparedFiles.add(targetFile)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    preparedFiles.add(sourceFile)
+                }
+            }
+
+            for (other in otherFiles) {
+                preparedFiles.add(other)
+            }
 
             val uris = ArrayList<Uri>()
             val addedUriStrings = HashSet<String>()
-            for (file in sortedFiles) {
+            for (file in preparedFiles) {
                 try {
                     val uri = androidx.core.content.FileProvider.getUriForFile(
                         activity,
