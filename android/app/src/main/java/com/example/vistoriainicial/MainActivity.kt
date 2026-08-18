@@ -349,8 +349,8 @@ class MainActivity : ComponentActivity() {
             }
         })
 
-        // Carregar do Vercel, com fallback para arquivo local se estiver offline
-        webView.loadUrl("https://gestao-vistoria-inicial.vercel.app")
+        // Carregar a partir dos arquivos locais (Offline-First)
+        webView.loadUrl("file:///android_asset/index.html")
 
         // Request Permissions
         checkPermissions()
