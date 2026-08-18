@@ -106,7 +106,20 @@ const shareSupervisaoTextButton = document.getElementById('shareSupervisaoTextBu
 const copySupervisaoTextButton = document.getElementById('copySupervisaoTextButton');
 const supervisaoStageFilterContainer = document.getElementById('supervisaoStageFilterContainer');
 const supervisaoOficinaFilterContainer = document.getElementById('supervisaoOficinaFilterContainer');
+const supervisaoOficinaFilterSelect = document.getElementById('supervisaoOficinaFilterSelect');
+const supervisaoOficinaFilterCount = document.getElementById('supervisaoOficinaFilterCount');
 const supervisaoReportContent = document.getElementById('supervisaoReportContent');
+
+// Report Preview Modal Elements
+const reportPreviewModal = document.getElementById('reportPreviewModal');
+const reportPreviewTitle = document.getElementById('reportPreviewTitle');
+const reportPreviewBadge = document.getElementById('reportPreviewBadge');
+const reportPreviewMeta = document.getElementById('reportPreviewMeta');
+const reportPreviewContent = document.getElementById('reportPreviewContent');
+const copyReportPreviewBtn = document.getElementById('copyReportPreviewBtn');
+const whatsappReportPreviewBtn = document.getElementById('whatsappReportPreviewBtn');
+const photosReportPreviewBtn = document.getElementById('photosReportPreviewBtn');
+let currentReportModalId = null;
 
 const STAGES_STORAGE_KEY = 'web-system-stages-v1';
 const DEFAULT_STAGES = [
@@ -522,15 +535,65 @@ if (supervisaoPartsPendingButtons) {
 
 
 
+if (supervisaoOficinaFilterSelect) {
+  supervisaoOficinaFilterSelect.addEventListener('change', (event) => {
+    selectedSupervisaoOficina = event.target.value;
+    if (supervisaoOficinaFilterContainer) {
+      supervisaoOficinaFilterContainer.querySelectorAll('.type-btn').forEach((b) => {
+        b.classList.toggle('active', b.dataset.filterOficina === selectedSupervisaoOficina);
+      });
+    }
+    const countEl = document.getElementById('supervisaoOficinaFilterCount');
+    if (countEl) {
+      const currentCount = selectedSupervisaoOficina === 'Todas'
+        ? supervisoes.length
+        : supervisoes.filter(s => s.oficinaId === selectedSupervisaoOficina).length;
+      countEl.textContent = `Total: ${currentCount}`;
+    }
+    renderSupervisaoReport();
+  });
+}
+
 if (supervisaoOficinaFilterContainer) {
   supervisaoOficinaFilterContainer.addEventListener('click', (event) => {
     const btn = event.target;
     if (!btn.matches('.type-btn')) return;
     selectedSupervisaoOficina = btn.dataset.filterOficina;
+    if (supervisaoOficinaFilterSelect) {
+      supervisaoOficinaFilterSelect.value = selectedSupervisaoOficina;
+    }
     supervisaoOficinaFilterContainer.querySelectorAll('.type-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.filterOficina === selectedSupervisaoOficina);
     });
     renderSupervisaoReport();
+  });
+}
+
+// Report Preview Modal Handlers
+if (copyReportPreviewBtn) {
+  copyReportPreviewBtn.addEventListener('click', () => {
+    if (!currentReportModalId) return;
+    const contentEl = document.getElementById('reportPreviewContent');
+    if (contentEl && contentEl.value) {
+      copyTextToClipboard(contentEl.value);
+      alert('📋 Relatório copiado para a área de transferência!');
+    }
+  });
+}
+
+if (whatsappReportPreviewBtn) {
+  whatsappReportPreviewBtn.addEventListener('click', () => {
+    if (!currentReportModalId) return;
+    shareVistoriaWhatsApp(currentReportModalId, 'text');
+  });
+}
+
+if (photosReportPreviewBtn) {
+  photosReportPreviewBtn.addEventListener('click', () => {
+    if (!currentReportModalId) return;
+    const targetId = currentReportModalId;
+    closeReportPreviewModal();
+    openPhotoManagerForId(targetId);
   });
 }
 
@@ -548,6 +611,56 @@ if (copySupervisaoTextButton) {
     const text = formatAllSupervisoesText(filtered);
     copySupervisaoTextToClipboard(text);
   });
+}
+
+function openReportModal(id) {
+  const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
+  if (!item) {
+    alert('Registro não encontrado!');
+    return;
+  }
+  currentReportModalId = id;
+
+  const isInspection = items.some(entry => entry.id === id);
+  const vehicleName = (item.plate || item.vehicle || 'Veículo').trim();
+  const reportText = isInspection ? getSurveyText(id) : formatSingleSupervisaoText(item);
+
+  const modalEl = document.getElementById('reportPreviewModal');
+  const titleEl = document.getElementById('reportPreviewTitle');
+  const badgeEl = document.getElementById('reportPreviewBadge');
+  const metaEl = document.getElementById('reportPreviewMeta');
+  const contentEl = document.getElementById('reportPreviewContent');
+
+  if (titleEl) titleEl.textContent = `📋 Relatório: ${vehicleName}`;
+  if (badgeEl) {
+    if (isInspection) {
+      badgeEl.textContent = item.type || 'Vistoria';
+      badgeEl.className = 'badge-inicial';
+    } else {
+      badgeEl.textContent = `Supervisão: ${item.stage || 'Em andamento'}`;
+      badgeEl.className = 'badge-supervisao';
+    }
+  }
+  if (metaEl) {
+    const dataCriacao = item.date ? formatDateString(item.date) : (item.createdAt || '—');
+    const ultimaAtualizacao = item.updatedAt || item.createdAt || '—';
+    metaEl.innerHTML = `📅 <strong>Data:</strong> ${escapeHtml(dataCriacao)} &nbsp;|&nbsp; 🕒 <strong>Última Atualização:</strong> ${escapeHtml(ultimaAtualizacao)}`;
+  }
+  if (contentEl) {
+    contentEl.value = reportText;
+  }
+
+  if (modalEl) {
+    modalEl.style.display = 'flex';
+  }
+}
+
+function closeReportPreviewModal() {
+  const modalEl = document.getElementById('reportPreviewModal');
+  if (modalEl) {
+    modalEl.style.display = 'none';
+  }
+  currentReportModalId = null;
 }
 
 function formatPlateInput() {
@@ -660,27 +773,55 @@ function cancelInsurerEdit() {
 function updateHomeSummary() {
   const summaryGridEl = document.getElementById('homeSummaryGrid');
   if (!summaryGridEl) return;
+  
   const statsItems = items.filter(item => item.clearedFromWeek !== true);
+  const totalVistorias = statsItems.length;
+  const totalSupervisoes = supervisoes.length;
   const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
   const uniqueDays = new Set(statsItems.map((item) => item.day)).size;
-  const lastRecord = statsItems.length ? (statsItems[0].date ? formatDateString(statsItems[0].date) : (statsItems[0].createdAt || '—')) : '—';
+
+  // Obter última vistoria (por updatedAtTime, id ou createdAt)
+  const sortedVistorias = statsItems.slice().sort((a, b) => {
+    const timeA = a.updatedAtTime || Number(a.id) || 0;
+    const timeB = b.updatedAtTime || Number(b.id) || 0;
+    return timeB - timeA;
+  });
+  const lastVistoria = sortedVistorias[0];
+  let lastVistoriaText = 'Nenhum registro';
+  if (lastVistoria) {
+    const dateStr = lastVistoria.updatedAt || (lastVistoria.date ? formatDateString(lastVistoria.date) : (lastVistoria.createdAt || ''));
+    lastVistoriaText = `${escapeHtml(lastVistoria.plate || 'Vistoria')} · ${escapeHtml(dateStr)}`;
+  }
+
+  // Obter última supervisão (por updatedAtTime, id ou createdAt)
+  const sortedSupervisoes = supervisoes.slice().sort((a, b) => {
+    const timeA = a.updatedAtTime || Number(a.id) || 0;
+    const timeB = b.updatedAtTime || Number(b.id) || 0;
+    return timeB - timeA;
+  });
+  const lastSupervisao = sortedSupervisoes[0];
+  let lastSupervisaoText = 'Nenhuma supervisão';
+  if (lastSupervisao) {
+    const dateStr = lastSupervisao.updatedAt || (lastSupervisao.date ? formatDateString(lastSupervisao.date) : (lastSupervisao.createdAt || ''));
+    const vehName = lastSupervisao.vehicle ? (lastSupervisao.vehicle.length > 22 ? lastSupervisao.vehicle.substring(0, 20) + '...' : lastSupervisao.vehicle) : 'Supervisão';
+    lastSupervisaoText = `${escapeHtml(vehName)} · ${escapeHtml(dateStr)}`;
+  }
 
   summaryGridEl.innerHTML = `
     <article class="summary-item" style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; text-align: center;">
-      <strong style="font-size: 1.3rem; color: #1e40af; display: block;">${statsItems.length}</strong>
-      <span style="font-size: 0.78rem; color: #3b82f6; font-weight: 700; text-transform: uppercase;">vistorias</span>
+      <strong style="font-size: 1.3rem; color: #1e40af; display: block;">${totalVistorias}</strong>
+      <span style="font-size: 0.78rem; color: #3b82f6; font-weight: 700; text-transform: uppercase;">vistorias na semana</span>
+      <small style="display: block; font-size: 0.72rem; color: #475569; margin-top: 4px; word-break: break-word;">🕒 Última: ${lastVistoriaText}</small>
+    </article>
+    <article class="summary-item" style="background: #f5f3ff; border: 1px solid #ddd6fe; padding: 12px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 1.3rem; color: #6d28d9; display: block;">${totalSupervisoes}</strong>
+      <span style="font-size: 0.78rem; color: #7c3aed; font-weight: 700; text-transform: uppercase;">supervisões ativas</span>
+      <small style="display: block; font-size: 0.72rem; color: #475569; margin-top: 4px; word-break: break-word;">🕒 Última: ${lastSupervisaoText}</small>
     </article>
     <article class="summary-item" style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px; border-radius: 12px; text-align: center;">
       <strong style="font-size: 1.2rem; color: #065f46; display: block;">R$ ${totalValue.toFixed(2).replace('.', ',')}</strong>
-      <span style="font-size: 0.78rem; color: #10b981; font-weight: 700; text-transform: uppercase;">valor total</span>
-    </article>
-    <article class="summary-item" style="background: #fef3c7; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; text-align: center;">
-      <strong style="font-size: 1.3rem; color: #92400e; display: block;">${uniqueDays}</strong>
-      <span style="font-size: 0.78rem; color: #d97706; font-weight: 700; text-transform: uppercase;">dias preenchidos</span>
-    </article>
-    <article class="summary-item" style="background: #f3e8ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; text-align: center;">
-      <strong style="font-size: 0.95rem; color: #6b21a8; display: block; word-break: break-word;">${lastRecord}</strong>
-      <span style="font-size: 0.78rem; color: #9333ea; font-weight: 700; text-transform: uppercase;">último registro</span>
+      <span style="font-size: 0.78rem; color: #10b981; font-weight: 700; text-transform: uppercase;">faturamento semana</span>
+      <small style="display: block; font-size: 0.72rem; color: #475569; margin-top: 4px;">${uniqueDays} dias com vistorias</small>
     </article>
   `;
 }
@@ -907,7 +1048,9 @@ function saveItem(event) {
 
   if (editingId) {
     items = items.map((item) => item.id === editingId ? { 
-      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details 
+      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details,
+      updatedAt: new Date().toLocaleString('pt-BR'),
+      updatedAtTime: Date.now()
     } : item);
   } else {
     items.unshift({
@@ -922,7 +1065,9 @@ function saveItem(event) {
       oficinaId,
       oficinaName,
       details,
-      createdAt: new Date().toLocaleString('pt-BR')
+      createdAt: new Date().toLocaleString('pt-BR'),
+      updatedAt: new Date().toLocaleString('pt-BR'),
+      updatedAtTime: Date.now()
     });
   }
 
@@ -1122,19 +1267,22 @@ function render() {
           const mainInfoStyle = isLongVehicle ? 'style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;"' : '';
           const badgeStyle = isLongVehicle ? 'style="width: 100% !important; max-width: 100% !important; min-width: 100% !important; justify-content: flex-start !important; padding: 5px 8px !important; box-sizing: border-box;"' : '';
           const badgeTextStyle = isLongVehicle ? 'style="white-space: normal !important; word-break: break-word;"' : '';
+          const dataCriacao = entry.date ? formatDateString(entry.date) : (entry.createdAt || '—');
+          const dataAtualizacao = entry.updatedAt || entry.createdAt || '—';
 
           return `
             <li class="item-card compact-item-card">
               <div class="item-main-info" ${mainInfoStyle}>
-                <div class="plate-badge compact-plate-badge" ${badgeStyle}>
-                  <span class="plate-badge-text" ${badgeTextStyle}>${escapeHtml(entry.vehicle || 'Supervisão')}</span>
+                <div class="plate-badge compact-plate-badge clickable-plate-link" data-super-action="open-report" data-id="${entry.id}" title="Clique para abrir o relatório" style="cursor: pointer; ${badgeStyle}">
+                  <span class="plate-badge-text" ${badgeTextStyle}>🚗 ${escapeHtml(entry.vehicle || 'Supervisão')}</span>
                 </div>
                 <div class="item-details">
                   <strong class="item-provider">Atendido: ${escapeHtml(entry.attended || '—')}</strong>
-                  <span class="item-meta">· ${escapeHtml(formatDateString(entry.date))}</span>
+                  <span class="item-meta">· 📅 ${escapeHtml(dataCriacao)}</span>
                   <span class="badge-supervisao" style="margin-left: 6px;">
                     Supervisão: ${escapeHtml(entry.stage || '')}
                   </span>
+                  <div style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">🕒 Atualizado: ${escapeHtml(dataAtualizacao)}</div>
                 </div>
               </div>
               <div class="actions card-actions-grid">
@@ -1157,18 +1305,21 @@ function render() {
           const mainInfoStyle = isLongPlate ? 'style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;"' : '';
           const badgeStyle = isLongPlate ? 'style="width: 100% !important; max-width: 100% !important; min-width: 100% !important; justify-content: flex-start !important; padding: 5px 8px !important; box-sizing: border-box;"' : '';
           const badgeTextStyle = isLongPlate ? 'style="white-space: normal !important; word-break: break-word;"' : '';
+          const dataCriacao = entry.date ? formatDateString(entry.date) : (entry.createdAt || '—');
+          const dataAtualizacao = entry.updatedAt || entry.createdAt || '—';
 
           return `
             <li class="item-card compact-item-card">
               <div class="item-main-info" ${mainInfoStyle}>
-                <div class="plate-badge compact-plate-badge" ${badgeStyle}>
-                  <span class="plate-badge-text" ${badgeTextStyle}>${escapeHtml(entry.plate)}</span>
+                <div class="plate-badge compact-plate-badge clickable-plate-link" data-action="open-report" data-id="${entry.id}" title="Clique para abrir o relatório" style="cursor: pointer; ${badgeStyle}">
+                  <span class="plate-badge-text" ${badgeTextStyle}>🚗 ${escapeHtml(entry.plate)}</span>
                 </div>
                 <div class="item-details">
                   <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
                   <span class="item-meta">· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
-                  <span class="item-meta">· ${escapeHtml(entry.day)}</span>
+                  <span class="item-meta">· 📅 ${escapeHtml(dataCriacao)}</span>
                   <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
+                  <div style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">🕒 Atualizado: ${escapeHtml(dataAtualizacao)}</div>
                 </div>
               </div>
               <div class="actions card-actions-grid">
@@ -1283,20 +1434,24 @@ function render() {
 
   itemList.innerHTML = filtered.map((item) => {
     const badgeClass = badgeClasses[item.type || 'Inicial'] || 'badge-inicial';
+    const dataCriacao = item.date ? formatDateString(item.date) : (item.createdAt || '—');
+    const dataAtualizacao = item.updatedAt || item.createdAt || '—';
+
     return `
       <li class="item-card compact-item-card">
         <div class="item-main-info">
-          <div class="plate-badge compact-plate-badge">
-            <span class="plate-badge-text">${escapeHtml(item.plate)}</span>
+          <div class="plate-badge compact-plate-badge clickable-plate-link" data-action="open-report" data-id="${item.id}" title="Clique para abrir o relatório" style="cursor: pointer;">
+            <span class="plate-badge-text">🚗 ${escapeHtml(item.plate)}</span>
           </div>
           <div class="item-details">
             <strong class="item-provider">${escapeHtml(item.provider || 'Sem seguradora')}</strong>
-            <span class="item-meta">· ${escapeHtml(formatDateString(item.date))}</span>
+            <span class="item-meta">· 📅 ${escapeHtml(dataCriacao)}</span>
             <strong class="item-value">· R$ ${escapeHtml(Number(item.value).toFixed(2).replace('.', ','))}</strong>
             <span class="${badgeClass}" style="margin-left: 6px;">
               ${escapeHtml(item.type || 'Inicial')}
             </span>
             ${item.oficinaName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(item.oficinaName)}</strong></div>` : ''}
+            <div style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">🕒 Atualizado: ${escapeHtml(dataAtualizacao)}</div>
           </div>
         </div>
         <div class="actions card-actions-grid">
@@ -1316,7 +1471,12 @@ function render() {
   }).join('');
 
   itemList.querySelectorAll('[data-action]').forEach((button) => {
-    button.addEventListener('click', () => handleAction(button.dataset.action, button.dataset.id));
+    button.addEventListener('click', (e) => {
+      if (button.tagName.toLowerCase() === 'a' || button.classList.contains('clickable-plate-link')) {
+        e.preventDefault();
+      }
+      handleAction(button.dataset.action, button.dataset.id);
+    });
   });
 
   renderReport(filtered);
@@ -1563,6 +1723,10 @@ async function shareReportTextOnly(id) {
 window.shareReportTextOnly = shareReportTextOnly;
 
 function handleAction(action, id) {
+  if (action === 'open-report') {
+    openReportModal(id);
+    return;
+  }
   if (action === 'open-folder') {
     openInspectionFolderForId(id);
     return;
@@ -2483,14 +2647,35 @@ function populateSupervisaoAttendedSelect(preserveValue) {
 }
 
 function populateSupervisaoOficinaFilter() {
-  if (!supervisaoOficinaFilterContainer) return;
+  const selectEl = document.getElementById('supervisaoOficinaFilterSelect');
+  const countEl = document.getElementById('supervisaoOficinaFilterCount');
   
-  let buttonsHtml = `<button type="button" class="type-btn${selectedSupervisaoOficina === 'Todas' ? ' active' : ''}" data-filter-oficina="Todas">Todas</button>`;
-  oficinas.forEach((oficina) => {
-    buttonsHtml += `<button type="button" class="type-btn${selectedSupervisaoOficina === oficina.id ? ' active' : ''}" data-filter-oficina="${oficina.id}">${escapeHtml(oficina.name)}</button>`;
-  });
-  
-  supervisaoOficinaFilterContainer.innerHTML = buttonsHtml;
+  const totalCount = supervisoes.length;
+  if (countEl) {
+    const currentCount = selectedSupervisaoOficina === 'Todas'
+      ? totalCount
+      : supervisoes.filter(s => s.oficinaId === selectedSupervisaoOficina).length;
+    countEl.textContent = `Total: ${currentCount}`;
+  }
+
+  if (selectEl) {
+    let optionsHtml = `<option value="Todas">🏢 Todas as Oficinas (${totalCount})</option>`;
+    oficinas.forEach((oficina) => {
+      const ofCount = supervisoes.filter(s => s.oficinaId === oficina.id).length;
+      optionsHtml += `<option value="${oficina.id}">${escapeHtml(oficina.name)} (${ofCount})</option>`;
+    });
+    selectEl.innerHTML = optionsHtml;
+    selectEl.value = selectedSupervisaoOficina || 'Todas';
+  }
+
+  if (supervisaoOficinaFilterContainer) {
+    let buttonsHtml = `<button type="button" class="type-btn${selectedSupervisaoOficina === 'Todas' ? ' active' : ''}" data-filter-oficina="Todas">Todas (${totalCount})</button>`;
+    oficinas.forEach((oficina) => {
+      const ofCount = supervisoes.filter(s => s.oficinaId === oficina.id).length;
+      buttonsHtml += `<button type="button" class="type-btn${selectedSupervisaoOficina === oficina.id ? ' active' : ''}" data-filter-oficina="${oficina.id}">${escapeHtml(oficina.name)} (${ofCount})</button>`;
+    });
+    supervisaoOficinaFilterContainer.innerHTML = buttonsHtml;
+  }
 }
 
 function populateSupervisaoStageSelect() {
@@ -2803,9 +2988,19 @@ function renderSupervisaoReport() {
       prevEst += `<br><small style="color:#6b7280;">Peças: ${escapeHtml(s.arrival || '—')}</small>`;
     }
 
+    const dataCriacao = s.date ? formatDateString(s.date) : (s.createdAt || '—');
+    const dataAtualizacao = s.updatedAt || s.createdAt || '—';
+
     return `
       <tr>
-        <td data-label="Veículo" style="font-weight: 600;">${escapeHtml(s.vehicle)}</td>
+        <td data-label="Veículo" style="font-weight: 600;">
+          <a href="#" class="clickable-vehicle-link" data-super-action="open-report" data-id="${s.id}" title="Clique para abrir o relatório completo">
+            🚗 ${escapeHtml(s.vehicle)}
+          </a>
+          <div style="font-size: 0.72rem; color: #64748b; font-weight: normal; margin-top: 3px;">
+            📅 ${escapeHtml(dataCriacao)} · 🕒 ${escapeHtml(dataAtualizacao)}
+          </div>
+        </td>
         <td data-label="Oficina" style="font-weight: 500;">${escapeHtml(s.oficinaName || 'Sem oficina')}</td>
         <td data-label="Atendido por">${escapeHtml(s.attended)}</td>
         <td data-label="Status">
@@ -2832,11 +3027,20 @@ function renderSupervisaoReport() {
   }).join('');
 
   supervisaoReportContent.querySelectorAll('[data-super-action]').forEach((button) => {
-    button.addEventListener('click', () => handleSupervisaoAction(button.dataset.superAction, button.dataset.id));
+    button.addEventListener('click', (e) => {
+      if (button.tagName.toLowerCase() === 'a') {
+        e.preventDefault();
+      }
+      handleSupervisaoAction(button.dataset.superAction, button.dataset.id);
+    });
   });
 }
 
 function handleSupervisaoAction(action, id) {
+  if (action === 'open-report') {
+    openReportModal(id);
+    return;
+  }
   if (action === 'open-folder') {
     openInspectionFolderForId(id);
     return;

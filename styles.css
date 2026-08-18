@@ -1392,5 +1392,63 @@ html, body {
   display: none !important;
 }
 
+/* Links Clicáveis para Relatório */
+.clickable-vehicle-link {
+  color: #1d4ed8 !important;
+  text-decoration: none;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1.5px dashed #93c5fd;
+  padding-bottom: 1px;
+  transition: all 0.15s ease;
+}
+
+.clickable-vehicle-link:hover,
+.clickable-vehicle-link:active {
+  color: #1e40af !important;
+  border-bottom-style: solid;
+  border-bottom-color: #2563eb;
+  background-color: #eff6ff;
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.clickable-plate-link {
+  cursor: pointer !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.clickable-plate-link:hover,
+.clickable-plate-link:active {
+  transform: scale(1.03);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  border-color: #2563eb !important;
+}
+
+/* Custom Select para Filtro de Oficinas */
+.custom-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 36px !important;
+  box-sizing: border-box;
+}
+
+.custom-select:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+.supervisao-filter-bar {
+  transition: all 0.2s ease;
+}
+
+
 
 
