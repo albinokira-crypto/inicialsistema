@@ -436,10 +436,7 @@ dayTabs.addEventListener('click', (event) => {
       });
     }
     if (typeInput) typeInput.value = 'Inicial';
-    const formTitle = document.getElementById('formTitle');
-    if (formTitle) {
-      formTitle.textContent = `Novo registro - Inicial`;
-    }
+    updateVistoriaFormTitle();
   }
 
   updateDayTabs();
@@ -506,6 +503,21 @@ if (clearMonthButton) {
   });
 }
 
+function updateVistoriaFormTitle() {
+  const formTitleEl = document.getElementById('formTitle');
+  if (!formTitleEl) return;
+  const currentDay = getSelectedSaveDay() || getWeekdayName(new Date());
+  const prefix = editingId ? 'Editar registro' : 'Novo registro';
+  
+  if (selectedDay === 'Seguradoras') {
+    formTitleEl.textContent = 'Cadastre seguradoras';
+  } else if (selectedDay === 'Oficinas') {
+    formTitleEl.textContent = 'Cadastre oficinas';
+  } else {
+    formTitleEl.textContent = `${prefix} / ${selectedType || 'Inicial'} / ${currentDay}`;
+  }
+}
+
 if (vistoriaTypeTabs) {
   vistoriaTypeTabs.addEventListener('click', (event) => {
     const btn = event.target;
@@ -516,10 +528,7 @@ if (vistoriaTypeTabs) {
     });
     if (typeInput) typeInput.value = selectedType;
     
-    const formTitle = document.getElementById('formTitle');
-    if (formTitle) {
-      formTitle.textContent = `Novo registro - ${selectedType}`;
-    }
+    updateVistoriaFormTitle();
     
     renderDynamicSurveyFields();
     render();
@@ -911,10 +920,7 @@ function handleMenuButtonClick(targetDay) {
     }
     const typeInputEl = document.getElementById('typeInput');
     if (typeInputEl) typeInputEl.value = 'Inicial';
-    const formTitleEl = document.getElementById('formTitle');
-    if (formTitleEl) {
-      formTitleEl.textContent = `Novo registro - Inicial`;
-    }
+    updateVistoriaFormTitle();
   }
   
   if (welcomeScreenEl) {
@@ -1862,10 +1868,7 @@ function handleAction(action, id) {
     });
   }
   
-  const formTitle = document.getElementById('formTitle');
-  if (formTitle) {
-    formTitle.textContent = `Editar registro - ${selectedType}`;
-  }
+  updateVistoriaFormTitle();
   
   // Render dynamic fields before populating them
   renderDynamicSurveyFields();
@@ -1960,15 +1963,7 @@ function updateFormDisplay() {
 
   updatePageTitleHeader();
 
-  if (formTitle) {
-    if (isInsurerPane) {
-      formTitle.textContent = 'Cadastre seguradoras';
-    } else if (isOficinaPane) {
-      formTitle.textContent = 'Cadastre oficinas';
-    } else {
-      formTitle.textContent = `Novo registro - ${selectedType}`;
-    }
-  }
+  updateVistoriaFormTitle();
   
   if (insurerForm) insurerForm.hidden = selectedDay !== 'Seguradoras';
   if (insurerCard) insurerCard.hidden = selectedDay !== 'Seguradoras';
