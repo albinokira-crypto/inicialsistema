@@ -3345,6 +3345,8 @@ function openSystemSettings() {
   if (folderSection) folderSection.style.setProperty('display', 'none', 'important');
   const cameraSection = document.getElementById('cameraSettingsSection');
   if (cameraSection) cameraSection.style.setProperty('display', 'none', 'important');
+  const versionDisplay = document.getElementById('systemAppVersionDisplay');
+  if (versionDisplay) versionDisplay.textContent = 'v1.45 (Mais Recente)';
   updateFolderLabelUI();
   updatePreferredCameraUI();
   if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
