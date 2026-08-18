@@ -166,7 +166,30 @@ let selectedSupervisaoStage = 'Todos';
 let selectedSupervisaoOficina = 'Todas';
 let selectedOficinaForTodasVistorias = null;
 let selectedTodasVistoriasFilter = 'Vistorias';
-let selectedTodasVistoriasDayFilter = 'Todos';
+let selectedTodasVistoriasDateFilter = 'Todas';
+
+function getAllAvailableDates(oficinaId = null) {
+  const dateSet = new Set();
+  items.forEach(item => {
+    if (item.date && (!oficinaId || item.oficinaId === oficinaId)) {
+      dateSet.add(item.date);
+    }
+  });
+  supervisoes.forEach(s => {
+    if (s.date && (!oficinaId || s.oficinaId === oficinaId)) {
+      dateSet.add(s.date);
+    }
+  });
+  const arr = Array.from(dateSet);
+  arr.sort((a, b) => b.localeCompare(a));
+  return arr;
+}
+
+function countRecordsForDate(dateVal, oficinaId = null) {
+  const vCount = items.filter(item => item.date === dateVal && (!oficinaId || item.oficinaId === oficinaId)).length;
+  const sCount = supervisoes.filter(s => s.date === dateVal && (!oficinaId || s.oficinaId === oficinaId)).length;
+  return { total: vCount + sCount, vistorias: vCount, supervisoes: sCount };
+}
 
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
@@ -643,9 +666,14 @@ function openReportModal(id) {
     }
   }
   if (metaEl) {
-    const dataCriacao = item.date ? formatDateString(item.date) : (item.createdAt || '—');
-    const ultimaAtualizacao = item.updatedAt || item.createdAt || '—';
-    metaEl.innerHTML = `📅 <strong>Data:</strong> ${escapeHtml(dataCriacao)} &nbsp;|&nbsp; 🕒 <strong>Última Atualização:</strong> ${escapeHtml(ultimaAtualizacao)}`;
+    if (isInspection) {
+      const dataCriacao = item.date ? formatDateString(item.date) : (item.createdAt || '—');
+      const dataAtualizacao = item.updatedAt || item.createdAt || '—';
+      metaEl.innerHTML = `📅 <strong>Data:</strong> ${escapeHtml(dataCriacao)} &nbsp;|&nbsp; 🕒 <strong>Última Atualização:</strong> ${escapeHtml(dataAtualizacao)}`;
+    } else {
+      const dataUnica = item.updatedAt || item.createdAt || (item.date ? formatDateString(item.date) : '—');
+      metaEl.innerHTML = `🕒 <strong>Última Atualização:</strong> ${escapeHtml(dataUnica)}`;
+    }
   }
   if (contentEl) {
     contentEl.value = reportText;
@@ -1142,9 +1170,23 @@ function render() {
       if (formCard) formCard.hidden = true;
       if (recordsCard) recordsCard.hidden = false;
       
+      const allDates = getAllAvailableDates();
+      const totalAllRecords = items.length + supervisoes.length;
+
       const filteredOficinas = oficinas.filter(o => 
         o.name.toLowerCase().includes(query)
       );
+
+      const oficinaRecordsCount = (oId) => {
+        if (selectedTodasVistoriasDateFilter === 'Todas') {
+          const vCount = items.filter(i => i.oficinaId === oId).length;
+          const sCount = supervisoes.filter(s => s.oficinaId === oId).length;
+          return vCount + sCount;
+        } else {
+          const counts = countRecordsForDate(selectedTodasVistoriasDateFilter, oId);
+          return counts.total;
+        }
+      };
 
       if (!filteredOficinas.length) {
         itemList.innerHTML = '<li class="empty">Nenhuma oficina cadastrada ou encontrada.</li>';
@@ -1152,19 +1194,33 @@ function render() {
       }
       
       itemList.innerHTML = `
-        <li style="list-style: none; grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
-          <h3 style="margin: 0; color: #1e40af; font-size: 1rem; font-weight: 700;">Selecione uma oficina:</h3>
-          <button id="tabClearAllButton" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 999px; cursor: pointer;">
-            🧹 Limpar Tudo
-          </button>
+        <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%;">
+            <h3 style="margin: 0; color: #1e40af; font-size: 1rem; font-weight: 700;">Selecione uma oficina:</h3>
+            <button id="tabClearAllButton" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 999px; cursor: pointer;">
+              🧹 Limpar Tudo
+            </button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 12px; border-radius: 12px; border: 1px solid #e2e8f0; width: 100%; box-sizing: border-box;">
+            <label for="todasVistoriasDateSelectOuter" style="font-size: 0.8rem; font-weight: 700; color: #1e293b; white-space: nowrap;">📅 Filtrar por Data:</label>
+            <select id="todasVistoriasDateSelectOuter" class="custom-select" style="flex: 1; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-weight: 600; font-size: 0.85rem; background-color: #ffffff; color: #0f172a; cursor: pointer; outline: none;">
+              <option value="Todas"${selectedTodasVistoriasDateFilter === 'Todas' ? ' selected' : ''}>📅 Todas as Datas (${totalAllRecords})</option>
+              ${allDates.map(d => {
+                const counts = countRecordsForDate(d);
+                const weekday = getWeekdayFromDateString(d);
+                return `<option value="${d}"${selectedTodasVistoriasDateFilter === d ? ' selected' : ''}>📅 ${formatDateString(d)} (${weekday || ''}) - ${counts.total} registros</option>`;
+              }).join('')}
+            </select>
+          </div>
         </li>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; width: 100%;">
           ${filteredOficinas.map(o => {
+            const count = oficinaRecordsCount(o.id);
             const isLongName = o.name && o.name.length > 20;
             const extraStyle = isLongName ? 'font-size: 0.7rem; padding: 14px 6px; white-space: normal; word-break: break-word;' : '';
             return `
               <button class="menu-btn" type="button" data-oficina-btn-id="${o.id}" style="width: 100%; text-align: center; padding: 14px 12px; font-weight: 700; border-radius: 14px; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; cursor: pointer; transition: all 0.2s; ${extraStyle}">
-                ${escapeHtml(o.name)}
+                ${escapeHtml(o.name)} <span style="font-size: 0.8em; opacity: 0.85;">(${count})</span>
               </button>
             `;
           }).join('')}
@@ -1191,6 +1247,14 @@ function render() {
           }
         });
       }
+
+      const dateSelectOuter = itemList.querySelector('#todasVistoriasDateSelectOuter');
+      if (dateSelectOuter) {
+        dateSelectOuter.addEventListener('change', (e) => {
+          selectedTodasVistoriasDateFilter = e.target.value;
+          render();
+        });
+      }
       
       itemList.querySelectorAll('[data-oficina-btn-id]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1202,9 +1266,12 @@ function render() {
       return;
     } else {
       const o = oficinas.find(oficina => oficina.id === selectedOficinaForTodasVistorias) || { name: 'Sem oficina' };
-      
+      const availableDatesForOficina = getAllAvailableDates(selectedOficinaForTodasVistorias);
+      const totalOficinaAllDates = countRecordsForDate(null, selectedOficinaForTodasVistorias);
+
       const filteredVistorias = items.filter(item => {
         if (item.oficinaId !== selectedOficinaForTodasVistorias) return false;
+        if (selectedTodasVistoriasDateFilter !== 'Todas' && item.date !== selectedTodasVistoriasDateFilter) return false;
         if (query) {
           return `${item.date} ${item.day} ${item.plate} ${item.provider} ${item.type || ''}`.toLowerCase().includes(query);
         }
@@ -1213,18 +1280,13 @@ function render() {
       
       const filteredSupervisoes = supervisoes.filter(s => {
         if (s.oficinaId !== selectedOficinaForTodasVistorias) return false;
+        if (selectedTodasVistoriasDateFilter !== 'Todas' && s.date !== selectedTodasVistoriasDateFilter) return false;
         if (query) {
           return `${s.date} ${s.day} ${s.vehicle} ${s.attended} ${s.stage}`.toLowerCase().includes(query);
         }
         return true;
       });
       
-      const rawList = (selectedTodasVistoriasFilter === 'Vistorias') ? filteredVistorias : filteredSupervisoes;
-      const countForDay = (dayName) => rawList.filter(item => {
-        const itemDay = getWeekdayFromDateString(item.date) || item.day;
-        return itemDay === dayName;
-      }).length;
-
       let listToDisplay = [];
       if (selectedTodasVistoriasFilter === 'Vistorias') {
         listToDisplay = filteredVistorias.map(i => ({ ...i, isSupervisao: false }));
@@ -1235,13 +1297,6 @@ function render() {
           const timeA = a.updatedAtTime || Number(a.id) || 0;
           const timeB = b.updatedAtTime || Number(b.id) || 0;
           return timeB - timeA;
-        });
-      }
-
-      if (selectedTodasVistoriasDayFilter !== 'Todos') {
-        listToDisplay = listToDisplay.filter(entry => {
-          const entryDay = getWeekdayFromDateString(entry.date) || entry.day;
-          return entryDay === selectedTodasVistoriasDayFilter;
         });
       }
       
@@ -1262,15 +1317,14 @@ function render() {
             </button>
           </div>
           <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 12px; border-radius: 12px; border: 1px solid #e2e8f0; width: 100%; box-sizing: border-box;">
-            <label for="todasVistoriasDaySelect" style="font-size: 0.8rem; font-weight: 700; color: #1e293b; white-space: nowrap;">📅 Filtrar Dia:</label>
-            <select id="todasVistoriasDaySelect" class="custom-select" style="flex: 1; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-weight: 600; font-size: 0.85rem; background-color: #ffffff; color: #0f172a; cursor: pointer; outline: none;">
-              <option value="Todos"${selectedTodasVistoriasDayFilter === 'Todos' ? ' selected' : ''}>📅 Todos os Dias (${rawList.length})</option>
-              <option value="Segunda"${selectedTodasVistoriasDayFilter === 'Segunda' ? ' selected' : ''}>Segunda-feira (${countForDay('Segunda')})</option>
-              <option value="Terça"${selectedTodasVistoriasDayFilter === 'Terça' ? ' selected' : ''}>Terça-feira (${countForDay('Terça')})</option>
-              <option value="Quarta"${selectedTodasVistoriasDayFilter === 'Quarta' ? ' selected' : ''}>Quarta-feira (${countForDay('Quarta')})</option>
-              <option value="Quinta"${selectedTodasVistoriasDayFilter === 'Quinta' ? ' selected' : ''}>Quinta-feira (${countForDay('Quinta')})</option>
-              <option value="Sexta"${selectedTodasVistoriasDayFilter === 'Sexta' ? ' selected' : ''}>Sexta-feira (${countForDay('Sexta')})</option>
-              <option value="Sábado"${selectedTodasVistoriasDayFilter === 'Sábado' ? ' selected' : ''}>Sábado (${countForDay('Sábado')})</option>
+            <label for="todasVistoriasDateSelectInner" style="font-size: 0.8rem; font-weight: 700; color: #1e293b; white-space: nowrap;">📅 Filtrar por Data:</label>
+            <select id="todasVistoriasDateSelectInner" class="custom-select" style="flex: 1; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-weight: 600; font-size: 0.85rem; background-color: #ffffff; color: #0f172a; cursor: pointer; outline: none;">
+              <option value="Todas"${selectedTodasVistoriasDateFilter === 'Todas' ? ' selected' : ''}>📅 Todas as Datas</option>
+              ${availableDatesForOficina.map(d => {
+                const counts = countRecordsForDate(d, o.id);
+                const weekday = getWeekdayFromDateString(d);
+                return `<option value="${d}"${selectedTodasVistoriasDateFilter === d ? ' selected' : ''}>📅 ${formatDateString(d)} (${weekday || ''}) - ${counts.total} registros</option>`;
+              }).join('')}
             </select>
           </div>
         </li>
@@ -1293,22 +1347,23 @@ function render() {
           const mainInfoStyle = isLongVehicle ? 'style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;"' : '';
           const badgeStyle = isLongVehicle ? 'style="width: 100% !important; max-width: 100% !important; min-width: 100% !important; justify-content: flex-start !important; padding: 5px 8px !important; box-sizing: border-box;"' : '';
           const badgeTextStyle = isLongVehicle ? 'style="white-space: normal !important; word-break: break-word;"' : '';
-          const dataCriacao = entry.date ? formatDateString(entry.date) : (entry.createdAt || '—');
-          const dataAtualizacao = entry.updatedAt || entry.createdAt || '—';
+          const dataUnica = entry.updatedAt || entry.createdAt || (entry.date ? formatDateString(entry.date) : '—');
 
           return `
             <li class="item-card compact-item-card">
               <div class="item-main-info" ${mainInfoStyle}>
                 <div class="plate-badge compact-plate-badge clickable-plate-link" data-super-action="open-report" data-id="${entry.id}" title="Clique para abrir o relatório" style="cursor: pointer; ${badgeStyle}">
-                  <span class="plate-badge-text" ${badgeTextStyle}>🚗 ${escapeHtml(entry.vehicle || 'Supervisão')}</span>
+                  <span class="plate-badge-text" ${badgeTextStyle}>🚗 ${escapeHtml(entry.vehicle || entry.plate || 'Supervisão')}</span>
                 </div>
                 <div class="item-details">
-                  <strong class="item-provider">Atendido: ${escapeHtml(entry.attended || '—')}</strong>
-                  <span class="item-meta">· 📅 ${escapeHtml(dataCriacao)}</span>
+                  <strong class="item-provider">${escapeHtml(entry.attended ? 'Atendido: ' + entry.attended : 'Sem atendente')}</strong>
+                  ${entry.plate ? `<span class="item-meta">· Placa: <strong>${escapeHtml(entry.plate)}</strong></span>` : ''}
                   <span class="badge-supervisao" style="margin-left: 6px;">
-                    Supervisão: ${escapeHtml(entry.stage || '')}
+                    ${escapeHtml(entry.stage || 'Supervisão')}
                   </span>
-                  <div style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">🕒 Atualizado: ${escapeHtml(dataAtualizacao)}</div>
+                  ${entry.oficinaName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(entry.oficinaName)}</strong></div>` : ''}
+                  ${entry.partsPending === 'Sim' ? `<div class="item-meta" style="color: #b91c1c; margin-top: 2px;">Peças: <strong>${escapeHtml(entry.parts || 'Pendentes')}</strong></div>` : ''}
+                  <div style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">🕒 ${escapeHtml(dataUnica)}</div>
                 </div>
               </div>
               <div class="actions card-actions-grid">
@@ -1365,7 +1420,7 @@ function render() {
         }
       }).join('');
       
-      itemList.innerHTML = headerHtml + (listToDisplay.length ? itemsHtml : `<li class="empty">Nenhum registro de ${selectedTodasVistoriasFilter.toLowerCase()} encontrado para esta oficina.</li>`);
+      itemList.innerHTML = headerHtml + (listToDisplay.length ? itemsHtml : `<li class="empty">Nenhum registro de ${selectedTodasVistoriasFilter.toLowerCase()} encontrado para esta oficina no filtro selecionado.</li>`);
       
       const backBtn = itemList.querySelector('#backToOficinasList');
       if (backBtn) {
@@ -1390,10 +1445,10 @@ function render() {
         });
       }
 
-      const daySelect = itemList.querySelector('#todasVistoriasDaySelect');
-      if (daySelect) {
-        daySelect.addEventListener('change', (e) => {
-          selectedTodasVistoriasDayFilter = e.target.value;
+      const dateSelectInner = itemList.querySelector('#todasVistoriasDateSelectInner');
+      if (dateSelectInner) {
+        dateSelectInner.addEventListener('change', (e) => {
+          selectedTodasVistoriasDateFilter = e.target.value;
           render();
         });
       }
@@ -3063,17 +3118,17 @@ function renderSupervisaoReport() {
       prevEst += `<br><small style="color:#6b7280;">Peças: ${escapeHtml(s.arrival || '—')}</small>`;
     }
 
-    const dataCriacao = s.date ? formatDateString(s.date) : (s.createdAt || '—');
-    const dataAtualizacao = s.updatedAt || s.createdAt || '—';
+    const dataUnica = s.updatedAt || s.createdAt || (s.date ? formatDateString(s.date) : '—');
 
     return `
       <tr>
         <td data-label="Veículo" style="font-weight: 600;">
-          <a href="#" class="clickable-vehicle-link" data-super-action="open-report" data-id="${s.id}" title="Clique para abrir o relatório completo">
-            🚗 ${escapeHtml(s.vehicle)}
-          </a>
-          <div style="font-size: 0.72rem; color: #64748b; font-weight: normal; margin-top: 3px;">
-            📅 ${escapeHtml(dataCriacao)} · 🕒 ${escapeHtml(dataAtualizacao)}
+          <div class="plate-badge compact-plate-badge clickable-plate-link" data-super-action="open-report" data-id="${s.id}" title="Clique para abrir o relatório" style="cursor: pointer; display: inline-flex; margin-bottom: 4px;">
+            <span class="plate-badge-text">🚗 ${escapeHtml(s.vehicle || s.plate || 'Supervisão')}</span>
+          </div>
+          ${s.plate ? `<div style="font-size: 0.78rem; color: #334155; font-weight: 600; margin-top: 1px;">Placa: ${escapeHtml(s.plate)}</div>` : ''}
+          <div style="font-size: 0.72rem; color: #64748b; font-weight: normal; margin-top: 2px;">
+            🕒 ${escapeHtml(dataUnica)}
           </div>
         </td>
         <td data-label="Oficina" style="font-weight: 500;">${escapeHtml(s.oficinaName || 'Sem oficina')}</td>
