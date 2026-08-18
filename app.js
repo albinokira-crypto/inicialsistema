@@ -3352,6 +3352,32 @@ function openSystemSettings() {
   if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
 }
 
+async function forceAppRefresh() {
+  const btn = document.getElementById('forceRefreshAppBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Limpando cache e recarregando...';
+  }
+
+  try {
+    if ('caches' in window) {
+      const names = await caches.keys();
+      for (const name of names) {
+        await caches.delete(name);
+      }
+    }
+  } catch (e) {
+    console.warn("Erro ao limpar caches:", e);
+  }
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.forceAppReload === 'function') {
+    window.AndroidInterface.forceAppReload();
+  } else {
+    window.location.reload(true);
+  }
+}
+window.forceAppRefresh = forceAppRefresh;
+
 function updatePreferredCameraUI() {
   const preferredCameraLabel = document.getElementById('preferredCameraLabel');
   const clearCameraBtn = document.getElementById('clearCameraBtn');

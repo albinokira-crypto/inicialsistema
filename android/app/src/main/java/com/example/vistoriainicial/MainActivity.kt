@@ -2340,4 +2340,16 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
         }
     }
+
+    @JavascriptInterface
+    fun forceAppReload() {
+        activity.runOnUiThread {
+            try {
+                webView.clearCache(true)
+                webView.reload()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 }
