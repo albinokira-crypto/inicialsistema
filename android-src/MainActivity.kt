@@ -1211,6 +1211,60 @@ class AndroidInterface(private val activity: ComponentActivity) {
     }
 
     @JavascriptInterface
+    fun shareVistoriaWhatsAppText(vehicleName: String, reportText: String) {
+        activity.runOnUiThread {
+            try {
+                val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("Relatório de Vistoria", reportText)
+                clipboard.setPrimaryClip(clip)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            val pm = activity.packageManager
+            var whatsappPkg: String? = null
+            try {
+                pm.getPackageInfo("com.whatsapp", 0)
+                whatsappPkg = "com.whatsapp"
+            } catch (e: Exception) {
+                try {
+                    pm.getPackageInfo("com.whatsapp.w4b", 0)
+                    whatsappPkg = "com.whatsapp.w4b"
+                } catch (ex: Exception) {
+                    whatsappPkg = null
+                }
+            }
+
+            if (whatsappPkg == null) {
+                Toast.makeText(activity, "WhatsApp não está instalado no aparelho!", Toast.LENGTH_LONG).show()
+                return@runOnUiThread
+            }
+
+            Toast.makeText(activity, "Compartilhando texto da vistoria...", Toast.LENGTH_SHORT).show()
+
+            val intent = Intent().apply {
+                setPackage(whatsappPkg)
+                action = Intent.ACTION_SEND
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, reportText)
+                putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            try {
+                activity.startActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(activity, "Erro ao abrir WhatsApp: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun shareVistoriaWhatsAppMedia(vehicleName: String, reportText: String) {
+        shareVistoriaWhatsApp(vehicleName, reportText)
+    }
+
+    @JavascriptInterface
     fun startShare(vehicleName: String) {
         startShareWithDate(vehicleName, "Seguem as fotos da vistoria do veículo: $vehicleName", "")
     }
