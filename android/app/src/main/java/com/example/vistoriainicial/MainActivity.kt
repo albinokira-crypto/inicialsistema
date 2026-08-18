@@ -1513,6 +1513,15 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 }
             }
 
+            // Copiar o texto do relatório para a área de transferência do Android
+            try {
+                val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("Relatório de Vistoria", reportText)
+                clipboard.setPrimaryClip(clip)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
             val pm = activity.packageManager
             var whatsappPkg: String? = null
             try {
@@ -1535,7 +1544,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
             if (uris.isEmpty()) {
                 Toast.makeText(activity, "Nenhuma foto/vídeo encontrado para $vehicleName. Enviando relatório de texto...", Toast.LENGTH_LONG).show()
             } else {
-                Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias em lote único com relatório...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, "Mídias prontas! Relatório copiado para colar no WhatsApp.", Toast.LENGTH_LONG).show()
             }
 
             val hasImages = imageFiles.isNotEmpty()
@@ -1552,12 +1561,10 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     action = Intent.ACTION_SEND
                     type = shareType
                     putExtra(Intent.EXTRA_STREAM, uris[0])
-                    putExtra(Intent.EXTRA_TEXT, reportText)
                 } else {
                     action = Intent.ACTION_SEND_MULTIPLE
                     type = shareType
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-                    putExtra(Intent.EXTRA_TEXT, reportText)
                 }
                 if (uris.isNotEmpty()) {
                     val clip = android.content.ClipData.newRawUri("Vistoria", uris[0])
