@@ -682,6 +682,34 @@ input, select, textarea {
   padding: 3px 8px !important;
 }
 
+.card-actions-grid {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+  box-sizing: border-box !important;
+}
+
+.card-actions-grid .btn-row {
+  display: flex !important;
+  gap: 6px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.card-actions-grid .btn-row .action-btn {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  padding: 8px 4px !important;
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+}
+
 /* Responsive Mobile Fixes for Supervisão and Mês Vigente */
 html, body {
   overflow-x: hidden;

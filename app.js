@@ -1137,16 +1137,16 @@ function render() {
                   </span>
                 </div>
               </div>
-              <div class="actions vertical-actions" style="width: 100%; max-width: 240px; display: flex; flex-direction: column; gap: 4px;">
-                <div class="btn-group" style="display: flex; gap: 4px; width: 100%;">
-                  <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">📸 Fotos</button>
-                  <button class="action-btn" type="button" data-super-action="open-folder" data-id="${entry.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">📂 Pasta</button>
-                  <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">Editar</button>
-                  <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">Excluir</button>
+              <div class="actions card-actions-grid">
+                <div class="btn-row">
+                  <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">📸 Fotos</button>
+                  <button class="action-btn" type="button" data-super-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
+                  <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
+                  <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
                 </div>
-                <div class="btn-group" style="display: flex; gap: 4px; width: 100%;">
-                  <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${entry.id}" style="flex: 1; padding: 5px 4px !important; font-weight: 700; font-size: 0.68rem !important; text-align: center;">📝 Enviar Relatório</button>
-                  <button class="action-btn" type="button" data-super-action="share-whatsapp-media" data-id="${entry.id}" style="flex: 1; padding: 5px 4px !important; font-weight: 700; font-size: 0.68rem !important; text-align: center;">🖼️ Enviar Mídias</button>
+                <div class="btn-row">
+                  <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${entry.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">📝 Enviar Relatório</button>
+                  <button class="action-btn" type="button" data-super-action="share-whatsapp-media" data-id="${entry.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">🖼️ Enviar Mídias</button>
                 </div>
               </div>
             </li>
@@ -1171,16 +1171,16 @@ function render() {
                   <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
                 </div>
               </div>
-              <div class="actions vertical-actions" style="width: 100%; max-width: 240px; display: flex; flex-direction: column; gap: 4px;">
-                <div class="btn-group" style="display: flex; gap: 4px; width: 100%;">
-                  <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">📸 Fotos</button>
-                  <button class="action-btn" type="button" data-action="open-folder" data-id="${entry.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">📂 Pasta</button>
-                  <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">Editar</button>
-                  <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">Excluir</button>
+              <div class="actions card-actions-grid">
+                <div class="btn-row">
+                  <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">📸 Fotos</button>
+                  <button class="action-btn" type="button" data-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
+                  <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
+                  <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
                 </div>
-                <div class="btn-group" style="display: flex; gap: 4px; width: 100%;">
-                  <button class="action-btn" type="button" data-action="share-whatsapp-text" data-id="${entry.id}" style="flex: 1; padding: 5px 4px !important; font-weight: 700; font-size: 0.68rem !important; text-align: center;">📝 Enviar Relatório</button>
-                  <button class="action-btn" type="button" data-action="share-whatsapp-media" data-id="${entry.id}" style="flex: 1; padding: 5px 4px !important; font-weight: 700; font-size: 0.68rem !important; text-align: center;">🖼️ Enviar Mídias</button>
+                <div class="btn-row">
+                  <button class="action-btn" type="button" data-action="share-whatsapp-text" data-id="${entry.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">📝 Enviar Relatório</button>
+                  <button class="action-btn" type="button" data-action="share-whatsapp-media" data-id="${entry.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">🖼️ Enviar Mídias</button>
                 </div>
               </div>
             </li>
@@ -1299,16 +1299,16 @@ function render() {
             ${item.oficinaName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(item.oficinaName)}</strong></div>` : ''}
           </div>
         </div>
-        <div class="actions vertical-actions" style="width: 100%; max-width: 240px; display: flex; flex-direction: column; gap: 4px;">
-          <div class="btn-group" style="display: flex; gap: 4px; width: 100%;">
-            <button class="action-btn" type="button" data-action="photos" data-id="${item.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">📸 Fotos</button>
-            <button class="action-btn" type="button" data-action="open-folder" data-id="${item.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">📂 Pasta</button>
-            <button class="action-btn" type="button" data-action="edit" data-id="${item.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">Editar</button>
-            <button class="action-btn" type="button" data-action="delete" data-id="${item.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">Excluir</button>
+        <div class="actions card-actions-grid">
+          <div class="btn-row">
+            <button class="action-btn" type="button" data-action="photos" data-id="${item.id}">📸 Fotos</button>
+            <button class="action-btn" type="button" data-action="open-folder" data-id="${item.id}">📂 Pasta</button>
+            <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
+            <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
           </div>
-          <div class="btn-group" style="display: flex; gap: 4px; width: 100%;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-text" data-id="${item.id}" style="flex: 1; padding: 5px 4px !important; font-weight: 700; font-size: 0.68rem !important; text-align: center;">📝 Enviar Relatório</button>
-            <button class="action-btn" type="button" data-action="share-whatsapp-media" data-id="${item.id}" style="flex: 1; padding: 5px 4px !important; font-weight: 700; font-size: 0.68rem !important; text-align: center;">🖼️ Enviar Mídias</button>
+          <div class="btn-row">
+            <button class="action-btn" type="button" data-action="share-whatsapp-text" data-id="${item.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">📝 Enviar Relatório</button>
+            <button class="action-btn" type="button" data-action="share-whatsapp-media" data-id="${item.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">🖼️ Enviar Mídias</button>
           </div>
         </div>
       </li>
@@ -2814,16 +2814,16 @@ function renderSupervisaoReport() {
         <td data-label="Pendência Peças">${partsPendingHtml}</td>
         <td data-label="Previsão/Estimativa">${prevEst}</td>
         <td data-label="Ações">
-          <div class="actions" style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end; width: 100%; max-width: 240px; margin: 0 auto 0 auto;">
-            <div class="btn-group" style="display: flex; gap: 4px; width: 100%;">
-              <button class="action-btn" type="button" data-super-action="photos" data-id="${s.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">📸 Fotos</button>
-              <button class="action-btn" type="button" data-super-action="open-folder" data-id="${s.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">📂 Pasta</button>
-              <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">Editar</button>
-              <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}" style="flex: 1; padding: 4px 2px !important; font-size: 0.65rem !important; text-align: center;">Excluir</button>
+          <div class="actions card-actions-grid">
+            <div class="btn-row">
+              <button class="action-btn" type="button" data-super-action="photos" data-id="${s.id}">📸 Fotos</button>
+              <button class="action-btn" type="button" data-super-action="open-folder" data-id="${s.id}">📂 Pasta</button>
+              <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
+              <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
             </div>
-            <div class="btn-group" style="display: flex; gap: 4px; width: 100%;">
-              <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${s.id}" style="flex: 1; padding: 5px 4px !important; font-weight: 700; font-size: 0.68rem !important; text-align: center;">📝 Enviar Relatório</button>
-              <button class="action-btn" type="button" data-super-action="share-whatsapp-media" data-id="${s.id}" style="flex: 1; padding: 5px 4px !important; font-weight: 700; font-size: 0.68rem !important; text-align: center;">🖼️ Enviar Mídias</button>
+            <div class="btn-row">
+              <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${s.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">📝 Enviar Relatório</button>
+              <button class="action-btn" type="button" data-super-action="share-whatsapp-media" data-id="${s.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">🖼️ Enviar Mídias</button>
             </div>
           </div>
         </td>
