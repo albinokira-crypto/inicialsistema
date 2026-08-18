@@ -3571,17 +3571,20 @@ async function shareVistoriaWhatsApp(id) {
     }
 
     if (navigator.share) {
-      const shareData = {
-        title: 'Vistoria: ' + vehicleName,
-        text: reportText
-      };
-
       if (filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
-        shareData.files = filesToShare;
+        // Envia todas as fotos em lote 100% único sem texto atrelado para evitar divisão em 3 lotes no WhatsApp
+        await navigator.share({
+          title: 'Vistoria: ' + vehicleName,
+          files: filesToShare
+        });
+        return;
+      } else {
+        await navigator.share({
+          title: 'Vistoria: ' + vehicleName,
+          text: reportText
+        });
+        return;
       }
-
-      await navigator.share(shareData);
-      return;
     }
   } catch (err) {
     if (err.name === 'AbortError') return;
