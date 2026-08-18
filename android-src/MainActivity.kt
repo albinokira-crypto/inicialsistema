@@ -1389,9 +1389,90 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
+            val imageExtensions = listOf("jpg", "jpeg", "png")
+            val videoExtensions = listOf("mp4", "3gp", "mov", "mkv", "webm")
+            val imageFiles = filesToShare.filter { it.extension.lowercase() in imageExtensions }
+                .sortedWith(Comparator { f1, f2 ->
+                    val num1 = Regex("""\d+""").find(f1.name)?.value?.toIntOrNull() ?: 0
+                    val num2 = Regex("""\d+""").find(f2.name)?.value?.toIntOrNull() ?: 0
+                    if (num1 != num2) num1.compareTo(num2) else f1.name.compareTo(f2.name)
+                })
+            val videoFiles = filesToShare.filter { it.extension.lowercase() in videoExtensions }
+                .sortedWith(Comparator { f1, f2 ->
+                    val num1 = Regex("""\d+""").find(f1.name)?.value?.toIntOrNull() ?: 0
+                    val num2 = Regex("""\d+""").find(f2.name)?.value?.toIntOrNull() ?: 0
+                    if (num1 != num2) num1.compareTo(num2) else f1.name.compareTo(f2.name)
+                })
+            val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
+
+            // Preparar pasta de cache com timestamps e EXIF sincronizados para forçar o WhatsApp a montar 1 ÚNICO ÁLBUM com todas as fotos e o texto acoplado
+            val shareTempDir = java.io.File(activity.cacheDir, "share_temp")
+            try {
+                if (shareTempDir.exists()) shareTempDir.deleteRecursively()
+                shareTempDir.mkdirs()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            val preparedFiles = ArrayList<java.io.File>()
+            val sessionId = System.currentTimeMillis()
+            val minVideoTime = if (videoFiles.isNotEmpty()) videoFiles.minOf { it.lastModified() } else sessionId
+            val minPhotoTime = if (imageFiles.isNotEmpty()) imageFiles.minOf { it.lastModified() } else sessionId
+            val referenceEarliestTime = minOf(minVideoTime, minPhotoTime)
+            
+            // Garantir que a base de horário de todas as fotos seja anterior ao vídeo mais antigo
+            val baseTime = referenceEarliestTime - ((imageFiles.size + 20) * 2000L)
+            val sdf = java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss", java.util.Locale.US)
+
+            for (i in imageFiles.indices) {
+                val sourceFile = imageFiles[i]
+                try {
+                    val ext = sourceFile.extension.ifEmpty { "jpg" }
+                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "foto_%d_%03d.%s", sessionId, i, ext))
+                    sourceFile.copyTo(targetFile, overwrite = true)
+                    val imgTime = baseTime + (i * 1000L)
+                    targetFile.setLastModified(imgTime)
+                    if (ext.lowercase() == "jpg" || ext.lowercase() == "jpeg") {
+                        try {
+                            val exif = android.media.ExifInterface(targetFile.absolutePath)
+                            val dateStr = sdf.format(java.util.Date(imgTime))
+                            exif.setAttribute(android.media.ExifInterface.TAG_DATETIME, dateStr)
+                            exif.setAttribute(android.media.ExifInterface.TAG_DATETIME_ORIGINAL, dateStr)
+                            exif.setAttribute(android.media.ExifInterface.TAG_DATETIME_DIGITIZED, dateStr)
+                            exif.saveAttributes()
+                        } catch (ex: Exception) {
+                            ex.printStackTrace()
+                        }
+                    }
+                    preparedFiles.add(targetFile)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    preparedFiles.add(sourceFile)
+                }
+            }
+
+            for (i in videoFiles.indices) {
+                val sourceFile = videoFiles[i]
+                try {
+                    val ext = sourceFile.extension.ifEmpty { "mp4" }
+                    val targetFile = java.io.File(shareTempDir, String.format(java.util.Locale.US, "video_%d_%03d.%s", sessionId, i, ext))
+                    sourceFile.copyTo(targetFile, overwrite = true)
+                    val vidTime = referenceEarliestTime + 5000L + (i * 2000L)
+                    targetFile.setLastModified(vidTime)
+                    preparedFiles.add(targetFile)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    preparedFiles.add(sourceFile)
+                }
+            }
+
+            for (other in otherFiles) {
+                preparedFiles.add(other)
+            }
+
             val uris = ArrayList<Uri>()
             val addedUriStrings = HashSet<String>()
-            for (file in filesToShare) {
+            for (file in preparedFiles) {
                 try {
                     val uri = androidx.core.content.FileProvider.getUriForFile(
                         activity,
@@ -1430,14 +1511,12 @@ class AndroidInterface(private val activity: ComponentActivity) {
             if (uris.isEmpty()) {
                 Toast.makeText(activity, "Nenhuma foto/vídeo encontrado para $vehicleName. Enviando relatório de texto...", Toast.LENGTH_LONG).show()
             } else {
-                Toast.makeText(activity, "📋 Relatório copiado! Abrindo WhatsApp com ${uris.size} mídias em lote único...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, "Abrindo WhatsApp com ${uris.size} mídias em lote único com relatório...", Toast.LENGTH_SHORT).show()
             }
 
-            val hasVideosOnly = filesToShare.all { f -> 
-                val name = f.name.lowercase()
-                name.endsWith(".mp4") || name.endsWith(".mov") || name.endsWith(".3gp") || name.endsWith(".mkv") || name.endsWith(".webm")
-            }
-            val shareType = if (hasVideosOnly) "video/*" else "image/*"
+            val hasImages = imageFiles.isNotEmpty()
+            val hasVideos = videoFiles.isNotEmpty()
+            val shareType = if (hasVideos && !hasImages) "video/*" else "image/*"
 
             val intent = Intent().apply {
                 setPackage(whatsappPkg)
@@ -1454,6 +1533,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     action = Intent.ACTION_SEND_MULTIPLE
                     type = shareType
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                    putExtra(Intent.EXTRA_TEXT, reportText)
                 }
                 if (uris.isNotEmpty()) {
                     val clip = android.content.ClipData.newRawUri("Vistoria", uris[0])
@@ -1462,6 +1542,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     }
                     clipData = clip
                 }
+                putExtra(Intent.EXTRA_SUBJECT, "Relatório da Vistoria: $vehicleName")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             }
 

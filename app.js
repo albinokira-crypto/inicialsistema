@@ -3346,7 +3346,7 @@ function openSystemSettings() {
   const cameraSection = document.getElementById('cameraSettingsSection');
   if (cameraSection) cameraSection.style.setProperty('display', 'none', 'important');
   const versionDisplay = document.getElementById('systemAppVersionDisplay');
-  if (versionDisplay) versionDisplay.textContent = 'v1.45';
+  if (versionDisplay) versionDisplay.textContent = 'v1.46';
   updateFolderLabelUI();
   updatePreferredCameraUI();
   if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
