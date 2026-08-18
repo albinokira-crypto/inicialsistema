@@ -811,55 +811,27 @@ function cancelInsurerEdit() {
 function updateHomeSummary() {
   const summaryGridEl = document.getElementById('homeSummaryGrid');
   if (!summaryGridEl) return;
-  
   const statsItems = items.filter(item => item.clearedFromWeek !== true);
-  const totalVistorias = statsItems.length;
-  const totalSupervisoes = supervisoes.length;
   const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
   const uniqueDays = new Set(statsItems.map((item) => item.day)).size;
-
-  // Obter última vistoria (por updatedAtTime, id ou createdAt)
-  const sortedVistorias = statsItems.slice().sort((a, b) => {
-    const timeA = a.updatedAtTime || Number(a.id) || 0;
-    const timeB = b.updatedAtTime || Number(b.id) || 0;
-    return timeB - timeA;
-  });
-  const lastVistoria = sortedVistorias[0];
-  let lastVistoriaText = 'Nenhum registro';
-  if (lastVistoria) {
-    const dateStr = lastVistoria.updatedAt || (lastVistoria.date ? formatDateString(lastVistoria.date) : (lastVistoria.createdAt || ''));
-    lastVistoriaText = `${escapeHtml(lastVistoria.plate || 'Vistoria')} · ${escapeHtml(dateStr)}`;
-  }
-
-  // Obter última supervisão (por updatedAtTime, id ou createdAt)
-  const sortedSupervisoes = supervisoes.slice().sort((a, b) => {
-    const timeA = a.updatedAtTime || Number(a.id) || 0;
-    const timeB = b.updatedAtTime || Number(b.id) || 0;
-    return timeB - timeA;
-  });
-  const lastSupervisao = sortedSupervisoes[0];
-  let lastSupervisaoText = 'Nenhuma supervisão';
-  if (lastSupervisao) {
-    const dateStr = lastSupervisao.updatedAt || (lastSupervisao.date ? formatDateString(lastSupervisao.date) : (lastSupervisao.createdAt || ''));
-    const vehName = lastSupervisao.vehicle ? (lastSupervisao.vehicle.length > 22 ? lastSupervisao.vehicle.substring(0, 20) + '...' : lastSupervisao.vehicle) : 'Supervisão';
-    lastSupervisaoText = `${escapeHtml(vehName)} · ${escapeHtml(dateStr)}`;
-  }
+  const lastRecord = statsItems.length ? (statsItems[0].date ? formatDateString(statsItems[0].date) : (statsItems[0].createdAt || '—')) : '—';
 
   summaryGridEl.innerHTML = `
     <article class="summary-item" style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; text-align: center;">
-      <strong style="font-size: 1.3rem; color: #1e40af; display: block;">${totalVistorias}</strong>
-      <span style="font-size: 0.78rem; color: #3b82f6; font-weight: 700; text-transform: uppercase;">vistorias na semana</span>
-      <small style="display: block; font-size: 0.72rem; color: #475569; margin-top: 4px; word-break: break-word;">🕒 Última: ${lastVistoriaText}</small>
-    </article>
-    <article class="summary-item" style="background: #f5f3ff; border: 1px solid #ddd6fe; padding: 12px; border-radius: 12px; text-align: center;">
-      <strong style="font-size: 1.3rem; color: #6d28d9; display: block;">${totalSupervisoes}</strong>
-      <span style="font-size: 0.78rem; color: #7c3aed; font-weight: 700; text-transform: uppercase;">supervisões ativas</span>
-      <small style="display: block; font-size: 0.72rem; color: #475569; margin-top: 4px; word-break: break-word;">🕒 Última: ${lastSupervisaoText}</small>
+      <strong style="font-size: 1.3rem; color: #1e40af; display: block;">${statsItems.length}</strong>
+      <span style="font-size: 0.78rem; color: #3b82f6; font-weight: 700; text-transform: uppercase;">vistorias</span>
     </article>
     <article class="summary-item" style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px; border-radius: 12px; text-align: center;">
       <strong style="font-size: 1.2rem; color: #065f46; display: block;">R$ ${totalValue.toFixed(2).replace('.', ',')}</strong>
-      <span style="font-size: 0.78rem; color: #10b981; font-weight: 700; text-transform: uppercase;">faturamento semana</span>
-      <small style="display: block; font-size: 0.72rem; color: #475569; margin-top: 4px;">${uniqueDays} dias com vistorias</small>
+      <span style="font-size: 0.78rem; color: #10b981; font-weight: 700; text-transform: uppercase;">valor total</span>
+    </article>
+    <article class="summary-item" style="background: #fef3c7; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 1.3rem; color: #92400e; display: block;">${uniqueDays}</strong>
+      <span style="font-size: 0.78rem; color: #d97706; font-weight: 700; text-transform: uppercase;">dias preenchidos</span>
+    </article>
+    <article class="summary-item" style="background: #f3e8ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 0.95rem; color: #6b21a8; display: block; word-break: break-word;">${lastRecord}</strong>
+      <span style="font-size: 0.78rem; color: #9333ea; font-weight: 700; text-transform: uppercase;">último registro</span>
     </article>
   `;
 }
