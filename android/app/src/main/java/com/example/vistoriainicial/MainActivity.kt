@@ -2432,7 +2432,9 @@ class AndroidInterface(private val activity: ComponentActivity) {
             try {
                 val mainAct = activity as MainActivity
                 mainAct.webView.clearCache(true)
-                mainAct.webView.reload()
+                mainAct.webView.clearHistory()
+                android.webkit.WebStorage.getInstance().deleteAllData()
+                mainAct.webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/dashboard.html?t=" + System.currentTimeMillis())
             } catch (e: Exception) {
                 e.printStackTrace()
             }

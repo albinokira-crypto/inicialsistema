@@ -22,6 +22,39 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
+const CURRENT_APP_VERSION = 'v1.55';
+
+async function checkForSystemUpdates() {
+  try {
+    const res = await fetch('https://gestao-vistoria-inicial.vercel.app/version.json?t=' + Date.now(), {
+      cache: 'no-store'
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.version && ('v' + data.version) !== CURRENT_APP_VERSION) {
+        console.log(`[AutoUpdate] Nova versão detectada: v${data.version} (atual: ${CURRENT_APP_VERSION})`);
+        if ('caches' in window) {
+          const names = await caches.keys();
+          for (const name of names) await caches.delete(name);
+        }
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const reg of regs) await reg.unregister();
+        }
+        localStorage.setItem('app_version', 'v' + data.version);
+        if (window.AndroidInterface && typeof window.AndroidInterface.forceAppReload === 'function') {
+          window.AndroidInterface.forceAppReload();
+        } else {
+          window.location.reload(true);
+        }
+      }
+    }
+  } catch (err) {
+    // Offline ou erro silencioso
+  }
+}
+setTimeout(checkForSystemUpdates, 3000);
+
 const STORAGE_KEY = 'web-system-items-v1';
 const form = document.getElementById('itemForm');
 const dateInput = document.getElementById('dateInput');
@@ -3683,17 +3716,18 @@ function openSystemSettings() {
   const cameraSection = document.getElementById('cameraSettingsSection');
   if (cameraSection) cameraSection.style.setProperty('display', 'none', 'important');
   const versionDisplay = document.getElementById('systemAppVersionDisplay');
-  if (versionDisplay) versionDisplay.textContent = 'v1.46';
+  if (versionDisplay) versionDisplay.textContent = CURRENT_APP_VERSION;
   updateFolderLabelUI();
   updatePreferredCameraUI();
   if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
+  checkForSystemUpdates();
 }
 
 async function forceAppRefresh() {
   const btn = document.getElementById('forceRefreshAppBtn');
   if (btn) {
     btn.disabled = true;
-    btn.textContent = '⏳ Limpando cache e recarregando...';
+    btn.textContent = '⏳ Limpando cache e atualizando...';
   }
 
   try {
@@ -3703,6 +3737,13 @@ async function forceAppRefresh() {
         await caches.delete(name);
       }
     }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        await reg.unregister();
+      }
+    }
+    localStorage.removeItem('app_version');
   } catch (e) {
     console.warn("Erro ao limpar caches:", e);
   }
@@ -3710,7 +3751,7 @@ async function forceAppRefresh() {
   if (window.AndroidInterface && typeof window.AndroidInterface.forceAppReload === 'function') {
     window.AndroidInterface.forceAppReload();
   } else {
-    window.location.reload(true);
+    window.location.href = 'dashboard.html?t=' + Date.now();
   }
 }
 window.forceAppRefresh = forceAppRefresh;
