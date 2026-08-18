@@ -166,6 +166,7 @@ let selectedSupervisaoStage = 'Todos';
 let selectedSupervisaoOficina = 'Todas';
 let selectedOficinaForTodasVistorias = null;
 let selectedTodasVistoriasFilter = 'Vistorias';
+let selectedTodasVistoriasDayFilter = 'Todos';
 
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
@@ -1218,6 +1219,12 @@ function render() {
         return true;
       });
       
+      const rawList = (selectedTodasVistoriasFilter === 'Vistorias') ? filteredVistorias : filteredSupervisoes;
+      const countForDay = (dayName) => rawList.filter(item => {
+        const itemDay = getWeekdayFromDateString(item.date) || item.day;
+        return itemDay === dayName;
+      }).length;
+
       let listToDisplay = [];
       if (selectedTodasVistoriasFilter === 'Vistorias') {
         listToDisplay = filteredVistorias.map(i => ({ ...i, isSupervisao: false }));
@@ -1228,6 +1235,13 @@ function render() {
           const timeA = a.updatedAtTime || Number(a.id) || 0;
           const timeB = b.updatedAtTime || Number(b.id) || 0;
           return timeB - timeA;
+        });
+      }
+
+      if (selectedTodasVistoriasDayFilter !== 'Todos') {
+        listToDisplay = listToDisplay.filter(entry => {
+          const entryDay = getWeekdayFromDateString(entry.date) || entry.day;
+          return entryDay === selectedTodasVistoriasDayFilter;
         });
       }
       
@@ -1241,11 +1255,23 @@ function render() {
           </div>
           <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
             <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-              Vistorias
+              Vistorias (${filteredVistorias.length})
             </button>
             <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-              Supervisões
+              Supervisões (${filteredSupervisoes.length})
             </button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 12px; border-radius: 12px; border: 1px solid #e2e8f0; width: 100%; box-sizing: border-box;">
+            <label for="todasVistoriasDaySelect" style="font-size: 0.8rem; font-weight: 700; color: #1e293b; white-space: nowrap;">📅 Filtrar Dia:</label>
+            <select id="todasVistoriasDaySelect" class="custom-select" style="flex: 1; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-weight: 600; font-size: 0.85rem; background-color: #ffffff; color: #0f172a; cursor: pointer; outline: none;">
+              <option value="Todos"${selectedTodasVistoriasDayFilter === 'Todos' ? ' selected' : ''}>📅 Todos os Dias (${rawList.length})</option>
+              <option value="Segunda"${selectedTodasVistoriasDayFilter === 'Segunda' ? ' selected' : ''}>Segunda-feira (${countForDay('Segunda')})</option>
+              <option value="Terça"${selectedTodasVistoriasDayFilter === 'Terça' ? ' selected' : ''}>Terça-feira (${countForDay('Terça')})</option>
+              <option value="Quarta"${selectedTodasVistoriasDayFilter === 'Quarta' ? ' selected' : ''}>Quarta-feira (${countForDay('Quarta')})</option>
+              <option value="Quinta"${selectedTodasVistoriasDayFilter === 'Quinta' ? ' selected' : ''}>Quinta-feira (${countForDay('Quinta')})</option>
+              <option value="Sexta"${selectedTodasVistoriasDayFilter === 'Sexta' ? ' selected' : ''}>Sexta-feira (${countForDay('Sexta')})</option>
+              <option value="Sábado"${selectedTodasVistoriasDayFilter === 'Sábado' ? ' selected' : ''}>Sábado (${countForDay('Sábado')})</option>
+            </select>
           </div>
         </li>
       `;
@@ -1360,6 +1386,14 @@ function render() {
       if (toggleSupervisoesBtn) {
         toggleSupervisoesBtn.addEventListener('click', () => {
           selectedTodasVistoriasFilter = 'Supervisões';
+          render();
+        });
+      }
+
+      const daySelect = itemList.querySelector('#todasVistoriasDaySelect');
+      if (daySelect) {
+        daySelect.addEventListener('change', (e) => {
+          selectedTodasVistoriasDayFilter = e.target.value;
           render();
         });
       }
@@ -2773,29 +2807,48 @@ function formatDateForDisplay(dateStr) {
 }
 
 function getTodayDateValue() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-function getSelectedSaveDay() {
-  const weekdays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
-  if (weekdays.includes(selectedDay)) {
-    return selectedDay;
+function getWeekdayFromDateString(dateStr) {
+  if (!dateStr) return null;
+  const parts = String(dateStr).split('-');
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+      const d = new Date(year, month, day);
+      const weekdayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+      return weekdayNames[d.getDay()];
+    }
   }
-  return getWeekdayName(new Date());
+  return null;
 }
 
 function getWeekdayName(date) {
+  if (!date) date = new Date();
   const weekdayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   return weekdayNames[date.getDay()];
 }
 
-function formatDateForDisplay(date) {
-  return date.toLocaleDateString('pt-BR');
+function getSelectedSaveDay(targetDateStr) {
+  const dateStr = targetDateStr || getTodayDateValue();
+  const realDay = getWeekdayFromDateString(dateStr);
+  const weekdays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  if (selectedDay && weekdays.includes(selectedDay)) {
+    return selectedDay;
+  }
+  return realDay || getWeekdayName(new Date());
 }
 
 function formatDateString(dateStr) {
   if (!dateStr) return '';
-  const parts = dateStr.split('-');
+  const parts = String(dateStr).split('-');
   if (parts.length === 3) {
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
@@ -2811,9 +2864,31 @@ function safeParseJson(raw, fallback) {
   }
 }
 
+function autoFixItemDays(rawItems) {
+  if (!Array.isArray(rawItems)) return [];
+  let changed = false;
+  const fixed = rawItems.map(item => {
+    if (item.date) {
+      const realDay = getWeekdayFromDateString(item.date);
+      if (realDay && realDay !== item.day) {
+        changed = true;
+        return { ...item, day: realDay };
+      }
+    }
+    return item;
+  });
+  if (changed) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(fixed));
+    } catch(e) {}
+  }
+  return fixed;
+}
+
 function loadItems() {
   const raw = localStorage.getItem(STORAGE_KEY);
-  return raw ? safeParseJson(raw, []) : [];
+  const parsed = raw ? safeParseJson(raw, []) : [];
+  return autoFixItemDays(parsed);
 }
 
 function saveItems() {
