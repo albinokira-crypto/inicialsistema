@@ -4145,7 +4145,36 @@ function showToastNotification(message, duration = 4000) {
   }, duration);
 }
 
-// Compartilhamento Sequencial Automático (1 clique: Texto primeiro, depois Mídias no retorno)
+// Verifica se existem fotos ou vídeos associados ao veículo/supervisão
+async function checkHasMediaForVehicle(vehicleName, isSupervisao) {
+  if (!vehicleName || !vehicleName.trim()) return false;
+  const cleanName = vehicleName.trim();
+
+  // 1. Se estiver no app Android, consulta a interface nativa
+  if (window.AndroidInterface && typeof window.AndroidInterface.hasMediaForVehicle === 'function') {
+    try {
+      const hasNative = window.AndroidInterface.hasMediaForVehicle(cleanName, !!isSupervisao);
+      if (hasNative) return true;
+    } catch (e) {
+      console.warn('Erro ao consultar hasMediaForVehicle no Android:', e);
+    }
+  }
+
+  // 2. Consulta fotos/vídeos armazenados no IndexedDB
+  try {
+    const stored = await getStoredPhotosForVehicle(cleanName);
+    if (stored && stored.length > 0) {
+      return true;
+    }
+  } catch (e) {
+    console.warn('Erro ao consultar fotos no IndexedDB:', e);
+  }
+
+  return false;
+}
+window.checkHasMediaForVehicle = checkHasMediaForVehicle;
+
+// Compartilhamento Sequencial Automático (1 clique: Texto primeiro, depois Mídias no retorno SE houver fotos/vídeos)
 async function shareVistoriaWhatsAppSequence(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
@@ -4158,10 +4187,26 @@ async function shareVistoriaWhatsAppSequence(id) {
     return;
   }
 
-  // Prepara o estado do segundo passo (fotos)
+  const isSupervisao = !items.some(entry => entry.id === id);
+  const hasMedia = await checkHasMediaForVehicle(vehicleName, isSupervisao);
+
+  if (!hasMedia) {
+    // NÃO há fotos/vídeos (ex: Supervisão sem fotos): envia apenas o texto e NÃO agenda retorno para mídias
+    pendingSequenceShare = null;
+    try {
+      sessionStorage.removeItem('pending_sequence_share');
+    } catch(e) {}
+
+    showToastNotification(isSupervisao ? 'Enviando relatório de supervisão no WhatsApp...' : 'Enviando relatório no WhatsApp...', 3500);
+    shareVistoriaWhatsApp(id, 'text');
+    return;
+  }
+
+  // HÁ fotos/vídeos: Prepara o estado do segundo passo (fotos)
   pendingSequenceShare = {
     id: id,
     vehicleName: vehicleName,
+    isSupervisao: isSupervisao,
     step: 'media',
     timestamp: Date.now()
   };
@@ -4176,7 +4221,7 @@ async function shareVistoriaWhatsAppSequence(id) {
 }
 window.shareVistoriaWhatsAppSequence = shareVistoriaWhatsAppSequence;
 
-function checkPendingSequenceShare() {
+async function checkPendingSequenceShare() {
   if (isCheckingSequenceShare) return;
   let pending = pendingSequenceShare;
   if (!pending) {
@@ -4195,6 +4240,13 @@ function checkPendingSequenceShare() {
       try {
         sessionStorage.removeItem('pending_sequence_share');
       } catch(e) {}
+
+      // Verificação de segurança: só reabre o WhatsApp se de fato houver fotos/vídeos
+      const hasMedia = await checkHasMediaForVehicle(pending.vehicleName, pending.isSupervisao);
+      if (!hasMedia) {
+        isCheckingSequenceShare = false;
+        return;
+      }
 
       setTimeout(() => {
         showToastNotification('Passo 2/2: Abrindo fotos no WhatsApp para o mesmo contato...', 4000);
@@ -4291,6 +4343,11 @@ async function shareVistoriaWhatsApp(id, shareMode) {
       }
     }
 
+    if (shareMode === 'media' && filesToShare.length === 0) {
+      console.log('Nenhuma mídia encontrada para compartilhamento.');
+      return;
+    }
+
     if (navigator.share) {
       if (filesToShare.length > 0 && navigator.canShare && navigator.canShare({ files: filesToShare })) {
         // Envia todas as fotos em lote 100% único sem texto atrelado para evitar divisão em 3 lotes no WhatsApp
@@ -4299,7 +4356,7 @@ async function shareVistoriaWhatsApp(id, shareMode) {
           files: filesToShare
         });
         return;
-      } else {
+      } else if (shareMode !== 'media') {
         await navigator.share({
           title: 'Vistoria: ' + vehicleName,
           text: reportText
@@ -4310,6 +4367,10 @@ async function shareVistoriaWhatsApp(id, shareMode) {
   } catch (err) {
     if (err.name === 'AbortError') return;
     console.warn('navigator.share falhou, utilizando fallback de texto/WhatsApp:', err);
+  }
+
+  if (shareMode === 'media') {
+    return;
   }
 
   try {

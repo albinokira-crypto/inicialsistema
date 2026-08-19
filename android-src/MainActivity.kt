@@ -999,6 +999,157 @@ class MainActivity : ComponentActivity() {
         return name.replace("[\\\\/:*?\"<>|]".toRegex(), "_")
     }
 
+    fun findVehicleMediaFiles(cleanVehicleName: String, isSupervision: Boolean): List<java.io.File> {
+        val filesToShare = ArrayList<java.io.File>()
+        val addedNames = HashSet<String>()
+
+        fun checkAndAddFile(file: java.io.File) {
+            if (file.exists() && file.isFile && file.length() > 0) {
+                val name = file.name.lowercase()
+                if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
+                    name.endsWith(".png") || name.endsWith(".mp4") ||
+                    name.endsWith(".mov") || name.endsWith(".3gp") ||
+                    name.endsWith(".mkv") || name.endsWith(".webm")) {
+                    if (!addedNames.contains(name)) {
+                        if (isSupervision) {
+                            val fileDate = java.util.Date(file.lastModified())
+                            val today = java.util.Date()
+                            val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+                            if (fmt.format(fileDate) != fmt.format(today)) {
+                                return
+                            }
+                        }
+                        addedNames.add(name)
+                        filesToShare.add(file)
+                    }
+                }
+            }
+        }
+
+        try {
+            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val vistoriasDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
+            if (vistoriasDir.exists()) {
+                val files = vistoriasDir.listFiles()
+                if (files != null) {
+                    for (file in files) {
+                        checkAndAddFile(file)
+                    }
+                }
+            }
+
+            val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
+            if (vistoriasBaseDir.exists()) {
+                val subDirs = vistoriasBaseDir.listFiles { file -> file.isDirectory }
+                if (subDirs != null) {
+                    val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
+                    for (dir in subDirs) {
+                        val dirNameLower = dir.name.lowercase().replace(" ", "").replace("-", "")
+                        if (dirNameLower.contains(cleanLower) || (cleanLower.length > 3 && dirNameLower.contains(cleanLower))) {
+                            val files = dir.listFiles()
+                            if (files != null) {
+                                for (file in files) {
+                                    checkAndAddFile(file)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            val dcimDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+            val cameraDirs = listOf(
+                java.io.File(dcimDir, "Camera"),
+                java.io.File(dcimDir, "Vistorias/$cleanVehicleName"),
+                java.io.File(picturesDir, "Camera"),
+                getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                getExternalFilesDir(null)
+            )
+
+            val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
+            for (cDir in cameraDirs) {
+                if (cDir != null && cDir.exists()) {
+                    val files = cDir.listFiles()
+                    if (files != null) {
+                        for (file in files) {
+                            if (file.isFile && file.length() > 0) {
+                                val nameLower = file.name.lowercase()
+                                if (nameLower.contains(cleanLower) || (cleanLower.length > 3 && nameLower.contains(cleanLower))) {
+                                    checkAndAddFile(file)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+            val savedUriStr = prefs.getString("selected_folder_uri", null)
+            if (savedUriStr != null) {
+                try {
+                    val rootUri = Uri.parse(savedUriStr)
+                    val rootFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(this, rootUri)
+                    if (rootFolder != null && rootFolder.exists()) {
+                        val vehicleFolder = getOrCreateDirectory(rootFolder, cleanVehicleName)
+                        if (vehicleFolder != null && vehicleFolder.exists()) {
+                            val files = vehicleFolder.listFiles()
+                            for (file in files) {
+                                if (file.isFile) {
+                                    val name = file.name ?: ""
+                                    val lowerName = name.lowercase()
+                                    if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") ||
+                                        lowerName.endsWith(".png") || lowerName.endsWith(".mp4") ||
+                                        lowerName.endsWith(".mov") || lowerName.endsWith(".3gp") ||
+                                        lowerName.endsWith(".mkv") || lowerName.endsWith(".webm")) {
+                                        if (!addedNames.contains(lowerName)) {
+                                            if (isSupervision) {
+                                                val fileDate = java.util.Date(file.lastModified())
+                                                val today = java.util.Date()
+                                                val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+                                                if (fmt.format(fileDate) != fmt.format(today)) {
+                                                    continue
+                                                }
+                                            }
+                                            addedNames.add(lowerName)
+                                            filesToShare.add(java.io.File(name))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            if (filesToShare.isEmpty() && vistoriasBaseDir.exists()) {
+                val now = System.currentTimeMillis()
+                val twoDaysAgo = now - (48 * 3600 * 1000L)
+                val allFiles = vistoriasBaseDir.listFiles()
+                if (allFiles != null) {
+                    for (file in allFiles) {
+                        if (file.isFile && file.length() > 0 && file.lastModified() >= twoDaysAgo) {
+                            if (isSupervision) {
+                                val fileDate = java.util.Date(file.lastModified())
+                                val today = java.util.Date()
+                                val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+                                if (fmt.format(fileDate) != fmt.format(today)) {
+                                    continue
+                                }
+                            }
+                            checkAndAddFile(file)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        return filesToShare
+    }
+
     fun getOrCreateDirectory(parent: DocumentFile, name: String): DocumentFile? {
         val existing = parent.findFile(name)
         if (existing != null && existing.isDirectory) {
@@ -1260,6 +1411,22 @@ class AndroidInterface(private val activity: ComponentActivity) {
     }
 
     @JavascriptInterface
+    fun hasMediaForVehicle(vehicleName: String, isSupervision: Boolean): Boolean {
+        val mainAct = activity as MainActivity
+        val cleanVehicleName = mainAct.sanitizeFilename(vehicleName)
+        val files = mainAct.findVehicleMediaFiles(cleanVehicleName, isSupervision)
+        return files.isNotEmpty()
+    }
+
+    @JavascriptInterface
+    fun getMediaCountForVehicle(vehicleName: String, isSupervision: Boolean): Int {
+        val mainAct = activity as MainActivity
+        val cleanVehicleName = mainAct.sanitizeFilename(vehicleName)
+        val files = mainAct.findVehicleMediaFiles(cleanVehicleName, isSupervision)
+        return files.size
+    }
+
+    @JavascriptInterface
     fun shareVistoriaWhatsAppMedia(vehicleName: String, reportText: String) {
         shareVistoriaWhatsApp(vehicleName, reportText)
     }
@@ -1476,9 +1643,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 })
             val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
 
-            // Copiar todos os arquivos para uma pasta temporária pública oculta (.share_temp)
-            // Isso garante que todas as mídias compartilhem a mesma raiz de URI pública no FileProvider,
-            // permitindo que o WhatsApp agrupe como álbum/lote único sem fragmentar por caminhos diferentes.
             val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
             val shareTempDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName/.share_temp")
             try {
@@ -1486,7 +1650,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                     shareTempDir.deleteRecursively()
                 }
                 shareTempDir.mkdirs()
-                // Criar arquivo .nomedia para ocultar a pasta temporária do scanner de galeria do celular
                 java.io.File(shareTempDir, ".nomedia").createNewFile()
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -1498,7 +1661,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
             val minPhotoTime = if (imageFiles.isNotEmpty()) imageFiles.minOf { it.lastModified() } else sessionId
             val referenceEarliestTime = minOf(minVideoTime, minPhotoTime)
             
-            // Garantir que a base de horário de todas as fotos seja anterior ao vídeo mais antigo
             val baseTime = referenceEarliestTime - ((imageFiles.size + 20) * 2000L)
             val sdf = java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss", java.util.Locale.US)
 
@@ -1567,7 +1729,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 }
             }
 
-            // Copiar o texto do relatório para a área de transferência do Android
             try {
                 val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 val clip = android.content.ClipData.newPlainText("Relatório de Vistoria", reportText)
@@ -1596,10 +1757,11 @@ class AndroidInterface(private val activity: ComponentActivity) {
             }
 
             if (uris.isEmpty()) {
-                Toast.makeText(activity, "Nenhuma foto/vídeo encontrado para $vehicleName. Enviando relatório de texto...", Toast.LENGTH_LONG).show()
-            } else {
-                Toast.makeText(activity, "Mídias prontas! Relatório copiado para colar no WhatsApp.", Toast.LENGTH_LONG).show()
+                Toast.makeText(activity, "Nenhuma foto/vídeo encontrado para $vehicleName.", Toast.LENGTH_SHORT).show()
+                return@runOnUiThread
             }
+
+            Toast.makeText(activity, "Mídias prontas! Relatório copiado para colar no WhatsApp.", Toast.LENGTH_LONG).show()
 
             val hasImages = imageFiles.isNotEmpty()
             val hasVideos = videoFiles.isNotEmpty()
@@ -1607,11 +1769,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             val intent = Intent().apply {
                 setPackage(whatsappPkg)
-                if (uris.isEmpty()) {
-                    action = Intent.ACTION_SEND
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, reportText)
-                } else if (uris.size == 1) {
+                if (uris.size == 1) {
                     action = Intent.ACTION_SEND
                     type = shareType
                     putExtra(Intent.EXTRA_STREAM, uris[0])
