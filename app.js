@@ -358,13 +358,6 @@ function registerServiceWorker() {
   }
 }
 
-function openSystemSettings() {
-  const modal = document.getElementById('systemSettingsModal');
-  if (modal) {
-    modal.style.display = 'flex';
-  }
-}
-
 function closeSystemSettings() {
   const modal = document.getElementById('systemSettingsModal');
   if (modal) {
@@ -858,84 +851,6 @@ function normalizePlate(value) {
 
 function isValidPlate(value) {
   return value && value.trim().length > 0;
-}
-
-function updateFormDisplay() {
-  const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
-  const isSupervisao = selectedDay === 'Supervisão';
-  const isSeguradoras = selectedDay === 'Seguradoras';
-  const isOficinas = selectedDay === 'Oficinas';
-  const isTotalSemana = selectedDay === 'Total da semana';
-  const isTodasVistorias = selectedDay === 'Todas as vistorias';
-
-  const formCardEl = document.getElementById('formCard');
-  const recordsCardEl = document.getElementById('recordsCard');
-  const vistoriaTypeTabsCardEl = document.getElementById('vistoriaTypeTabsCard');
-  const supervisaoFormCardEl = document.getElementById('supervisaoFormCard');
-  const supervisaoRecordsCardEl = document.getElementById('supervisaoRecordsCard');
-  const insurerCardEl = document.getElementById('insurerCard');
-  const oficinaCardEl = document.getElementById('oficinaCard');
-  const summaryGridEl = document.getElementById('summaryGrid');
-
-  if (formCardEl) {
-    formCardEl.hidden = !isWeekday;
-    formCardEl.style.display = isWeekday ? 'block' : 'none';
-  }
-  if (recordsCardEl) {
-    recordsCardEl.hidden = !(isWeekday || isTotalSemana || isTodasVistorias);
-    recordsCardEl.style.display = (isWeekday || isTotalSemana || isTodasVistorias) ? 'block' : 'none';
-  }
-  if (vistoriaTypeTabsCardEl) {
-    vistoriaTypeTabsCardEl.hidden = !isWeekday;
-    vistoriaTypeTabsCardEl.style.display = isWeekday ? 'block' : 'none';
-  }
-
-  if (supervisaoFormCardEl) {
-    supervisaoFormCardEl.hidden = !isSupervisao;
-    supervisaoFormCardEl.style.display = isSupervisao ? 'block' : 'none';
-  }
-  if (supervisaoRecordsCardEl) {
-    supervisaoRecordsCardEl.hidden = !isSupervisao;
-    supervisaoRecordsCardEl.style.display = isSupervisao ? 'block' : 'none';
-  }
-
-  if (insurerCardEl) {
-    insurerCardEl.hidden = !isSeguradoras;
-    insurerCardEl.style.display = isSeguradoras ? 'block' : 'none';
-  }
-  if (oficinaCardEl) {
-    oficinaCardEl.hidden = !isOficinas;
-    oficinaCardEl.style.display = isOficinas ? 'block' : 'none';
-  }
-  if (summaryGridEl) {
-    summaryGridEl.style.display = (isTotalSemana || isTodasVistorias) ? 'grid' : 'none';
-  }
-}
-
-function updateFormState() {
-  updateFormDisplay();
-}
-
-function updateDayTabs() {
-  const dayTabsEl = document.getElementById('dayTabs');
-  if (dayTabsEl) {
-    dayTabsEl.querySelectorAll('.tab-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.day === selectedDay);
-    });
-  }
-  updateFormDisplay();
-}
-
-function updateTypeButtonsHighlight() {
-  if (vistoriaTypeTabs) {
-    vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
-      b.classList.toggle('active', b.dataset.type === (selectedType || 'Inicial'));
-    });
-  }
-}
-
-function updateInsurerButtonsHighlight() {
-  // Safe stub
 }
 
 function cancelEdit() {
@@ -3011,31 +2926,6 @@ async function syncDataToServer() {
   }
 }
 
-function getWeekdayName(dateObj) {
-  const dayIndex = (dateObj || new Date()).getDay();
-  const map = {
-    1: 'Segunda',
-    2: 'Terça',
-    3: 'Quarta',
-    4: 'Quinta',
-    5: 'Sexta'
-  };
-  return map[dayIndex] || 'Segunda';
-}
-
-function formatDateString(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return dateStr;
-  } catch (e) {
-    return dateStr || '—';
-  }
-}
-
 function formatDateForDisplay(dateStr) {
   return formatDateString(dateStr);
 }
@@ -3148,7 +3038,11 @@ function escapeHtml(value) {
 }
 
 function updateTypeButtonsHighlight() {
-  // No-op (type is managed by sub-tabs)
+  if (vistoriaTypeTabs) {
+    vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.type === (selectedType || 'Inicial'));
+    });
+  }
 }
 
 function loadSupervisoes() {
