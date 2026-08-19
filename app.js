@@ -1229,6 +1229,10 @@ function initAppWithDOM() {
   attachGlobalEventListeners();
 }
 
+if (window.AndroidInterface || window.location.protocol === 'file:') {
+  localStorage.setItem('authenticated', 'true');
+}
+
 if (localStorage.getItem('authenticated') !== 'true') {
   window.location.href = 'index.html';
 } else {

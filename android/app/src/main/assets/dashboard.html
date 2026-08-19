@@ -8,18 +8,8 @@
     <script>
       (function() {
         try {
-          // Se caiu em arquivo local offline (file://) mas está online, redireciona para a versão online oficial
-          if (window.location.protocol === 'file:' && navigator.onLine) {
-            window.location.href = 'https://gestao-vistoria-inicial.vercel.app/dashboard.html';
-            return;
-          }
-          const APP_VERSION = 'v164';
-          const storedVersion = localStorage.getItem('app_version');
-          if (storedVersion !== APP_VERSION) {
-            localStorage.setItem('app_version', APP_VERSION);
-            if ('caches' in window) {
-              caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
-            }
+          if (window.AndroidInterface || window.location.protocol === 'file:') {
+            localStorage.setItem('authenticated', 'true');
           }
         } catch(e) {}
       })();
