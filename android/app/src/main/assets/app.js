@@ -1093,59 +1093,63 @@ function getAutomaticDayOfWeek() {
 }
 
 function handleMenuButtonClick(targetDay) {
-  const welcomeScreenEl = document.getElementById('welcomeScreen');
-  const homeSummaryCardEl = document.getElementById('homeSummaryCard');
-  const appHeaderEl = document.getElementById('appHeader');
-  const appContentEl = document.getElementById('appContent');
+  try {
+    const welcomeScreenEl = document.getElementById('welcomeScreen');
+    const homeSummaryCardEl = document.getElementById('homeSummaryCard');
+    const appHeaderEl = document.getElementById('appHeader');
+    const appContentEl = document.getElementById('appContent');
 
-  if (targetDay === 'Vistorias') {
-    selectedDay = getAutomaticDayOfWeek();
-  } else {
-    selectedDay = targetDay;
-  }
-  
-  if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
-    selectedType = 'Inicial';
-    const typeTabsEl = document.getElementById('vistoriaTypeTabs');
-    if (typeTabsEl) {
-      typeTabsEl.querySelectorAll('.tab-btn').forEach((b) => {
-        b.classList.toggle('active', b.dataset.type === 'Inicial');
-      });
+    if (targetDay === 'Vistorias') {
+      selectedDay = getAutomaticDayOfWeek();
+    } else {
+      selectedDay = targetDay;
     }
-    const typeInputEl = document.getElementById('typeInput');
-    if (typeInputEl) typeInputEl.value = 'Inicial';
-    updateVistoriaFormTitle();
-  }
-  
-  if (welcomeScreenEl) {
-    welcomeScreenEl.hidden = true;
-    welcomeScreenEl.style.display = 'none';
-  }
-  if (homeSummaryCardEl) {
-    homeSummaryCardEl.hidden = true;
-    homeSummaryCardEl.style.display = 'none';
-  }
-  if (appHeaderEl) appHeaderEl.style.display = 'none';
-  if (appContentEl) {
-    appContentEl.hidden = false;
-    appContentEl.style.display = 'block';
-  }
+    
+    if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
+      selectedType = 'Inicial';
+      const typeTabsEl = document.getElementById('vistoriaTypeTabs');
+      if (typeTabsEl) {
+        typeTabsEl.querySelectorAll('.tab-btn').forEach((b) => {
+          b.classList.toggle('active', b.dataset.type === 'Inicial');
+        });
+      }
+      const typeInputEl = document.getElementById('typeInput');
+      if (typeInputEl) typeInputEl.value = 'Inicial';
+      updateVistoriaFormTitle();
+    }
+    
+    if (welcomeScreenEl) {
+      welcomeScreenEl.hidden = true;
+      welcomeScreenEl.style.display = 'none';
+    }
+    if (homeSummaryCardEl) {
+      homeSummaryCardEl.hidden = true;
+      homeSummaryCardEl.style.display = 'none';
+    }
+    if (appHeaderEl) appHeaderEl.style.display = 'none';
+    if (appContentEl) {
+      appContentEl.hidden = false;
+      appContentEl.style.display = 'block';
+    }
 
-  updateDayTabs();
-  render();
-  if (selectedDay === 'Supervisão') {
-    populateSupervisaoOficinaSelect();
-    populateSupervisaoOficinaFilter();
-    populateSupervisaoStageSelect();
-    renderSupervisaoReport();
-  } else if (selectedDay === 'Seguradoras') {
-    renderInsurers();
-  } else if (selectedDay === 'Oficinas') {
-    renderOficinas();
-  }
+    updateDayTabs();
+    render();
+    if (selectedDay === 'Supervisão') {
+      populateSupervisaoOficinaSelect();
+      populateSupervisaoOficinaFilter();
+      populateSupervisaoStageSelect();
+      renderSupervisaoReport();
+    } else if (selectedDay === 'Seguradoras') {
+      renderInsurers();
+    } else if (selectedDay === 'Oficinas') {
+      renderOficinas();
+    }
 
-  updatePageTitleHeader();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+    updatePageTitleHeader();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (err) {
+    console.error('Erro ao abrir seção:', err);
+  }
 }
 
 window.openMenuSection = function(targetDay) {
@@ -1185,16 +1189,6 @@ window.closeSystemSettings = function() {
 };
 
 function attachMenuListeners() {
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('.menu-btn');
-    if (btn) {
-      const targetDay = btn.dataset.day;
-      if (targetDay) {
-        handleMenuButtonClick(targetDay);
-      }
-    }
-  });
-
   if (backToMenuButton) {
     backToMenuButton.addEventListener('click', (e) => {
       e.preventDefault();

@@ -125,17 +125,11 @@ if (localStorage.getItem('authenticated') === 'true') {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js')
     .then((registration) => {
-      // Force checking for updates immediately on load
       registration.update();
     })
     .catch((error) => {
       console.warn('Registro do service worker falhou', error);
     });
-
-  // Auto-reload when service worker updates to apply changes in real-time
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    window.location.reload();
-  });
 }
 
 function downloadJsonFile(filename, jsonString) {
