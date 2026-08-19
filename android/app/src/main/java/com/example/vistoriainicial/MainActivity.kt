@@ -2427,6 +2427,16 @@ class AndroidInterface(private val activity: ComponentActivity) {
     }
 
     @JavascriptInterface
+    fun getAppVersion(): String {
+        return try {
+            val pInfo = activity.packageManager.getPackageInfo(activity.packageName, 0)
+            "v" + pInfo.versionName
+        } catch (e: Exception) {
+            "v1.60"
+        }
+    }
+
+    @JavascriptInterface
     fun forceAppReload() {
         activity.runOnUiThread {
             try {

@@ -26,24 +26,33 @@ window.homeLogout = homeLogout;
 const CURRENT_APP_VERSION = 'v1.60';
 
 async function checkForSystemUpdates(showFeedback = false) {
+  let activeVersion = CURRENT_APP_VERSION;
+  if (window.AndroidInterface && typeof window.AndroidInterface.getAppVersion === 'function') {
+    try {
+      activeVersion = window.AndroidInterface.getAppVersion();
+    } catch(e) {}
+  }
+  const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
+  if (versionEl) {
+    versionEl.textContent = activeVersion;
+  }
   try {
     const res = await fetch('https://gestao-vistoria-inicial.vercel.app/version.json?t=' + Date.now(), {
       cache: 'no-store'
     });
     if (res.ok) {
       const data = await res.json();
-      const versionEl = document.getElementById('systemVersionText');
       if (data && data.version) {
-        const isNewer = ('v' + data.version) !== CURRENT_APP_VERSION;
+        const isNewer = ('v' + data.version) !== activeVersion;
         if (versionEl) {
-          versionEl.textContent = `${CURRENT_APP_VERSION} ${isNewer ? '(Nova versão v' + data.version + ' disponível)' : '(Atualizado)'}`;
+          versionEl.textContent = `${activeVersion} ${isNewer ? '(Nova versão v' + data.version + ' disponível)' : '(Atualizado)'}`;
         }
         if (isNewer && showFeedback) {
           if (confirm(`Uma nova versão (v${data.version}) está disponível! Deseja atualizar o aplicativo agora?`)) {
             forceAppRefresh();
           }
         } else if (!isNewer && showFeedback) {
-          alert(`Você já está utilizando a versão mais recente (${CURRENT_APP_VERSION})!`);
+          alert(`Você já está utilizando a versão mais recente (${activeVersion})!`);
         }
       }
     }
@@ -3838,8 +3847,14 @@ function openSystemSettings() {
   if (folderSection) folderSection.style.setProperty('display', 'none', 'important');
   const cameraSection = document.getElementById('cameraSettingsSection');
   if (cameraSection) cameraSection.style.setProperty('display', 'none', 'important');
-  const versionDisplay = document.getElementById('systemAppVersionDisplay');
-  if (versionDisplay) versionDisplay.textContent = CURRENT_APP_VERSION;
+  let activeVersion = CURRENT_APP_VERSION;
+  if (window.AndroidInterface && typeof window.AndroidInterface.getAppVersion === 'function') {
+    try {
+      activeVersion = window.AndroidInterface.getAppVersion();
+    } catch(e) {}
+  }
+  const versionDisplay = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
+  if (versionDisplay) versionDisplay.textContent = activeVersion;
   updateFolderLabelUI();
   updatePreferredCameraUI();
   if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
