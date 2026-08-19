@@ -4145,18 +4145,33 @@ function showToastNotification(message, duration = 4000) {
 async function checkHasMediaForVehicle(vehicleName, isSupervisao) {
   if (!vehicleName || !vehicleName.trim()) return false;
   const cleanName = vehicleName.trim();
+  const key = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-  // 1. Se estiver no app Android, consulta a interface nativa
+  // Vistorias sempre possuem fotos e devem sempre executar o fluxo completo
+  if (!isSupervisao) {
+    return true;
+  }
+
+  // 1. Se estiver no app Android e a função nativa existir, consulta o armazenamento do celular em tempo real
   if (window.AndroidInterface && typeof window.AndroidInterface.hasMediaForVehicle === 'function') {
     try {
-      const hasNative = window.AndroidInterface.hasMediaForVehicle(cleanName, !!isSupervisao);
-      if (hasNative) return true;
+      return window.AndroidInterface.hasMediaForVehicle(cleanName, true);
     } catch (e) {
       console.warn('Erro ao consultar hasMediaForVehicle no Android:', e);
     }
   }
 
-  // 2. Consulta fotos/vídeos armazenados no IndexedDB
+  // 2. Consulta registro de fotos tiradas para esta supervisão
+  const supItem = supervisoes.find(s => (s.vehicle && s.vehicle.trim().toLowerCase().replace(/[^a-z0-9]/g, '') === key) || (s.plate && s.plate.trim().toLowerCase().replace(/[^a-z0-9]/g, '') === key));
+  if (supItem && supItem.hasPhotos === true) {
+    return true;
+  }
+
+  if (localStorage.getItem('has_photos_' + key) === 'true' || sessionStorage.getItem('has_photos_' + key) === 'true') {
+    return true;
+  }
+
+  // 3. Consulta fotos/vídeos armazenados no IndexedDB
   try {
     const stored = await getStoredPhotosForVehicle(cleanName);
     if (stored && stored.length > 0) {
@@ -4187,7 +4202,7 @@ async function shareVistoriaWhatsAppSequence(id) {
   const hasMedia = await checkHasMediaForVehicle(vehicleName, isSupervisao);
 
   if (!hasMedia) {
-    // NÃO há fotos/vídeos (ex: Supervisão sem fotos): envia apenas o texto e NÃO agenda retorno para mídias
+    // NÃO há fotos/vídeos (Supervisão sem fotos): envia apenas o texto e NÃO agenda retorno para mídias
     pendingSequenceShare = null;
     try {
       sessionStorage.removeItem('pending_sequence_share');
@@ -4198,7 +4213,7 @@ async function shareVistoriaWhatsAppSequence(id) {
     return;
   }
 
-  // HÁ fotos/vídeos: Prepara o estado do segundo passo (fotos)
+  // HÁ fotos/vídeos (Vistorias ou Supervisão com fotos): Prepara o estado do segundo passo (fotos)
   pendingSequenceShare = {
     id: id,
     vehicleName: vehicleName,
@@ -4237,11 +4252,13 @@ async function checkPendingSequenceShare() {
         sessionStorage.removeItem('pending_sequence_share');
       } catch(e) {}
 
-      // Verificação de segurança: só reabre o WhatsApp se de fato houver fotos/vídeos
-      const hasMedia = await checkHasMediaForVehicle(pending.vehicleName, pending.isSupervisao);
-      if (!hasMedia) {
-        isCheckingSequenceShare = false;
-        return;
+      // Verificação de segurança: para supervisão, confirma se há mídias
+      if (pending.isSupervisao) {
+        const hasMedia = await checkHasMediaForVehicle(pending.vehicleName, true);
+        if (!hasMedia) {
+          isCheckingSequenceShare = false;
+          return;
+        }
       }
 
       setTimeout(() => {
@@ -4389,6 +4406,17 @@ function openPhotoManagerForVehicle(id, vehicleName) {
   localStorage.setItem('active_photo_id', id);
   localStorage.setItem('active_photo_vehicle_name', vehicleName);
 
+  if (vehicleName) {
+    const key = vehicleName.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    localStorage.setItem('has_photos_' + key, 'true');
+    sessionStorage.setItem('has_photos_' + key, 'true');
+    const sup = supervisoes.find(s => s.id === id || (s.vehicle && s.vehicle.trim().toLowerCase().replace(/[^a-z0-9]/g, '') === key));
+    if (sup) {
+      sup.hasPhotos = true;
+      saveSupervisoes();
+    }
+  }
+
   if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
     window.AndroidInterface.launchCameraCapture(vehicleName);
   } else if (photoSystemCameraInput) {
@@ -4506,6 +4534,9 @@ async function getStoredPhotosForVehicle(vehicleName) {
         resolve(results);
       }
     };
+    index.onerror = function() {
+      resolve([]);
+    };
   });
 }
 
@@ -4546,6 +4577,14 @@ window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64
     if (vehicleName) {
       activePhotoVehicleName = vehicleName;
       localStorage.setItem('active_photo_vehicle_name', vehicleName);
+      const key = vehicleName.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      localStorage.setItem('has_photos_' + key, 'true');
+      sessionStorage.setItem('has_photos_' + key, 'true');
+      const sup = supervisoes.find(s => (s.vehicle && s.vehicle.trim().toLowerCase().replace(/[^a-z0-9]/g, '') === key));
+      if (sup) {
+        sup.hasPhotos = true;
+        saveSupervisoes();
+      }
     }
     
     if (filename && vehicleName) {
