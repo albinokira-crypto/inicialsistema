@@ -23,38 +23,36 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.57';
+const CURRENT_APP_VERSION = 'v1.60';
 
-async function checkForSystemUpdates() {
+async function checkForSystemUpdates(showFeedback = false) {
   try {
     const res = await fetch('https://gestao-vistoria-inicial.vercel.app/version.json?t=' + Date.now(), {
       cache: 'no-store'
     });
     if (res.ok) {
       const data = await res.json();
-      if (data && data.version && ('v' + data.version) !== CURRENT_APP_VERSION) {
-        console.log(`[AutoUpdate] Nova versão detectada: v${data.version} (atual: ${CURRENT_APP_VERSION})`);
-        if ('caches' in window) {
-          const names = await caches.keys();
-          for (const name of names) await caches.delete(name);
+      const versionEl = document.getElementById('systemVersionText');
+      if (data && data.version) {
+        const isNewer = ('v' + data.version) !== CURRENT_APP_VERSION;
+        if (versionEl) {
+          versionEl.textContent = `${CURRENT_APP_VERSION} ${isNewer ? '(Nova versão v' + data.version + ' disponível)' : '(Atualizado)'}`;
         }
-        if ('serviceWorker' in navigator) {
-          const regs = await navigator.serviceWorker.getRegistrations();
-          for (const reg of regs) await reg.unregister();
-        }
-        localStorage.setItem('app_version', 'v' + data.version);
-        if (window.AndroidInterface && typeof window.AndroidInterface.forceAppReload === 'function') {
-          window.AndroidInterface.forceAppReload();
-        } else {
-          window.location.reload(true);
+        if (isNewer && showFeedback) {
+          if (confirm(`Uma nova versão (v${data.version}) está disponível! Deseja atualizar o aplicativo agora?`)) {
+            forceAppRefresh();
+          }
+        } else if (!isNewer && showFeedback) {
+          alert(`Você já está utilizando a versão mais recente (${CURRENT_APP_VERSION})!`);
         }
       }
     }
   } catch (err) {
-    // Offline ou erro silencioso
+    if (showFeedback) {
+      alert('Não foi possível verificar atualizações no momento.');
+    }
   }
 }
-setTimeout(checkForSystemUpdates, 3000);
 
 const STORAGE_KEY = 'web-system-items-v1';
 const form = document.getElementById('itemForm');
@@ -348,17 +346,11 @@ function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
-        // Force checking for updates immediately on load
         registration.update();
       })
       .catch((error) => {
         console.warn('Registro do service worker falhou', error);
       });
-
-    // Auto-reload when service worker updates to apply changes in real-time
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      window.location.reload();
-    });
   }
 }
 

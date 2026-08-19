@@ -5,6 +5,7 @@ window.openMenuSection = openMenuSection;
 
 function backToHomeMenu() {
   selectedOficinaForTodasVistorias = null;
+  showOficinasInTodasVistorias = false;
   showWelcomeScreen();
   if (typeof window.scrollTo === 'function') {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -22,38 +23,36 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.56';
+const CURRENT_APP_VERSION = 'v1.60';
 
-async function checkForSystemUpdates() {
+async function checkForSystemUpdates(showFeedback = false) {
   try {
     const res = await fetch('https://gestao-vistoria-inicial.vercel.app/version.json?t=' + Date.now(), {
       cache: 'no-store'
     });
     if (res.ok) {
       const data = await res.json();
-      if (data && data.version && ('v' + data.version) !== CURRENT_APP_VERSION) {
-        console.log(`[AutoUpdate] Nova versão detectada: v${data.version} (atual: ${CURRENT_APP_VERSION})`);
-        if ('caches' in window) {
-          const names = await caches.keys();
-          for (const name of names) await caches.delete(name);
+      const versionEl = document.getElementById('systemVersionText');
+      if (data && data.version) {
+        const isNewer = ('v' + data.version) !== CURRENT_APP_VERSION;
+        if (versionEl) {
+          versionEl.textContent = `${CURRENT_APP_VERSION} ${isNewer ? '(Nova versão v' + data.version + ' disponível)' : '(Atualizado)'}`;
         }
-        if ('serviceWorker' in navigator) {
-          const regs = await navigator.serviceWorker.getRegistrations();
-          for (const reg of regs) await reg.unregister();
-        }
-        localStorage.setItem('app_version', 'v' + data.version);
-        if (window.AndroidInterface && typeof window.AndroidInterface.forceAppReload === 'function') {
-          window.AndroidInterface.forceAppReload();
-        } else {
-          window.location.reload(true);
+        if (isNewer && showFeedback) {
+          if (confirm(`Uma nova versão (v${data.version}) está disponível! Deseja atualizar o aplicativo agora?`)) {
+            forceAppRefresh();
+          }
+        } else if (!isNewer && showFeedback) {
+          alert(`Você já está utilizando a versão mais recente (${CURRENT_APP_VERSION})!`);
         }
       }
     }
   } catch (err) {
-    // Offline ou erro silencioso
+    if (showFeedback) {
+      alert('Não foi possível verificar atualizações no momento.');
+    }
   }
 }
-setTimeout(checkForSystemUpdates, 3000);
 
 const STORAGE_KEY = 'web-system-items-v1';
 const form = document.getElementById('itemForm');
@@ -202,6 +201,105 @@ let selectedSupervisaoOficina = 'Todas';
 let selectedOficinaForTodasVistorias = null;
 let selectedTodasVistoriasFilter = 'Vistorias';
 let selectedTodasVistoriasDateFilter = 'Todas';
+let todasVistoriasOficinaSearchQuery = '';
+let showOficinasInTodasVistorias = false;
+
+function renderVistoriaOrSupervisaoCard(entry) {
+  const badgeClasses = {
+    'Inicial': 'badge-inicial',
+    'Roubo Recuperado': 'badge-roubo',
+    'Incêndio': 'badge-incendio',
+    'Enchente': 'badge-enchente',
+    'Moto': 'badge-moto',
+    'Complemento': 'badge-complemento',
+    'Pós entrega': 'badge-pos',
+    'Vistoria Rio log': 'badge-riolog'
+  };
+
+  if (entry.isSupervisao) {
+    const isLongVehicle = entry.vehicle && entry.vehicle.length > 20;
+    const mainInfoStyle = isLongVehicle ? 'style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;"' : '';
+    const badgeStyle = isLongVehicle ? 'style="width: 100% !important; max-width: 100% !important; min-width: 100% !important; justify-content: flex-start !important; padding: 5px 8px !important; box-sizing: border-box;"' : '';
+    const badgeTextStyle = isLongVehicle ? 'style="white-space: normal !important; word-break: break-word;"' : '';
+    const dataUnica = entry.updatedAt || entry.createdAt || (entry.date ? formatDateString(entry.date) : '—');
+    const ofObj = oficinas.find(o => o.id === entry.oficinaId);
+    const ofName = entry.oficinaName || (ofObj ? ofObj.name : '');
+
+    return `
+      <li class="item-card compact-item-card">
+        <div class="item-main-info" ${mainInfoStyle}>
+          <div class="plate-badge compact-plate-badge clickable-plate-link" data-super-action="open-report" data-id="${entry.id}" title="Clique para abrir o relatório" style="cursor: pointer; ${badgeStyle}">
+            <span class="plate-badge-text" ${badgeTextStyle}>🚗 ${escapeHtml(entry.vehicle || entry.plate || 'Supervisão')}</span>
+          </div>
+          <div class="item-details">
+            <strong class="item-provider">${escapeHtml(entry.attended ? 'Atendido: ' + entry.attended : 'Sem atendente')}</strong>
+            ${entry.plate ? `<span class="item-meta">· Placa: <strong>${escapeHtml(entry.plate)}</strong></span>` : ''}
+            <span class="badge-supervisao" style="margin-left: 6px;">
+              ${escapeHtml(entry.stage || 'Supervisão')}
+            </span>
+            ${ofName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(ofName)}</strong></div>` : ''}
+            ${entry.partsPending === 'Sim' ? `<div class="item-meta" style="color: #b91c1c; margin-top: 2px;">Peças: <strong>${escapeHtml(entry.parts || 'Pendentes')}</strong></div>` : ''}
+            <div style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">🕒 ${escapeHtml(dataUnica)}</div>
+          </div>
+        </div>
+        <div class="actions card-actions-grid">
+          <div class="btn-row">
+            <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">📸 Fotos</button>
+            <button class="action-btn" type="button" data-super-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
+            <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
+            <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
+          </div>
+          <div class="btn-row" style="margin-top: 4px;">
+            <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar Supervisão (Texto + Mídias)
+            </button>
+          </div>
+        </div>
+      </li>
+    `;
+  } else {
+    const badgeClass = badgeClasses[entry.type || 'Inicial'] || 'badge-inicial';
+    const isLongPlate = entry.plate && entry.plate.length > 20;
+    const mainInfoStyle = isLongPlate ? 'style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;"' : '';
+    const badgeStyle = isLongPlate ? 'style="width: 100% !important; max-width: 100% !important; min-width: 100% !important; justify-content: flex-start !important; padding: 5px 8px !important; box-sizing: border-box;"' : '';
+    const badgeTextStyle = isLongPlate ? 'style="white-space: normal !important; word-break: break-word;"' : '';
+    const dataCriacao = entry.date ? formatDateString(entry.date) : (entry.createdAt || '—');
+    const dataAtualizacao = entry.updatedAt || entry.createdAt || '—';
+    const ofObj = oficinas.find(o => o.id === entry.oficinaId);
+    const ofName = entry.oficinaName || (ofObj ? ofObj.name : '');
+
+    return `
+      <li class="item-card compact-item-card">
+        <div class="item-main-info" ${mainInfoStyle}>
+          <div class="plate-badge compact-plate-badge clickable-plate-link" data-action="open-report" data-id="${entry.id}" title="Clique para abrir o relatório" style="cursor: pointer; ${badgeStyle}">
+            <span class="plate-badge-text" ${badgeTextStyle}>🚗 ${escapeHtml(entry.plate)}</span>
+          </div>
+          <div class="item-details">
+            <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
+            <span class="item-meta">· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
+            <span class="item-meta">· 📅 ${escapeHtml(dataCriacao)}</span>
+            <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
+            ${ofName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(ofName)}</strong></div>` : ''}
+            <div style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">🕒 Atualizado: ${escapeHtml(dataAtualizacao)}</div>
+          </div>
+        </div>
+        <div class="actions card-actions-grid">
+          <div class="btn-row">
+            <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">📸 Fotos</button>
+            <button class="action-btn" type="button" data-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
+            <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
+            <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
+          </div>
+          <div class="btn-row" style="margin-top: 4px;">
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar Vistoria (Texto + Mídias)
+            </button>
+          </div>
+        </div>
+      </li>
+    `;
+  }
+}
 
 function getAllAvailableDates(oficinaId = null) {
   const dateSet = new Set();
@@ -248,24 +346,11 @@ function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
-        // Force checking for updates immediately on load
         registration.update();
       })
       .catch((error) => {
         console.warn('Registro do service worker falhou', error);
       });
-
-    // Auto-reload when service worker updates to apply changes in real-time
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      window.location.reload();
-    });
-  }
-}
-
-function openSystemSettings() {
-  const modal = document.getElementById('systemSettingsModal');
-  if (modal) {
-    modal.style.display = 'flex';
   }
 }
 
@@ -668,7 +753,9 @@ if (copyReportPreviewBtn) {
 if (whatsappReportPreviewBtn) {
   whatsappReportPreviewBtn.addEventListener('click', () => {
     if (!currentReportModalId) return;
-    shareVistoriaWhatsApp(currentReportModalId, 'text');
+    const targetId = currentReportModalId;
+    closeReportPreviewModal();
+    shareVistoriaWhatsAppSequence(targetId);
   });
 }
 
@@ -762,84 +849,6 @@ function normalizePlate(value) {
 
 function isValidPlate(value) {
   return value && value.trim().length > 0;
-}
-
-function updateFormDisplay() {
-  const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
-  const isSupervisao = selectedDay === 'Supervisão';
-  const isSeguradoras = selectedDay === 'Seguradoras';
-  const isOficinas = selectedDay === 'Oficinas';
-  const isTotalSemana = selectedDay === 'Total da semana';
-  const isTodasVistorias = selectedDay === 'Todas as vistorias';
-
-  const formCardEl = document.getElementById('formCard');
-  const recordsCardEl = document.getElementById('recordsCard');
-  const vistoriaTypeTabsCardEl = document.getElementById('vistoriaTypeTabsCard');
-  const supervisaoFormCardEl = document.getElementById('supervisaoFormCard');
-  const supervisaoRecordsCardEl = document.getElementById('supervisaoRecordsCard');
-  const insurerCardEl = document.getElementById('insurerCard');
-  const oficinaCardEl = document.getElementById('oficinaCard');
-  const summaryGridEl = document.getElementById('summaryGrid');
-
-  if (formCardEl) {
-    formCardEl.hidden = !isWeekday;
-    formCardEl.style.display = isWeekday ? 'block' : 'none';
-  }
-  if (recordsCardEl) {
-    recordsCardEl.hidden = !(isWeekday || isTotalSemana || isTodasVistorias);
-    recordsCardEl.style.display = (isWeekday || isTotalSemana || isTodasVistorias) ? 'block' : 'none';
-  }
-  if (vistoriaTypeTabsCardEl) {
-    vistoriaTypeTabsCardEl.hidden = !isWeekday;
-    vistoriaTypeTabsCardEl.style.display = isWeekday ? 'block' : 'none';
-  }
-
-  if (supervisaoFormCardEl) {
-    supervisaoFormCardEl.hidden = !isSupervisao;
-    supervisaoFormCardEl.style.display = isSupervisao ? 'block' : 'none';
-  }
-  if (supervisaoRecordsCardEl) {
-    supervisaoRecordsCardEl.hidden = !isSupervisao;
-    supervisaoRecordsCardEl.style.display = isSupervisao ? 'block' : 'none';
-  }
-
-  if (insurerCardEl) {
-    insurerCardEl.hidden = !isSeguradoras;
-    insurerCardEl.style.display = isSeguradoras ? 'block' : 'none';
-  }
-  if (oficinaCardEl) {
-    oficinaCardEl.hidden = !isOficinas;
-    oficinaCardEl.style.display = isOficinas ? 'block' : 'none';
-  }
-  if (summaryGridEl) {
-    summaryGridEl.style.display = (isTotalSemana || isTodasVistorias) ? 'grid' : 'none';
-  }
-}
-
-function updateFormState() {
-  updateFormDisplay();
-}
-
-function updateDayTabs() {
-  const dayTabsEl = document.getElementById('dayTabs');
-  if (dayTabsEl) {
-    dayTabsEl.querySelectorAll('.tab-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.day === selectedDay);
-    });
-  }
-  updateFormDisplay();
-}
-
-function updateTypeButtonsHighlight() {
-  if (vistoriaTypeTabs) {
-    vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
-      b.classList.toggle('active', b.dataset.type === (selectedType || 'Inicial'));
-    });
-  }
-}
-
-function updateInsurerButtonsHighlight() {
-  // Safe stub
 }
 
 function cancelEdit() {
@@ -1194,68 +1203,251 @@ function render() {
     clearSearchButton.hidden = !query;
     installButton.hidden = !deferredPrompt;
 
-    if (selectedOficinaForTodasVistorias === null) {
-      if (reportCard) reportCard.hidden = true;
-      if (formCard) formCard.hidden = true;
-      if (recordsCard) recordsCard.hidden = false;
-      
-      const allDates = getAllAvailableDates();
-      const totalAllRecords = items.length + supervisoes.length;
+    if (reportCard) reportCard.hidden = true;
+    if (formCard) formCard.hidden = true;
+    if (recordsCard) recordsCard.hidden = false;
 
-      const filteredOficinas = oficinas.filter(o => 
-        o.name.toLowerCase().includes(query)
-      );
+    const allDates = getAllAvailableDates();
+    const totalAllRecords = items.length + supervisoes.length;
 
-      const oficinaRecordsCount = (oId) => {
-        if (selectedTodasVistoriasDateFilter === 'Todas') {
-          const vCount = items.filter(i => i.oficinaId === oId).length;
-          const sCount = supervisoes.filter(s => s.oficinaId === oId).length;
-          return vCount + sCount;
-        } else {
-          const counts = countRecordsForDate(selectedTodasVistoriasDateFilter, oId);
-          return counts.total;
-        }
-      };
-
-      if (!filteredOficinas.length) {
-        itemList.innerHTML = '<li class="empty">Nenhuma oficina cadastrada ou encontrada.</li>';
-        return;
+    function attachCardActionListeners() {
+      itemList.querySelectorAll('[data-action]').forEach((button) => {
+        button.addEventListener('click', () => handleAction(button.dataset.action, button.dataset.id));
+      });
+      itemList.querySelectorAll('[data-super-action]').forEach((button) => {
+        button.addEventListener('click', () => handleSupervisaoAction(button.dataset.superAction, button.dataset.id));
+      });
+      const toggleVistoriasBtn = itemList.querySelector('#toggleFilterVistorias');
+      const toggleSupervisoesBtn = itemList.querySelector('#toggleFilterSupervisoes');
+      if (toggleVistoriasBtn) {
+        toggleVistoriasBtn.addEventListener('click', () => {
+          selectedTodasVistoriasFilter = 'Vistorias';
+          render();
+        });
       }
-      
-      itemList.innerHTML = `
+      if (toggleSupervisoesBtn) {
+        toggleSupervisoesBtn.addEventListener('click', () => {
+          selectedTodasVistoriasFilter = 'Supervisões';
+          render();
+        });
+      }
+    }
+
+    // =========================================================================
+    // CASO 1: BUSCA GLOBAL POR DIGITAÇÃO (Placa, Seguradora, Dia, Oficina, etc.)
+    // =========================================================================
+    if (query) {
+      const q = query.trim().toLowerCase();
+      const filteredVistorias = items.filter(item => {
+        const dStr = item.date ? formatDateString(item.date) : '';
+        const ofName = item.oficinaName || (oficinas.find(o => o.id === item.oficinaId) ? oficinas.find(o => o.id === item.oficinaId).name : '');
+        const fullText = `${item.date || ''} ${dStr} ${item.day || ''} ${item.plate || ''} ${item.provider || ''} ${item.type || ''} ${ofName} ${JSON.stringify(item.details || {})}`.toLowerCase();
+        return fullText.includes(q);
+      });
+
+      const filteredSupervisoes = supervisoes.filter(s => {
+        const dStr = s.date ? formatDateString(s.date) : '';
+        const ofName = s.oficinaName || (oficinas.find(o => o.id === s.oficinaId) ? oficinas.find(o => o.id === s.oficinaId).name : '');
+        const fullText = `${s.date || ''} ${dStr} ${s.day || ''} ${s.vehicle || ''} ${s.plate || ''} ${s.attended || ''} ${s.stage || ''} ${ofName} ${s.parts || ''} ${s.other || ''}`.toLowerCase();
+        return fullText.includes(q);
+      });
+
+      let listToDisplay = [];
+      if (selectedTodasVistoriasFilter === 'Vistorias') {
+        listToDisplay = filteredVistorias.map(i => ({ ...i, isSupervisao: false }));
+        listToDisplay.sort((a, b) => b.id.localeCompare(a.id));
+      } else {
+        listToDisplay = filteredSupervisoes.map(s => ({ ...s, isSupervisao: true }));
+        listToDisplay.sort((a, b) => {
+          const timeA = a.updatedAtTime || Number(a.id) || 0;
+          const timeB = b.updatedAtTime || Number(b.id) || 0;
+          return timeB - timeA;
+        });
+      }
+
+      const headerHtml = `
         <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
-          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%;">
-            <h3 style="margin: 0; color: #1e40af; font-size: 1rem; font-weight: 700;">Selecione uma oficina:</h3>
-            <button id="tabClearAllButton" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 999px; cursor: pointer;">
-              🧹 Limpar Tudo
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #eff6ff; border-radius: 12px; border: 1px solid #bfdbfe; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong style="color: #1e40af; font-size: 0.92rem;">🔍 Resultados para: "${escapeHtml(query)}"</strong>
+              <div style="font-size: 0.75rem; color: #3b82f6; font-weight: 600;">${filteredVistorias.length + filteredSupervisoes.length} registro(s) encontrado(s)</div>
+            </div>
+            <button id="clearGlobalSearchBtn" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #ffffff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 999px; cursor: pointer;">
+              ✕ Limpar Busca
             </button>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 12px; border-radius: 12px; border: 1px solid #e2e8f0; width: 100%; box-sizing: border-box;">
-            <label for="todasVistoriasDateSelectOuter" style="font-size: 0.8rem; font-weight: 700; color: #1e293b; white-space: nowrap;">📅 Filtrar por Data:</label>
-            <select id="todasVistoriasDateSelectOuter" class="custom-select" style="flex: 1; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-weight: 600; font-size: 0.85rem; background-color: #ffffff; color: #0f172a; cursor: pointer; outline: none;">
-              <option value="Todas"${selectedTodasVistoriasDateFilter === 'Todas' ? ' selected' : ''}>📅 Todas as Datas (${totalAllRecords})</option>
-              ${allDates.map(d => {
-                const counts = countRecordsForDate(d);
-                const weekday = getWeekdayFromDateString(d);
-                return `<option value="${d}"${selectedTodasVistoriasDateFilter === d ? ' selected' : ''}>📅 ${formatDateString(d)} (${weekday || ''}) - ${counts.total} registros</option>`;
-              }).join('')}
-            </select>
+          <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+              Vistorias (${filteredVistorias.length})
+            </button>
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+              Supervisões (${filteredSupervisoes.length})
+            </button>
           </div>
         </li>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; width: 100%;">
-          ${filteredOficinas.map(o => {
-            const count = oficinaRecordsCount(o.id);
-            const isLongName = o.name && o.name.length > 20;
-            const extraStyle = isLongName ? 'font-size: 0.7rem; padding: 14px 6px; white-space: normal; word-break: break-word;' : '';
-            return `
-              <button class="menu-btn" type="button" data-oficina-btn-id="${o.id}" style="width: 100%; text-align: center; padding: 14px 12px; font-weight: 700; border-radius: 14px; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; cursor: pointer; transition: all 0.2s; ${extraStyle}">
-                ${escapeHtml(o.name)} <span style="font-size: 0.8em; opacity: 0.85;">(${count})</span>
+      `;
+
+      const itemsHtml = listToDisplay.map(renderVistoriaOrSupervisaoCard).join('');
+      itemList.innerHTML = headerHtml + (listToDisplay.length ? itemsHtml : `<li class="empty">Nenhum registro de ${selectedTodasVistoriasFilter.toLowerCase()} encontrado para "${escapeHtml(query)}".</li>`);
+
+      const clearBtn = itemList.querySelector('#clearGlobalSearchBtn');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          searchInput.value = '';
+          render();
+          searchInput.focus();
+        });
+      }
+      attachCardActionListeners();
+      return;
+    }
+
+    // =========================================================================
+    // CASO 2: VISUALIZANDO UMA OFICINA ESPECÍFICA
+    // =========================================================================
+    if (selectedOficinaForTodasVistorias !== null) {
+      const o = oficinas.find(oficina => oficina.id === selectedOficinaForTodasVistorias) || { name: 'Sem oficina' };
+
+      const filteredVistorias = items.filter(item => {
+        if (item.oficinaId !== selectedOficinaForTodasVistorias) return false;
+        if (selectedTodasVistoriasDateFilter !== 'Todas' && item.date !== selectedTodasVistoriasDateFilter) return false;
+        return true;
+      });
+      const filteredSupervisoes = supervisoes.filter(s => {
+        if (s.oficinaId !== selectedOficinaForTodasVistorias) return false;
+        if (selectedTodasVistoriasDateFilter !== 'Todas' && s.date !== selectedTodasVistoriasDateFilter) return false;
+        return true;
+      });
+      
+      let listToDisplay = [];
+      if (selectedTodasVistoriasFilter === 'Vistorias') {
+        listToDisplay = filteredVistorias.map(i => ({ ...i, isSupervisao: false }));
+        listToDisplay.sort((a, b) => b.id.localeCompare(a.id));
+      } else {
+        listToDisplay = filteredSupervisoes.map(s => ({ ...s, isSupervisao: true }));
+        listToDisplay.sort((a, b) => {
+          const timeA = a.updatedAtTime || Number(a.id) || 0;
+          const timeB = b.updatedAtTime || Number(b.id) || 0;
+          return timeB - timeA;
+        });
+      }
+      
+      const headerHtml = `
+        <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
+            <strong style="color: #15803d; font-size: 0.95rem;">🏢 Oficina: ${escapeHtml(o.name)}</strong>
+            <button id="backToOficinasList" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 999px; cursor: pointer;">
+              ← Voltar às Oficinas
+            </button>
+          </div>
+          <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+              Vistorias (${filteredVistorias.length})
+            </button>
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+              Supervisões (${filteredSupervisoes.length})
+            </button>
+          </div>
+        </li>
+      `;
+
+      const itemsHtml = listToDisplay.map(renderVistoriaOrSupervisaoCard).join('');
+      itemList.innerHTML = headerHtml + (listToDisplay.length ? itemsHtml : `<li class="empty">Nenhum registro de ${selectedTodasVistoriasFilter.toLowerCase()} encontrado para esta oficina.</li>`);
+      
+      const backBtn = itemList.querySelector('#backToOficinasList');
+      if (backBtn) {
+        backBtn.addEventListener('click', () => {
+          selectedOficinaForTodasVistorias = null;
+          showOficinasInTodasVistorias = true;
+          render();
+        });
+      }
+      attachCardActionListeners();
+      return;
+    }
+
+    // =========================================================================
+    // CASO 3: EXIBIR LISTA DE OFICINAS (Quando showOficinasInTodasVistorias === true)
+    // =========================================================================
+    if (showOficinasInTodasVistorias) {
+      const ofQuery = (todasVistoriasOficinaSearchQuery || '').trim().toLowerCase();
+      const filteredOficinas = ofQuery ? oficinas.filter(o => o.name.toLowerCase().includes(ofQuery)) : oficinas;
+
+      itemList.innerHTML = `
+        <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h3 style="margin: 0; color: #1e40af; font-size: 1rem; font-weight: 700;">🏢 Lista de Oficinas</h3>
+              <span style="font-size: 0.75rem; font-weight: 700; background: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 6px; border: 1px solid #bfdbfe;">${filteredOficinas.length} oficinas</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button id="btnOcultarOficinas" class="ghost-btn" style="font-size: 0.78rem; padding: 6px 12px; width: auto; font-weight: 700; background: #eff6ff; color: #1e40af; border: 1.5px solid #93c5fd; border-radius: 8px; cursor: pointer;">
+                ✕ Ocultar Oficinas
               </button>
+              <button id="tabClearAllButton" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 999px; cursor: pointer;">
+                🧹 Limpar Tudo
+              </button>
+            </div>
+          </div>
+
+          <!-- Campo de Busca por Digitação para Oficinas -->
+          <div style="position: relative; width: 100%;">
+            <input id="todasVistoriasOficinaSearchInput" type="text" placeholder="🔍 Digite para procurar a oficina..." value="${escapeHtml(todasVistoriasOficinaSearchQuery || '')}" style="width: 100%; padding: 9px 34px 9px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600; box-sizing: border-box; outline: none; background: #ffffff; color: #0f172a;" />
+            <button id="todasVistoriasOficinaSearchClearBtn" type="button" style="display: ${todasVistoriasOficinaSearchQuery ? 'block' : 'none'}; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.1rem; color: #94a3b8; cursor: pointer; padding: 4px;">✕</button>
+          </div>
+        </li>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+          ${filteredOficinas.map(o => {
+            const count = (items.filter(i => i.oficinaId === o.id).length) + (supervisoes.filter(s => s.oficinaId === o.id).length);
+            return `
+              <div class="oficina-list-card" data-oficina-btn-id="${o.id}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 1.25rem;">🏢</span>
+                  <strong style="color: #1e3a8a; font-size: 0.92rem;">${escapeHtml(o.name)}</strong>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 0.75rem; font-weight: 700; background: ${count > 0 ? '#eff6ff' : '#f1f5f9'}; color: ${count > 0 ? '#2563eb' : '#64748b'}; border: 1px solid ${count > 0 ? '#bfdbfe' : '#e2e8f0'}; padding: 3px 10px; border-radius: 999px;">
+                    ${count} registros
+                  </span>
+                  <span style="color: #94a3b8; font-size: 1.1rem; font-weight: bold;">›</span>
+                </div>
+              </div>
             `;
           }).join('')}
+          ${!filteredOficinas.length ? '<div style="text-align: center; padding: 16px; color: #64748b; font-size: 0.88rem;">Nenhuma oficina encontrada com esse nome.</div>' : ''}
         </div>
       `;
-      
+
+      const ofSearchInput = itemList.querySelector('#todasVistoriasOficinaSearchInput');
+      const ofClearBtn = itemList.querySelector('#todasVistoriasOficinaSearchClearBtn');
+      if (ofSearchInput) {
+        ofSearchInput.addEventListener('input', (e) => {
+          todasVistoriasOficinaSearchQuery = e.target.value;
+          render();
+          const freshInput = document.getElementById('todasVistoriasOficinaSearchInput');
+          if (freshInput) {
+            freshInput.focus();
+            const len = freshInput.value.length;
+            freshInput.setSelectionRange(len, len);
+          }
+        });
+      }
+      if (ofClearBtn) {
+        ofClearBtn.addEventListener('click', () => {
+          todasVistoriasOficinaSearchQuery = '';
+          render();
+        });
+      }
+
+      const btnOcultar = itemList.querySelector('#btnOcultarOficinas');
+      if (btnOcultar) {
+        btnOcultar.addEventListener('click', () => {
+          showOficinasInTodasVistorias = false;
+          render();
+        });
+      }
+
       const clearAllBtn = itemList.querySelector('#tabClearAllButton');
       if (clearAllBtn) {
         clearAllBtn.addEventListener('click', () => {
@@ -1277,14 +1469,6 @@ function render() {
         });
       }
 
-      const dateSelectOuter = itemList.querySelector('#todasVistoriasDateSelectOuter');
-      if (dateSelectOuter) {
-        dateSelectOuter.addEventListener('change', (e) => {
-          selectedTodasVistoriasDateFilter = e.target.value;
-          render();
-        });
-      }
-      
       itemList.querySelectorAll('[data-oficina-btn-id]').forEach(btn => {
         btn.addEventListener('click', () => {
           selectedOficinaForTodasVistorias = btn.dataset.oficinaBtnId;
@@ -1293,203 +1477,124 @@ function render() {
         });
       });
       return;
-    } else {
-      const o = oficinas.find(oficina => oficina.id === selectedOficinaForTodasVistorias) || { name: 'Sem oficina' };
-      const availableDatesForOficina = getAllAvailableDates(selectedOficinaForTodasVistorias);
-      const totalOficinaAllDates = countRecordsForDate(null, selectedOficinaForTodasVistorias);
-
-      const filteredVistorias = items.filter(item => {
-        if (item.oficinaId !== selectedOficinaForTodasVistorias) return false;
-        if (selectedTodasVistoriasDateFilter !== 'Todas' && item.date !== selectedTodasVistoriasDateFilter) return false;
-        if (query) {
-          return `${item.date} ${item.day} ${item.plate} ${item.provider} ${item.type || ''}`.toLowerCase().includes(query);
-        }
-        return true;
-      });
-      
-      const filteredSupervisoes = supervisoes.filter(s => {
-        if (s.oficinaId !== selectedOficinaForTodasVistorias) return false;
-        if (selectedTodasVistoriasDateFilter !== 'Todas' && s.date !== selectedTodasVistoriasDateFilter) return false;
-        if (query) {
-          return `${s.date} ${s.day} ${s.vehicle} ${s.attended} ${s.stage}`.toLowerCase().includes(query);
-        }
-        return true;
-      });
-      
-      let listToDisplay = [];
-      if (selectedTodasVistoriasFilter === 'Vistorias') {
-        listToDisplay = filteredVistorias.map(i => ({ ...i, isSupervisao: false }));
-        listToDisplay.sort((a, b) => b.id.localeCompare(a.id));
-      } else {
-        listToDisplay = filteredSupervisoes.map(s => ({ ...s, isSupervisao: true }));
-        listToDisplay.sort((a, b) => {
-          const timeA = a.updatedAtTime || Number(a.id) || 0;
-          const timeB = b.updatedAtTime || Number(b.id) || 0;
-          return timeB - timeA;
-        });
-      }
-      
-      let headerHtml = `
-        <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
-            <strong style="color: #15803d; font-size: 0.95rem;">Oficina: ${escapeHtml(o.name)}</strong>
-            <button id="backToOficinasList" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 999px; cursor: pointer;">
-              ← Voltar
-            </button>
-          </div>
-          <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
-            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-              Vistorias (${filteredVistorias.length})
-            </button>
-            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-              Supervisões (${filteredSupervisoes.length})
-            </button>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 12px; border-radius: 12px; border: 1px solid #e2e8f0; width: 100%; box-sizing: border-box;">
-            <label for="todasVistoriasDateSelectInner" style="font-size: 0.8rem; font-weight: 700; color: #1e293b; white-space: nowrap;">📅 Filtrar por Data:</label>
-            <select id="todasVistoriasDateSelectInner" class="custom-select" style="flex: 1; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-weight: 600; font-size: 0.85rem; background-color: #ffffff; color: #0f172a; cursor: pointer; outline: none;">
-              <option value="Todas"${selectedTodasVistoriasDateFilter === 'Todas' ? ' selected' : ''}>📅 Todas as Datas</option>
-              ${availableDatesForOficina.map(d => {
-                const counts = countRecordsForDate(d, o.id);
-                const weekday = getWeekdayFromDateString(d);
-                return `<option value="${d}"${selectedTodasVistoriasDateFilter === d ? ' selected' : ''}>📅 ${formatDateString(d)} (${weekday || ''}) - ${counts.total} registros</option>`;
-              }).join('')}
-            </select>
-          </div>
-        </li>
-      `;
-      
-      const badgeClasses = {
-        'Inicial': 'badge-inicial',
-        'Roubo Recuperado': 'badge-roubo',
-        'Incêndio': 'badge-incendio',
-        'Enchente': 'badge-enchente',
-        'Moto': 'badge-moto',
-        'Complemento': 'badge-complemento',
-        'Pós entrega': 'badge-pos',
-        'Vistoria Rio log': 'badge-riolog'
-      };
-
-      const itemsHtml = listToDisplay.map((entry) => {
-        if (entry.isSupervisao) {
-          const isLongVehicle = entry.vehicle && entry.vehicle.length > 20;
-          const mainInfoStyle = isLongVehicle ? 'style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;"' : '';
-          const badgeStyle = isLongVehicle ? 'style="width: 100% !important; max-width: 100% !important; min-width: 100% !important; justify-content: flex-start !important; padding: 5px 8px !important; box-sizing: border-box;"' : '';
-          const badgeTextStyle = isLongVehicle ? 'style="white-space: normal !important; word-break: break-word;"' : '';
-          const dataUnica = entry.updatedAt || entry.createdAt || (entry.date ? formatDateString(entry.date) : '—');
-
-          return `
-            <li class="item-card compact-item-card">
-              <div class="item-main-info" ${mainInfoStyle}>
-                <div class="plate-badge compact-plate-badge clickable-plate-link" data-super-action="open-report" data-id="${entry.id}" title="Clique para abrir o relatório" style="cursor: pointer; ${badgeStyle}">
-                  <span class="plate-badge-text" ${badgeTextStyle}>🚗 ${escapeHtml(entry.vehicle || entry.plate || 'Supervisão')}</span>
-                </div>
-                <div class="item-details">
-                  <strong class="item-provider">${escapeHtml(entry.attended ? 'Atendido: ' + entry.attended : 'Sem atendente')}</strong>
-                  ${entry.plate ? `<span class="item-meta">· Placa: <strong>${escapeHtml(entry.plate)}</strong></span>` : ''}
-                  <span class="badge-supervisao" style="margin-left: 6px;">
-                    ${escapeHtml(entry.stage || 'Supervisão')}
-                  </span>
-                  ${entry.oficinaName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(entry.oficinaName)}</strong></div>` : ''}
-                  ${entry.partsPending === 'Sim' ? `<div class="item-meta" style="color: #b91c1c; margin-top: 2px;">Peças: <strong>${escapeHtml(entry.parts || 'Pendentes')}</strong></div>` : ''}
-                  <div style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">🕒 ${escapeHtml(dataUnica)}</div>
-                </div>
-              </div>
-              <div class="actions card-actions-grid">
-                <div class="btn-row">
-                  <button class="action-btn" type="button" data-super-action="photos" data-id="${entry.id}">📸 Fotos</button>
-                  <button class="action-btn" type="button" data-super-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
-                  <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
-                  <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
-                </div>
-                <div class="btn-row">
-                  <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${entry.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">📝 Enviar Relatório</button>
-                  <button class="action-btn" type="button" data-super-action="share-whatsapp-media" data-id="${entry.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">🖼️ Enviar Mídias</button>
-                </div>
-              </div>
-            </li>
-          `;
-        } else {
-          const badgeClass = badgeClasses[entry.type || 'Inicial'] || 'badge-inicial';
-          const isLongPlate = entry.plate && entry.plate.length > 20;
-          const mainInfoStyle = isLongPlate ? 'style="flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;"' : '';
-          const badgeStyle = isLongPlate ? 'style="width: 100% !important; max-width: 100% !important; min-width: 100% !important; justify-content: flex-start !important; padding: 5px 8px !important; box-sizing: border-box;"' : '';
-          const badgeTextStyle = isLongPlate ? 'style="white-space: normal !important; word-break: break-word;"' : '';
-          const dataCriacao = entry.date ? formatDateString(entry.date) : (entry.createdAt || '—');
-          const dataAtualizacao = entry.updatedAt || entry.createdAt || '—';
-
-          return `
-            <li class="item-card compact-item-card">
-              <div class="item-main-info" ${mainInfoStyle}>
-                <div class="plate-badge compact-plate-badge clickable-plate-link" data-action="open-report" data-id="${entry.id}" title="Clique para abrir o relatório" style="cursor: pointer; ${badgeStyle}">
-                  <span class="plate-badge-text" ${badgeTextStyle}>🚗 ${escapeHtml(entry.plate)}</span>
-                </div>
-                <div class="item-details">
-                  <strong class="item-provider">${escapeHtml(entry.provider || 'Sem seguradora')}</strong>
-                  <span class="item-meta">· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
-                  <span class="item-meta">· 📅 ${escapeHtml(dataCriacao)}</span>
-                  <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
-                  <div style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">🕒 Atualizado: ${escapeHtml(dataAtualizacao)}</div>
-                </div>
-              </div>
-              <div class="actions card-actions-grid">
-                <div class="btn-row">
-                  <button class="action-btn" type="button" data-action="photos" data-id="${entry.id}">📸 Fotos</button>
-                  <button class="action-btn" type="button" data-action="open-folder" data-id="${entry.id}">📂 Pasta</button>
-                  <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
-                  <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
-                </div>
-                <div class="btn-row">
-                  <button class="action-btn" type="button" data-action="share-whatsapp-text" data-id="${entry.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">📝 Enviar Relatório</button>
-                  <button class="action-btn" type="button" data-action="share-whatsapp-media" data-id="${entry.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">🖼️ Enviar Mídias</button>
-                </div>
-              </div>
-            </li>
-          `;
-        }
-      }).join('');
-      
-      itemList.innerHTML = headerHtml + (listToDisplay.length ? itemsHtml : `<li class="empty">Nenhum registro de ${selectedTodasVistoriasFilter.toLowerCase()} encontrado para esta oficina no filtro selecionado.</li>`);
-      
-      const backBtn = itemList.querySelector('#backToOficinasList');
-      if (backBtn) {
-        backBtn.addEventListener('click', () => {
-          selectedOficinaForTodasVistorias = null;
-          render();
-        });
-      }
-      
-      const toggleVistoriasBtn = itemList.querySelector('#toggleFilterVistorias');
-      const toggleSupervisoesBtn = itemList.querySelector('#toggleFilterSupervisoes');
-      if (toggleVistoriasBtn) {
-        toggleVistoriasBtn.addEventListener('click', () => {
-          selectedTodasVistoriasFilter = 'Vistorias';
-          render();
-        });
-      }
-      if (toggleSupervisoesBtn) {
-        toggleSupervisoesBtn.addEventListener('click', () => {
-          selectedTodasVistoriasFilter = 'Supervisões';
-          render();
-        });
-      }
-
-      const dateSelectInner = itemList.querySelector('#todasVistoriasDateSelectInner');
-      if (dateSelectInner) {
-        dateSelectInner.addEventListener('change', (e) => {
-          selectedTodasVistoriasDateFilter = e.target.value;
-          render();
-        });
-      }
-      
-      itemList.querySelectorAll('[data-action]').forEach((button) => {
-        button.addEventListener('click', () => handleAction(button.dataset.action, button.dataset.id));
-      });
-      itemList.querySelectorAll('[data-super-action]').forEach((button) => {
-        button.addEventListener('click', () => handleSupervisaoAction(button.dataset.superAction, button.dataset.id));
-      });
-      return;
     }
+
+    // =========================================================================
+    // CASO 4 (PADRÃO): EXIBIR TODAS AS VISTORIAS E SUPERVISÕES (Com Botão Exibir Oficinas)
+    // =========================================================================
+    const isDateFiltered = selectedTodasVistoriasDateFilter !== 'Todas';
+    const selectedDate = selectedTodasVistoriasDateFilter;
+    const formattedDate = formatDateString(selectedDate);
+    const weekdayName = getWeekdayFromDateString(selectedDate) || '';
+
+    const filteredVistorias = isDateFiltered 
+      ? items.filter(item => item.date === selectedDate)
+      : items;
+
+    const filteredSupervisoes = isDateFiltered
+      ? supervisoes.filter(s => s.date === selectedDate)
+      : supervisoes;
+
+    let listToDisplay = [];
+    if (selectedTodasVistoriasFilter === 'Vistorias') {
+      listToDisplay = filteredVistorias.map(i => ({ ...i, isSupervisao: false }));
+      listToDisplay.sort((a, b) => b.id.localeCompare(a.id));
+    } else {
+      listToDisplay = filteredSupervisoes.map(s => ({ ...s, isSupervisao: true }));
+      listToDisplay.sort((a, b) => {
+        const timeA = a.updatedAtTime || Number(a.id) || 0;
+        const timeB = b.updatedAtTime || Number(b.id) || 0;
+        return timeB - timeA;
+      });
+    }
+
+    const dateLabelHtml = isDateFiltered
+      ? `<span style="color: #2563eb; font-weight: 800; background: #eff6ff; padding: 2px 8px; border-radius: 6px; border: 1px solid #bfdbfe; font-size: 0.85rem;">${formattedDate} (${weekdayName})</span>`
+      : `<span style="color: #64748b; font-weight: 700; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin-left: 4px;">Todas as Datas</span>`;
+
+    const headerHtml = `
+      <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap;">
+          <button id="btnExibirOficinas" class="ghost-btn" style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 8px 14px; font-weight: 700; background: #eff6ff; color: #1e40af; border: 1.5px solid #93c5fd; border-radius: 10px; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 1px 3px rgba(37,99,235,0.1);">
+            🏢 Exibir Oficinas (${oficinas.length})
+          </button>
+          <button id="tabClearAllButton" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 999px; cursor: pointer;">
+            🧹 Limpar Tudo
+          </button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px; background: #f8fafc; padding: 10px 12px; border-radius: 12px; border: 1px solid #e2e8f0; width: 100%; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">📅 Filtrar por Data:</span>
+              ${dateLabelHtml}
+            </div>
+            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700;">Total: ${isDateFiltered ? (filteredVistorias.length + filteredSupervisoes.length) : totalAllRecords}</span>
+          </div>
+          <select id="todasVistoriasDateSelect" class="custom-select" style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-weight: 600; font-size: 0.85rem; background-color: #ffffff; color: #0f172a; cursor: pointer; outline: none;">
+            <option value="Todas"${!isDateFiltered ? ' selected' : ''}>📅 Todas as Datas (${totalAllRecords})</option>
+            ${allDates.map(d => {
+              const counts = countRecordsForDate(d);
+              const wd = getWeekdayFromDateString(d);
+              return `<option value="${d}"${selectedDate === d ? ' selected' : ''}>📅 ${formatDateString(d)} (${wd || ''}) - ${counts.total} registros</option>`;
+            }).join('')}
+          </select>
+        </div>
+
+        <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
+          <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+            Vistorias (${filteredVistorias.length})
+          </button>
+          <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+            Supervisões (${filteredSupervisoes.length})
+          </button>
+        </div>
+      </li>
+    `;
+
+    const itemsHtml = listToDisplay.map(renderVistoriaOrSupervisaoCard).join('');
+    itemList.innerHTML = headerHtml + (listToDisplay.length ? itemsHtml : `<li class="empty">Nenhum registro de ${selectedTodasVistoriasFilter.toLowerCase()} encontrado${isDateFiltered ? ' para a data ' + formattedDate : ''}.</li>`);
+
+    const btnExibir = itemList.querySelector('#btnExibirOficinas');
+    if (btnExibir) {
+      btnExibir.addEventListener('click', () => {
+        showOficinasInTodasVistorias = true;
+        render();
+      });
+    }
+
+    const dateSelect = itemList.querySelector('#todasVistoriasDateSelect');
+    if (dateSelect) {
+      dateSelect.addEventListener('change', (e) => {
+        selectedTodasVistoriasDateFilter = e.target.value;
+        render();
+      });
+    }
+
+    const clearAllBtn = itemList.querySelector('#tabClearAllButton');
+    if (clearAllBtn) {
+      clearAllBtn.addEventListener('click', () => {
+        const verification = window.prompt(
+          '⚠️ AVISO DE SEGURANÇA:\n\n' +
+          'Esta ação irá apagar PERMANENTEMENTE todos os registros cadastrados (vistorias e supervisões) de todas as oficinas.\n' +
+          'Esta ação não poderá ser desfeita.\n\n' +
+          'Para confirmar que deseja prosseguir, digite a palavra APAGAR no campo abaixo:'
+        );
+        if (verification && verification.trim().toUpperCase() === 'APAGAR') {
+          items = [];
+          supervisoes = [];
+          saveItems();
+          saveSupervisoes();
+          selectedOficinaForTodasVistorias = null;
+          showOficinasInTodasVistorias = false;
+          render();
+          renderSupervisaoReport();
+        }
+      });
+    }
+
+    attachCardActionListeners();
+    return;
   }
 
   // Normal day filtering for regular vistorias
@@ -1579,9 +1684,10 @@ function render() {
             <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
             <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
           </div>
-          <div class="btn-row">
-            <button class="action-btn" type="button" data-action="share-whatsapp-text" data-id="${item.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">📝 Enviar Relatório</button>
-            <button class="action-btn" type="button" data-action="share-whatsapp-media" data-id="${item.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">🖼️ Enviar Mídias</button>
+          <div class="btn-row" style="margin-top: 4px;">
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar Vistoria (Texto + Mídias)
+            </button>
           </div>
         </div>
       </li>
@@ -1853,16 +1959,16 @@ function handleAction(action, id) {
     openPhotoManagerForId(id);
     return;
   }
+  if (action === 'share-whatsapp-sequence' || action === 'share-whatsapp-all' || action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-text' || action === 'share-report-text') {
+    shareVistoriaWhatsAppSequence(id);
+    return;
+  }
   if (action === 'share-whatsapp-text') {
     shareVistoriaWhatsApp(id, 'text');
     return;
   }
   if (action === 'share-whatsapp-media') {
     shareVistoriaWhatsApp(id, 'media');
-    return;
-  }
-  if (action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-text' || action === 'share-report-text') {
-    shareVistoriaWhatsApp(id);
     return;
   }
   if (action === 'delete') {
@@ -2856,31 +2962,6 @@ async function syncDataToServer() {
   }
 }
 
-function getWeekdayName(dateObj) {
-  const dayIndex = (dateObj || new Date()).getDay();
-  const map = {
-    1: 'Segunda',
-    2: 'Terça',
-    3: 'Quarta',
-    4: 'Quinta',
-    5: 'Sexta'
-  };
-  return map[dayIndex] || 'Segunda';
-}
-
-function formatDateString(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return dateStr;
-  } catch (e) {
-    return dateStr || '—';
-  }
-}
-
 function formatDateForDisplay(dateStr) {
   return formatDateString(dateStr);
 }
@@ -2993,7 +3074,11 @@ function escapeHtml(value) {
 }
 
 function updateTypeButtonsHighlight() {
-  // No-op (type is managed by sub-tabs)
+  if (vistoriaTypeTabs) {
+    vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.type === (selectedType || 'Inicial'));
+    });
+  }
 }
 
 function loadSupervisoes() {
@@ -3183,9 +3268,10 @@ function renderSupervisaoReport() {
               <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
               <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
             </div>
-            <div class="btn-row">
-              <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${s.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">📝 Enviar Relatório</button>
-              <button class="action-btn" type="button" data-super-action="share-whatsapp-media" data-id="${s.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">🖼️ Enviar Mídias</button>
+            <div class="btn-row" style="margin-top: 4px;">
+              <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${s.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+                📲 Compartilhar Supervisão (Texto + Mídias)
+              </button>
             </div>
           </div>
         </td>
@@ -3212,16 +3298,16 @@ function handleSupervisaoAction(action, id) {
     openInspectionFolderForId(id);
     return;
   }
+  if (action === 'share-whatsapp-sequence' || action === 'share-whatsapp-all' || action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-report-text') {
+    shareVistoriaWhatsAppSequence(id);
+    return;
+  }
   if (action === 'share-whatsapp-text') {
     shareVistoriaWhatsApp(id, 'text');
     return;
   }
-  if (action === 'share-whatsapp-media') {
+  if (action === 'share-whatsapp-media' || action === 'share-photos') {
     shareVistoriaWhatsApp(id, 'media');
-    return;
-  }
-  if (action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-report-text' || action === 'share-photos') {
-    shareVistoriaWhatsApp(id);
     return;
   }
   if (action === 'photos') {
@@ -3944,6 +4030,116 @@ function base64ToBlob(base64, mimeType = 'image/jpeg') {
   }
   return new Blob(byteArrays, { type: mimeType });
 }
+
+let pendingSequenceShare = null;
+let isCheckingSequenceShare = false;
+
+function showToastNotification(message, duration = 4000) {
+  let toast = document.getElementById('appToastNotification');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'appToastNotification';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4);
+      z-index: 99999;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      text-align: center;
+      max-width: 90%;
+      pointer-events: none;
+      border: 1px solid #334155;
+    `;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateX(-50%) translateY(0)';
+  
+  if (window._toastTimeout) clearTimeout(window._toastTimeout);
+  window._toastTimeout = setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(10px)';
+  }, duration);
+}
+
+// Compartilhamento Sequencial Automático (1 clique: Texto primeiro, depois Mídias no retorno)
+async function shareVistoriaWhatsAppSequence(id) {
+  const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
+  if (!item) {
+    alert('Registro não encontrado!');
+    return;
+  }
+  const vehicleName = (item.plate || item.vehicle || '').trim();
+  if (!vehicleName) {
+    alert('Nome do veículo ou placa inválido!');
+    return;
+  }
+
+  // Prepara o estado do segundo passo (fotos)
+  pendingSequenceShare = {
+    id: id,
+    vehicleName: vehicleName,
+    step: 'media',
+    timestamp: Date.now()
+  };
+  try {
+    sessionStorage.setItem('pending_sequence_share', JSON.stringify(pendingSequenceShare));
+  } catch(e) {}
+
+  showToastNotification('Passo 1/2: Enviando texto no WhatsApp. Ao voltar ao app, as fotos serão enviadas automaticamente!', 5000);
+
+  // Passo 1: Dispara o envio do texto para o WhatsApp
+  shareVistoriaWhatsApp(id, 'text');
+}
+window.shareVistoriaWhatsAppSequence = shareVistoriaWhatsAppSequence;
+
+function checkPendingSequenceShare() {
+  if (isCheckingSequenceShare) return;
+  let pending = pendingSequenceShare;
+  if (!pending) {
+    try {
+      const raw = sessionStorage.getItem('pending_sequence_share');
+      if (raw) pending = JSON.parse(raw);
+    } catch(e) {}
+  }
+
+  if (pending && pending.step === 'media') {
+    const elapsed = Date.now() - (pending.timestamp || 0);
+    // Dispara somente se o envio do texto ocorreu entre 800ms e 10 minutos atrás
+    if (elapsed > 800 && elapsed < 10 * 60 * 1000) {
+      isCheckingSequenceShare = true;
+      pendingSequenceShare = null;
+      try {
+        sessionStorage.removeItem('pending_sequence_share');
+      } catch(e) {}
+
+      setTimeout(() => {
+        showToastNotification('Passo 2/2: Abrindo fotos no WhatsApp para o mesmo contato...', 4000);
+        shareVistoriaWhatsApp(pending.id, 'media');
+        setTimeout(() => {
+          isCheckingSequenceShare = false;
+        }, 1500);
+      }, 600);
+    }
+  }
+}
+
+window.addEventListener('focus', checkPendingSequenceShare);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    checkPendingSequenceShare();
+  }
+});
 
 // Compartilha fotos + relatório. Se não há fotos, compartilha só o relatório.
 async function shareVistoriaWhatsApp(id, shareMode) {

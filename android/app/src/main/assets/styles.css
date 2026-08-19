@@ -1449,6 +1449,19 @@ html, body {
   transition: all 0.2s ease;
 }
 
+.oficina-list-card {
+  transition: all 0.15s ease-in-out;
+}
 
+.oficina-list-card:hover {
+  border-color: #93c5fd !important;
+  background-color: #f8faff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+}
 
-
+.oficina-list-card:active {
+  transform: scale(0.99);
+  background-color: #eff6ff !important;
+  border-color: #3b82f6 !important;
+}
