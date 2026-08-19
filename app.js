@@ -251,9 +251,10 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
             <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
-          <div class="btn-row">
-            <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${entry.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">📝 Enviar Relatório</button>
-            <button class="action-btn" type="button" data-super-action="share-whatsapp-media" data-id="${entry.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">🖼️ Enviar Mídias</button>
+          <div class="btn-row" style="margin-top: 4px;">
+            <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar Supervisão (Texto + Mídias)
+            </button>
           </div>
         </div>
       </li>
@@ -291,9 +292,10 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
             <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
-          <div class="btn-row">
-            <button class="action-btn" type="button" data-action="share-whatsapp-text" data-id="${entry.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">📝 Enviar Relatório</button>
-            <button class="action-btn" type="button" data-action="share-whatsapp-media" data-id="${entry.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">🖼️ Enviar Mídias</button>
+          <div class="btn-row" style="margin-top: 4px;">
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar Vistoria (Texto + Mídias)
+            </button>
           </div>
         </div>
       </li>
@@ -759,7 +761,9 @@ if (copyReportPreviewBtn) {
 if (whatsappReportPreviewBtn) {
   whatsappReportPreviewBtn.addEventListener('click', () => {
     if (!currentReportModalId) return;
-    shareVistoriaWhatsApp(currentReportModalId, 'text');
+    const targetId = currentReportModalId;
+    closeReportPreviewModal();
+    shareVistoriaWhatsAppSequence(targetId);
   });
 }
 
@@ -1688,9 +1692,10 @@ function render() {
             <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
             <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
           </div>
-          <div class="btn-row">
-            <button class="action-btn" type="button" data-action="share-whatsapp-text" data-id="${item.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">📝 Enviar Relatório</button>
-            <button class="action-btn" type="button" data-action="share-whatsapp-media" data-id="${item.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">🖼️ Enviar Mídias</button>
+          <div class="btn-row" style="margin-top: 4px;">
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar Vistoria (Texto + Mídias)
+            </button>
           </div>
         </div>
       </li>
@@ -1962,16 +1967,16 @@ function handleAction(action, id) {
     openPhotoManagerForId(id);
     return;
   }
+  if (action === 'share-whatsapp-sequence' || action === 'share-whatsapp-all' || action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-text' || action === 'share-report-text') {
+    shareVistoriaWhatsAppSequence(id);
+    return;
+  }
   if (action === 'share-whatsapp-text') {
     shareVistoriaWhatsApp(id, 'text');
     return;
   }
   if (action === 'share-whatsapp-media') {
     shareVistoriaWhatsApp(id, 'media');
-    return;
-  }
-  if (action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-text' || action === 'share-report-text') {
-    shareVistoriaWhatsApp(id);
     return;
   }
   if (action === 'delete') {
@@ -3271,9 +3276,10 @@ function renderSupervisaoReport() {
               <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
               <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
             </div>
-            <div class="btn-row">
-              <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${s.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">📝 Enviar Relatório</button>
-              <button class="action-btn" type="button" data-super-action="share-whatsapp-media" data-id="${s.id}" style="font-weight: 700; font-size: 0.78rem !important; padding: 9px 4px !important;">🖼️ Enviar Mídias</button>
+            <div class="btn-row" style="margin-top: 4px;">
+              <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${s.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+                📲 Compartilhar Supervisão (Texto + Mídias)
+              </button>
             </div>
           </div>
         </td>
@@ -3300,16 +3306,16 @@ function handleSupervisaoAction(action, id) {
     openInspectionFolderForId(id);
     return;
   }
+  if (action === 'share-whatsapp-sequence' || action === 'share-whatsapp-all' || action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-report-text') {
+    shareVistoriaWhatsAppSequence(id);
+    return;
+  }
   if (action === 'share-whatsapp-text') {
     shareVistoriaWhatsApp(id, 'text');
     return;
   }
-  if (action === 'share-whatsapp-media') {
+  if (action === 'share-whatsapp-media' || action === 'share-photos') {
     shareVistoriaWhatsApp(id, 'media');
-    return;
-  }
-  if (action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-report-text' || action === 'share-photos') {
-    shareVistoriaWhatsApp(id);
     return;
   }
   if (action === 'photos') {
@@ -4032,6 +4038,116 @@ function base64ToBlob(base64, mimeType = 'image/jpeg') {
   }
   return new Blob(byteArrays, { type: mimeType });
 }
+
+let pendingSequenceShare = null;
+let isCheckingSequenceShare = false;
+
+function showToastNotification(message, duration = 4000) {
+  let toast = document.getElementById('appToastNotification');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'appToastNotification';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4);
+      z-index: 99999;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      text-align: center;
+      max-width: 90%;
+      pointer-events: none;
+      border: 1px solid #334155;
+    `;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateX(-50%) translateY(0)';
+  
+  if (window._toastTimeout) clearTimeout(window._toastTimeout);
+  window._toastTimeout = setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(10px)';
+  }, duration);
+}
+
+// Compartilhamento Sequencial Automático (1 clique: Texto primeiro, depois Mídias no retorno)
+async function shareVistoriaWhatsAppSequence(id) {
+  const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
+  if (!item) {
+    alert('Registro não encontrado!');
+    return;
+  }
+  const vehicleName = (item.plate || item.vehicle || '').trim();
+  if (!vehicleName) {
+    alert('Nome do veículo ou placa inválido!');
+    return;
+  }
+
+  // Prepara o estado do segundo passo (fotos)
+  pendingSequenceShare = {
+    id: id,
+    vehicleName: vehicleName,
+    step: 'media',
+    timestamp: Date.now()
+  };
+  try {
+    sessionStorage.setItem('pending_sequence_share', JSON.stringify(pendingSequenceShare));
+  } catch(e) {}
+
+  showToastNotification('Passo 1/2: Enviando texto no WhatsApp. Ao voltar ao app, as fotos serão enviadas automaticamente!', 5000);
+
+  // Passo 1: Dispara o envio do texto para o WhatsApp
+  shareVistoriaWhatsApp(id, 'text');
+}
+window.shareVistoriaWhatsAppSequence = shareVistoriaWhatsAppSequence;
+
+function checkPendingSequenceShare() {
+  if (isCheckingSequenceShare) return;
+  let pending = pendingSequenceShare;
+  if (!pending) {
+    try {
+      const raw = sessionStorage.getItem('pending_sequence_share');
+      if (raw) pending = JSON.parse(raw);
+    } catch(e) {}
+  }
+
+  if (pending && pending.step === 'media') {
+    const elapsed = Date.now() - (pending.timestamp || 0);
+    // Dispara somente se o envio do texto ocorreu entre 800ms e 10 minutos atrás
+    if (elapsed > 800 && elapsed < 10 * 60 * 1000) {
+      isCheckingSequenceShare = true;
+      pendingSequenceShare = null;
+      try {
+        sessionStorage.removeItem('pending_sequence_share');
+      } catch(e) {}
+
+      setTimeout(() => {
+        showToastNotification('Passo 2/2: Abrindo fotos no WhatsApp para o mesmo contato...', 4000);
+        shareVistoriaWhatsApp(pending.id, 'media');
+        setTimeout(() => {
+          isCheckingSequenceShare = false;
+        }, 1500);
+      }, 600);
+    }
+  }
+}
+
+window.addEventListener('focus', checkPendingSequenceShare);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    checkPendingSequenceShare();
+  }
+});
 
 // Compartilha fotos + relatório. Se não há fotos, compartilha só o relatório.
 async function shareVistoriaWhatsApp(id, shareMode) {
