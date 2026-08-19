@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.63';
+const CURRENT_APP_VERSION = 'v1.64';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -63,27 +63,6 @@ async function checkForSystemUpdates(showFeedback = false) {
     }
   }
 }
-
-async function autoUpdateAppOnStartup() {
-  try {
-    const res = await fetch('https://gestao-vistoria-inicial.vercel.app/version.json?t=' + Date.now(), {
-      cache: 'no-store'
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.version) {
-        const serverVersion = 'v' + data.version;
-        const activeVersion = CURRENT_APP_VERSION;
-        const lastUpdated = localStorage.getItem('last_auto_updated_version');
-        if (serverVersion !== activeVersion && lastUpdated !== serverVersion) {
-          console.log(`[AutoUpdate] Atualizando app de ${activeVersion} para ${serverVersion}`);
-          window.location.href = 'dashboard.html?t=' + Date.now();
-        }
-      }
-    }
-  } catch(e) {}
-}
-setTimeout(autoUpdateAppOnStartup, 1500);
 
 const STORAGE_KEY = 'web-system-items-v1';
 const form = document.getElementById('itemForm');
