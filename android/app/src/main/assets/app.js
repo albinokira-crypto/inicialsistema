@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.62';
+const CURRENT_APP_VERSION = 'v1.63';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -4151,7 +4151,7 @@ async function checkHasMediaForVehicle(vehicleName, isSupervisao) {
 }
 window.checkHasMediaForVehicle = checkHasMediaForVehicle;
 
-// Compartilhamento Sequencial Automático (1 clique: Texto primeiro, depois Mídias no retorno)
+// Compartilhamento Sequencial Automático (1 clique: Texto primeiro, depois Mídias no retorno se houver fotos)
 async function shareVistoriaWhatsAppSequence(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
@@ -4166,19 +4166,35 @@ async function shareVistoriaWhatsAppSequence(id) {
 
   const isSupervisao = !items.some(entry => entry.id === id);
 
-  // Prepara o estado do segundo passo (fotos)
-  pendingSequenceShare = {
-    id: id,
-    vehicleName: vehicleName,
-    isSupervisao: isSupervisao,
-    step: 'media',
-    timestamp: Date.now()
-  };
-  try {
-    sessionStorage.setItem('pending_sequence_share', JSON.stringify(pendingSequenceShare));
-  } catch(e) {}
+  // Verifica se o veículo possui fotos/mídias cadastradas
+  let hasMedia = true;
+  if (isSupervisao) {
+    hasMedia = await checkHasMediaForVehicle(vehicleName, true);
+  }
 
-  showToastNotification('Passo 1/2: Enviando texto no WhatsApp. Ao voltar ao app, as fotos serão enviadas automaticamente!', 5000);
+  if (hasMedia) {
+    // Prepara o estado do segundo passo (fotos) apenas se houver fotos
+    pendingSequenceShare = {
+      id: id,
+      vehicleName: vehicleName,
+      isSupervisao: isSupervisao,
+      step: 'media',
+      timestamp: Date.now()
+    };
+    try {
+      sessionStorage.setItem('pending_sequence_share', JSON.stringify(pendingSequenceShare));
+    } catch(e) {}
+
+    showToastNotification('Passo 1/2: Enviando texto no WhatsApp. Ao voltar ao app, as fotos serão enviadas automaticamente!', 5000);
+  } else {
+    // Supervisão sem foto: Limpa qualquer pendência para NUNCA reabrir o WhatsApp no retorno
+    pendingSequenceShare = null;
+    try {
+      sessionStorage.removeItem('pending_sequence_share');
+    } catch(e) {}
+
+    showToastNotification('Enviando relatório da supervisão no WhatsApp...', 3000);
+  }
 
   // Passo 1: Dispara o envio do texto para o WhatsApp
   shareVistoriaWhatsApp(id, 'text');
@@ -4204,6 +4220,15 @@ async function checkPendingSequenceShare() {
       try {
         sessionStorage.removeItem('pending_sequence_share');
       } catch(e) {}
+
+      // Se for supervisão, confere mais uma vez se realmente tem fotos antes de abrir WhatsApp
+      if (pending.isSupervisao) {
+        const hasMedia = await checkHasMediaForVehicle(pending.vehicleName, true);
+        if (!hasMedia) {
+          isCheckingSequenceShare = false;
+          return;
+        }
+      }
 
       setTimeout(() => {
         showToastNotification('Passo 2/2: Abrindo fotos no WhatsApp para o mesmo contato...', 4000);
