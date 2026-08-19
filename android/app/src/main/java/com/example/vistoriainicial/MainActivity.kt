@@ -1463,7 +1463,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
 
             val filesToShare = ArrayList<java.io.File>()
             val addedNames = HashSet<String>()
-            val isSupervision = reportText.contains("Supervisão")
 
             fun checkAndAddFile(file: java.io.File) {
                 if (file.exists() && file.isFile && file.length() > 0) {
@@ -1473,14 +1472,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                         name.endsWith(".mov") || name.endsWith(".3gp") ||
                         name.endsWith(".mkv") || name.endsWith(".webm")) {
                         if (!addedNames.contains(name)) {
-                            if (isSupervision) {
-                                val fileDate = java.util.Date(file.lastModified())
-                                val today = java.util.Date()
-                                val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
-                                if (fmt.format(fileDate) != fmt.format(today)) {
-                                    return
-                                }
-                            }
                             addedNames.add(name)
                             filesToShare.add(file)
                         }
@@ -1568,14 +1559,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                                             lowerName.endsWith(".mov") || lowerName.endsWith(".3gp") ||
                                             lowerName.endsWith(".mkv") || lowerName.endsWith(".webm")) {
                                             if (!addedNames.contains(lowerName)) {
-                                                if (isSupervision) {
-                                                    val fileDate = java.util.Date(file.lastModified())
-                                                    val today = java.util.Date()
-                                                    val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
-                                                    if (fmt.format(fileDate) != fmt.format(today)) {
-                                                        continue
-                                                    }
-                                                }
                                                 try {
                                                     val tempFile = java.io.File(cacheDir, name)
                                                     activity.contentResolver.openInputStream(file.uri)?.use { input ->

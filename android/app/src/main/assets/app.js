@@ -77,20 +77,7 @@ async function autoUpdateAppOnStartup() {
         const lastUpdated = localStorage.getItem('last_auto_updated_version');
         if (serverVersion !== activeVersion && lastUpdated !== serverVersion) {
           console.log(`[AutoUpdate] Atualizando app de ${activeVersion} para ${serverVersion}`);
-          localStorage.setItem('last_auto_updated_version', serverVersion);
-          if ('caches' in window) {
-            const keys = await caches.keys();
-            for (const k of keys) await caches.delete(k);
-          }
-          if ('serviceWorker' in navigator) {
-            const regs = await navigator.serviceWorker.getRegistrations();
-            for (const r of regs) await r.unregister();
-          }
-          if (window.AndroidInterface && typeof window.AndroidInterface.forceAppReload === 'function') {
-            window.AndroidInterface.forceAppReload();
-          } else {
-            window.location.reload(true);
-          }
+          window.location.href = 'dashboard.html?t=' + Date.now();
         }
       }
     }
@@ -3919,25 +3906,11 @@ async function forceAppRefresh() {
   const btn = document.getElementById('forceRefreshAppBtn');
   if (btn) {
     btn.disabled = true;
-    btn.textContent = '⏳ Atualizando sistema...';
+    btn.textContent = '⏳ Recarregando sistema...';
   }
 
-  try {
-    if ('serviceWorker' in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      for (const reg of regs) {
-        await reg.update();
-      }
-    }
-  } catch (e) {
-    console.warn("Erro ao atualizar serviceWorker:", e);
-  }
-
-  if (window.AndroidInterface && typeof window.AndroidInterface.forceAppReload === 'function') {
-    window.AndroidInterface.forceAppReload();
-  } else {
-    window.location.href = 'https://gestao-vistoria-inicial.vercel.app/dashboard.html?t=' + Date.now();
-  }
+  // Recarrega diretamente a página web com timestamp sem acionar limpeza nativa de cache
+  window.location.href = 'dashboard.html?t=' + Date.now();
 }
 window.forceAppRefresh = forceAppRefresh;
 
@@ -4296,18 +4269,29 @@ async function shareVistoriaWhatsApp(id, shareMode) {
       }
     }
 
-    if (shareMode === 'text' && typeof window.AndroidInterface.shareVistoriaWhatsAppText === 'function') {
-      window.AndroidInterface.shareVistoriaWhatsAppText(vehicleName, reportText);
-      return;
-    } else if (shareMode === 'media' && typeof window.AndroidInterface.shareVistoriaWhatsAppMedia === 'function') {
-      window.AndroidInterface.shareVistoriaWhatsAppMedia(vehicleName, reportText);
-      return;
-    } else if (typeof window.AndroidInterface.shareVistoriaWhatsApp === 'function') {
-      window.AndroidInterface.shareVistoriaWhatsApp(vehicleName, reportText);
-      return;
-    } else if (typeof window.AndroidInterface.startShareWithDate === 'function') {
-      window.AndroidInterface.startShareWithDate(vehicleName, reportText, '');
-      return;
+    if (shareMode === 'text') {
+      if (typeof window.AndroidInterface.shareVistoriaWhatsAppText === 'function') {
+        window.AndroidInterface.shareVistoriaWhatsAppText(vehicleName, reportText);
+        return;
+      } else if (typeof window.AndroidInterface.shareText === 'function') {
+        window.AndroidInterface.shareText(`Relatório: ${vehicleName}`, reportText);
+        return;
+      } else {
+        const encodedText = encodeURIComponent(reportText);
+        window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+        return;
+      }
+    } else if (shareMode === 'media') {
+      if (typeof window.AndroidInterface.shareVistoriaWhatsAppMedia === 'function') {
+        window.AndroidInterface.shareVistoriaWhatsAppMedia(vehicleName, reportText);
+        return;
+      } else if (typeof window.AndroidInterface.shareVistoriaWhatsApp === 'function') {
+        window.AndroidInterface.shareVistoriaWhatsApp(vehicleName, reportText);
+        return;
+      } else if (typeof window.AndroidInterface.startShareWithDate === 'function') {
+        window.AndroidInterface.startShareWithDate(vehicleName, reportText, '');
+        return;
+      }
     }
   }
 
