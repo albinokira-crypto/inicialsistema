@@ -5,6 +5,7 @@ window.openMenuSection = openMenuSection;
 
 function backToHomeMenu() {
   selectedOficinaForTodasVistorias = null;
+  showOficinasInTodasVistorias = false;
   showWelcomeScreen();
   if (typeof window.scrollTo === 'function') {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -203,6 +204,7 @@ let selectedOficinaForTodasVistorias = null;
 let selectedTodasVistoriasFilter = 'Vistorias';
 let selectedTodasVistoriasDateFilter = 'Todas';
 let todasVistoriasOficinaSearchQuery = '';
+let showOficinasInTodasVistorias = false;
 
 function renderVistoriaOrSupervisaoCard(entry) {
   const badgeClasses = {
@@ -1305,95 +1307,21 @@ function render() {
     }
 
     // =========================================================================
-    // CASO 2: FILTRO POR DATA SELECIONADA (Exibe vistorias e supervisões da data)
-    // =========================================================================
-    if (selectedTodasVistoriasDateFilter !== 'Todas') {
-      const selectedDate = selectedTodasVistoriasDateFilter;
-      const formattedDate = formatDateString(selectedDate);
-      const weekdayName = getWeekdayFromDateString(selectedDate) || '';
-
-      const filteredVistorias = items.filter(item => item.date === selectedDate);
-      const filteredSupervisoes = supervisoes.filter(s => s.date === selectedDate);
-
-      let listToDisplay = [];
-      if (selectedTodasVistoriasFilter === 'Vistorias') {
-        listToDisplay = filteredVistorias.map(i => ({ ...i, isSupervisao: false }));
-        listToDisplay.sort((a, b) => b.id.localeCompare(a.id));
-      } else {
-        listToDisplay = filteredSupervisoes.map(s => ({ ...s, isSupervisao: true }));
-        listToDisplay.sort((a, b) => {
-          const timeA = a.updatedAtTime || Number(a.id) || 0;
-          const timeB = b.updatedAtTime || Number(b.id) || 0;
-          return timeB - timeA;
-        });
-      }
-
-      const headerHtml = `
-        <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
-          <div style="display: flex; flex-direction: column; gap: 6px; background: #f8fafc; padding: 10px 12px; border-radius: 12px; border: 1px solid #e2e8f0; width: 100%; box-sizing: border-box;">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">📅 Filtrar por Data:</span>
-                <span style="color: #2563eb; font-weight: 800; background: #eff6ff; padding: 2px 8px; border-radius: 6px; border: 1px solid #bfdbfe; font-size: 0.85rem;">
-                  ${formattedDate} (${weekdayName})
-                </span>
-              </div>
-              <button id="btnVerTodasOficinas" class="ghost-btn" style="font-size: 0.75rem; padding: 4px 10px; font-weight: 700; background: #ffffff; color: #1e40af; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
-                🏢 Ver Oficinas
-              </button>
-            </div>
-            <select id="todasVistoriasDateSelect" class="custom-select" style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-weight: 600; font-size: 0.85rem; background-color: #ffffff; color: #0f172a; cursor: pointer; outline: none;">
-              <option value="Todas">📅 Todas as Datas (${totalAllRecords})</option>
-              ${allDates.map(d => {
-                const counts = countRecordsForDate(d);
-                const wd = getWeekdayFromDateString(d);
-                return `<option value="${d}"${selectedDate === d ? ' selected' : ''}>📅 ${formatDateString(d)} (${wd || ''}) - ${counts.total} registros</option>`;
-              }).join('')}
-            </select>
-          </div>
-
-          <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
-            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-              Vistorias (${filteredVistorias.length})
-            </button>
-            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-              Supervisões (${filteredSupervisoes.length})
-            </button>
-          </div>
-        </li>
-      `;
-
-      const itemsHtml = listToDisplay.map(renderVistoriaOrSupervisaoCard).join('');
-      itemList.innerHTML = headerHtml + (listToDisplay.length ? itemsHtml : `<li class="empty">Nenhum registro de ${selectedTodasVistoriasFilter.toLowerCase()} encontrado para a data ${formattedDate}.</li>`);
-
-      const backToAllBtn = itemList.querySelector('#btnVerTodasOficinas');
-      if (backToAllBtn) {
-        backToAllBtn.addEventListener('click', () => {
-          selectedTodasVistoriasDateFilter = 'Todas';
-          render();
-        });
-      }
-
-      const dateSelect = itemList.querySelector('#todasVistoriasDateSelect');
-      if (dateSelect) {
-        dateSelect.addEventListener('change', (e) => {
-          selectedTodasVistoriasDateFilter = e.target.value;
-          render();
-        });
-      }
-
-      attachCardActionListeners();
-      return;
-    }
-
-    // =========================================================================
-    // CASO 3: DENTRO DE UMA OFICINA ESPECÍFICA
+    // CASO 2: VISUALIZANDO UMA OFICINA ESPECÍFICA
     // =========================================================================
     if (selectedOficinaForTodasVistorias !== null) {
       const o = oficinas.find(oficina => oficina.id === selectedOficinaForTodasVistorias) || { name: 'Sem oficina' };
 
-      const filteredVistorias = items.filter(item => item.oficinaId === selectedOficinaForTodasVistorias);
-      const filteredSupervisoes = supervisoes.filter(s => s.oficinaId === selectedOficinaForTodasVistorias);
+      const filteredVistorias = items.filter(item => {
+        if (item.oficinaId !== selectedOficinaForTodasVistorias) return false;
+        if (selectedTodasVistoriasDateFilter !== 'Todas' && item.date !== selectedTodasVistoriasDateFilter) return false;
+        return true;
+      });
+      const filteredSupervisoes = supervisoes.filter(s => {
+        if (s.oficinaId !== selectedOficinaForTodasVistorias) return false;
+        if (selectedTodasVistoriasDateFilter !== 'Todas' && s.date !== selectedTodasVistoriasDateFilter) return false;
+        return true;
+      });
       
       let listToDisplay = [];
       if (selectedTodasVistoriasFilter === 'Vistorias') {
@@ -1434,6 +1362,7 @@ function render() {
       if (backBtn) {
         backBtn.addEventListener('click', () => {
           selectedOficinaForTodasVistorias = null;
+          showOficinasInTodasVistorias = true;
           render();
         });
       }
@@ -1442,90 +1371,205 @@ function render() {
     }
 
     // =========================================================================
-    // CASO 4: LISTA ELEGANTE DE OFICINAS (Com Busca Digitável e Filtro por Data)
+    // CASO 3: EXIBIR LISTA DE OFICINAS (Quando showOficinasInTodasVistorias === true)
     // =========================================================================
-    const ofQuery = (todasVistoriasOficinaSearchQuery || '').trim().toLowerCase();
-    const filteredOficinas = ofQuery ? oficinas.filter(o => o.name.toLowerCase().includes(ofQuery)) : oficinas;
+    if (showOficinasInTodasVistorias) {
+      const ofQuery = (todasVistoriasOficinaSearchQuery || '').trim().toLowerCase();
+      const filteredOficinas = ofQuery ? oficinas.filter(o => o.name.toLowerCase().includes(ofQuery)) : oficinas;
 
-    itemList.innerHTML = `
+      itemList.innerHTML = `
+        <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h3 style="margin: 0; color: #1e40af; font-size: 1rem; font-weight: 700;">🏢 Lista de Oficinas</h3>
+              <span style="font-size: 0.75rem; font-weight: 700; background: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 6px; border: 1px solid #bfdbfe;">${filteredOficinas.length} oficinas</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button id="btnOcultarOficinas" class="ghost-btn" style="font-size: 0.78rem; padding: 6px 12px; width: auto; font-weight: 700; background: #eff6ff; color: #1e40af; border: 1.5px solid #93c5fd; border-radius: 8px; cursor: pointer;">
+                ✕ Ocultar Oficinas
+              </button>
+              <button id="tabClearAllButton" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 999px; cursor: pointer;">
+                🧹 Limpar Tudo
+              </button>
+            </div>
+          </div>
+
+          <!-- Campo de Busca por Digitação para Oficinas -->
+          <div style="position: relative; width: 100%;">
+            <input id="todasVistoriasOficinaSearchInput" type="text" placeholder="🔍 Digite para procurar a oficina..." value="${escapeHtml(todasVistoriasOficinaSearchQuery || '')}" style="width: 100%; padding: 9px 34px 9px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600; box-sizing: border-box; outline: none; background: #ffffff; color: #0f172a;" />
+            <button id="todasVistoriasOficinaSearchClearBtn" type="button" style="display: ${todasVistoriasOficinaSearchQuery ? 'block' : 'none'}; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.1rem; color: #94a3b8; cursor: pointer; padding: 4px;">✕</button>
+          </div>
+        </li>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+          ${filteredOficinas.map(o => {
+            const count = (items.filter(i => i.oficinaId === o.id).length) + (supervisoes.filter(s => s.oficinaId === o.id).length);
+            return `
+              <div class="oficina-list-card" data-oficina-btn-id="${o.id}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 1.25rem;">🏢</span>
+                  <strong style="color: #1e3a8a; font-size: 0.92rem;">${escapeHtml(o.name)}</strong>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 0.75rem; font-weight: 700; background: ${count > 0 ? '#eff6ff' : '#f1f5f9'}; color: ${count > 0 ? '#2563eb' : '#64748b'}; border: 1px solid ${count > 0 ? '#bfdbfe' : '#e2e8f0'}; padding: 3px 10px; border-radius: 999px;">
+                    ${count} registros
+                  </span>
+                  <span style="color: #94a3b8; font-size: 1.1rem; font-weight: bold;">›</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+          ${!filteredOficinas.length ? '<div style="text-align: center; padding: 16px; color: #64748b; font-size: 0.88rem;">Nenhuma oficina encontrada com esse nome.</div>' : ''}
+        </div>
+      `;
+
+      const ofSearchInput = itemList.querySelector('#todasVistoriasOficinaSearchInput');
+      const ofClearBtn = itemList.querySelector('#todasVistoriasOficinaSearchClearBtn');
+      if (ofSearchInput) {
+        ofSearchInput.addEventListener('input', (e) => {
+          todasVistoriasOficinaSearchQuery = e.target.value;
+          render();
+          const freshInput = document.getElementById('todasVistoriasOficinaSearchInput');
+          if (freshInput) {
+            freshInput.focus();
+            const len = freshInput.value.length;
+            freshInput.setSelectionRange(len, len);
+          }
+        });
+      }
+      if (ofClearBtn) {
+        ofClearBtn.addEventListener('click', () => {
+          todasVistoriasOficinaSearchQuery = '';
+          render();
+        });
+      }
+
+      const btnOcultar = itemList.querySelector('#btnOcultarOficinas');
+      if (btnOcultar) {
+        btnOcultar.addEventListener('click', () => {
+          showOficinasInTodasVistorias = false;
+          render();
+        });
+      }
+
+      const clearAllBtn = itemList.querySelector('#tabClearAllButton');
+      if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', () => {
+          const verification = window.prompt(
+            '⚠️ AVISO DE SEGURANÇA:\n\n' +
+            'Esta ação irá apagar PERMANENTEMENTE todos os registros cadastrados (vistorias e supervisões) de todas as oficinas.\n' +
+            'Esta ação não poderá ser desfeita.\n\n' +
+            'Para confirmar que deseja prosseguir, digite a palavra APAGAR no campo abaixo:'
+          );
+          if (verification && verification.trim().toUpperCase() === 'APAGAR') {
+            items = [];
+            supervisoes = [];
+            saveItems();
+            saveSupervisoes();
+            selectedOficinaForTodasVistorias = null;
+            render();
+            renderSupervisaoReport();
+          }
+        });
+      }
+
+      itemList.querySelectorAll('[data-oficina-btn-id]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedOficinaForTodasVistorias = btn.dataset.oficinaBtnId;
+          selectedTodasVistoriasFilter = 'Vistorias';
+          render();
+        });
+      });
+      return;
+    }
+
+    // =========================================================================
+    // CASO 4 (PADRÃO): EXIBIR TODAS AS VISTORIAS E SUPERVISÕES (Com Botão Exibir Oficinas)
+    // =========================================================================
+    const isDateFiltered = selectedTodasVistoriasDateFilter !== 'Todas';
+    const selectedDate = selectedTodasVistoriasDateFilter;
+    const formattedDate = formatDateString(selectedDate);
+    const weekdayName = getWeekdayFromDateString(selectedDate) || '';
+
+    const filteredVistorias = isDateFiltered 
+      ? items.filter(item => item.date === selectedDate)
+      : items;
+
+    const filteredSupervisoes = isDateFiltered
+      ? supervisoes.filter(s => s.date === selectedDate)
+      : supervisoes;
+
+    let listToDisplay = [];
+    if (selectedTodasVistoriasFilter === 'Vistorias') {
+      listToDisplay = filteredVistorias.map(i => ({ ...i, isSupervisao: false }));
+      listToDisplay.sort((a, b) => b.id.localeCompare(a.id));
+    } else {
+      listToDisplay = filteredSupervisoes.map(s => ({ ...s, isSupervisao: true }));
+      listToDisplay.sort((a, b) => {
+        const timeA = a.updatedAtTime || Number(a.id) || 0;
+        const timeB = b.updatedAtTime || Number(b.id) || 0;
+        return timeB - timeA;
+      });
+    }
+
+    const dateLabelHtml = isDateFiltered
+      ? `<span style="color: #2563eb; font-weight: 800; background: #eff6ff; padding: 2px 8px; border-radius: 6px; border: 1px solid #bfdbfe; font-size: 0.85rem;">${formattedDate} (${weekdayName})</span>`
+      : `<span style="color: #64748b; font-weight: 700; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin-left: 4px;">Todas as Datas</span>`;
+
+    const headerHtml = `
       <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%;">
-          <h3 style="margin: 0; color: #1e40af; font-size: 1rem; font-weight: 700;">Selecione uma oficina:</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap;">
+          <button id="btnExibirOficinas" class="ghost-btn" style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 8px 14px; font-weight: 700; background: #eff6ff; color: #1e40af; border: 1.5px solid #93c5fd; border-radius: 10px; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 1px 3px rgba(37,99,235,0.1);">
+            🏢 Exibir Oficinas (${oficinas.length})
+          </button>
           <button id="tabClearAllButton" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 999px; cursor: pointer;">
             🧹 Limpar Tudo
           </button>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px; background: #f8fafc; padding: 10px 12px; border-radius: 12px; border: 1px solid #e2e8f0; width: 100%; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <label for="todasVistoriasDateSelectOuter" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
-              📅 Filtrar por Data: <span style="color: #64748b; font-weight: 700; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin-left: 4px;">Todas as Datas</span>
-            </label>
-            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700;">Total: ${totalAllRecords}</span>
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">📅 Filtrar por Data:</span>
+              ${dateLabelHtml}
+            </div>
+            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700;">Total: ${isDateFiltered ? (filteredVistorias.length + filteredSupervisoes.length) : totalAllRecords}</span>
           </div>
-          <select id="todasVistoriasDateSelectOuter" class="custom-select" style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-weight: 600; font-size: 0.85rem; background-color: #ffffff; color: #0f172a; cursor: pointer; outline: none;">
-            <option value="Todas" selected>📅 Todas as Datas (${totalAllRecords})</option>
+          <select id="todasVistoriasDateSelect" class="custom-select" style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-weight: 600; font-size: 0.85rem; background-color: #ffffff; color: #0f172a; cursor: pointer; outline: none;">
+            <option value="Todas"${!isDateFiltered ? ' selected' : ''}>📅 Todas as Datas (${totalAllRecords})</option>
             ${allDates.map(d => {
               const counts = countRecordsForDate(d);
-              const weekday = getWeekdayFromDateString(d);
-              return `<option value="${d}">📅 ${formatDateString(d)} (${weekday || ''}) - ${counts.total} registros</option>`;
+              const wd = getWeekdayFromDateString(d);
+              return `<option value="${d}"${selectedDate === d ? ' selected' : ''}>📅 ${formatDateString(d)} (${wd || ''}) - ${counts.total} registros</option>`;
             }).join('')}
           </select>
         </div>
 
-        <!-- Campo de Busca por Digitação para Oficinas -->
-        <div style="position: relative; width: 100%;">
-          <input id="todasVistoriasOficinaSearchInput" type="text" placeholder="🔍 Digite para procurar a oficina..." value="${escapeHtml(todasVistoriasOficinaSearchQuery || '')}" style="width: 100%; padding: 9px 34px 9px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600; box-sizing: border-box; outline: none; background: #ffffff; color: #0f172a;" />
-          <button id="todasVistoriasOficinaSearchClearBtn" type="button" style="display: ${todasVistoriasOficinaSearchQuery ? 'block' : 'none'}; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.1rem; color: #94a3b8; cursor: pointer; padding: 4px;">✕</button>
+        <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
+          <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+            Vistorias (${filteredVistorias.length})
+          </button>
+          <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
+            Supervisões (${filteredSupervisoes.length})
+          </button>
         </div>
       </li>
-
-      <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-        ${filteredOficinas.map(o => {
-          const count = (items.filter(i => i.oficinaId === o.id).length) + (supervisoes.filter(s => s.oficinaId === o.id).length);
-          return `
-            <div class="oficina-list-card" data-oficina-btn-id="${o.id}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 1.25rem;">🏢</span>
-                <strong style="color: #1e3a8a; font-size: 0.92rem;">${escapeHtml(o.name)}</strong>
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 0.75rem; font-weight: 700; background: ${count > 0 ? '#eff6ff' : '#f1f5f9'}; color: ${count > 0 ? '#2563eb' : '#64748b'}; border: 1px solid ${count > 0 ? '#bfdbfe' : '#e2e8f0'}; padding: 3px 10px; border-radius: 999px;">
-                  ${count} registros
-                </span>
-                <span style="color: #94a3b8; font-size: 1.1rem; font-weight: bold;">›</span>
-              </div>
-            </div>
-          `;
-        }).join('')}
-        ${!filteredOficinas.length ? '<div style="text-align: center; padding: 16px; color: #64748b; font-size: 0.88rem;">Nenhuma oficina encontrada com esse nome.</div>' : ''}
-      </div>
     `;
 
-    const ofSearchInput = itemList.querySelector('#todasVistoriasOficinaSearchInput');
-    const ofClearBtn = itemList.querySelector('#todasVistoriasOficinaSearchClearBtn');
-    if (ofSearchInput) {
-      ofSearchInput.addEventListener('input', (e) => {
-        todasVistoriasOficinaSearchQuery = e.target.value;
-        render();
-        const freshInput = document.getElementById('todasVistoriasOficinaSearchInput');
-        if (freshInput) {
-          freshInput.focus();
-          const len = freshInput.value.length;
-          freshInput.setSelectionRange(len, len);
-        }
-      });
-    }
-    if (ofClearBtn) {
-      ofClearBtn.addEventListener('click', () => {
-        todasVistoriasOficinaSearchQuery = '';
+    const itemsHtml = listToDisplay.map(renderVistoriaOrSupervisaoCard).join('');
+    itemList.innerHTML = headerHtml + (listToDisplay.length ? itemsHtml : `<li class="empty">Nenhum registro de ${selectedTodasVistoriasFilter.toLowerCase()} encontrado${isDateFiltered ? ' para a data ' + formattedDate : ''}.</li>`);
+
+    const btnExibir = itemList.querySelector('#btnExibirOficinas');
+    if (btnExibir) {
+      btnExibir.addEventListener('click', () => {
+        showOficinasInTodasVistorias = true;
         render();
       });
     }
 
-    const dateSelectOuter = itemList.querySelector('#todasVistoriasDateSelectOuter');
-    if (dateSelectOuter) {
-      dateSelectOuter.addEventListener('change', (e) => {
+    const dateSelect = itemList.querySelector('#todasVistoriasDateSelect');
+    if (dateSelect) {
+      dateSelect.addEventListener('change', (e) => {
         selectedTodasVistoriasDateFilter = e.target.value;
         render();
       });
@@ -1546,19 +1590,14 @@ function render() {
           saveItems();
           saveSupervisoes();
           selectedOficinaForTodasVistorias = null;
+          showOficinasInTodasVistorias = false;
           render();
           renderSupervisaoReport();
         }
       });
     }
 
-    itemList.querySelectorAll('[data-oficina-btn-id]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        selectedOficinaForTodasVistorias = btn.dataset.oficinaBtnId;
-        selectedTodasVistoriasFilter = 'Vistorias';
-        render();
-      });
-    });
+    attachCardActionListeners();
     return;
   }
 

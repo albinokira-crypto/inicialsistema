@@ -8,19 +8,18 @@
     <script>
       (function() {
         try {
-          const APP_VERSION = 'v157';
-          if (localStorage.getItem('app_version') !== APP_VERSION) {
+          const APP_VERSION = 'v158';
+          const storedVersion = localStorage.getItem('app_version');
+          if (storedVersion !== APP_VERSION) {
             localStorage.setItem('app_version', APP_VERSION);
             if ('caches' in window) {
-              caches.keys().then(function(names) {
-                for (let name of names) caches.delete(name);
-              }).catch(function(){});
+              caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
             }
           }
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=157" />
+    <link rel="stylesheet" href="styles.css?v=158" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -591,6 +590,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=157"></script>
+    <script src="app.js?v=158"></script>
   </body>
 </html>
