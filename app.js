@@ -22,7 +22,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.55';
+const CURRENT_APP_VERSION = 'v1.56';
 
 async function checkForSystemUpdates() {
   try {
@@ -141,6 +141,8 @@ const supervisaoStageFilterContainer = document.getElementById('supervisaoStageF
 const supervisaoOficinaFilterContainer = document.getElementById('supervisaoOficinaFilterContainer');
 const supervisaoOficinaFilterSelect = document.getElementById('supervisaoOficinaFilterSelect');
 const supervisaoOficinaFilterCount = document.getElementById('supervisaoOficinaFilterCount');
+const supervisaoOficinaSearchInput = document.getElementById('supervisaoOficinaSearchInput');
+const supervisaoOficinaSearchClearBtn = document.getElementById('supervisaoOficinaSearchClearBtn');
 const supervisaoReportContent = document.getElementById('supervisaoReportContent');
 
 // Report Preview Modal Elements
@@ -601,6 +603,29 @@ if (supervisaoPartsPendingButtons) {
 
 
 
+if (supervisaoOficinaSearchInput) {
+  supervisaoOficinaSearchInput.addEventListener('input', (event) => {
+    const query = event.target.value.trim();
+    if (supervisaoOficinaSearchClearBtn) {
+      supervisaoOficinaSearchClearBtn.style.display = query ? 'block' : 'none';
+    }
+    populateSupervisaoOficinaFilter(query);
+    renderSupervisaoReport();
+  });
+}
+
+if (supervisaoOficinaSearchClearBtn) {
+  supervisaoOficinaSearchClearBtn.addEventListener('click', () => {
+    if (supervisaoOficinaSearchInput) {
+      supervisaoOficinaSearchInput.value = '';
+      supervisaoOficinaSearchClearBtn.style.display = 'none';
+      populateSupervisaoOficinaFilter('');
+      renderSupervisaoReport();
+      supervisaoOficinaSearchInput.focus();
+    }
+  });
+}
+
 if (supervisaoOficinaFilterSelect) {
   supervisaoOficinaFilterSelect.addEventListener('change', (event) => {
     selectedSupervisaoOficina = event.target.value;
@@ -608,13 +633,6 @@ if (supervisaoOficinaFilterSelect) {
       supervisaoOficinaFilterContainer.querySelectorAll('.type-btn').forEach((b) => {
         b.classList.toggle('active', b.dataset.filterOficina === selectedSupervisaoOficina);
       });
-    }
-    const countEl = document.getElementById('supervisaoOficinaFilterCount');
-    if (countEl) {
-      const currentCount = selectedSupervisaoOficina === 'Todas'
-        ? supervisoes.length
-        : supervisoes.filter(s => s.oficinaId === selectedSupervisaoOficina).length;
-      countEl.textContent = `Total: ${currentCount}`;
     }
     renderSupervisaoReport();
   });
@@ -2735,31 +2753,37 @@ function populateSupervisaoAttendedSelect(preserveValue) {
   };
 }
 
-function populateSupervisaoOficinaFilter() {
+function populateSupervisaoOficinaFilter(query) {
   const selectEl = document.getElementById('supervisaoOficinaFilterSelect');
-  const countEl = document.getElementById('supervisaoOficinaFilterCount');
+  const searchInputEl = document.getElementById('supervisaoOficinaSearchInput');
+  const q = (typeof query === 'string' ? query : (searchInputEl ? searchInputEl.value : '')).trim().toLowerCase();
   
+  const matchingOficinas = q ? oficinas.filter(o => o.name.toLowerCase().includes(q)) : oficinas;
   const totalCount = supervisoes.length;
-  if (countEl) {
-    const currentCount = selectedSupervisaoOficina === 'Todas'
-      ? totalCount
-      : supervisoes.filter(s => s.oficinaId === selectedSupervisaoOficina).length;
-    countEl.textContent = `Total: ${currentCount}`;
-  }
 
   if (selectEl) {
     let optionsHtml = `<option value="Todas">🏢 Todas as Oficinas (${totalCount})</option>`;
-    oficinas.forEach((oficina) => {
+    matchingOficinas.forEach((oficina) => {
       const ofCount = supervisoes.filter(s => s.oficinaId === oficina.id).length;
       optionsHtml += `<option value="${oficina.id}">${escapeHtml(oficina.name)} (${ofCount})</option>`;
     });
     selectEl.innerHTML = optionsHtml;
-    selectEl.value = selectedSupervisaoOficina || 'Todas';
+    
+    if (selectedSupervisaoOficina && selectedSupervisaoOficina !== 'Todas') {
+      if (matchingOficinas.some(o => o.id === selectedSupervisaoOficina)) {
+        selectEl.value = selectedSupervisaoOficina;
+      } else {
+        selectedSupervisaoOficina = 'Todas';
+        selectEl.value = 'Todas';
+      }
+    } else {
+      selectEl.value = 'Todas';
+    }
   }
 
   if (supervisaoOficinaFilterContainer) {
     let buttonsHtml = `<button type="button" class="type-btn${selectedSupervisaoOficina === 'Todas' ? ' active' : ''}" data-filter-oficina="Todas">Todas (${totalCount})</button>`;
-    oficinas.forEach((oficina) => {
+    matchingOficinas.forEach((oficina) => {
       const ofCount = supervisoes.filter(s => s.oficinaId === oficina.id).length;
       buttonsHtml += `<button type="button" class="type-btn${selectedSupervisaoOficina === oficina.id ? ' active' : ''}" data-filter-oficina="${oficina.id}">${escapeHtml(oficina.name)} (${ofCount})</button>`;
     });
@@ -3074,10 +3098,23 @@ function cancelSupervisaoEdit() {
 function renderSupervisaoReport() {
   if (!supervisaoReportContent) return;
 
+  const searchInputEl = document.getElementById('supervisaoOficinaSearchInput');
+  const searchText = searchInputEl ? searchInputEl.value.trim().toLowerCase() : '';
+
   const filtered = supervisoes.filter((s) => {
     if (selectedSupervisaoOficina !== 'Todas' && s.oficinaId !== selectedSupervisaoOficina) return false;
+    if (searchText) {
+      const ofObj = oficinas.find(o => o.id === s.oficinaId);
+      const ofName = (ofObj ? ofObj.name : (s.oficinaName || '')).toLowerCase();
+      if (!ofName.includes(searchText)) return false;
+    }
     return true;
   });
+
+  const countEl = document.getElementById('supervisaoOficinaFilterCount');
+  if (countEl) {
+    countEl.textContent = `Total: ${filtered.length}`;
+  }
 
   if (!filtered.length) {
     supervisaoReportContent.innerHTML = '<tr><td colspan="7" class="empty">Nenhum registro de supervisão encontrado.</td></tr>';

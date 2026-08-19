@@ -8,7 +8,7 @@
     <script>
       (function() {
         try {
-          const APP_VERSION = 'v155';
+          const APP_VERSION = 'v156';
           if (localStorage.getItem('app_version') !== APP_VERSION) {
             localStorage.setItem('app_version', APP_VERSION);
             if ('caches' in window) {
@@ -20,7 +20,7 @@
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=155" />
+    <link rel="stylesheet" href="styles.css?v=156" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -342,11 +342,19 @@
           </div>
         </div>
         
-        <div class="filter-group supervisao-filter-bar" style="margin-bottom: 16px; background: #f8fafc; padding: 12px 14px; border-radius: 14px; border: 1px solid #e2e8f0;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+        <div class="filter-group supervisao-filter-bar" style="margin-bottom: 16px; background: #f8fafc; padding: 12px 14px; border-radius: 14px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
             <label for="supervisaoOficinaFilterSelect" class="status-label" style="margin: 0; font-weight: 700; color: #1e293b; font-size: 0.85rem;">🏢 Filtrar por Oficina</label>
             <span id="supervisaoOficinaFilterCount" style="font-size: 0.75rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 8px; border-radius: 999px; border: 1px solid #bfdbfe;">Total: 0</span>
           </div>
+
+          <!-- Campo de Busca por Digitação -->
+          <div style="position: relative; width: 100%;">
+            <input id="supervisaoOficinaSearchInput" type="text" placeholder="🔍 Digite para procurar a oficina..." style="width: 100%; padding: 9px 34px 9px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600; box-sizing: border-box; outline: none; background: #ffffff; color: #0f172a;" />
+            <button id="supervisaoOficinaSearchClearBtn" type="button" style="display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.1rem; color: #94a3b8; cursor: pointer; padding: 4px; line-height: 1;">✕</button>
+          </div>
+
+          <!-- Menu de Seleção de Todas as Oficinas -->
           <select id="supervisaoOficinaFilterSelect" class="custom-select" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-weight: 600; font-size: 0.9rem; background-color: #ffffff; color: #0f172a; cursor: pointer; outline: none;">
             <option value="Todas">🏢 Todas as Oficinas</option>
           </select>
@@ -409,7 +417,7 @@
               <span style="font-size: 1.3rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão do Aplicativo</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1rem; font-weight: 800; color: #1e3a8a;">v1.55</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1rem; font-weight: 800; color: #1e3a8a;">v1.56</div>
               </div>
             </div>
             <span style="background: #dcfce7; color: #166534; font-size: 0.72rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid #86efac; display: flex; align-items: center; gap: 4px;">
@@ -583,6 +591,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=155"></script>
+    <script src="app.js?v=156"></script>
   </body>
 </html>
