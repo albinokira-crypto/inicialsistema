@@ -13,7 +13,7 @@
             window.location.href = 'https://gestao-vistoria-inicial.vercel.app/dashboard.html';
             return;
           }
-          const APP_VERSION = 'v163';
+          const APP_VERSION = 'v164';
           const storedVersion = localStorage.getItem('app_version');
           if (storedVersion !== APP_VERSION) {
             localStorage.setItem('app_version', APP_VERSION);
@@ -24,7 +24,7 @@
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=163" />
+    <link rel="stylesheet" href="styles.css?v=164" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -167,7 +167,7 @@
           </div>
           <div class="search-actions" style="position: relative; width: 100%; display: flex; align-items: center;">
             <input id="searchInput" type="text" placeholder="🔍 Pesquisar por placa, seguradora ou dia..." autocomplete="off" autocapitalize="none" spellcheck="false" style="width: 100% !important; box-sizing: border-box; padding: 11px 40px 11px 14px; border-radius: 12px; border: 1.5px solid #cbd5e1; background: #f8fafc; font-size: 0.92rem; font-weight: 500; color: #0f172a; outline: none; transition: border-color 0.2s;" />
-            <button id="clearSearchButton" class="ghost-btn" type="button" title="Limpar busca" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: #e2e8f0; color: #475569; border: none; font-size: 0.82rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; z-index: 5;" hidden>✕</button>
+            <button id="clearSearchButton" type="button" title="Limpar busca" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 26px !important; height: 26px !important; min-width: 26px !important; max-width: 26px !important; border-radius: 50% !important; background: #e2e8f0; color: #475569; border: none; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; z-index: 5;" hidden>✕</button>
           </div>
 
           <!-- Filtro Único Unificado por Oficina nas Vistorias -->
@@ -431,7 +431,7 @@
               <span style="font-size: 1.3rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão do Aplicativo</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1rem; font-weight: 800; color: #1e3a8a;">v1.63</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1rem; font-weight: 800; color: #1e3a8a;">v1.64</div>
               </div>
             </div>
             <span style="background: #dcfce7; color: #166534; font-size: 0.72rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid #86efac; display: flex; align-items: center; gap: 4px;">
@@ -605,6 +605,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=163"></script>
+    <script src="app.js?v=164"></script>
   </body>
 </html>

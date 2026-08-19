@@ -1414,6 +1414,13 @@ function render() {
         return fullText.includes(q);
       });
 
+      // Alterna automaticamente para a aba com resultados se a aba atual estiver vazia
+      if (filteredVistorias.length === 0 && filteredSupervisoes.length > 0 && selectedTodasVistoriasFilter === 'Vistorias') {
+        selectedTodasVistoriasFilter = 'Supervisões';
+      } else if (filteredSupervisoes.length === 0 && filteredVistorias.length > 0 && selectedTodasVistoriasFilter === 'Supervisões') {
+        selectedTodasVistoriasFilter = 'Vistorias';
+      }
+
       let listToDisplay = [];
       if (selectedTodasVistoriasFilter === 'Vistorias') {
         listToDisplay = filteredVistorias.map(i => ({ ...i, isSupervisao: false }));

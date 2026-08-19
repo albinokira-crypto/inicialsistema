@@ -200,6 +200,16 @@ input, select, textarea {
   width: 100%;
 }
 
+#clearSearchButton {
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  max-width: 26px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
 .form-actions {
   display: flex;
   flex-wrap: wrap;
