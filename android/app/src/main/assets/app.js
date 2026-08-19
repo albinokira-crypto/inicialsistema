@@ -280,9 +280,12 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
             <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
-          <div class="btn-row" style="margin-top: 4px;">
-            <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Compartilhar Supervisão (Texto + Mídias)
+          <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
+            <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar (Texto + Fotos)
+            </button>
+            <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${entry.id}" style="font-weight: 700; font-size: 0.80rem !important; padding: 10px 6px !important; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              💬 Só Texto
             </button>
           </div>
         </div>
@@ -3318,9 +3321,12 @@ function renderSupervisaoReport() {
               <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
               <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
             </div>
-            <div class="btn-row" style="margin-top: 4px;">
-              <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${s.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-                📲 Compartilhar Supervisão (Texto + Mídias)
+            <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
+              <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${s.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+                📲 Compartilhar (Texto + Fotos)
+              </button>
+              <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${s.id}" style="font-weight: 700; font-size: 0.80rem !important; padding: 10px 6px !important; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                💬 Só Texto
               </button>
             </div>
           </div>
@@ -4151,7 +4157,7 @@ async function checkHasMediaForVehicle(vehicleName, isSupervisao) {
 }
 window.checkHasMediaForVehicle = checkHasMediaForVehicle;
 
-// Compartilhamento Sequencial Automático (1 clique: Texto primeiro, depois Mídias no retorno se houver fotos)
+// Compartilhamento Sequencial Automático (1 clique: Texto primeiro, depois Mídias no retorno)
 async function shareVistoriaWhatsAppSequence(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
@@ -4166,35 +4172,19 @@ async function shareVistoriaWhatsAppSequence(id) {
 
   const isSupervisao = !items.some(entry => entry.id === id);
 
-  // Verifica se o veículo possui fotos/mídias cadastradas
-  let hasMedia = true;
-  if (isSupervisao) {
-    hasMedia = await checkHasMediaForVehicle(vehicleName, true);
-  }
+  // Prepara o estado do segundo passo (fotos)
+  pendingSequenceShare = {
+    id: id,
+    vehicleName: vehicleName,
+    isSupervisao: isSupervisao,
+    step: 'media',
+    timestamp: Date.now()
+  };
+  try {
+    sessionStorage.setItem('pending_sequence_share', JSON.stringify(pendingSequenceShare));
+  } catch(e) {}
 
-  if (hasMedia) {
-    // Prepara o estado do segundo passo (fotos) apenas se houver fotos
-    pendingSequenceShare = {
-      id: id,
-      vehicleName: vehicleName,
-      isSupervisao: isSupervisao,
-      step: 'media',
-      timestamp: Date.now()
-    };
-    try {
-      sessionStorage.setItem('pending_sequence_share', JSON.stringify(pendingSequenceShare));
-    } catch(e) {}
-
-    showToastNotification('Passo 1/2: Enviando texto no WhatsApp. Ao voltar ao app, as fotos serão enviadas automaticamente!', 5000);
-  } else {
-    // Supervisão sem foto: Limpa qualquer pendência para NUNCA reabrir o WhatsApp no retorno
-    pendingSequenceShare = null;
-    try {
-      sessionStorage.removeItem('pending_sequence_share');
-    } catch(e) {}
-
-    showToastNotification('Enviando relatório da supervisão no WhatsApp...', 3000);
-  }
+  showToastNotification('Passo 1/2: Enviando texto no WhatsApp. Ao voltar ao app, as fotos serão enviadas automaticamente!', 5000);
 
   // Passo 1: Dispara o envio do texto para o WhatsApp
   shareVistoriaWhatsApp(id, 'text');
@@ -4220,15 +4210,6 @@ async function checkPendingSequenceShare() {
       try {
         sessionStorage.removeItem('pending_sequence_share');
       } catch(e) {}
-
-      // Se for supervisão, confere mais uma vez se realmente tem fotos antes de abrir WhatsApp
-      if (pending.isSupervisao) {
-        const hasMedia = await checkHasMediaForVehicle(pending.vehicleName, true);
-        if (!hasMedia) {
-          isCheckingSequenceShare = false;
-          return;
-        }
-      }
 
       setTimeout(() => {
         showToastNotification('Passo 2/2: Abrindo fotos no WhatsApp para o mesmo contato...', 4000);
