@@ -293,12 +293,9 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
             <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
-          <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
-            <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Compartilhar (Texto + Fotos)
-            </button>
-            <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${entry.id}" style="font-weight: 700; font-size: 0.80rem !important; padding: 10px 6px !important; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
-              💬 Só Texto
+          <div class="btn-row" style="margin-top: 4px;">
+            <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar Supervisão (Texto + Mídias)
             </button>
           </div>
         </div>
@@ -337,12 +334,9 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
             <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
-          <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Compartilhar (Texto + Fotos)
-            </button>
-            <button class="action-btn" type="button" data-action="share-whatsapp-text" data-id="${entry.id}" style="font-weight: 700; font-size: 0.80rem !important; padding: 10px 6px !important; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
-              💬 Só Texto
+          <div class="btn-row" style="margin-top: 4px;">
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar Vistoria (Texto + Mídias)
             </button>
           </div>
         </div>
@@ -1753,12 +1747,9 @@ function render() {
             <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
             <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
           </div>
-          <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Compartilhar (Texto + Fotos)
-            </button>
-            <button class="action-btn" type="button" data-action="share-whatsapp-text" data-id="${item.id}" style="font-weight: 700; font-size: 0.80rem !important; padding: 10px 6px !important; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
-              💬 Só Texto
+          <div class="btn-row" style="margin-top: 4px;">
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar Vistoria (Texto + Mídias)
             </button>
           </div>
         </div>
@@ -3340,12 +3331,9 @@ function renderSupervisaoReport() {
               <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
               <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
             </div>
-            <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
-              <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${s.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-                📲 Compartilhar (Texto + Fotos)
-              </button>
-              <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${s.id}" style="font-weight: 700; font-size: 0.80rem !important; padding: 10px 6px !important; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
-                💬 Só Texto
+            <div class="btn-row" style="margin-top: 4px;">
+              <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${s.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+                📲 Compartilhar Supervisão (Texto + Mídias)
               </button>
             </div>
           </div>
