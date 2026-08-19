@@ -8,7 +8,7 @@
     <script>
       (function() {
         try {
-          const APP_VERSION = 'v160';
+          const APP_VERSION = 'v161';
           const storedVersion = localStorage.getItem('app_version');
           if (storedVersion !== APP_VERSION) {
             localStorage.setItem('app_version', APP_VERSION);
@@ -19,7 +19,7 @@
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=160" />
+    <link rel="stylesheet" href="styles.css?v=161" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -156,11 +156,13 @@
       </section>
 
       <section class="card" id="recordsCard">
-        <div class="toolbar">
-          <h2>Registros</h2>
-          <div class="search-actions">
-            <input id="searchInput" type="search" placeholder="Pesquisar por placa, seguradora ou dia" />
-            <button id="clearSearchButton" class="ghost-btn" type="button" hidden>Limpar</button>
+        <div class="toolbar" style="display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 100%;">
+          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <h2>Registros</h2>
+          </div>
+          <div class="search-actions" style="position: relative; width: 100%; display: flex; align-items: center;">
+            <input id="searchInput" type="text" placeholder="🔍 Pesquisar por placa, seguradora ou dia..." autocomplete="off" autocapitalize="none" spellcheck="false" style="width: 100% !important; box-sizing: border-box; padding: 11px 40px 11px 14px; border-radius: 12px; border: 1.5px solid #cbd5e1; background: #f8fafc; font-size: 0.92rem; font-weight: 500; color: #0f172a; outline: none; transition: border-color 0.2s;" />
+            <button id="clearSearchButton" class="ghost-btn" type="button" title="Limpar busca" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: #e2e8f0; color: #475569; border: none; font-size: 0.82rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; z-index: 5;" hidden>✕</button>
           </div>
         </div>
         <ul id="itemList" class="item-list"></ul>
@@ -416,7 +418,7 @@
               <span style="font-size: 1.3rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão do Aplicativo</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1rem; font-weight: 800; color: #1e3a8a;">v1.60</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1rem; font-weight: 800; color: #1e3a8a;">v1.61</div>
               </div>
             </div>
             <span style="background: #dcfce7; color: #166534; font-size: 0.72rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid #86efac; display: flex; align-items: center; gap: 4px;">
@@ -590,6 +592,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=160"></script>
+    <script src="app.js?v=161"></script>
   </body>
 </html>

@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.60';
+const CURRENT_APP_VERSION = 'v1.61';
 
 async function checkForSystemUpdates(showFeedback = false) {
   let activeVersion = CURRENT_APP_VERSION;
@@ -62,6 +62,45 @@ async function checkForSystemUpdates(showFeedback = false) {
     }
   }
 }
+
+async function autoUpdateAppOnStartup() {
+  try {
+    const res = await fetch('https://gestao-vistoria-inicial.vercel.app/version.json?t=' + Date.now(), {
+      cache: 'no-store'
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.version) {
+        const serverVersion = 'v' + data.version;
+        let activeVersion = CURRENT_APP_VERSION;
+        if (window.AndroidInterface && typeof window.AndroidInterface.getAppVersion === 'function') {
+          try {
+            activeVersion = window.AndroidInterface.getAppVersion();
+          } catch(e) {}
+        }
+        const lastUpdated = localStorage.getItem('last_auto_updated_version');
+        if (serverVersion !== activeVersion && lastUpdated !== serverVersion) {
+          console.log(`[AutoUpdate] Atualizando app de ${activeVersion} para ${serverVersion}`);
+          localStorage.setItem('last_auto_updated_version', serverVersion);
+          if ('caches' in window) {
+            const keys = await caches.keys();
+            for (const k of keys) await caches.delete(k);
+          }
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const r of regs) await r.unregister();
+          }
+          if (window.AndroidInterface && typeof window.AndroidInterface.forceAppReload === 'function') {
+            window.AndroidInterface.forceAppReload();
+          } else {
+            window.location.reload(true);
+          }
+        }
+      }
+    }
+  } catch (e) {}
+}
+setTimeout(autoUpdateAppOnStartup, 1500);
 
 const STORAGE_KEY = 'web-system-items-v1';
 const form = document.getElementById('itemForm');
@@ -547,11 +586,30 @@ function updateSyncStatus(message) {
 
 
 form.addEventListener('submit', saveItem);
-searchInput.addEventListener('input', render);
-clearSearchButton.addEventListener('click', () => {
-  searchInput.value = '';
-  render();
-});
+
+let searchInputDebounce = null;
+if (searchInput) {
+  searchInput.addEventListener('input', () => {
+    if (clearSearchButton) {
+      clearSearchButton.hidden = !searchInput.value.trim();
+    }
+    if (searchInputDebounce) clearTimeout(searchInputDebounce);
+    searchInputDebounce = setTimeout(() => {
+      render();
+    }, 120);
+  });
+}
+
+if (clearSearchButton) {
+  clearSearchButton.addEventListener('click', () => {
+    if (searchInput) {
+      searchInput.value = '';
+      clearSearchButton.hidden = true;
+      render();
+      searchInput.focus();
+    }
+  });
+}
 dayTabs.addEventListener('click', (event) => {
   const target = event.target;
   if (!target.matches('.tab-btn')) return;
