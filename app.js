@@ -23,19 +23,16 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.61';
+const CURRENT_APP_VERSION = 'v1.62';
 
 async function checkForSystemUpdates(showFeedback = false) {
-  let activeVersion = CURRENT_APP_VERSION;
-  if (window.AndroidInterface && typeof window.AndroidInterface.getAppVersion === 'function') {
-    try {
-      activeVersion = window.AndroidInterface.getAppVersion();
-    } catch(e) {}
-  }
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
+  let activeVersion = CURRENT_APP_VERSION;
+
   if (versionEl) {
     versionEl.textContent = activeVersion;
   }
+
   try {
     const res = await fetch('https://gestao-vistoria-inicial.vercel.app/version.json?t=' + Date.now(), {
       cache: 'no-store'
@@ -43,12 +40,13 @@ async function checkForSystemUpdates(showFeedback = false) {
     if (res.ok) {
       const data = await res.json();
       if (data && data.version) {
-        const isNewer = ('v' + data.version) !== activeVersion;
+        const serverVersion = 'v' + data.version;
+        const isNewer = serverVersion !== activeVersion;
         if (versionEl) {
-          versionEl.textContent = `${activeVersion} ${isNewer ? '(Nova versão v' + data.version + ' disponível)' : '(Atualizado)'}`;
+          versionEl.textContent = `${activeVersion} ${isNewer ? '(Nova versão ' + serverVersion + ' disponível)' : '(Atualizado)'}`;
         }
         if (isNewer && showFeedback) {
-          if (confirm(`Uma nova versão (v${data.version}) está disponível! Deseja atualizar o aplicativo agora?`)) {
+          if (confirm(`Uma nova versão (${serverVersion}) está disponível! Deseja atualizar o aplicativo agora?`)) {
             forceAppRefresh();
           }
         } else if (!isNewer && showFeedback) {
@@ -57,6 +55,9 @@ async function checkForSystemUpdates(showFeedback = false) {
       }
     }
   } catch (err) {
+    if (versionEl && !versionEl.textContent) {
+      versionEl.textContent = activeVersion;
+    }
     if (showFeedback) {
       alert('Não foi possível verificar atualizações no momento.');
     }
@@ -72,12 +73,7 @@ async function autoUpdateAppOnStartup() {
       const data = await res.json();
       if (data && data.version) {
         const serverVersion = 'v' + data.version;
-        let activeVersion = CURRENT_APP_VERSION;
-        if (window.AndroidInterface && typeof window.AndroidInterface.getAppVersion === 'function') {
-          try {
-            activeVersion = window.AndroidInterface.getAppVersion();
-          } catch(e) {}
-        }
+        const activeVersion = CURRENT_APP_VERSION;
         const lastUpdated = localStorage.getItem('last_auto_updated_version');
         if (serverVersion !== activeVersion && lastUpdated !== serverVersion) {
           console.log(`[AutoUpdate] Atualizando app de ${activeVersion} para ${serverVersion}`);
@@ -98,7 +94,7 @@ async function autoUpdateAppOnStartup() {
         }
       }
     }
-  } catch (e) {}
+  } catch(e) {}
 }
 setTimeout(autoUpdateAppOnStartup, 1500);
 
