@@ -293,9 +293,12 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-super-action="edit" data-id="${entry.id}">Editar</button>
             <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
-          <div class="btn-row" style="margin-top: 4px;">
-            <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Compartilhar Supervisão (Texto + Mídias)
+          <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
+            <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar (Texto + Fotos)
+            </button>
+            <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${entry.id}" style="font-weight: 700; font-size: 0.80rem !important; padding: 10px 6px !important; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              💬 Só Texto
             </button>
           </div>
         </div>
@@ -334,9 +337,12 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
             <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
-          <div class="btn-row" style="margin-top: 4px;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Compartilhar Vistoria (Texto + Mídias)
+          <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar (Texto + Fotos)
+            </button>
+            <button class="action-btn" type="button" data-action="share-whatsapp-text" data-id="${entry.id}" style="font-weight: 700; font-size: 0.80rem !important; padding: 10px 6px !important; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              💬 Só Texto
             </button>
           </div>
         </div>
@@ -1747,9 +1753,12 @@ function render() {
             <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
             <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
           </div>
-          <div class="btn-row" style="margin-top: 4px;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Compartilhar Vistoria (Texto + Mídias)
+          <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Compartilhar (Texto + Fotos)
+            </button>
+            <button class="action-btn" type="button" data-action="share-whatsapp-text" data-id="${item.id}" style="font-weight: 700; font-size: 0.80rem !important; padding: 10px 6px !important; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              💬 Só Texto
             </button>
           </div>
         </div>
@@ -3331,9 +3340,12 @@ function renderSupervisaoReport() {
               <button class="action-btn" type="button" data-super-action="edit" data-id="${s.id}">Editar</button>
               <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
             </div>
-            <div class="btn-row" style="margin-top: 4px;">
-              <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${s.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-                📲 Compartilhar Supervisão (Texto + Mídias)
+            <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
+              <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${s.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+                📲 Compartilhar (Texto + Fotos)
+              </button>
+              <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${s.id}" style="font-weight: 700; font-size: 0.80rem !important; padding: 10px 6px !important; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                💬 Só Texto
               </button>
             </div>
           </div>
@@ -3908,7 +3920,7 @@ function openSystemSettings() {
     } catch(e) {}
   }
   const versionDisplay = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
-  if (versionDisplay) versionDisplay.textContent = activeVersion;
+  if (versionDisplay) versionDisplay.textContent = CURRENT_APP_VERSION;
   updateFolderLabelUI();
   updatePreferredCameraUI();
   if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
@@ -3919,31 +3931,24 @@ async function forceAppRefresh() {
   const btn = document.getElementById('forceRefreshAppBtn');
   if (btn) {
     btn.disabled = true;
-    btn.textContent = '⏳ Limpando cache e atualizando...';
+    btn.textContent = '⏳ Atualizando sistema...';
   }
 
   try {
-    if ('caches' in window) {
-      const names = await caches.keys();
-      for (const name of names) {
-        await caches.delete(name);
-      }
-    }
     if ('serviceWorker' in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
       for (const reg of regs) {
-        await reg.unregister();
+        await reg.update();
       }
     }
-    localStorage.removeItem('app_version');
   } catch (e) {
-    console.warn("Erro ao limpar caches:", e);
+    console.warn("Erro ao atualizar serviceWorker:", e);
   }
 
   if (window.AndroidInterface && typeof window.AndroidInterface.forceAppReload === 'function') {
     window.AndroidInterface.forceAppReload();
   } else {
-    window.location.href = 'dashboard.html?t=' + Date.now();
+    window.location.href = 'https://gestao-vistoria-inicial.vercel.app/dashboard.html?t=' + Date.now();
   }
 }
 window.forceAppRefresh = forceAppRefresh;
@@ -4185,7 +4190,7 @@ async function checkHasMediaForVehicle(vehicleName, isSupervisao) {
 }
 window.checkHasMediaForVehicle = checkHasMediaForVehicle;
 
-// Compartilhamento Sequencial Automático (1 clique: Texto primeiro, depois Mídias no retorno SE houver fotos/vídeos)
+// Compartilhamento Sequencial Automático (1 clique: Texto primeiro, depois Mídias no retorno)
 async function shareVistoriaWhatsAppSequence(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
@@ -4199,21 +4204,8 @@ async function shareVistoriaWhatsAppSequence(id) {
   }
 
   const isSupervisao = !items.some(entry => entry.id === id);
-  const hasMedia = await checkHasMediaForVehicle(vehicleName, isSupervisao);
 
-  if (!hasMedia) {
-    // NÃO há fotos/vídeos (Supervisão sem fotos): envia apenas o texto e NÃO agenda retorno para mídias
-    pendingSequenceShare = null;
-    try {
-      sessionStorage.removeItem('pending_sequence_share');
-    } catch(e) {}
-
-    showToastNotification(isSupervisao ? 'Enviando relatório de supervisão no WhatsApp...' : 'Enviando relatório no WhatsApp...', 3500);
-    shareVistoriaWhatsApp(id, 'text');
-    return;
-  }
-
-  // HÁ fotos/vídeos (Vistorias ou Supervisão com fotos): Prepara o estado do segundo passo (fotos)
+  // Prepara o estado do segundo passo (fotos)
   pendingSequenceShare = {
     id: id,
     vehicleName: vehicleName,
@@ -4251,15 +4243,6 @@ async function checkPendingSequenceShare() {
       try {
         sessionStorage.removeItem('pending_sequence_share');
       } catch(e) {}
-
-      // Verificação de segurança: para supervisão, confirma se há mídias
-      if (pending.isSupervisao) {
-        const hasMedia = await checkHasMediaForVehicle(pending.vehicleName, true);
-        if (!hasMedia) {
-          isCheckingSequenceShare = false;
-          return;
-        }
-      }
 
       setTimeout(() => {
         showToastNotification('Passo 2/2: Abrindo fotos no WhatsApp para o mesmo contato...', 4000);
