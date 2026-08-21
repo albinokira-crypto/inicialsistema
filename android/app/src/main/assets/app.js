@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.65';
+const CURRENT_APP_VERSION = 'v1.66';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -659,15 +659,75 @@ function updateVistoriaFormTitle() {
   const formTitleEl = document.getElementById('formTitle');
   if (!formTitleEl) return;
   const currentDay = getSelectedSaveDay() || getWeekdayName(new Date());
-  const prefix = editingId ? 'Editar registro' : 'Novo registro';
+  const isEditing = Boolean(editingId);
   
   if (selectedDay === 'Seguradoras') {
-    formTitleEl.textContent = 'Cadastre seguradoras';
-  } else if (selectedDay === 'Oficinas') {
-    formTitleEl.textContent = 'Cadastre oficinas';
-  } else {
-    formTitleEl.textContent = `${prefix} / ${selectedType || 'Inicial'} / ${currentDay}`;
+    formTitleEl.innerHTML = `
+      <div class="form-title-wrapper">
+        <div class="form-title-primary">
+          <span class="form-title-icon">🏢</span>
+          <span class="form-title-text">${isEditing ? 'Editar Seguradora' : 'Cadastrar Seguradoras'}</span>
+        </div>
+      </div>
+    `;
+    return;
   }
+  
+  if (selectedDay === 'Oficinas') {
+    formTitleEl.innerHTML = `
+      <div class="form-title-wrapper">
+        <div class="form-title-primary">
+          <span class="form-title-icon">🔧</span>
+          <span class="form-title-text">${isEditing ? 'Editar Oficina' : 'Cadastrar Oficinas'}</span>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const typeName = selectedType || 'Inicial';
+  const badgeClasses = {
+    'Inicial': 'badge-inicial',
+    'Roubo Recuperado': 'badge-roubo',
+    'Incêndio': 'badge-incendio',
+    'Enchente': 'badge-enchente',
+    'Moto': 'badge-moto',
+    'Complemento': 'badge-complemento',
+    'Pós entrega': 'badge-pos',
+    'Vistoria Rio log': 'badge-riolog'
+  };
+  const typeIcons = {
+    'Inicial': '🚗',
+    'Roubo Recuperado': '🚨',
+    'Incêndio': '🔥',
+    'Enchente': '🌊',
+    'Moto': '🏍️',
+    'Complemento': '📄',
+    'Pós entrega': '📦',
+    'Vistoria Rio log': '🚛'
+  };
+
+  const badgeClass = badgeClasses[typeName] || 'badge-inicial';
+  const typeIcon = typeIcons[typeName] || '📋';
+  const dayDisplay = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(currentDay) ? `${currentDay}-feira` : currentDay;
+
+  formTitleEl.innerHTML = `
+    <div class="form-title-wrapper">
+      <div class="form-title-primary">
+        <span class="form-title-status-indicator ${isEditing ? 'editing' : 'new'}">
+          ${isEditing ? '✏️ Editar Registro' : '✨ Novo Registro'}
+        </span>
+        <span class="${badgeClass} form-title-type-badge">
+          ${typeIcon} ${escapeHtml(typeName)}
+        </span>
+      </div>
+      <div class="form-title-secondary">
+        <span class="form-title-day-badge">
+          📅 ${escapeHtml(dayDisplay)}
+        </span>
+      </div>
+    </div>
+  `;
 }
 
 if (vistoriaTypeTabs) {
