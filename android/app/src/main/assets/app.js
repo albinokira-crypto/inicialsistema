@@ -1950,6 +1950,25 @@ function getSurveyText(id) {
     if (details.obs) {
       sections.push(`Observações Complementares : ${details.obs}`);
     }
+  } else if (item.type === 'Pós entrega') {
+    sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
+
+    const reclamacaoVal = (details.reclamacao || details.obs || details.conteudoLivre || '').trim();
+    if (reclamacaoVal) {
+      sections.push(`Reclamação\n${reclamacaoVal}`);
+    } else {
+      sections.push(`Reclamação`);
+    }
+
+    if (details.trocas && details.trocas.trim()) {
+      sections.push(`Trocas\n${details.trocas.trim()}`);
+    }
+
+    if (details.reparos && details.reparos.trim()) {
+      sections.push(`Reparos\n${details.reparos.trim()}`);
+    }
+
+    return sections.join('\n\n');
   } else {
     // Other survey types
     sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
@@ -1987,7 +2006,7 @@ function getSurveyText(id) {
       if (details.motorTravado) checklist.push(`Motor travado: ${yesNo(details.motorTravado)}`);
       if (details.alturaAgua) checklist.push(`Altura da água: ${details.alturaAgua}`);
     }
-    if ((item.type === 'Complemento' || item.type === 'Pós entrega') && details.conteudoLivre) {
+    if (item.type === 'Complemento' && details.conteudoLivre) {
       checklist.push(`Conteúdo: ${details.conteudoLivre}`);
     }
     
@@ -2186,6 +2205,13 @@ function handleAction(action, id) {
         }
       }
     });
+
+    if (selectedType === 'Pós entrega') {
+      const recInput = dynamicFieldsContainer.querySelector('[name="reclamacao"]');
+      if (recInput && !recInput.value) {
+        recInput.value = item.details.reclamacao || item.details.obs || item.details.conteudoLivre || '';
+      }
+    }
   }
 
   updateTypeButtonsHighlight();
@@ -2830,13 +2856,21 @@ function renderDynamicSurveyFields() {
       </label>
     `;
     fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + obsHtml + avariasHtml;
-  } else if (selectedType === 'Complemento' || selectedType === 'Pós entrega') {
+  } else if (selectedType === 'Complemento') {
     fieldsHtml = `
       <label style="grid-column: 1 / -1;">
         Conteúdo do Relatório
         <textarea name="conteudoLivre" rows="5" required placeholder="Digite o conteúdo livre para o relatório..."></textarea>
       </label>
     ` + extraFieldsHtml;
+  } else if (selectedType === 'Pós entrega') {
+    const reclamacaoHtml = `
+      <label style="grid-column: 1 / -1;">
+        Reclamação
+        <textarea name="reclamacao" rows="4" placeholder="Digite a reclamação..."></textarea>
+      </label>
+    `;
+    fieldsHtml = reclamacaoHtml + trocasReparosHtml;
   }
 
   dynamicFieldsContainer.innerHTML = officeDropdownHtml + fieldsHtml;
