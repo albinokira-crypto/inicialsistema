@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.66';
+const CURRENT_APP_VERSION = 'v1.67';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -2012,6 +2012,7 @@ function getSurveyText(id) {
     }
   } else if (item.type === 'Pós entrega') {
     sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
+    sections.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
 
     const reclamacaoVal = (details.reclamacao || details.obs || details.conteudoLivre || '').trim();
     if (reclamacaoVal) {
