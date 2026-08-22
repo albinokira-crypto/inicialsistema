@@ -1810,4 +1810,49 @@ html, body {
   justify-content: center;
 }
 
+/* Abas de Tipo de Veículo */
+.vp-type-tabs-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.vp-type-tab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 3px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.vp-type-tab-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+.vp-type-tab-btn:hover:not(.active) {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.vp-type-tab-btn:active {
+  transform: scale(0.97);
+}
+
+
 

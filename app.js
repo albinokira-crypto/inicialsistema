@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.69';
+const CURRENT_APP_VERSION = 'v1.70';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -5642,8 +5642,11 @@ const VP_BASE_ZONES_MOTO = [
       'Tampa do tanque',
       'Carenagem lateral LD do tanque',
       'Carenagem lateral LE do tanque',
+      'Carenagem lateral / tampa lateral LD',
+      'Carenagem lateral / tampa lateral LE',
       'Banco / assento',
       'Chassi / quadro principal',
+      'Protetor de carenagem / motor',
       'Cavalete lateral / descanso',
       'Cavalete central'
     ]
@@ -5653,9 +5656,9 @@ const VP_BASE_ZONES_MOTO = [
     name: 'Traseira & Escapamento',
     icon: '🛵',
     parts: [
-      'Rabeta Tras LD',
-      'Rabeta Tras LE',
-      'Rabeta Tras Central',
+      'Rabeta Traseira LD',
+      'Rabeta Traseira LE',
+      'Rabeta Traseira Central',
       'Lanterna traseira',
       'Suporte de placa / para-lama traseiro',
       'Pisca traseiro LD',
@@ -5664,8 +5667,11 @@ const VP_BASE_ZONES_MOTO = [
       'Protetor do escapamento',
       'Protetor do bico do escapamento',
       'Balança traseira',
-      'Amortecedor Tras LD',
-      'Amortecedor Tras LE'
+      'Amortecedor Traseiro LD',
+      'Amortecedor Traseiro LE',
+      'Amortecedor central (Monoshock)',
+      'Alça traseira do garupa LD',
+      'Alça traseira do garupa LE'
     ]
   },
   {
@@ -5673,20 +5679,334 @@ const VP_BASE_ZONES_MOTO = [
     name: 'Motor & Rodas',
     icon: '⚙️',
     parts: [
-      'Tampa do motor lateral LD',
-      'Tampa do motor lateral LE',
+      'Tampa do motor lateral LD (embreagem)',
+      'Tampa do motor lateral LE (estator)',
       'Pedal de câmbio / marcha',
       'Pedal de freio traseiro',
       'Pedaleira dianteira LD',
       'Pedaleira dianteira LE',
-      'Pedaleira traseira LD',
-      'Pedaleira traseira LE',
+      'Pedaleira traseira LD (garupa)',
+      'Pedaleira traseira LE (garupa)',
       'Roda dianteira',
       'Roda traseira',
       'Disco de freio dianteiro',
       'Disco/Tambor de freio traseiro',
+      'Pinça de freio dianteira',
+      'Pinça de freio traseira',
       'Pneu dianteiro',
-      'Pneu traseiro'
+      'Pneu traseiro',
+      'Corrente / relação de transmissão',
+      'Guia / capa de corrente'
+    ]
+  }
+];
+
+const VP_BASE_ZONES_PICAPE = [
+  {
+    id: 'dianteira',
+    name: 'Dianteira',
+    icon: '🚗',
+    parts: [
+      'Capô do motor',
+      'Para-choque dianteiro',
+      'Grade dianteira',
+      'Alma do para-choque dianteiro',
+      'Farol dianteiro LD',
+      'Farol dianteiro LE',
+      'Farol de milha LD',
+      'Farol de milha LE',
+      'Para-lama dianteiro LD',
+      'Para-lama dianteiro LE',
+      'Painel frontal / mini-frente',
+      'Radiador de água',
+      'Condensador do ar-condicionado',
+      'Eletroventilador / ventoinha',
+      'Guia do para-choque dianteiro LD',
+      'Guia do para-choque dianteiro LE',
+      'Emblema frontal da montadora'
+    ]
+  },
+  {
+    id: 'traseira_cacamba',
+    name: 'Traseira & Caçamba',
+    icon: '🛻',
+    parts: [
+      'Tampa da caçamba traseira',
+      'Maçaneta da tampa traseira',
+      'Para-choque traseiro',
+      'Alma do para-choque traseiro',
+      'Lanterna traseira LD',
+      'Lanterna traseira LE',
+      'Protetor de caçamba plástico',
+      'Santo Antônio (barra de caçamba)',
+      'Capota marítima / rígida',
+      'Painel traseiro da cabine',
+      'Assoalho da caçamba',
+      'Emblema traseiro da montadora',
+      'Estribo traseiro de acesso'
+    ]
+  },
+  {
+    id: 'lateral_dir',
+    name: 'Lateral LD',
+    icon: '➡️',
+    parts: [
+      'Porta dianteira LD',
+      'Porta traseira LD',
+      'Retrovisor LD completo',
+      'Capa do retrovisor LD',
+      'Espelho do retrovisor LD',
+      'Estribo lateral LD',
+      'Caixa de ar / soleira LD',
+      'Coluna A dianteira LD',
+      'Coluna B central LD',
+      'Coluna C traseira LD',
+      'Lateral externa da caçamba LD',
+      'Moldura / alargador de para-lama LD',
+      'Friso da porta dianteira LD',
+      'Maçaneta dianteira LD',
+      'Maçaneta traseira LD'
+    ]
+  },
+  {
+    id: 'lateral_esq',
+    name: 'Lateral LE',
+    icon: '⬅️',
+    parts: [
+      'Porta dianteira LE (motorista)',
+      'Porta traseira LE',
+      'Retrovisor LE completo',
+      'Capa do retrovisor LE',
+      'Espelho do retrovisor LE',
+      'Estribo lateral LE',
+      'Caixa de ar / soleira LE',
+      'Coluna A dianteira LE',
+      'Coluna B central LE',
+      'Coluna C traseira LE',
+      'Lateral externa da caçamba LE',
+      'Moldura / alargador de para-lama LE',
+      'Friso da porta dianteira LE',
+      'Maçaneta dianteira LE',
+      'Maçaneta traseira LE'
+    ]
+  },
+  {
+    id: 'estrutura_cabine',
+    name: 'Teto & Estrutura',
+    icon: '🛡️',
+    parts: [
+      'Painel do teto da cabine',
+      'Rack de teto / longarina LD',
+      'Rack de teto / longarina LE',
+      'Longarina dianteira do chassi LD',
+      'Longarina dianteira do chassi LE',
+      'Longarina traseira do chassi LD',
+      'Longarina traseira do chassi LE',
+      'Caixa de roda dianteira LD',
+      'Caixa de roda dianteira LE',
+      'Caixa de roda traseira LD',
+      'Caixa de roda traseira LE',
+      'Protetor de cárter / peito de aço',
+      'Engate de reboque traseiro'
+    ]
+  },
+  {
+    id: 'mecanica_susp',
+    name: 'Mecânica & Suspensão',
+    icon: '⚙️',
+    parts: [
+      'Amortecedor dianteiro LD',
+      'Amortecedor dianteiro LE',
+      'Amortecedor traseiro LD',
+      'Amortecedor traseiro LE',
+      'Feixe de molas traseiro LD',
+      'Feixe de molas traseiro LE',
+      'Bandeja superior dianteira LD',
+      'Bandeja superior dianteira LE',
+      'Bandeja inferior dianteira LD',
+      'Bandeja inferior dianteira LE',
+      'Diferencial traseiro / cardan',
+      'Caixa de direção hidráulica/elétrica',
+      'Manga de eixo dianteira LD',
+      'Manga de eixo dianteira LE',
+      'Roda dianteira LD',
+      'Roda dianteira LE',
+      'Roda traseira LD',
+      'Roda traseira LE',
+      'Pneu dianteiro LD',
+      'Pneu dianteiro LE',
+      'Pneu traseiro LD',
+      'Pneu traseiro LE',
+      'Pneu de estepe'
+    ]
+  },
+  {
+    id: 'vidros_interior',
+    name: 'Vidros & Interior',
+    icon: '🪟',
+    parts: [
+      'Vidro para-brisa dianteiro',
+      'Vidro traseiro da cabine / vigia',
+      'Vidro porta dianteira LD',
+      'Vidro porta dianteira LE',
+      'Vidro porta traseira LD',
+      'Vidro porta traseira LE',
+      'Bolsa do Airbag motorista (volante)',
+      'Bolsa do Airbag passageiro (painel)',
+      'Painel de instrumentos / tabelier'
+    ]
+  }
+];
+
+const VP_BASE_ZONES_CAMINHAO = [
+  {
+    id: 'cabine_dianteira',
+    name: 'Cabine & Dianteira',
+    icon: '🚛',
+    parts: [
+      'Capô frontal / tampa basculante',
+      'Grade frontal superior',
+      'Grade frontal inferior',
+      'Para-choque dianteiro central',
+      'Ponteira do para-choque dianteiro LD',
+      'Ponteira do para-choque dianteiro LE',
+      'Alma / travessa do para-choque',
+      'Farol dianteiro principal LD',
+      'Farol dianteiro principal LE',
+      'Farol de milha / auxiliar LD',
+      'Farol de milha / auxiliar LE',
+      'Lanterna de seta dianteira LD',
+      'Lanterna de seta dianteira LE',
+      'Para-brisa dianteiro',
+      'Quebra-sol externo (tapa-sol teto)',
+      'Lanterna três marias / luz de teto',
+      'Defletor de ar do teto (aerofólio)',
+      'Defletor de ar lateral da cabine LD',
+      'Defletor de ar lateral da cabine LE',
+      'Emblema frontal da montadora'
+    ]
+  },
+  {
+    id: 'portas_cabine',
+    name: 'Portas & Cabine',
+    icon: '🚪',
+    parts: [
+      'Porta LD da cabine',
+      'Porta LE da cabine (motorista)',
+      'Retrovisor principal LD',
+      'Retrovisor principal LE',
+      'Retrovisor auxiliar / de rampa LD',
+      'Retrovisor frontal / de aproximação',
+      'Braço do retrovisor LD',
+      'Braço do retrovisor LE',
+      'Degraus / estribo de acesso LD',
+      'Degraus / estribo de acesso LE',
+      'Para-lama dianteiro da cabine LD',
+      'Para-lama dianteiro da cabine LE',
+      'Extensão do para-lama LD',
+      'Extensão do para-lama LE',
+      'Vidro da porta LD',
+      'Vidro da porta LE',
+      'Maçaneta da porta LD',
+      'Maçaneta da porta LE',
+      'Spoiler / saia lateral inferior LD',
+      'Spoiler / saia lateral inferior LE',
+      'Painel traseiro da cabine / leito'
+    ]
+  },
+  {
+    id: 'chassi_tanques',
+    name: 'Chassi & Tanques',
+    icon: '🛡️',
+    parts: [
+      'Longarina do chassi LD',
+      'Longarina do chassi LE',
+      'Travessa do chassi',
+      'Tanque de combustível principal',
+      'Tanque de combustível suplementar',
+      'Tanque de Arla 32',
+      'Cinta / suporte do tanque de combustível',
+      'Protetor lateral ciclista LD',
+      'Protetor lateral ciclista LE',
+      'Caixa de bateria com tampa',
+      'Suporte do pneu de estepe',
+      'Pneu de estepe',
+      'Caixa de ferramentas / mantimentos'
+    ]
+  },
+  {
+    id: 'mecanica_susp_caminhao',
+    name: 'Mecânica & Suspensão',
+    icon: '⚙️',
+    parts: [
+      'Feixe de molas dianteiro LD',
+      'Feixe de molas dianteiro LE',
+      'Feixe de molas traseiro LD',
+      'Feixe de molas traseiro LE',
+      'Bolsa de ar da suspensão',
+      'Amortecedor dianteiro LD',
+      'Amortecedor dianteiro LE',
+      'Amortecedor traseiro LD',
+      'Amortecedor traseiro LE',
+      'Barra estabilizadora dianteira',
+      'Barra estabilizadora traseira',
+      'Eixo dianteiro direcional',
+      'Eixo de tração (diferencial)',
+      'Terceiro eixo / Truck',
+      'Caixa de direção hidráulica',
+      'Radiador de água',
+      'Radiador Intercooler',
+      'Cárter de óleo do motor'
+    ]
+  },
+  {
+    id: 'traseira_implemento',
+    name: 'Traseira & Implemento',
+    icon: '📦',
+    parts: [
+      'Para-choque traseiro homologado',
+      'Faixas refletivas de segurança',
+      'Lanterna traseira LD completa',
+      'Lanterna traseira LE completa',
+      'Suporte da placa traseira com luz',
+      'Para-barro de borracha traseiro LD',
+      'Para-barro de borracha traseiro LE',
+      'Para-lama traseiro envolvente LD',
+      'Para-lama traseiro envolvente LE',
+      'Mesa da quinta roda',
+      'Quinta roda / engate cavalo mecânico',
+      'Assoalho da caçamba / baú / carroceria',
+      'Tampa traseira da caçamba / carroceria',
+      'Portas traseiras do baú',
+      'Lateral do baú / furgão LD',
+      'Lateral do baú / furgão LE'
+    ]
+  },
+  {
+    id: 'rodas_pneus_caminhao',
+    name: 'Rodas & Pneus',
+    icon: '🛞',
+    parts: [
+      'Roda dianteira LD',
+      'Roda dianteira LE',
+      'Roda tração externa LD',
+      'Roda tração interna LD',
+      'Roda tração externa LE',
+      'Roda tração interna LE',
+      'Roda truck externa LD',
+      'Roda truck interna LD',
+      'Roda truck externa LE',
+      'Roda truck interna LE',
+      'Pneu dianteiro LD',
+      'Pneu dianteiro LE',
+      'Pneu tração externo LD',
+      'Pneu tração interno LD',
+      'Pneu tração externo LE',
+      'Pneu tração interno LE',
+      'Pneu truck externo LD',
+      'Pneu truck interno LD',
+      'Pneu truck externo LE',
+      'Pneu truck interno LE'
     ]
   }
 ];
@@ -5721,6 +6041,55 @@ function vpGetEffectivePartName(rawName) {
   return vpCustomPartRenamesMap[rawName] || rawName;
 }
 
+window.vpSetVehicleType = function(type, forceRender = true) {
+  vpDetectedVehicleType = type;
+
+  const btnCarro = document.getElementById('vpTypeBtn_carro');
+  const btnMoto = document.getElementById('vpTypeBtn_moto');
+  const btnPicape = document.getElementById('vpTypeBtn_picape');
+  const btnCaminhao = document.getElementById('vpTypeBtn_caminhao');
+
+  [btnCarro, btnMoto, btnPicape, btnCaminhao].forEach(btn => {
+    if (btn) btn.classList.remove('active');
+  });
+
+  const activeBtn = document.getElementById(`vpTypeBtn_${type}`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  const headerIcon = document.getElementById('vpVehicleHeaderIcon');
+  const typeBadge = document.getElementById('vpVehicleBadge');
+
+  if (type === 'moto') {
+    vpActiveZones = VP_BASE_ZONES_MOTO;
+    vpActiveZoneId = 'dianteira_moto';
+    if (headerIcon) headerIcon.textContent = '🏍️';
+    if (typeBadge) typeBadge.textContent = '🏍️ Motocicleta';
+  } else if (type === 'picape') {
+    vpActiveZones = VP_BASE_ZONES_PICAPE;
+    vpActiveZoneId = 'dianteira';
+    if (headerIcon) headerIcon.textContent = '🛻';
+    if (typeBadge) typeBadge.textContent = '🛻 Picape / Caminhonete';
+  } else if (type === 'caminhao') {
+    vpActiveZones = VP_BASE_ZONES_CAMINHAO;
+    vpActiveZoneId = 'cabine_dianteira';
+    if (headerIcon) headerIcon.textContent = '🚛';
+    if (typeBadge) typeBadge.textContent = '🚛 Caminhão / Pesado';
+  } else {
+    vpDetectedVehicleType = 'carro';
+    vpActiveZones = VP_BASE_ZONES_CAR;
+    vpActiveZoneId = 'dianteira';
+    if (headerIcon) headerIcon.textContent = '🚗';
+    if (typeBadge) typeBadge.textContent = '🚗 Automóvel / SUV';
+  }
+
+  vpViewAllZonesMode = false;
+
+  if (forceRender) {
+    vpUpdateTriggerButton();
+    vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  }
+};
+
 window.openVehiclePartsModal = function() {
   vpLoadState();
 
@@ -5730,43 +6099,47 @@ window.openVehiclePartsModal = function() {
 
   const vUpper = vehicleTitle.toUpperCase();
   const titleDisplay = document.getElementById('vpVehicleTitle');
-  const typeBadge = document.getElementById('vpVehicleBadge');
 
-  if (vUpper.includes('MOTO') || vUpper.includes('CG 160') || vUpper.includes('FAZER') || vUpper.includes('HONDA BIZ') || vUpper.includes('YAMAHA') || vUpper.includes('XRE') || vUpper.includes('BROS')) {
-    vpDetectedVehicleType = 'moto';
-    vpActiveZones = VP_BASE_ZONES_MOTO;
-    vpActiveZoneId = 'dianteira_moto';
-    if (typeBadge) typeBadge.textContent = '🏍️ Motocicleta';
-  } else if (vUpper.includes('HILUX') || vUpper.includes('S10') || vUpper.includes('RANGER') || vUpper.includes('TORO') || vUpper.includes('STRADA') || vUpper.includes('SAVEIRO') || vUpper.includes('AMAROK') || vUpper.includes('MONTANA') || vUpper.includes('OROCH') || vUpper.includes('FRONTIER') || vUpper.includes('L200') || vUpper.includes('RAM')) {
-    vpDetectedVehicleType = 'picape';
-    vpActiveZones = JSON.parse(JSON.stringify(VP_BASE_ZONES_CAR));
-    const trasZone = vpActiveZones.find(z => z.id === 'traseira');
-    if (trasZone) {
-      trasZone.name = 'Traseira & Caçamba';
-      trasZone.parts = [
-        'Tampa da caçamba traseira',
-        'Para-choque traseiro',
-        'Alma do para-choque traseiro',
-        'Lanterna traseira LD',
-        'Lanterna traseira LE',
-        'Protetor de caçamba',
-        'Santo Antônio',
-        'Capota marítima',
-        'Estribo lateral LD',
-        'Estribo lateral LE',
-        'Painel traseiro da cabine',
-        'Assoalho da caçamba',
-        'Emblema traseiro da montadora'
-      ];
-    }
-    vpActiveZoneId = 'dianteira';
-    if (typeBadge) typeBadge.textContent = '🛻 Picape / Caminhonete';
-  } else {
-    vpDetectedVehicleType = 'carro';
-    vpActiveZones = VP_BASE_ZONES_CAR;
-    vpActiveZoneId = 'dianteira';
-    if (typeBadge) typeBadge.textContent = '🚗 Automóvel / SUV';
+  // Auto-detecção inteligente de tipo com keywords ampliadas
+  let detectedType = 'carro';
+
+  const motoKeywords = [
+    'MOTO', 'MOTOCICLETA', 'HONDA', 'YAMAHA', 'SUZUKI', 'KAWASAKI', 'BMW GS', 'TRIUMPH', 
+    'DUCATI', 'ROYAL ENFIELD', 'SHINERAY', 'HAOJUE', 'DAFRA', 'TWISTER', 'CB ', 'CB300', 
+    'CB 300', 'CB500', 'CB 500', 'CB650', 'CB 650', 'CB1000', 'CBR', 'CG ', 'CG160', 
+    'CG 160', 'CG150', 'CG 150', 'CG125', 'TITAN', 'FAN', 'START', 'BIZ', 'POP 110', 
+    'POP 100', 'POP110', 'POP100', 'BROS', 'NXR', 'XRE', 'SAHARA', 'TORNADO', 'FAZER', 
+    'FZ15', 'FZ 15', 'FZ25', 'FZ 25', 'FZ6', 'LANDER', 'XTZ', 'TENERE', 'TÉNÉRÉ', 
+    'FACTOR', 'CROSSER', 'MT-03', 'MT-07', 'MT-09', 'MT03', 'MT07', 'MT09', 'R3', 
+    'R1', 'PCX', 'NMAX', 'XMAX', 'ELITE', 'NEO', 'ADV 150', 'ADV 350', 'SH 150', 
+    'SH 300', 'BURGMAN', 'INTRUDER', 'TIGER', 'Z400', 'Z900', 'NINJA', 'VERSYS', 
+    'SCRAMBLER', 'METEOR', 'HUNTER', 'CLASSIC 350', 'HIMALAYAN'
+  ];
+
+  const caminhaoKeywords = [
+    'CAMINHAO', 'CAMINHÃO', 'CAVALO', 'TRUCK', 'BITREM', 'RODOTREM', 'CARRETA', 'SCANIA', 
+    'VOLVO FH', 'VOLVO FM', 'VOLVO VM', 'VOLVO FMX', 'MERCEDES-BENZ', 'MERCEDES BENZ', 
+    'MB ', 'ACTROS', 'ATEGO', 'ACCELO', 'AXOR', '1620', '1938', '1113', '1313', 'VW 24.', 
+    'CONSTELLATION', 'DELIVERY', 'METEOR', 'MAN ', 'IVECO', 'STRALIS', 'HI-WAY', 
+    'TECTOR', 'DAILY', 'S-WAY', 'DAF', 'XF', 'CF', 'FORD CARGO', 'CARGO ', 'F-4000', 
+    'F-12000', 'F-14000', 'CAVALO MECANICO', 'CAVALO MECÂNICO'
+  ];
+
+  const picapeKeywords = [
+    'HILUX', 'S10', 'RANGER', 'TORO', 'STRADA', 'SAVEIRO', 'AMAROK', 'MONTANA', 
+    'OROCH', 'FRONTIER', 'L200', 'RAM ', 'RAMPAGE', 'TITANO', 'MAVERICK', 'FIORINO', 'COURIER'
+  ];
+
+  if (motoKeywords.some(k => vUpper.includes(k))) {
+    detectedType = 'moto';
+  } else if (caminhaoKeywords.some(k => vUpper.includes(k))) {
+    detectedType = 'caminhao';
+  } else if (picapeKeywords.some(k => vUpper.includes(k))) {
+    detectedType = 'picape';
   }
+
+  // Aplica o tipo detectado e atualiza as abas
+  window.vpSetVehicleType(detectedType, false);
 
   if (titleDisplay) {
     titleDisplay.textContent = vehicleTitle || 'Partes do Veículo';

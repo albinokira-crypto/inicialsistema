@@ -560,15 +560,32 @@
         
         <!-- HEADER DO SELETOR -->
         <div style="background: #ffffff; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
+          
+          <!-- ABAS DE TIPO DE VEÍCULO (ACIMA DO TÍTULO) -->
+          <div class="vp-type-tabs-container" id="vpTypeTabsContainer">
+            <button type="button" class="vp-type-tab-btn active" id="vpTypeBtn_carro" onclick="vpSetVehicleType('carro')">
+              <span>🚗</span> Carro
+            </button>
+            <button type="button" class="vp-type-tab-btn" id="vpTypeBtn_moto" onclick="vpSetVehicleType('moto')">
+              <span>🏍️</span> Moto
+            </button>
+            <button type="button" class="vp-type-tab-btn" id="vpTypeBtn_picape" onclick="vpSetVehicleType('picape')">
+              <span>🛻</span> Picape
+            </button>
+            <button type="button" class="vp-type-tab-btn" id="vpTypeBtn_caminhao" onclick="vpSetVehicleType('caminhao')">
+              <span>🚛</span> Caminhão
+            </button>
+          </div>
+
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 1.3rem;">🚗</span>
-              <div>
-                <h3 id="vpVehicleTitle" style="margin: 0; font-size: 1rem; font-weight: 800; color: #0f172a; line-height: 1.2;">Partes do Veículo</h3>
-                <span id="vpVehicleBadge" style="font-size: 0.70rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 4px; display: inline-block;">Automóvel</span>
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+              <span id="vpVehicleHeaderIcon" style="font-size: 1.3rem;">🚗</span>
+              <div style="min-width: 0; flex: 1;">
+                <h3 id="vpVehicleTitle" style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #0f172a; line-height: 1.2; word-break: break-word;">Partes do Veículo</h3>
+                <span id="vpVehicleBadge" style="font-size: 0.70rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 2px;">Automóvel / SUV</span>
               </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
               <button type="button" onclick="vpOpenAddCustomModal()" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-size: 0.76rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; cursor: pointer;">
                 + Nova Peça
               </button>
