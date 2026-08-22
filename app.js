@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.67';
+const CURRENT_APP_VERSION = 'v1.68';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -424,27 +424,7 @@ function attachGlobalEventListeners() {
   if (supervisaoQuickAdd) {
     supervisaoQuickAdd.addEventListener('click', (e) => {
       e.preventDefault();
-      const name = window.prompt('Digite o nome da nova oficina:');
-      if (name && name.trim()) {
-        const cleanedName = name.trim();
-        const exists = oficinas.some(o => o.name.toLowerCase() === cleanedName.toLowerCase());
-        if (exists) {
-          alert('Esta oficina já está cadastrada!');
-          return;
-        }
-        const newOficina = {
-          id: Date.now().toString(),
-          name: cleanedName,
-          responsaveis: []
-        };
-        oficinas.push(newOficina);
-        saveOficinas();
-        renderOficinas();
-        populateSupervisaoOficinaSelect();
-        if (supervisaoOficinaSelect) {
-          supervisaoOficinaSelect.value = newOficina.id;
-        }
-      }
+      openQuickAddOficinaModal('supervisao');
     });
   }
 
@@ -2242,6 +2222,13 @@ function handleAction(action, id) {
   if (item.oficinaId) {
     const oficinaSelect = document.getElementById('itemOficinaSelect');
     if (oficinaSelect) oficinaSelect.value = item.oficinaId;
+    const oficinaInput = document.getElementById('itemOficinaComboboxInput');
+    const ofObj = oficinas.find(o => o.id === item.oficinaId);
+    if (oficinaInput && ofObj) {
+      oficinaInput.value = ofObj.name;
+      const clearBtn = document.getElementById('itemOficinaComboboxClearBtn');
+      if (clearBtn) clearBtn.style.display = 'block';
+    }
   }
 
   if (item.details) {
@@ -2629,19 +2616,29 @@ function handleOficinaAction(action, id) {
 function renderDynamicSurveyFields() {
   if (!dynamicFieldsContainer) return;
 
-  const officeOptions = oficinas.map(o => `<option value="${o.id}">${escapeHtml(o.name)}</option>`).join('');
   const officeDropdownHtml = `
-    <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
+    <div style="width: 100%; max-width: 100%; box-sizing: border-box; position: relative;">
       <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
-        <span>Oficina</span>
+        <span style="font-size: 0.9rem; font-weight: 600; color: #374151;">🏢 Oficina</span>
         <a href="#" id="quickAddOficina" style="color: #2563eb; font-size: 0.8rem; font-weight: 700; text-decoration: none;">+ Cadastrar Nova</a>
       </div>
-      <select id="itemOficinaSelect" name="oficinaId" required>
+      
+      <!-- Select nativo em segundo plano para manter integridade de submit e required -->
+      <select id="itemOficinaSelect" name="oficinaId" required style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; bottom: 0; left: 0;">
         <option value="" disabled selected>${oficinas.length ? 'Selecione a oficina...' : 'Nenhuma oficina cadastrada'}</option>
-        ${officeOptions}
+        ${oficinas.map(o => `<option value="${o.id}">${escapeHtml(o.name)}</option>`).join('')}
       </select>
+
+      <div class="oficina-combobox-wrapper" style="position: relative; width: 100%;">
+        <div style="position: relative; display: flex; align-items: center; width: 100%;">
+          <input id="itemOficinaComboboxInput" type="text" placeholder="${oficinas.length ? '🔍 Digite para buscar ou clique para selecionar...' : 'Nenhuma oficina cadastrada'}" autocomplete="off" style="width: 100% !important; box-sizing: border-box; padding: 11px 40px 11px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.90rem; font-weight: 600; outline: none; background: #ffffff; color: #0f172a; cursor: pointer;" />
+          <button id="itemOficinaComboboxClearBtn" type="button" style="display: none; position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1rem; color: #94a3b8; cursor: pointer; padding: 4px; line-height: 1;">✕</button>
+          <button id="itemOficinaComboboxToggleBtn" type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 0.8rem; color: #64748b; cursor: pointer; padding: 4px; line-height: 1;">▼</button>
+        </div>
+        <ul id="itemOficinaComboboxList" class="oficina-combobox-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; max-height: 220px; overflow-y: auto; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); z-index: 70; padding: 4px 0; margin: 0; list-style: none;"></ul>
+      </div>
       ${!oficinas.length ? '<span style="color:#ef4444; font-size:0.75rem; margin-top:4px; display:block;">Cadastre uma oficina no menu antes de prosseguir.</span>' : ''}
-    </label>
+    </div>
   `;
 
   let fieldsHtml = '';
@@ -2953,6 +2950,10 @@ function renderDynamicSurveyFields() {
     const selectEl = document.getElementById('itemOficinaSelect');
     if (selectEl) {
       selectEl.value = rioLogOficina.id;
+      const inputEl = document.getElementById('itemOficinaComboboxInput');
+      if (inputEl) inputEl.value = rioLogOficina.name;
+      const clearBtn = document.getElementById('itemOficinaComboboxClearBtn');
+      if (clearBtn) clearBtn.style.display = 'block';
     }
   }
 
@@ -2960,28 +2961,7 @@ function renderDynamicSurveyFields() {
   if (quickAdd) {
     quickAdd.addEventListener('click', (e) => {
       e.preventDefault();
-      const name = window.prompt('Digite o nome da nova oficina:');
-      if (name && name.trim()) {
-        const cleanedName = name.trim();
-        const exists = oficinas.some(o => o.name.toLowerCase() === cleanedName.toLowerCase());
-        if (exists) {
-          alert('Esta oficina já está cadastrada!');
-          return;
-        }
-        const newOficina = {
-          id: Date.now().toString(),
-          name: cleanedName
-        };
-        oficinas.push(newOficina);
-        saveOficinas();
-        renderOficinas();
-        
-        renderDynamicSurveyFields();
-        const selectEl = document.getElementById('itemOficinaSelect');
-        if (selectEl) {
-          selectEl.value = newOficina.id;
-        }
-      }
+      openQuickAddOficinaModal('vistoria');
     });
   }
 
@@ -3041,7 +3021,188 @@ function renderDynamicSurveyFields() {
       }
     });
   });
+
+  // Initialize searchable combobox in the dynamic fields form
+  setupItemFormOficinaCombobox();
 }
+
+let quickAddOficinaSource = 'vistoria';
+
+function openQuickAddOficinaModal(source = 'vistoria') {
+  quickAddOficinaSource = source;
+  const modal = document.getElementById('quickAddOficinaModal');
+  const nameInput = document.getElementById('quickAddOficinaNameInput');
+  const respInput = document.getElementById('quickAddOficinaResponsavelInput');
+  if (nameInput) nameInput.value = '';
+  if (respInput) respInput.value = '';
+  if (modal) modal.style.display = 'flex';
+  if (nameInput) setTimeout(() => nameInput.focus(), 100);
+}
+window.openQuickAddOficinaModal = openQuickAddOficinaModal;
+
+function closeQuickAddOficinaModal() {
+  const modal = document.getElementById('quickAddOficinaModal');
+  if (modal) modal.style.display = 'none';
+}
+window.closeQuickAddOficinaModal = closeQuickAddOficinaModal;
+
+function handleQuickAddOficinaSubmit(e) {
+  if (e) e.preventDefault();
+  const nameInput = document.getElementById('quickAddOficinaNameInput');
+  const respInput = document.getElementById('quickAddOficinaResponsavelInput');
+  const name = nameInput ? nameInput.value.trim() : '';
+  const resp = respInput ? respInput.value.trim() : '';
+
+  if (!name) return;
+
+  const exists = oficinas.some(o => o.name.toLowerCase() === name.toLowerCase());
+  if (exists) {
+    alert('Esta oficina já está cadastrada!');
+    return;
+  }
+
+  const newOficina = {
+    id: Date.now().toString(),
+    name: name,
+    responsaveis: resp ? [resp] : []
+  };
+
+  oficinas.push(newOficina);
+  saveOficinas();
+  renderOficinas();
+  closeQuickAddOficinaModal();
+
+  if (quickAddOficinaSource === 'supervisao') {
+    populateSupervisaoOficinaSelect();
+    if (supervisaoOficinaSelect) {
+      supervisaoOficinaSelect.value = newOficina.id;
+    }
+    if (supervisaoAttendedInput && resp) {
+      supervisaoAttendedInput.value = resp;
+    }
+  } else {
+    renderDynamicSurveyFields();
+    const selectEl = document.getElementById('itemOficinaSelect');
+    const inputEl = document.getElementById('itemOficinaComboboxInput');
+    const clearBtn = document.getElementById('itemOficinaComboboxClearBtn');
+    if (selectEl) selectEl.value = newOficina.id;
+    if (inputEl) inputEl.value = newOficina.name;
+    if (clearBtn) clearBtn.style.display = 'block';
+  }
+}
+window.handleQuickAddOficinaSubmit = handleQuickAddOficinaSubmit;
+
+function setupItemFormOficinaCombobox() {
+  const inputEl = document.getElementById('itemOficinaComboboxInput');
+  const clearBtn = document.getElementById('itemOficinaComboboxClearBtn');
+  const toggleBtn = document.getElementById('itemOficinaComboboxToggleBtn');
+  const listEl = document.getElementById('itemOficinaComboboxList');
+  const selectEl = document.getElementById('itemOficinaSelect');
+
+  if (!inputEl || !listEl || !selectEl) return;
+
+  function renderDropdown(filterText = '') {
+    const q = filterText.trim().toLowerCase();
+    const matchingOficinas = q
+      ? oficinas.filter(o => o.name.toLowerCase().includes(q) || (o.responsaveis && o.responsaveis.some(r => r.toLowerCase().includes(q))))
+      : oficinas;
+
+    if (matchingOficinas.length === 0) {
+      listEl.innerHTML = `<li style="padding: 12px 14px; font-size: 0.85rem; color: #94a3b8; text-align: center;">Nenhuma oficina encontrada</li>`;
+    } else {
+      listEl.innerHTML = matchingOficinas.map(oficina => {
+        const isSel = selectEl.value === oficina.id;
+        const respText = (oficina.responsaveis && oficina.responsaveis.length)
+          ? `<div style="font-size: 0.74rem; color: #64748b; margin-top: 2px;">👤 Resp: ${escapeHtml(oficina.responsaveis.join(', '))}</div>`
+          : '';
+        return `
+          <li data-oficina-id="${oficina.id}" data-name="${escapeHtml(oficina.name)}" style="padding: 10px 14px; font-size: 0.88rem; font-weight: 600; color: ${isSel ? '#16a34a' : '#0f172a'}; cursor: pointer; border-bottom: 1px solid #f8fafc; background: ${isSel ? '#f0fdf4' : 'transparent'};">
+            <div>${escapeHtml(oficina.name)}</div>
+            ${respText}
+          </li>
+        `;
+      }).join('');
+    }
+  }
+
+  function openDropdown() {
+    renderDropdown(inputEl.value);
+    listEl.style.display = 'block';
+  }
+
+  function closeDropdown() {
+    listEl.style.display = 'none';
+  }
+
+  function selectOficina(oficinaId, oficinaName) {
+    selectEl.value = oficinaId;
+    inputEl.value = oficinaName;
+    if (clearBtn) clearBtn.style.display = 'block';
+    closeDropdown();
+  }
+
+  if (selectEl.value) {
+    const cur = oficinas.find(o => o.id === selectEl.value);
+    if (cur) {
+      inputEl.value = cur.name;
+      if (clearBtn) clearBtn.style.display = 'block';
+    }
+  }
+
+  inputEl.addEventListener('focus', () => {
+    openDropdown();
+  });
+
+  inputEl.addEventListener('input', (e) => {
+    const val = e.target.value;
+    if (clearBtn) clearBtn.style.display = val ? 'block' : 'none';
+    renderDropdown(val);
+    listEl.style.display = 'block';
+
+    const matchExact = oficinas.find(o => o.name.toLowerCase() === val.trim().toLowerCase());
+    if (matchExact) {
+      selectEl.value = matchExact.id;
+    } else {
+      selectEl.value = '';
+    }
+  });
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (listEl.style.display === 'block') {
+        closeDropdown();
+      } else {
+        openDropdown();
+        inputEl.focus();
+      }
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectEl.value = '';
+      inputEl.value = '';
+      clearBtn.style.display = 'none';
+      closeDropdown();
+    });
+  }
+
+  listEl.addEventListener('click', (e) => {
+    const li = e.target.closest('li[data-oficina-id]');
+    if (!li) return;
+    selectOficina(li.dataset.oficinaId, li.dataset.name);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!inputEl.contains(e.target) && !listEl.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
+      closeDropdown();
+    }
+  });
+}
+window.setupItemFormOficinaCombobox = setupItemFormOficinaCombobox;
+
 function populateSupervisaoOficinaSelect() {
   if (!supervisaoOficinaSelect) return;
   const currentVal = supervisaoOficinaSelect.value;
