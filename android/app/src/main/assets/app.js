@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.68';
+const CURRENT_APP_VERSION = 'v1.69';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -34,25 +34,36 @@ async function checkForSystemUpdates(showFeedback = false) {
   }
 
   try {
-    const res = await fetch('https://gestao-vistoria-inicial.vercel.app/version.json?t=' + Date.now(), {
-      cache: 'no-store'
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.version) {
-        const serverVersion = 'v' + data.version;
-        const isNewer = serverVersion !== activeVersion;
-        if (versionEl) {
-          versionEl.textContent = `${activeVersion} ${isNewer ? '(Nova versão ' + serverVersion + ' disponível)' : '(Atualizado)'}`;
+    const endpoints = [
+      'version.json?t=' + Date.now(),
+      'https://gestao-vistoria-inicial.vercel.app/version.json?t=' + Date.now()
+    ];
+    let data = null;
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (res.ok) {
+          data = await res.json();
+          if (data && data.version) break;
         }
-        if (isNewer && showFeedback) {
-          if (confirm(`Uma nova versão (${serverVersion}) está disponível! Deseja atualizar o aplicativo agora?`)) {
-            forceAppRefresh();
-          }
-        } else if (!isNewer && showFeedback) {
-          alert(`Você já está utilizando a versão mais recente (${activeVersion})!`);
-        }
+      } catch(e) {}
+    }
+
+    if (data && data.version) {
+      const serverVersion = data.version.startsWith('v') ? data.version : 'v' + data.version;
+      const isNewer = serverVersion !== activeVersion;
+      if (versionEl) {
+        versionEl.textContent = `${activeVersion} ${isNewer ? '(Nova versão ' + serverVersion + ' disponível)' : '(Atualizado)'}`;
       }
+      if (isNewer && showFeedback) {
+        if (confirm(`Uma nova versão (${serverVersion}) está disponível! Deseja atualizar o aplicativo agora?`)) {
+          forceAppRefresh();
+        }
+      } else if (!isNewer && showFeedback) {
+        alert(`Você já está utilizando a versão mais recente (${activeVersion})!`);
+      }
+    } else {
+      if (versionEl) versionEl.textContent = `${activeVersion} (Atualizado)`;
     }
   } catch (err) {
     if (versionEl && !versionEl.textContent) {
@@ -4251,11 +4262,38 @@ async function forceAppRefresh() {
   const btn = document.getElementById('forceRefreshAppBtn');
   if (btn) {
     btn.disabled = true;
-    btn.textContent = '⏳ Recarregando sistema...';
+    btn.textContent = '⏳ Atualizando sistema...';
   }
 
-  // Recarrega diretamente a página web com timestamp sem acionar limpeza nativa de cache
-  window.location.href = 'dashboard.html?t=' + Date.now();
+  // 1. Limpa todos os caches locais do Service Worker
+  if ('caches' in window) {
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(key => caches.delete(key)));
+    } catch(e) {}
+  }
+
+  // 2. Desregistra Service Worker ativo para forçar download novo
+  if ('serviceWorker' in navigator) {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const reg of registrations) {
+        await reg.unregister();
+      }
+    } catch(e) {}
+  }
+
+  // 3. Notifica interface nativa do Android se disponível
+  if (window.AndroidInterface && typeof window.AndroidInterface.clearAppCache === 'function') {
+    try {
+      window.AndroidInterface.clearAppCache();
+    } catch(e) {}
+  }
+
+  // 4. Recarrega a página forçando bypass de cache
+  setTimeout(() => {
+    window.location.href = 'dashboard.html?t=' + Date.now() + '&v=' + CURRENT_APP_VERSION;
+  }, 250);
 }
 window.forceAppRefresh = forceAppRefresh;
 
