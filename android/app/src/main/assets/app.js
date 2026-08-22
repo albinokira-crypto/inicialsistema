@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.79';
+const CURRENT_APP_VERSION = 'v1.80';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -1088,26 +1088,43 @@ function updateHomeSummary() {
   const summaryGridEl = document.getElementById('homeSummaryGrid');
   if (!summaryGridEl) return;
   const statsItems = items.filter(item => item.clearedFromWeek !== true);
+  
+  // Vistorias com valor vs Vistorias Extras (sem valor ou valor <= 0)
+  const vistoriasComValor = statsItems.filter(item => Number(item.value) > 0);
+  const vistoriasExtras = statsItems.filter(item => !item.value || Number(item.value) <= 0 || isNaN(Number(item.value)));
+  
+  const countComValor = vistoriasComValor.length;
+  const countExtras = vistoriasExtras.length;
   const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
   const uniqueDays = new Set(statsItems.map((item) => item.day)).size;
   const lastRecord = statsItems.length ? (statsItems[0].date ? formatDateString(statsItems[0].date) : (statsItems[0].createdAt || '—')) : '—';
 
   summaryGridEl.innerHTML = `
-    <article class="summary-item" style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; text-align: center;">
-      <strong style="font-size: 1.3rem; color: #1e40af; display: block;">${statsItems.length}</strong>
-      <span style="font-size: 0.78rem; color: #3b82f6; font-weight: 700; text-transform: uppercase;">vistorias</span>
+    <!-- LINHA 1 (3 CARDS) -->
+    <article class="summary-item summary-item-top" style="grid-column: span 2; background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 4px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 1.25rem; color: #1e40af; display: block; font-weight: 800;">${countComValor}</strong>
+      <span style="font-size: 0.70rem; color: #2563eb; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">Vistorias</span>
     </article>
-    <article class="summary-item" style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px; border-radius: 12px; text-align: center;">
-      <strong style="font-size: 1.2rem; color: #065f46; display: block;">R$ ${totalValue.toFixed(2).replace('.', ',')}</strong>
-      <span style="font-size: 0.78rem; color: #10b981; font-weight: 700; text-transform: uppercase;">valor total</span>
+
+    <article class="summary-item summary-item-top" style="grid-column: span 2; background: #fff7ed; border: 1px solid #fed7aa; padding: 10px 4px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 1.25rem; color: #c2410c; display: block; font-weight: 800;">${countExtras}</strong>
+      <span style="font-size: 0.70rem; color: #ea580c; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">Vistorias Extras</span>
     </article>
-    <article class="summary-item" style="background: #fef3c7; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; text-align: center;">
-      <strong style="font-size: 1.3rem; color: #92400e; display: block;">${uniqueDays}</strong>
-      <span style="font-size: 0.78rem; color: #d97706; font-weight: 700; text-transform: uppercase;">dias preenchidos</span>
+
+    <article class="summary-item summary-item-top" style="grid-column: span 2; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 10px 4px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 1.10rem; color: #065f46; display: block; font-weight: 800;">R$ ${totalValue.toFixed(2).replace('.', ',')}</strong>
+      <span style="font-size: 0.70rem; color: #059669; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">Valor Total</span>
     </article>
-    <article class="summary-item" style="background: #f3e8ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; text-align: center;">
-      <strong style="font-size: 0.95rem; color: #6b21a8; display: block; word-break: break-word;">${lastRecord}</strong>
-      <span style="font-size: 0.78rem; color: #9333ea; font-weight: 700; text-transform: uppercase;">último registro</span>
+
+    <!-- LINHA 2 (2 CARDS DO MESMO TAMANHO) -->
+    <article class="summary-item summary-item-bottom" style="grid-column: span 3; background: #fefce8; border: 1px solid #fef08a; padding: 10px 6px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 1.20rem; color: #854d0e; display: block; font-weight: 800;">${uniqueDays}</strong>
+      <span style="font-size: 0.72rem; color: #ca8a04; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">Dias Preenchidos</span>
+    </article>
+
+    <article class="summary-item summary-item-bottom" style="grid-column: span 3; background: #f3e8ff; border: 1px solid #e9d5ff; padding: 10px 6px; border-radius: 12px; text-align: center;">
+      <strong style="font-size: 0.95rem; color: #6b21a8; display: block; word-break: break-word; font-weight: 800;">${lastRecord}</strong>
+      <span style="font-size: 0.72rem; color: #9333ea; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">Último Registro</span>
     </article>
   `;
 }
@@ -1848,13 +1865,20 @@ function render() {
   installButton.hidden = !deferredPrompt;
 
   const statsItems = items.filter(item => item.clearedFromWeek !== true);
+  const vistoriasComValor = statsItems.filter(item => Number(item.value) > 0);
+  const vistoriasExtras = statsItems.filter(item => !item.value || Number(item.value) <= 0 || isNaN(Number(item.value)));
   const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
   const uniqueDays = new Set(statsItems.map((item) => item.day)).size;
+  const lastRecord = statsItems.length ? (statsItems[0].date ? formatDateString(statsItems[0].date) : (statsItems[0].createdAt || '—')) : '—';
 
   summaryGrid.innerHTML = `
     <article class="summary-item">
-      <strong>${statsItems.length}</strong>
+      <strong>${vistoriasComValor.length}</strong>
       <span>vistorias</span>
+    </article>
+    <article class="summary-item">
+      <strong>${vistoriasExtras.length}</strong>
+      <span>vistorias extras</span>
     </article>
     <article class="summary-item">
       <strong>R$ ${totalValue.toFixed(2).replace('.', ',')}</strong>
@@ -1865,7 +1889,7 @@ function render() {
       <span>dias preenchidos</span>
     </article>
     <article class="summary-item">
-      <strong>${statsItems.length ? escapeHtml(statsItems[0].createdAt) : '—'}</strong>
+      <strong>${lastRecord}</strong>
       <span>último registro</span>
     </article>
   `;
