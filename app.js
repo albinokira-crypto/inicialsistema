@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.71';
+const CURRENT_APP_VERSION = 'v1.72';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -6017,10 +6017,45 @@ let vpDetectedVehicleType = 'carro';
 let vpCurrentVehicleModelName = '';
 let vpViewAllZonesMode = false;
 
+const VP_CLOUD_API_URL = 'https://api.restful-api.dev/objects/ff8081819ff5b11001a02a509b237b4b';
 let vpSelectedPartsMap = new Map(); // key = displayName -> { name, rawName, zoneId, zoneName, action: 'troca'|'reparo', obs: '' }
 let vpCustomPartsList = [];
 let vpCustomPartRenamesMap = {};
 let vpDeletedPartsList = [];
+let vpIsSyncingCloud = false;
+
+function vpUpdateCloudIndicator(status, text) {
+  const iconEl = document.getElementById('vpCloudSyncIcon');
+  const textEl = document.getElementById('vpCloudSyncText');
+  const btnEl = document.getElementById('vpCloudSyncBtn');
+  if (!iconEl && !textEl && !btnEl) return;
+
+  if (status === 'syncing') {
+    if (iconEl) iconEl.textContent = '🔄';
+    if (textEl) textEl.textContent = text || 'Sincronizando...';
+    if (btnEl) {
+      btnEl.style.background = '#fef9c3';
+      btnEl.style.borderColor = '#fde047';
+      btnEl.style.color = '#a16207';
+    }
+  } else if (status === 'synced') {
+    if (iconEl) iconEl.textContent = '☁️';
+    if (textEl) textEl.textContent = text || 'Nuvem';
+    if (btnEl) {
+      btnEl.style.background = '#f0fdf4';
+      btnEl.style.borderColor = '#bbf7d0';
+      btnEl.style.color = '#16a34a';
+    }
+  } else if (status === 'error') {
+    if (iconEl) iconEl.textContent = '⚠️';
+    if (textEl) textEl.textContent = text || 'Offline';
+    if (btnEl) {
+      btnEl.style.background = '#fef2f2';
+      btnEl.style.borderColor = '#fecaca';
+      btnEl.style.color = '#dc2626';
+    }
+  }
+}
 
 function vpLoadState() {
   try {
@@ -6033,13 +6068,130 @@ function vpLoadState() {
   } catch(e) {}
 }
 
-function vpSaveState() {
+function vpSaveState(syncToCloud = false) {
   try {
     localStorage.setItem('mobile_parts_custom', JSON.stringify(vpCustomPartsList));
     localStorage.setItem('mobile_parts_renames', JSON.stringify(vpCustomPartRenamesMap));
     localStorage.setItem('mobile_parts_deleted', JSON.stringify(vpDeletedPartsList));
   } catch(e) {}
+
+  if (syncToCloud) {
+    vpPushCatalogToCloud();
+  }
 }
+
+async function vpPushCatalogToCloud() {
+  if (vpIsSyncingCloud) return;
+  vpIsSyncingCloud = true;
+  vpUpdateCloudIndicator('syncing', 'Salvando...');
+
+  try {
+    const payload = {
+      name: 'gestao_vistorias_parts_catalog',
+      data: {
+        customParts: vpCustomPartsList,
+        deletedParts: vpDeletedPartsList,
+        renames: vpCustomPartRenamesMap,
+        updatedAt: Date.now()
+      }
+    };
+
+    const res = await fetch(VP_CLOUD_API_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      vpUpdateCloudIndicator('synced', 'Salvo Online ✓');
+      setTimeout(() => vpUpdateCloudIndicator('synced', 'Nuvem'), 3000);
+    } else {
+      vpUpdateCloudIndicator('error', 'Erro Online');
+    }
+  } catch (err) {
+    console.warn('Erro ao sincronizar catálogo com a nuvem:', err);
+    vpUpdateCloudIndicator('error', 'Offline');
+  } finally {
+    vpIsSyncingCloud = false;
+  }
+}
+
+window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
+  if (vpIsSyncingCloud) return;
+  vpIsSyncingCloud = true;
+  vpUpdateCloudIndicator('syncing', 'Baixando...');
+
+  try {
+    const res = await fetch(VP_CLOUD_API_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Servidor da nuvem indisponível');
+    const json = await res.json();
+    const cloudData = (json && json.data) ? json.data : {};
+
+    let hasChanges = false;
+
+    // 1. Merge de peças customizadas da nuvem
+    if (Array.isArray(cloudData.customParts)) {
+      cloudData.customParts.forEach(cloudPart => {
+        if (!cloudPart || !cloudPart.name) return;
+        const existsLocally = vpCustomPartsList.some(p => p.name.toLowerCase() === cloudPart.name.toLowerCase());
+        if (!existsLocally) {
+          vpCustomPartsList.push(cloudPart);
+          hasChanges = true;
+        }
+      });
+    }
+
+    // 2. Merge de peças deletadas
+    if (Array.isArray(cloudData.deletedParts)) {
+      cloudData.deletedParts.forEach(delName => {
+        if (delName && !vpDeletedPartsList.some(d => d.toLowerCase() === delName.toLowerCase())) {
+          vpDeletedPartsList.push(delName);
+          hasChanges = true;
+        }
+      });
+    }
+
+    // 3. Merge de renomeações
+    if (cloudData.renames && typeof cloudData.renames === 'object') {
+      Object.keys(cloudData.renames).forEach(orig => {
+        if (!vpCustomPartRenamesMap[orig]) {
+          vpCustomPartRenamesMap[orig] = cloudData.renames[orig];
+          hasChanges = true;
+        }
+      });
+    }
+
+    // Se temos peças locais que ainda não estavam na nuvem, faz push consolidado
+    const localHasExtra = vpCustomPartsList.some(localP => {
+      return !cloudData.customParts || !cloudData.customParts.some(cP => cP.name.toLowerCase() === localP.name.toLowerCase());
+    });
+
+    if (localHasExtra) {
+      vpIsSyncingCloud = false;
+      await vpPushCatalogToCloud();
+    } else {
+      vpSaveState(false);
+      vpUpdateCloudIndicator('synced', 'Sincronizado ✓');
+      setTimeout(() => vpUpdateCloudIndicator('synced', 'Nuvem'), 3000);
+    }
+
+    if (hasChanges) {
+      vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+    }
+
+    if (showFeedback) {
+      alert('☁️ Catálogo online sincronizado com sucesso! Todas as peças dos seus aparelhos estão atualizadas.');
+    }
+  } catch (err) {
+    console.warn('Falha na sincronização online do catálogo:', err);
+    vpUpdateCloudIndicator('error', 'Offline');
+    if (showFeedback) {
+      alert('Não foi possível conectar à nuvem no momento. Seus dados locais continuam seguros e serão sincronizados assim que houver conexão.');
+    }
+  } finally {
+    vpIsSyncingCloud = false;
+  }
+};
 
 function vpGetEffectivePartName(rawName) {
   return vpCustomPartRenamesMap[rawName] || rawName;
@@ -6106,6 +6258,9 @@ window.vpSetVehicleType = function(type, forceRender = true) {
 
 window.openVehiclePartsModal = function() {
   vpLoadState();
+  if (typeof window.vpSyncCatalogWithCloud === 'function') {
+    window.vpSyncCatalogWithCloud(false);
+  }
 
   const plateInput = document.getElementById('plateInput');
   const vehicleTitle = plateInput ? plateInput.value.trim() : '';
@@ -6733,7 +6888,7 @@ window.vpDeletePart = function(rawName, displayName) {
     vpSelectedPartsMap.delete(rawName);
   }
 
-  vpSaveState();
+  vpSaveState(true);
   window.vpCloseEditPartModal();
   vpUpdateTriggerButton();
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
@@ -6770,7 +6925,7 @@ window.vpSaveEditPartName = function(e) {
     vpSelectedPartsMap.set(newName, prevItem);
   }
 
-  vpSaveState();
+  vpSaveState(true);
   window.vpCloseEditPartModal();
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
   vpUpdateDockAndSheet();
@@ -6838,7 +6993,7 @@ window.vpSaveCustomPart = function(e) {
     });
   }
 
-  vpSaveState();
+  vpSaveState(true);
   window.vpCloseAddCustomModal();
   vpActiveZoneId = zoneId;
   vpViewAllZonesMode = false;
