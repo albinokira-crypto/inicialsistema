@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.75';
+const CURRENT_APP_VERSION = 'v1.76';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -6458,6 +6458,47 @@ function vpDetectVehicleTypeFromText(rawText) {
     'CABINE DUPLA', 'CABINE SIMPLES', 'CABINE ESTENDIDA', 'CD 4X4', 'CS 4X4', 'PICKUP', 'PICK-UP', 'PICAPE'
   ];
 
+  // 4. REGRAS ESTRITAS DE CARROS / SUVS / ELETRICOS
+  const carStrictTokens = [
+    // GM / Chevrolet
+    'ONIX', 'ONIX PLUS', 'TRACKER', 'SPIN', 'CRUZE', 'CRUZE SPORT6', 'COBALT', 'PRISMA', 'CELTA', 'CORSA', 'CLASSIC', 'AGILE', 'ASTRA', 'VECTRA', 'ZAFIRA', 'MERIVA', 'EQUINOX', 'TRAILBLAZER', 'CAPTIVA', 'CAMARO', 'CORVETTE', 'BOLT', 'BLAZER EV', 'EQUINOX EV', 'OPALA', 'CHEVETTE', 'KADETT', 'MONZA', 'CARAVAN', 'OMEGA', 'SONIC',
+    // Volkswagen
+    'GOL', 'POLO', 'POLO TRACK', 'VIRTUS', 'NIVUS', 'T-CROSS', 'TCROSS', 'TAOS', 'TIGUAN', 'JETTA', 'PASSAT', 'FOX', 'CROSSFOX', 'SPACEFOX', 'UP!', 'VOYAGE', 'GOLF', 'FUSCA', 'KOMBI', 'BORA', 'PARATI', 'SANTANA', 'QUANTUM', 'ID.4', 'ID.BUZZ', 'TOUAREG',
+    // Fiat
+    'ARGO', 'CRONOS', 'MOBI', 'PULSE', 'FASTBACK', 'UNO', 'MILLE', 'PALIO', 'PALIO WEEKEND', 'PALIO FIRE', 'SIENA', 'GRAND SIENA', 'PUNTO', 'BRAVO', 'LINEA', 'IDEA', 'DOBLO', 'DOBLÒ', '500', 'FIAT 500', '500E', 'STILO', 'TEMPRA', 'TIPO', 'MAREA', 'PREMIO', 'ELBA', '147', 'BRAVA', 'FREEMONT',
+    // Hyundai
+    'HB20', 'HB20S', 'HB20X', 'CRETA', 'TUCSON', 'IX35', 'SANTA FE', 'AZERA', 'ELANTRA', 'I30', 'IONIQ', 'IONIQ 5', 'KONA', 'PALISADE', 'VELOSTER', 'VERA CRUZ',
+    // Toyota
+    'COROLLA', 'COROLLA CROSS', 'COROLLA HYBRID', 'YARIS', 'ETIOS', 'RAV4', 'PRIUS', 'CAMRY', 'SW4', 'BANDEIRANTE', 'FIELDER',
+    // Honda
+    'CIVIC', 'HR-V', 'HRV', 'CR-V', 'CRV', 'WR-V', 'WRV', 'FIT', 'CITY', 'ACCORD', 'ZR-V', 'ZRV',
+    // Renault
+    'KWID', 'KWID E-TECH', 'SANDERO', 'STEPWAY', 'LOGAN', 'DUSTER', 'CAPTUR', 'KARDIAN', 'MEGANE', 'MEGANE E-TECH', 'FLUENCE', 'CLIO', 'SYMBOL', 'SCENIC', 'TWINGO', 'ZOE',
+    // Jeep
+    'RENEGADE', 'COMPASS', 'COMMANDER', 'WRANGLER', 'CHEROKEE', 'GRAND CHEROKEE',
+    // Nissan
+    'KICKS', 'VERSA', 'V-DRIVE', 'SENTRA', 'MARCH', 'TIIDA', 'LIVINA', 'LEAF', 'X-TRAIL',
+    // Ford
+    'KA', 'KA SEDAN', 'KA+', 'ECOSPORT', 'FOCUS', 'FIESTA', 'FUSION', 'TERRITORY', 'BRONCO', 'BRONCO SPORT', 'MUSTANG', 'MUSTANG MACH-E', 'EDGE', 'DEL REY', 'CORCEL', 'ESCORT',
+    // Peugeot / Citroën
+    '208', '2008', '308', '3008', '408', '5008', '206', '207', '307', 'C3', 'C3 AIRCROSS', 'C4', 'C4 CACTUS', 'C4 LOUNGE', 'C4 PICASSO', 'BASALT', 'AIRCROSS', 'DS3', 'DS4', 'DS5',
+    // BYD & GWM
+    'BYD', 'DOLPHIN', 'DOLPHIN MINI', 'DOLPHIN PLUS', 'SEAL', 'YUAN', 'YUAN PLUS', 'YUAN PRO', 'SONG', 'SONG PLUS', 'SONG PRO', 'TANG', 'HAN', 'KING', 'D1',
+    'GWM', 'HAVAL', 'HAVAL H6', 'H6 HEV', 'H6 PHEV', 'H6 GT', 'ORA 03', 'ORA', 'TANK 300', 'TANK 500',
+    // Caoa Chery
+    'TIGGO', 'TIGGO 2', 'TIGGO 3X', 'TIGGO 5X', 'TIGGO 7', 'TIGGO 8', 'ARRIZO', 'ARRIZO 5', 'ARRIZO 6', 'ICAR', 'QQ', 'CELER',
+    // Premium (BMW, Mercedes, Audi, Volvo, Porsche, Land Rover, Jaguar, Lexus, Mini, Subaru, Kia, Mitsubishi)
+    '320I', '328I', '330I', '118I', '120I', 'X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'M2', 'M3', 'M4', 'M5', 'I3', 'I4', 'IX', 'IX1', 'IX3',
+    'C180', 'C200', 'C250', 'C300', 'A200', 'A250', 'CLA', 'GLA', 'GLB', 'GLC', 'GLE', 'EQA', 'EQB', 'EQC', 'EQE', 'EQS',
+    'A1', 'A3', 'A4', 'A5', 'A6', 'Q2', 'Q3', 'Q5', 'Q7', 'Q8', 'E-TRON', 'TT', 'RS3', 'RS4', 'RS5',
+    'XC40', 'XC60', 'XC90', 'EX30', 'EX90', 'C40', 'V40', 'V60', 'S60', 'RECHARGE',
+    'TAYCAN', 'MACAN', 'CAYENNE', '911', 'PANAMERA', 'BOXSTER', 'CAYMAN',
+    'SPORTAGE', 'SELTOS', 'NIRO', 'EV6', 'EV9', 'CERATO', 'SOUL', 'PICANTO', 'SORENTO', 'CARNIVAL', 'STONIC',
+    'ASX', 'ECLIPSE CROSS', 'OUTLANDER', 'PAJERO', 'PAJERO TR4', 'PAJERO SPORT', 'LANCER',
+    'EVOQUE', 'DISCOVERY', 'DISCOVERY SPORT', 'DEFENDER', 'RANGE ROVER', 'VELAR',
+    'COOPER', 'COUNTRYMAN', 'F-PACE', 'E-PACE', 'I-PACE', 'UX 250H', 'NX 350H', 'FORESTER', 'XV', 'IMPREZA', 'JIMNY', 'VITARA'
+  ];
+
   const hasToken = (token) => {
     const cleanToken = (' ' + token.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') + ' ')
       .replace(/[^A-Z0-9\.\-\/]/g, ' ')
@@ -6469,6 +6510,7 @@ function vpDetectVehicleTypeFromText(rawText) {
   if (motoExclusiveBrands.some(b => hasToken(b))) return 'moto';
   if (caminhaoStrictTokens.some(t => hasToken(t))) return 'caminhao';
   if (picapeStrictTokens.some(t => hasToken(t))) return 'picape';
+  if (carStrictTokens.some(t => hasToken(t))) return 'carro';
 
   const currentSurveyType = document.getElementById('typeInput')?.value || '';
   if (currentSurveyType === 'Moto') return 'moto';
