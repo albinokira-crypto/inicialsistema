@@ -697,44 +697,56 @@
     <!-- MODAL PARA EDITAR NOME DE PEÇA (LÁPIS ✏️) -->
     <div id="vpEditPartModal" class="photo-modal-overlay" style="display: none; z-index: 10005;">
       <div class="photo-modal" style="max-width: 400px; background: white; padding: 18px; border-radius: 16px;">
-        <h3 style="margin-top: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a;">✏️ Editar Nome da Peça</h3>
+        <h3 style="margin-top: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a;">✏️ Editar Peça do Catálogo</h3>
         <form onsubmit="vpSaveEditPartName(event)">
           <input type="hidden" id="vpEditOriginalName" />
           <div style="margin: 12px 0;">
             <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Nome da Peça:</label>
             <input type="text" id="vpEditNameInput" required style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.90rem; font-weight: 600;" />
           </div>
-          <div style="display: flex; justify-content: flex-end; gap: 8px;">
-            <button type="button" onclick="vpCloseEditPartModal()" style="padding: 8px 14px; background: #f1f5f9; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Cancelar</button>
-            <button type="submit" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Salvar</button>
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 16px;">
+            <button type="button" onclick="vpDeleteFromEditModal()" style="padding: 8px 12px; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; border-radius: 8px; font-weight: 700; font-size: 0.80rem; cursor: pointer;">
+              🗑️ Excluir
+            </button>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" onclick="vpCloseEditPartModal()" style="padding: 8px 14px; background: #f1f5f9; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Cancelar</button>
+              <button type="submit" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Salvar</button>
+            </div>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- MODAL PARA ADICIONAR NOVA PEÇA PERSONALIZADA (+) -->
+    <!-- MODAL PARA ADICIONAR NOVA PEÇA NO CATÁLOGO (+) -->
     <div id="vpAddCustomModal" class="photo-modal-overlay" style="display: none; z-index: 10005;">
       <div class="photo-modal" style="max-width: 420px; background: white; padding: 18px; border-radius: 16px;">
-        <h3 style="margin-top: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a;">➕ Adicionar Peça Personalizada</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a;">➕ Cadastrar Peça no Catálogo</h3>
+          <button type="button" onclick="vpCloseAddCustomModal()" style="background: none; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer;">✕</button>
+        </div>
         <form onsubmit="vpSaveCustomPart(event)">
           <div style="margin-bottom: 10px;">
-            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Zona:</label>
-            <select id="vpCustomZoneSelect" required style="width: 100%; box-sizing: border-box; padding: 9px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600;"></select>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Zona do Veículo:</label>
+            <select id="vpCustomZoneSelect" required style="width: 100%; box-sizing: border-box; padding: 9px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600; background: #ffffff;"></select>
           </div>
           <div style="margin-bottom: 10px;">
             <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Nome da Peça:</label>
             <input type="text" id="vpCustomNameInput" required placeholder="Ex: Defletor inferior do para-choque" style="width: 100%; box-sizing: border-box; padding: 9px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600;" />
           </div>
           <div style="margin-bottom: 10px;">
-            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Ação Inicial:</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-              <label style="display: flex; align-items: center; gap: 6px; padding: 8px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.80rem; font-weight: 700; cursor: pointer;">
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Ação na Vistoria Atual:</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+              <label style="display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px 4px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.74rem; font-weight: 700; cursor: pointer; text-align: center;">
                 <input type="radio" name="vpCustomAction" value="troca" checked />
-                <span>🔁 Troca</span>
+                <span>🔁 Trocar</span>
               </label>
-              <label style="display: flex; align-items: center; gap: 6px; padding: 8px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.80rem; font-weight: 700; cursor: pointer;">
+              <label style="display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px 4px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.74rem; font-weight: 700; cursor: pointer; text-align: center;">
                 <input type="radio" name="vpCustomAction" value="reparo" />
-                <span>🛠️ Reparo</span>
+                <span>🛠️ Reparar</span>
+              </label>
+              <label style="display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px 4px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.74rem; font-weight: 700; cursor: pointer; text-align: center;">
+                <input type="radio" name="vpCustomAction" value="catalogo" />
+                <span>📋 Só Catálogo</span>
               </label>
             </div>
           </div>
@@ -744,7 +756,7 @@
           </div>
           <div style="display: flex; justify-content: flex-end; gap: 8px;">
             <button type="button" onclick="vpCloseAddCustomModal()" style="padding: 8px 14px; background: #f1f5f9; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Cancelar</button>
-            <button type="submit" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Adicionar</button>
+            <button type="submit" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Salvar no Catálogo</button>
           </div>
         </form>
       </div>

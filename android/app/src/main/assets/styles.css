@@ -1614,6 +1614,23 @@ html, body {
   background: #eff6ff;
 }
 
+.vp-btn-delete-part {
+  background: none;
+  border: none;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.vp-btn-delete-part:hover {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
 .vp-part-zone-label {
   font-size: 0.68rem;
   font-weight: 700;

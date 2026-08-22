@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.70';
+const CURRENT_APP_VERSION = 'v1.71';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -6020,6 +6020,7 @@ let vpViewAllZonesMode = false;
 let vpSelectedPartsMap = new Map(); // key = displayName -> { name, rawName, zoneId, zoneName, action: 'troca'|'reparo', obs: '' }
 let vpCustomPartsList = [];
 let vpCustomPartRenamesMap = {};
+let vpDeletedPartsList = [];
 
 function vpLoadState() {
   try {
@@ -6027,6 +6028,8 @@ function vpLoadState() {
     if (savedCustom) vpCustomPartsList = JSON.parse(savedCustom);
     const savedRenames = localStorage.getItem('mobile_parts_renames');
     if (savedRenames) vpCustomPartRenamesMap = JSON.parse(savedRenames);
+    const savedDeleted = localStorage.getItem('mobile_parts_deleted');
+    if (savedDeleted) vpDeletedPartsList = JSON.parse(savedDeleted);
   } catch(e) {}
 }
 
@@ -6034,11 +6037,22 @@ function vpSaveState() {
   try {
     localStorage.setItem('mobile_parts_custom', JSON.stringify(vpCustomPartsList));
     localStorage.setItem('mobile_parts_renames', JSON.stringify(vpCustomPartRenamesMap));
+    localStorage.setItem('mobile_parts_deleted', JSON.stringify(vpDeletedPartsList));
   } catch(e) {}
 }
 
 function vpGetEffectivePartName(rawName) {
   return vpCustomPartRenamesMap[rawName] || rawName;
+}
+
+function vpIsPartDeleted(rawName, effectiveName) {
+  const eName = effectiveName || vpGetEffectivePartName(rawName);
+  const rLower = (rawName || '').toLowerCase();
+  const eLower = (eName || '').toLowerCase();
+  return vpDeletedPartsList.some(d => {
+    const dLower = (d || '').toLowerCase();
+    return dLower === rLower || dLower === eLower;
+  });
 }
 
 window.vpSetVehicleType = function(type, forceRender = true) {
@@ -6330,6 +6344,10 @@ function vpRenderParts(filterQuery = '') {
   const listEl = document.getElementById('vpPartsScrollContainer');
   if (!listEl) return;
 
+  const matchesVehicleType = (p) => {
+    return !p.vehicleType || p.vehicleType === 'all' || p.vehicleType === vpDetectedVehicleType;
+  };
+
   // BUSCA
   if (filterQuery.trim()) {
     const q = filterQuery.trim().toLowerCase();
@@ -6337,16 +6355,22 @@ function vpRenderParts(filterQuery = '') {
     vpActiveZones.forEach(z => {
       z.parts.forEach(rawP => {
         const effective = vpGetEffectivePartName(rawP);
-        if (effective.toLowerCase().includes(q) || rawP.toLowerCase().includes(q)) {
-          matching.push({ rawName: rawP, name: effective, zoneId: z.id, zoneName: z.name, icon: z.icon });
+        if (!vpIsPartDeleted(rawP, effective)) {
+          if (effective.toLowerCase().includes(q) || rawP.toLowerCase().includes(q)) {
+            matching.push({ rawName: rawP, name: effective, zoneId: z.id, zoneName: z.name, icon: z.icon });
+          }
         }
       });
     });
     vpCustomPartsList.forEach(p => {
-      const effective = vpGetEffectivePartName(p.name);
-      if (effective.toLowerCase().includes(q)) {
-        const zObj = vpActiveZones.find(z => z.id === p.zoneId);
-        matching.push({ rawName: p.name, name: effective, zoneId: p.zoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: '✨' });
+      if (matchesVehicleType(p)) {
+        const effective = vpGetEffectivePartName(p.name);
+        if (!vpIsPartDeleted(p.name, effective)) {
+          if (effective.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)) {
+            const zObj = vpActiveZones.find(z => z.id === p.zoneId);
+            matching.push({ rawName: p.name, name: effective, zoneId: p.zoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: '✨' });
+          }
+        }
       }
     });
 
@@ -6355,7 +6379,7 @@ function vpRenderParts(filterQuery = '') {
         <div style="padding: 30px 16px; text-align: center; color: #64748b;">
           <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">🔍</span>
           <b>Nenhuma peça encontrada para "${vpEscapeHtml(filterQuery)}"</b>
-          <p style="font-size: 0.80rem; margin-top: 4px;">Toque no botão "+ Nova Peça" acima para cadastrá-la.</p>
+          <p style="font-size: 0.80rem; margin-top: 4px;">Toque no botão "+ Nova Peça" acima para cadastrá-la no catálogo.</p>
         </div>
       `;
       return;
@@ -6369,21 +6393,44 @@ function vpRenderParts(filterQuery = '') {
   if (vpViewAllZonesMode) {
     let html = '';
     vpActiveZones.forEach(z => {
-      const partsInZ = z.parts.map(rawP => ({ rawName: rawP, name: vpGetEffectivePartName(rawP), zoneId: z.id, zoneName: z.name, icon: z.icon }));
-      const customInZ = vpCustomPartsList.filter(p => p.zoneId === z.id).map(p => ({ rawName: p.name, name: vpGetEffectivePartName(p.name), zoneId: z.id, zoneName: z.name, icon: '✨' }));
+      const partsInZ = z.parts
+        .map(rawP => ({ rawName: rawP, name: vpGetEffectivePartName(rawP), zoneId: z.id, zoneName: z.name, icon: z.icon }))
+        .filter(p => !vpIsPartDeleted(p.rawName, p.name));
+      const customInZ = vpCustomPartsList
+        .filter(p => p.zoneId === z.id && matchesVehicleType(p))
+        .map(p => ({ rawName: p.name, name: vpGetEffectivePartName(p.name), zoneId: z.id, zoneName: z.name, icon: '✨' }))
+        .filter(p => !vpIsPartDeleted(p.rawName, p.name));
       const allInZ = [...partsInZ, ...customInZ];
 
-      html += `<div class="vp-zone-group-header">${z.icon} ${vpEscapeHtml(z.name)} (${allInZ.length})</div>`;
-      html += allInZ.map(item => vpRenderPartCardHtml(item)).join('');
+      if (allInZ.length > 0) {
+        html += `<div class="vp-zone-group-header">${z.icon} ${vpEscapeHtml(z.name)} (${allInZ.length})</div>`;
+        html += allInZ.map(item => vpRenderPartCardHtml(item)).join('');
+      }
     });
-    listEl.innerHTML = html;
+    listEl.innerHTML = html || '<div style="text-align: center; padding: 20px; color: #94a3b8;">Nenhuma peça cadastrada.</div>';
     return;
   }
 
   // ZONA ATUAL
-  const partsInCurrent = currentZone.parts.map(rawP => ({ rawName: rawP, name: vpGetEffectivePartName(rawP), zoneId: currentZone.id, zoneName: currentZone.name, icon: currentZone.icon }));
-  const customInCurrent = vpCustomPartsList.filter(p => p.zoneId === currentZone.id).map(p => ({ rawName: p.name, name: vpGetEffectivePartName(p.name), zoneId: currentZone.id, zoneName: currentZone.name, icon: '✨' }));
+  const partsInCurrent = currentZone.parts
+    .map(rawP => ({ rawName: rawP, name: vpGetEffectivePartName(rawP), zoneId: currentZone.id, zoneName: currentZone.name, icon: currentZone.icon }))
+    .filter(p => !vpIsPartDeleted(p.rawName, p.name));
+  const customInCurrent = vpCustomPartsList
+    .filter(p => p.zoneId === currentZone.id && matchesVehicleType(p))
+    .map(p => ({ rawName: p.name, name: vpGetEffectivePartName(p.name), zoneId: currentZone.id, zoneName: currentZone.name, icon: '✨' }))
+    .filter(p => !vpIsPartDeleted(p.rawName, p.name));
   const totalZoneParts = [...partsInCurrent, ...customInCurrent];
+
+  if (totalZoneParts.length === 0) {
+    listEl.innerHTML = `
+      <div style="padding: 30px 16px; text-align: center; color: #64748b;">
+        <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">📂</span>
+        <b>Nenhuma peça ativa nesta zona</b>
+        <p style="font-size: 0.80rem; margin-top: 4px;">Toque no botão "+ Nova Peça" acima para cadastrar.</p>
+      </div>
+    `;
+    return;
+  }
 
   listEl.innerHTML = totalZoneParts.map(item => vpRenderPartCardHtml(item)).join('');
 }
@@ -6399,7 +6446,10 @@ function vpRenderPartCardHtml(item) {
       <div class="vp-card-top">
         <div class="vp-part-title-wrap">
           <span class="vp-part-title">${vpEscapeHtml(item.name)}</span>
-          <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
+          <div style="display: inline-flex; align-items: center; gap: 2px;">
+            <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
+            <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">🗑️</button>
+          </div>
         </div>
         <span class="vp-part-zone-label">${item.icon} ${vpEscapeHtml(item.zoneName)}</span>
       </div>
@@ -6655,6 +6705,51 @@ window.vpCloseEditPartModal = function() {
   if (modal) modal.style.display = 'none';
 };
 
+window.vpDeletePart = function(rawName, displayName) {
+  const name = displayName || vpGetEffectivePartName(rawName);
+  if (!confirm(`Deseja realmente excluir permanentemente a peça "${name}" do catálogo?`)) {
+    return;
+  }
+
+  // Remove da lista de customizadas se estiver lá
+  vpCustomPartsList = vpCustomPartsList.filter(p => 
+    p.name.toLowerCase() !== rawName.toLowerCase() && 
+    p.name.toLowerCase() !== name.toLowerCase()
+  );
+
+  // Adiciona à lista de deletadas
+  if (!vpDeletedPartsList.some(d => d.toLowerCase() === rawName.toLowerCase())) {
+    vpDeletedPartsList.push(rawName);
+  }
+  if (name !== rawName && !vpDeletedPartsList.some(d => d.toLowerCase() === name.toLowerCase())) {
+    vpDeletedPartsList.push(name);
+  }
+
+  // Se estiver selecionada para a vistoria atual, desmarca
+  if (vpSelectedPartsMap.has(name)) {
+    vpSelectedPartsMap.delete(name);
+  }
+  if (vpSelectedPartsMap.has(rawName)) {
+    vpSelectedPartsMap.delete(rawName);
+  }
+
+  vpSaveState();
+  window.vpCloseEditPartModal();
+  vpUpdateTriggerButton();
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  vpUpdateDockAndSheet();
+};
+
+window.vpDeleteFromEditModal = function() {
+  const origInput = document.getElementById('vpEditOriginalName');
+  const nameInput = document.getElementById('vpEditNameInput');
+  const rawName = origInput ? origInput.value.trim() : '';
+  const displayName = nameInput ? nameInput.value.trim() : rawName;
+  if (rawName || displayName) {
+    window.vpDeletePart(rawName, displayName);
+  }
+};
+
 window.vpSaveEditPartName = function(e) {
   e.preventDefault();
   const origInput = document.getElementById('vpEditOriginalName');
@@ -6712,25 +6807,36 @@ window.vpSaveCustomPart = function(e) {
   const zoneId = zoneSelect ? zoneSelect.value : vpActiveZoneId;
   const name = nameInput ? nameInput.value.trim() : '';
   const obs = obsInput ? obsInput.value.trim() : '';
-  const action = actionRadio ? actionRadio.value : 'troca';
+  const action = actionRadio ? actionRadio.value : 'troca'; // 'troca' | 'reparo' | 'catalogo'
 
   if (!name) return;
 
   const zObj = vpActiveZones.find(z => z.id === zoneId);
   const zoneName = zObj ? zObj.name : 'Personalizada';
 
-  if (!vpCustomPartsList.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-    vpCustomPartsList.push({ name, zoneId });
+  // Se havia sido excluída anteriormente, remove da lista de excluídas
+  vpDeletedPartsList = vpDeletedPartsList.filter(d => d.toLowerCase() !== name.toLowerCase());
+
+  // Salva permanentemente no catálogo customizado com o tipo de veículo atual
+  const existingIdx = vpCustomPartsList.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+  if (existingIdx >= 0) {
+    vpCustomPartsList[existingIdx].zoneId = zoneId;
+    vpCustomPartsList[existingIdx].vehicleType = vpDetectedVehicleType;
+  } else {
+    vpCustomPartsList.push({ name, zoneId, vehicleType: vpDetectedVehicleType });
   }
 
-  vpSelectedPartsMap.set(name, {
-    name: name,
-    rawName: name,
-    zoneId: zoneId,
-    zoneName: zoneName,
-    action: action,
-    obs: obs
-  });
+  // Se a ação for troca ou reparo, adiciona também à seleção da vistoria atual
+  if (action === 'troca' || action === 'reparo') {
+    vpSelectedPartsMap.set(name, {
+      name: name,
+      rawName: name,
+      zoneId: zoneId,
+      zoneName: zoneName,
+      action: action,
+      obs: obs
+    });
+  }
 
   vpSaveState();
   window.vpCloseAddCustomModal();
