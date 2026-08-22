@@ -13,6 +13,13 @@ node_modules/
 *.zip
 *.ps1
 *.json
+!version.json
+!android/app/src/main/assets/version.json
+!manifest.webmanifest
 *.js
 !app.js
 !android/app/src/main/assets/app.js
+!sw.js
+!android/app/src/main/assets/sw.js
+!login.js
+!api/catalog.js

@@ -415,18 +415,33 @@
         </div>
 
         <!-- Versão Atual do Sistema e Botão de Forçar Atualização -->
-        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 12px 14px; margin-top: 18px; display: flex; flex-direction: column; gap: 10px;">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 14px; margin-top: 18px; display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 1.3rem;">📱</span>
+              <span style="font-size: 1.4rem;">📱</span>
               <div>
-                <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão do Aplicativo</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1rem; font-weight: 800; color: #1e3a8a;">v1.69</div>
+                <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v1.74</div>
               </div>
             </div>
-            <span style="background: #dcfce7; color: #166534; font-size: 0.72rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid #86efac; display: flex; align-items: center; gap: 4px;">
-              <span style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a; display: inline-block;"></span> Ativo
-            </span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span id="systemVersionStatusBadge" style="background: #dcfce7; color: #166534; font-size: 0.72rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid #86efac; display: flex; align-items: center; gap: 4px;">
+                <span id="systemVersionStatusDot" style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a; display: inline-block;"></span>
+                <span id="systemVersionStatusText">Ativo</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Área ligada diretamente ao arquivo version.json -->
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem;">
+            <div style="display: flex; align-items: center; gap: 6px; color: #475569;">
+              <span>🌐</span>
+              <span>Servidor (version.json):</span>
+              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v1.74</strong>
+            </div>
+            <button type="button" onclick="checkForSystemUpdates(true)" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-weight: 700; font-size: 0.72rem; padding: 3px 8px; border-radius: 5px; cursor: pointer;">
+              🔍 Checar
+            </button>
           </div>
           
           <button id="forceRefreshAppBtn" type="button" onclick="forceAppRefresh()" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease;">

@@ -23,25 +23,29 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.73';
+const CURRENT_APP_VERSION = 'v1.74';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
-  let activeVersion = CURRENT_APP_VERSION;
+  const serverJsonEl = document.getElementById('serverVersionJsonDisplay');
+  const statusBadge = document.getElementById('systemVersionStatusBadge');
+  const statusDot = document.getElementById('systemVersionStatusDot');
+  const statusText = document.getElementById('systemVersionStatusText');
 
-  if (versionEl) {
-    versionEl.textContent = activeVersion;
-  }
+  let activeVersion = CURRENT_APP_VERSION;
+  if (versionEl) versionEl.textContent = activeVersion;
 
   try {
+    const timestamp = Date.now();
     const endpoints = [
-      'version.json?t=' + Date.now(),
-      'https://gestao-vistoria-inicial.vercel.app/version.json?t=' + Date.now()
+      'version.json?t=' + timestamp,
+      '/version.json?t=' + timestamp,
+      'https://gestao-vistoria-inicial.vercel.app/version.json?t=' + timestamp
     ];
     let data = null;
     for (const url of endpoints) {
       try {
-        const res = await fetch(url, { cache: 'no-store' });
+        const res = await fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
         if (res.ok) {
           data = await res.json();
           if (data && data.version) break;
@@ -50,27 +54,47 @@ async function checkForSystemUpdates(showFeedback = false) {
     }
 
     if (data && data.version) {
-      const serverVersion = data.version.startsWith('v') ? data.version : 'v' + data.version;
-      const isNewer = serverVersion !== activeVersion;
-      if (versionEl) {
-        versionEl.textContent = `${activeVersion} ${isNewer ? '(Nova versão ' + serverVersion + ' disponível)' : '(Atualizado)'}`;
-      }
-      if (isNewer && showFeedback) {
-        if (confirm(`Uma nova versão (${serverVersion}) está disponível! Deseja atualizar o aplicativo agora?`)) {
-          forceAppRefresh();
+      const serverVer = data.version.startsWith('v') ? data.version : 'v' + data.version;
+      if (serverJsonEl) serverJsonEl.textContent = serverVer;
+
+      const isNewer = serverVer !== activeVersion;
+      if (isNewer) {
+        if (statusBadge) {
+          statusBadge.style.background = '#fef3c7';
+          statusBadge.style.borderColor = '#fde68a';
+          statusBadge.style.color = '#92400e';
         }
-      } else if (!isNewer && showFeedback) {
-        alert(`Você já está utilizando a versão mais recente (${activeVersion})!`);
+        if (statusDot) statusDot.style.background = '#d97706';
+        if (statusText) statusText.textContent = `Atualização ${serverVer}`;
+        if (versionEl) versionEl.textContent = `${activeVersion} (Disponível ${serverVer})`;
+
+        if (showFeedback) {
+          if (confirm(`Uma nova versão (${serverVer}) foi encontrada no servidor! Deseja atualizar o aplicativo agora?`)) {
+            forceAppRefresh();
+          }
+        }
+      } else {
+        if (statusBadge) {
+          statusBadge.style.background = '#dcfce7';
+          statusBadge.style.borderColor = '#86efac';
+          statusBadge.style.color = '#166534';
+        }
+        if (statusDot) statusDot.style.background = '#16a34a';
+        if (statusText) statusText.textContent = 'Ativo / Atualizado';
+        if (versionEl) versionEl.textContent = `${activeVersion}`;
+
+        if (showFeedback) {
+          alert(`✅ Seu aplicativo está na versão mais recente (${activeVersion}) conectada diretamente ao servidor!`);
+        }
       }
     } else {
-      if (versionEl) versionEl.textContent = `${activeVersion} (Atualizado)`;
+      if (serverJsonEl) serverJsonEl.textContent = activeVersion;
+      if (statusText) statusText.textContent = 'Ativo';
     }
   } catch (err) {
-    if (versionEl && !versionEl.textContent) {
-      versionEl.textContent = activeVersion;
-    }
+    if (serverJsonEl) serverJsonEl.textContent = activeVersion;
     if (showFeedback) {
-      alert('Não foi possível verificar atualizações no momento.');
+      alert('Não foi possível verificar a versão no servidor.');
     }
   }
 }
@@ -6017,7 +6041,10 @@ let vpDetectedVehicleType = 'carro';
 let vpCurrentVehicleModelName = '';
 let vpViewAllZonesMode = false;
 
-const VP_CLOUD_API_URL = 'https://api.restful-api.dev/objects/ff8081819ff5b11001a02a509b237b4b';
+const VP_CLOUD_ENDPOINTS = [
+  '/api/catalog',
+  'https://gestao-vistoria-inicial.vercel.app/api/catalog'
+];
 let vpSelectedPartsMap = new Map(); // key = displayName -> { name, rawName, zoneId, zoneName, action: 'troca'|'reparo', obs: '' }
 let vpCustomPartsList = [];
 let vpCustomPartRenamesMap = {};
@@ -6035,9 +6062,9 @@ function vpUpdateCloudIndicator(status, text) {
     if (iconEl) iconEl.textContent = '🔄';
     if (textEl) textEl.textContent = text || 'Sincronizando...';
     if (btnEl) {
-      btnEl.style.background = '#fef9c3';
-      btnEl.style.borderColor = '#fde047';
-      btnEl.style.color = '#a16207';
+      btnEl.style.background = '#eff6ff';
+      btnEl.style.borderColor = '#bfdbfe';
+      btnEl.style.color = '#2563eb';
     }
   } else if (status === 'synced') {
     if (iconEl) iconEl.textContent = '☁️';
@@ -6047,13 +6074,14 @@ function vpUpdateCloudIndicator(status, text) {
       btnEl.style.borderColor = '#bbf7d0';
       btnEl.style.color = '#16a34a';
     }
-  } else if (status === 'error') {
-    if (iconEl) iconEl.textContent = '⚠️';
-    if (textEl) textEl.textContent = text || 'Offline';
+  } else {
+    // Modo offline / standby
+    if (iconEl) iconEl.textContent = '☁️';
+    if (textEl) textEl.textContent = text || 'Nuvem';
     if (btnEl) {
-      btnEl.style.background = '#fef2f2';
-      btnEl.style.borderColor = '#fecaca';
-      btnEl.style.color = '#dc2626';
+      btnEl.style.background = '#f8fafc';
+      btnEl.style.borderColor = '#cbd5e1';
+      btnEl.style.color = '#64748b';
     }
   }
 }
@@ -6122,7 +6150,6 @@ async function vpPushCatalogToCloud() {
 
   try {
     const payload = {
-      name: 'gestao_vistorias_parts_catalog',
       data: {
         customParts: vpCustomPartsList,
         deletedParts: vpDeletedPartsList,
@@ -6132,21 +6159,33 @@ async function vpPushCatalogToCloud() {
       }
     };
 
-    const res = await fetch(VP_CLOUD_API_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    let success = false;
+    for (const endpoint of VP_CLOUD_ENDPOINTS) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          success = true;
+          break;
+        }
+      } catch(e) {}
+    }
 
-    if (res.ok) {
-      vpUpdateCloudIndicator('synced', 'Salvo Online ✓');
-      setTimeout(() => vpUpdateCloudIndicator('synced', 'Nuvem'), 3000);
+    if (success) {
+      vpUpdateCloudIndicator('synced', 'Salvo ✓');
+      setTimeout(() => vpUpdateCloudIndicator('synced', 'Nuvem'), 2500);
     } else {
-      vpUpdateCloudIndicator('error', 'Erro Online');
+      vpUpdateCloudIndicator('idle', 'Nuvem');
     }
   } catch (err) {
-    console.warn('Erro ao sincronizar catálogo com a nuvem:', err);
-    vpUpdateCloudIndicator('error', 'Offline');
+    vpUpdateCloudIndicator('idle', 'Nuvem');
   } finally {
     vpIsSyncingCloud = false;
   }
@@ -6155,86 +6194,104 @@ async function vpPushCatalogToCloud() {
 window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
   if (vpIsSyncingCloud) return;
   vpIsSyncingCloud = true;
-  vpUpdateCloudIndicator('syncing', 'Baixando...');
+  vpUpdateCloudIndicator('syncing', 'Sincronizando...');
 
   try {
-    const res = await fetch(VP_CLOUD_API_URL, { cache: 'no-store' });
-    if (!res.ok) throw new Error('Servidor da nuvem indisponível');
-    const json = await res.json();
-    const cloudData = (json && json.data) ? json.data : {};
-
-    let hasChanges = false;
-
-    // 1. Merge de peças customizadas da nuvem
-    if (Array.isArray(cloudData.customParts)) {
-      cloudData.customParts.forEach(cloudPart => {
-        if (!cloudPart || !cloudPart.name) return;
-        const existsLocally = vpCustomPartsList.some(p => p.name.toLowerCase() === cloudPart.name.toLowerCase());
-        if (!existsLocally) {
-          vpCustomPartsList.push(cloudPart);
-          hasChanges = true;
+    let cloudData = null;
+    for (const endpoint of VP_CLOUD_ENDPOINTS) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(endpoint + '?t=' + Date.now(), {
+          cache: 'no-store',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const json = await res.json();
+          if (json && (json.data || json.customParts)) {
+            cloudData = json.data || json;
+            break;
+          }
         }
-      });
+      } catch(e) {}
     }
 
-    // 2. Merge de peças deletadas
-    if (Array.isArray(cloudData.deletedParts)) {
-      cloudData.deletedParts.forEach(delName => {
-        if (delName && !vpDeletedPartsList.some(d => d.toLowerCase() === delName.toLowerCase())) {
-          vpDeletedPartsList.push(delName);
-          hasChanges = true;
-        }
+    if (cloudData) {
+      let hasChanges = false;
+
+      // 1. Merge de peças customizadas da nuvem
+      if (Array.isArray(cloudData.customParts)) {
+        cloudData.customParts.forEach(cloudPart => {
+          if (!cloudPart || !cloudPart.name) return;
+          const existsLocally = vpCustomPartsList.some(p => p.name.toLowerCase() === cloudPart.name.toLowerCase());
+          if (!existsLocally) {
+            vpCustomPartsList.push(cloudPart);
+            hasChanges = true;
+          }
+        });
+      }
+
+      // 2. Merge de peças deletadas
+      if (Array.isArray(cloudData.deletedParts)) {
+        cloudData.deletedParts.forEach(delName => {
+          if (delName && !vpDeletedPartsList.some(d => d.toLowerCase() === delName.toLowerCase())) {
+            vpDeletedPartsList.push(delName);
+            hasChanges = true;
+          }
+        });
+      }
+
+      // 3. Merge de renomeações
+      if (cloudData.renames && typeof cloudData.renames === 'object') {
+        Object.keys(cloudData.renames).forEach(orig => {
+          if (!vpCustomPartRenamesMap[orig]) {
+            vpCustomPartRenamesMap[orig] = cloudData.renames[orig];
+            hasChanges = true;
+          }
+        });
+      }
+
+      // 4. Merge de estatísticas de uso
+      if (cloudData.usageStats && typeof cloudData.usageStats === 'object') {
+        Object.keys(cloudData.usageStats).forEach(k => {
+          const cloudVal = cloudData.usageStats[k] || 0;
+          if ((vpUsageStats[k] || 0) < cloudVal) {
+            vpUsageStats[k] = cloudVal;
+            hasChanges = true;
+          }
+        });
+      }
+
+      // Se temos peças locais que ainda não estavam na nuvem, faz push consolidado
+      const localHasExtra = vpCustomPartsList.some(localP => {
+        return !cloudData.customParts || !cloudData.customParts.some(cP => cP.name.toLowerCase() === localP.name.toLowerCase());
       });
-    }
 
-    // 3. Merge de renomeações
-    if (cloudData.renames && typeof cloudData.renames === 'object') {
-      Object.keys(cloudData.renames).forEach(orig => {
-        if (!vpCustomPartRenamesMap[orig]) {
-          vpCustomPartRenamesMap[orig] = cloudData.renames[orig];
-          hasChanges = true;
-        }
-      });
-    }
+      if (localHasExtra) {
+        vpIsSyncingCloud = false;
+        await vpPushCatalogToCloud();
+      } else {
+        vpSaveState(false);
+        vpUpdateCloudIndicator('synced', 'Sincronizado ✓');
+        setTimeout(() => vpUpdateCloudIndicator('synced', 'Nuvem'), 2500);
+      }
 
-    // 4. Merge de estatísticas de uso
-    if (cloudData.usageStats && typeof cloudData.usageStats === 'object') {
-      Object.keys(cloudData.usageStats).forEach(k => {
-        const cloudVal = cloudData.usageStats[k] || 0;
-        if ((vpUsageStats[k] || 0) < cloudVal) {
-          vpUsageStats[k] = cloudVal;
-          hasChanges = true;
-        }
-      });
-    }
+      if (hasChanges) {
+        vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+      }
 
-    // Se temos peças locais que ainda não estavam na nuvem, faz push consolidado
-    const localHasExtra = vpCustomPartsList.some(localP => {
-      return !cloudData.customParts || !cloudData.customParts.some(cP => cP.name.toLowerCase() === localP.name.toLowerCase());
-    });
-
-    if (localHasExtra) {
-      vpIsSyncingCloud = false;
-      await vpPushCatalogToCloud();
+      if (showFeedback) {
+        alert('☁️ Catálogo online sincronizado com sucesso!');
+      }
     } else {
-      vpSaveState(false);
-      vpUpdateCloudIndicator('synced', 'Sincronizado ✓');
-      setTimeout(() => vpUpdateCloudIndicator('synced', 'Nuvem'), 3000);
-    }
-
-    if (hasChanges) {
-      vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
-    }
-
-    if (showFeedback) {
-      alert('☁️ Catálogo online sincronizado com sucesso! Todas as peças dos seus aparelhos estão atualizadas.');
+      vpUpdateCloudIndicator('idle', 'Nuvem');
+      if (showFeedback) {
+        alert('Modo local ativo. Suas peças estão salvas neste aparelho.');
+      }
     }
   } catch (err) {
-    console.warn('Falha na sincronização online do catálogo:', err);
-    vpUpdateCloudIndicator('error', 'Offline');
-    if (showFeedback) {
-      alert('Não foi possível conectar à nuvem no momento. Seus dados locais continuam seguros e serão sincronizados assim que houver conexão.');
-    }
+    vpUpdateCloudIndicator('idle', 'Nuvem');
   } finally {
     vpIsSyncingCloud = false;
   }
