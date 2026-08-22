@@ -1553,7 +1553,7 @@ html, body {
 }
 
 /* ==========================================================================
-   MÓDULO DE PARTES DE VEÍCULOS (ZONAS E PEÇAS) - DESIGN COMPACTO
+   MÓDULO DE PARTES DE VEÍCULOS (ZONAS E PEÇAS) - 2 COLUNAS COMPACTAS
    ========================================================================== */
 .vp-type-tabs-container {
   display: grid;
@@ -1587,16 +1587,38 @@ html, body {
   box-shadow: 0 1px 4px rgba(37, 99, 235, 0.3);
 }
 
+#vpPartsScrollContainer {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 6px !important;
+  padding: 6px 8px 80px 8px !important;
+  align-content: start !important;
+}
+
+.vp-zone-group-header {
+  grid-column: 1 / -1 !important;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  background: #e0f2fe;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
 .vp-part-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 6px 6px 5px 6px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 4px;
   transition: all 0.15s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .vp-part-card.selected-troca {
@@ -1609,37 +1631,38 @@ html, body {
   background: #f0f9ff;
 }
 
+/* 1ª LINHA: [✏️] [Descrição da Peça] [🗑️] */
 .vp-card-top {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 2px;
-}
-
-.vp-part-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
-  flex: 1;
+  width: 100%;
 }
 
 .vp-part-title {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  color: #1e293b;
-  line-height: 1.2;
+  color: #0f172a;
+  line-height: 1.15;
+  text-align: center;
+  flex: 1;
+  min-width: 0;
   word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .vp-btn-edit-name {
   background: none;
   border: none;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: #94a3b8;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 2px 3px;
   border-radius: 3px;
   line-height: 1;
   flex-shrink: 0;
@@ -1653,10 +1676,10 @@ html, body {
 .vp-btn-delete-part {
   background: none;
   border: none;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: #94a3b8;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 2px 3px;
   border-radius: 3px;
   line-height: 1;
   flex-shrink: 0;
@@ -1668,37 +1691,31 @@ html, body {
   background: #fee2e2;
 }
 
-.vp-part-zone-label {
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #64748b;
-  background: #f1f5f9;
-  padding: 1px 5px;
-  border-radius: 3px;
-  white-space: nowrap;
-}
-
+/* 2ª LINHA: [🔁 Trocar] [🛠️ Reparar] (Exatamente do mesmo tamanho) */
 .vp-card-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 4px;
+  width: 100%;
 }
 
 .vp-btn-action {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 5px 8px;
+  gap: 3px;
+  padding: 4px 2px;
   border-radius: 6px;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 700;
   border: 1px solid #cbd5e1;
   background: #ffffff;
   cursor: pointer;
   transition: all 0.15s ease;
   min-height: 28px;
+  width: 100%;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 
 .vp-btn-action.btn-trocar {
@@ -1725,42 +1742,20 @@ html, body {
   box-shadow: 0 1px 4px rgba(2, 132, 199, 0.25);
 }
 
+/* OBSERVAÇÃO INLINE COMPACTA */
 .vp-inline-obs-box {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-top: 4px;
+  width: 100%;
+  padding-top: 3px;
   border-top: 1px dashed #e2e8f0;
-}
-
-.vp-inline-obs-box.obs-troca {
-  border-top-color: #fecaca;
-}
-
-.vp-inline-obs-box.obs-reparo {
-  border-top-color: #bae6fd;
-}
-
-.vp-inline-obs-label {
-  font-size: 0.65rem;
-  font-weight: 700;
-}
-
-.vp-inline-obs-label.label-troca {
-  color: #dc2626;
-}
-
-.vp-inline-obs-label.label-reparo {
-  color: #0284c7;
 }
 
 .vp-inline-obs-input {
   width: 100%;
   box-sizing: border-box;
-  padding: 4px 8px;
-  border-radius: 5px;
+  padding: 3px 6px;
+  border-radius: 4px;
   border: 1px solid #cbd5e1;
-  font-size: 0.75rem;
+  font-size: 0.70rem;
   font-weight: 600;
   outline: none;
   background: #ffffff;

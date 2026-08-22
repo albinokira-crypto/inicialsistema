@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.76';
+const CURRENT_APP_VERSION = 'v1.77';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -6362,14 +6362,53 @@ window.vpSetVehicleType = function(type, forceRender = true) {
 
 function vpDetectVehicleTypeFromText(rawText) {
   if (!rawText || typeof rawText !== 'string') return 'carro';
-  const text = (' ' + rawText.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') + ' ')
-    .replace(/[^A-Z0-9\.\-\/]/g, ' ')
-    .replace(/\s+/g, ' ');
+  
+  let rawUpper = rawText.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  
+  // Extrai placas brasileiras (antigas e Mercosul) para evitar colisões com siglas curtas de motos
+  const platePattern = /\b[A-Z]{3}[-\s]?[0-9][A-Z0-9][0-9]{2}\b|\b[A-Z]{3}[-\s]?[0-9]{4}\b/g;
+  let textWithoutPlates = rawUpper.replace(platePattern, ' ');
 
-  // 1. REGRAS ESTRITAS DE MOTO (Modelos e Marcas)
+  const fullText = (' ' + textWithoutPlates.replace(/[^A-Z0-9\.\-\/]/g, ' ') + ' ').replace(/\s+/g, ' ');
+
+  const hasWord = (term) => {
+    const clean = (' ' + term.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') + ' ')
+      .replace(/[^A-Z0-9\.\-\/]/g, ' ')
+      .replace(/\s+/g, ' ');
+    return fullText.includes(clean);
+  };
+
+  // 1. PICAPES E UTILITÁRIOS (Verificação prioritária)
+  const picapeStrictTokens = [
+    'HILUX', 'S10', 'S-10', 'MONTANA', 'SILVERADO', 'D20', 'D-20', 'D10', 'C10', 'C20', 'COLORADO',
+    'RANGER', 'MAVERICK', 'F-150', 'F150', 'F-250', 'F250', 'COURIER',
+    'STRADA', 'TORO', 'TITANO', 'FIORINO',
+    'SAVEIRO', 'AMAROK', 'FRONTIER', 'L200', 'TRITON',
+    'RAMPAGE', 'RAM 1500', 'RAM 2500', 'RAM 3500', 'OROCH', 'DUSTER OROCH',
+    'LANDTREK', 'HOGGAR', 'JAC HUNTER', 'BYD SHARK', 'GWM POER',
+    'CABINE DUPLA', 'CABINE SIMPLES', 'CABINE ESTENDIDA', 'CD 4X4', 'CS 4X4', 'PICKUP', 'PICK-UP', 'PICAPE'
+  ];
+  if (picapeStrictTokens.some(t => hasWord(t))) return 'picape';
+
+  // 2. CAMINHÕES E PESADOS
+  const caminhaoStrictTokens = [
+    'CAMINHAO', 'CAMINHÃO', 'CAVALO MECANICO', 'CAVALO MECÂNICO', 'CAVALO-MECANICO',
+    'BITREM', 'RODOTREM', 'CARRETA', 'SEMI-REBOQUE', 'SEMIRREBOQUE', 'BASCULANTE',
+    'BITRUCK', 'TRUCK', 'CHASSI', 'CACAMBA', 'CAÇAMBA', 'GRANELEIRO', 'SIDER',
+    'SCANIA', 'R440', 'R450', 'R480', 'R500', 'R540', 'P310', 'P360', 'P250', 'P270', 'P280', 'G440', '113H', '124G',
+    'VOLVO FH', 'VOLVO FM', 'VOLVO FMX', 'VOLVO VM', 'FH 460', 'FH 500', 'FH 540', 'FH 420', 'FH 440', 'FH 520', 'FM 370', 'FM 380', 'VM 260', 'VM 270', 'VM 330',
+    'ACTROS', 'ATEGO', 'ACCELO', 'AXOR', 'ATRON', 'AROCS', 'MB 1620', 'MB 1938', 'MB 1113', 'MB 710', '1620', '1938', '1113', '710', '2544', '2546', '2646', '2651', '2548', '2426', '2428', '1719', '815', '1016',
+    'CONSTELLATION', 'DELIVERY', 'METEOR', 'WORKER', '24.250', '24.280', '25.440', '26.460', '19.320', '19.360', '17.190', '15.180', '13.180', '11.180', '9.170', '6.160',
+    'STRALIS', 'HI-WAY', 'HI-ROAD', 'TECTOR', 'S-WAY', 'VERTIS', 'EUROCARGO', 'DAILY 70C', 'DAILY 35S',
+    'DAF XF', 'DAF CF', 'DAF LF', 'XF105', 'XF 105', 'XF 480', 'XF 530', 'CF 85',
+    'FORD CARGO', 'CARGO 815', 'CARGO 2428', 'CARGO 2422', 'CARGO 2429', 'CARGO 1722', 'CARGO 1719', 'CARGO 1932', 'F-4000', 'F4000',
+    'MAN TGX', 'TGX 28.440'
+  ];
+  if (caminhaoStrictTokens.some(t => hasWord(t))) return 'caminhao';
+
+  // 3. MOTOCICLETAS (Com termos precisos)
   const motoStrictTokens = [
     'MOTOCICLETA', 'MOTO', 'MOTONETA', 'SCOOTER', 'CICLOMOTOR', 'TRICICLO',
-    // Honda Motos
     'TITAN', 'FAN', 'START', 'BIZ', 'POP110', 'POP 110', 'POP100', 'POP 100',
     'BROS', 'NXR', 'XRE', 'XRE300', 'XRE 300', 'XRE190', 'XRE 190',
     'SAHARA', 'TORNADO', 'TWISTER', 'CB300', 'CB 300', 'CB 300F', 'CB300F',
@@ -6377,144 +6416,35 @@ function vpDetectVehicleTypeFromText(rawText) {
     'NC750', 'NC 750', 'NC700', 'TRANSALP', 'AFRICA TWIN', 'HORNET',
     'PCX', 'ADV150', 'ADV 150', 'ADV350', 'ADV 350', 'LEAD 110', 'SH150', 'SH 150', 'SH300', 'SH 300', 'FORZA',
     'CG160', 'CG 160', 'CG150', 'CG 150', 'CG125', 'CG 125', 'CG CARGO', 'FALCON', 'NX4', 'SHADOW',
-    // Yamaha Motos
     'FAZER', 'FZ15', 'FZ 15', 'FZ25', 'FZ 25', 'FZ6', 'FAZER 250', 'FAZER 150',
     'FACTOR', 'FACTOR 150', 'FACTOR 125', 'LANDER', 'XTZ', 'XTZ 250', 'XTZ 150', 'CROSSER',
     'TENERE', 'TENERE 250', 'TENERE 700', 'T7', 'MT-03', 'MT-07', 'MT-09', 'MT-10', 'MT03', 'MT07', 'MT09', 'MT10',
-    'YZF-R3', 'R3', 'R15', 'R1', 'R6', 'NMAX', 'XMAX', 'FLUO', 'NEO 125', 'CRYPTON', 'YBR', 'VIRAGO', 'DRAGSTAR', 'MIDNIGHT STAR', 'RD 135', 'RD 350', 'DT 200',
-    // Suzuki Motos
+    'YZF-R3', 'YZF R3', 'YZF R15', 'YZF R1', 'NMAX', 'XMAX', 'FLUO', 'NEO 125', 'CRYPTON', 'YBR', 'VIRAGO', 'DRAGSTAR', 'MIDNIGHT STAR', 'RD 135', 'RD 350', 'DT 200',
     'BURGMAN', 'INTRUDER', 'YES 125', 'GSR 750', 'GSR 150', 'GSX-S', 'GSX-R', 'GSX', 'HAYABUSA', 'BANDIT', 'V-STROM', 'VSTROM', 'BOULEVARD', 'INAZUMA', 'GLADIUS',
-    // Kawasaki
     'NINJA', 'NINJA 300', 'NINJA 400', 'NINJA 650', 'NINJA 1000', 'ZX-6R', 'ZX-10R', 'ZX6R', 'ZX10R', 'Z400', 'Z 400', 'Z650', 'Z 650', 'Z900', 'Z 900', 'Z1000',
-    'VERSYS', 'VERSYS 300', 'VERSYS 650', 'VERSYS 1000', 'VULCAN', 'KLX', 'D-TRACKER',
-    // BMW Motos
-    'GS 1250', 'GS 1200', 'GS 1300', 'GS 850', 'GS 750', 'GS 310', 'G 310', 'G310GS', 'G310R', 'F850GS', 'F800GS', 'F750GS', 'F900R', 'F900XR', 'S1000RR', 'S1000R', 'R1250GS', 'R1200GS', 'R1300GS', 'R NINET',
-    // Triumph
-    'TIGER', 'TIGER 900', 'TIGER 1200', 'TIGER 800', 'TIGER 660', 'BONNEVILLE', 'STREET TRIPLE', 'SPEED TRIPLE', 'TRIDENT', 'ROCKET 3', 'THRUXTON', 'SPEED TWIN',
-    // Royal Enfield
-    'HUNTER 350', 'HUNTER', 'METEOR 350', 'METEOR', 'CLASSIC 350', 'HIMALAYAN', 'SCRAM 411', 'INTERCEPTOR 650', 'INTERCEPTOR', 'CONTINENTAL GT', 'SUPER METEOR', 'SHOTGUN 650',
-    // Ducati
+    'VERSYS', 'VERSYS 300', 'VERSYS 650', 'VERSYS 1000', 'VULCAN', 'KLX',
+    'GS 1250', 'GS 1200', 'GS 1300', 'GS 850', 'GS 750', 'GS 310', 'G 310', 'G310GS', 'G310R', 'F850GS', 'F800GS', 'F750GS', 'F900R', 'F900XR', 'S1000RR', 'S1000R', 'R1250GS', 'R1200GS', 'R1300GS', 'R 1250 GS', 'R 1200 GS', 'R 1300 GS', 'R NINET',
+    'TIGER', 'TIGER 900', 'TIGER 1200', 'TIGER 800', 'TIGER 660', 'BONNEVILLE', 'STREET TRIPLE', 'SPEED TRIPLE', 'TRIDENT', 'ROCKET 3',
+    'HUNTER 350', 'METEOR 350', 'CLASSIC 350', 'HIMALAYAN', 'SCRAM 411', 'INTERCEPTOR 650', 'CONTINENTAL GT', 'SUPER METEOR', 'SHOTGUN 650',
     'PANIGALE', 'MULTISTRADA', 'DIAVEL', 'HYPERMOTARD', 'DESERTX', 'MONSTER 797', 'MONSTER 821', 'MONSTER 1200', 'STREETFIGHTER',
-    // Harley Davidson
     'FAT BOY', 'HERITAGE', 'IRON 883', 'SPORTSTER', 'ROAD KING', 'STREET GLIDE', 'ULTRA LIMITED', 'BREAKOUT', 'NIGHTSTER', 'LOW RIDER', 'FAT BOB',
-    // KTM
-    'KTM DUKE', 'DUKE 200', 'DUKE 390', 'DUKE 790', 'DUKE 890', 'ADVENTURE 390', 'ADVENTURE 890', 'ADVENTURE 1290', 'KTM 250', 'KTM 300',
-    // Bajaj / Haojue / Dafra / Shineray
+    'KTM DUKE', 'DUKE 200', 'DUKE 390', 'DUKE 790', 'ADVENTURE 390', 'ADVENTURE 890', 'ADVENTURE 1290',
     'DOMINAR', 'DOMINAR 400', 'DOMINAR 200', 'DOMINAR 160', 'PULSAR', 'CHETAK',
     'DR160', 'DR 160', 'CHOPPER ROAD', 'MASTER RIDE', 'DK150', 'DK 150', 'VR150', 'LINDY 125', 'NK150',
     'CITYCOM', 'MAXSYM', 'APACHE RTR', 'NH 190', 'NH 300', 'CRUISYM', 'HORIZON 150', 'HORIZON 250',
-    'VOLTZ', 'EVS', 'EV1', 'WATTS W125', 'SUPER SOCO', 'MUVINX',
-    'JET 50', 'JET 125', 'PHOENIX 50', 'PHOENIX S', 'WORKER 125', 'SHINERAY XY', 'XY 50'
+    'VOLTZ', 'EVS', 'EV1', 'WATTS W125', 'SUPER SOCO', 'MUVINX', 'JET 50', 'JET 125', 'PHOENIX 50', 'WORKER 125'
   ];
 
   const motoExclusiveBrands = [
     'TRIUMPH', 'DUCATI', 'ROYAL ENFIELD', 'HARLEY-DAVIDSON', 'HARLEY DAVIDSON', 'HARLEY',
     'BAJAJ', 'HAOJUE', 'DAFRA', 'SHINERAY', 'KASINSKI', 'SUNDOWN', 'TRAXX', 'VESPA', 'PIAGGIO',
-    'MV AGUSTA', 'APRILIA', 'BENELLI', 'KTM', 'VOLTZ', 'SUPER SOCO'
+    'MV AGUSTA', 'APRILIA', 'BENELLI', 'KTM', 'SUPER SOCO'
   ];
 
-  // 2. REGRAS ESTRITAS DE CAMINHÃO
-  const caminhaoStrictTokens = [
-    'CAMINHAO', 'CAMINHÃO', 'CAVALO MECANICO', 'CAVALO MECÂNICO', 'CAVALO-MECANICO',
-    'BITREM', 'RODOTREM', 'CARRETA', 'SEMI-REBOQUE', 'SEMIRREBOQUE', 'BASCULANTE',
-    'BITRUCK', 'TRUCK', 'CHASSI', 'CACAMBA', 'CAÇAMBA', 'GRANELEIRO', 'SIDER',
-    // Scania
-    'SCANIA', 'R440', 'R450', 'R480', 'R500', 'R540', 'R560', 'R620',
-    'P310', 'P360', 'P250', 'P270', 'P280', 'G440', 'G420', 'G400', 'G380', '113H', '113', '124G', '124', '112', '142', '143',
-    // Volvo Caminhões
-    'VOLVO FH', 'VOLVO FM', 'VOLVO FMX', 'VOLVO VM', 'FH 460', 'FH 500', 'FH 540', 'FH 420', 'FH 440', 'FH 520',
-    'FM 370', 'FM 380', 'FM 400', 'FM 440', 'VM 260', 'VM 270', 'VM 330', 'VM 310', 'VM 210', 'VM 220',
-    // Mercedes Caminhões
-    'ACTROS', 'ATEGO', 'ACCELO', 'AXOR', 'ATRON', 'AROCS',
-    'MB 1620', 'MB 1938', 'MB 1113', 'MB 1313', 'MB 710', 'MB 1935', 'MB 1944', 'MB 2544', 'MB 2546', 'MB 2646', 'MB 2651',
-    '1620', '1938', '1113', '1313', '710', '2544', '2546', '2646', '2651', '2548', '2426', '2428', '1719', '1726', '815', '1016',
-    // VW Caminhões
-    'CONSTELLATION', 'DELIVERY', 'METEOR', 'WORKER', 'TITAN TRACTOR',
-    '24.250', '24.280', '25.440', '25.460', '26.460', '26.510', '31.320', '19.320', '19.360', '17.190', '17.250', '17.280', '15.180', '15.190', '13.180', '13.190', '9.150', '8.150', '10.160', '11.180', '6.160', '9.170',
-    // Iveco Caminhões
-    'STRALIS', 'HI-WAY', 'HI-ROAD', 'TECTOR', 'S-WAY', 'VERTIS', 'EUROCARGO', 'CAVALLINO', 'CURSOR', 'DAILY 70C', 'DAILY 35S',
-    // DAF Caminhões
-    'DAF XF', 'DAF CF', 'DAF LF', 'XF105', 'XF 105', 'XF 480', 'XF 530', 'CF 85',
-    // Ford Caminhões
-    'FORD CARGO', 'CARGO 815', 'CARGO 2428', 'CARGO 2422', 'CARGO 2429', 'CARGO 1722', 'CARGO 1719', 'CARGO 1932', 'CARGO 2842', 'CARGO 2042', 'CARGO 1119', 'F-4000', 'F4000', 'F-12000', 'F-14000', 'F-11000', 'F-16000',
-    // MAN Caminhões
-    'MAN TGX', 'MAN TGS', 'TGX 28.440', 'TGX 29.440', 'TGX 29.480'
-  ];
+  if (motoStrictTokens.some(t => hasWord(t))) return 'moto';
+  if (motoExclusiveBrands.some(b => hasWord(b))) return 'moto';
 
-  // 3. REGRAS ESTRITAS DE PICAPE
-  const picapeStrictTokens = [
-    'HILUX', 'HILUX CD', 'HILUX CS', 'HILUX SR', 'HILUX SRV', 'HILUX SRX', 'HILUX GR-S', 'HILUX STD', 'TACOMA', 'TUNDRA',
-    'S10', 'S-10', 'MONTANA', 'SILVERADO', 'D20', 'D-20', 'D10', 'C10', 'C20', 'COLORADO',
-    'RANGER', 'RANGER XLS', 'RANGER XLT', 'RANGER LIMITED', 'RANGER RAPTOR', 'RANGER BLACK', 'RANGER STORM', 'MAVERICK', 'F-150', 'F150', 'F-250', 'F250', 'COURIER',
-    'STRADA', 'STRADA FREEDOM', 'STRADA VOLCANO', 'STRADA RANCH', 'STRADA ULTRA', 'STRADA ENDURANCE', 'STRADA WORKING', 'STRADA ADVENTURE',
-    'TORO', 'TORO FREEDOM', 'TORO VOLCANO', 'TORO RANCH', 'TORO ULTRA', 'TORO ENDURANCE', 'TITANO', 'FIORINO',
-    'SAVEIRO', 'SAVEIRO CROSS', 'SAVEIRO ROBUST', 'SAVEIRO TRENDLINE', 'SAVEIRO SURF', 'SAVEIRO PEPPER', 'AMAROK', 'AMAROK V6', 'AMAROK HIGHLINE', 'AMAROK COMFORTLINE', 'AMAROK EXTREME',
-    'FRONTIER', 'FRONTIER PRO4X', 'FRONTIER ATTACK', 'FRONTIER XE', 'FRONTIER LE', 'FRONTIER S', 'FRONTIER PLATINUM',
-    'L200', 'L200 TRITON', 'TRITON SPORT', 'TRITON SAVANA', 'TRITON HPE', 'TRITON GLS', 'TRITON GLX',
-    'RAMPAGE', 'RAM 1500', 'RAM 2500', 'RAM 3500', 'RAM CLASSIC', 'RAM REBEL', 'RAM LARAMIE', 'RAM BIG HORN',
-    'OROCH', 'DUSTER OROCH', 'OROCH OUTSIDER', 'OROCH PRO',
-    'LANDTREK', 'HOGGAR',
-    'JAC HUNTER', 'JAC T6', 'JAC T8', 'JAC T9', 'BYD SHARK', 'GWM POER',
-    'CABINE DUPLA', 'CABINE SIMPLES', 'CABINE ESTENDIDA', 'CD 4X4', 'CS 4X4', 'PICKUP', 'PICK-UP', 'PICAPE'
-  ];
-
-  // 4. REGRAS ESTRITAS DE CARROS / SUVS / ELETRICOS
-  const carStrictTokens = [
-    // GM / Chevrolet
-    'ONIX', 'ONIX PLUS', 'TRACKER', 'SPIN', 'CRUZE', 'CRUZE SPORT6', 'COBALT', 'PRISMA', 'CELTA', 'CORSA', 'CLASSIC', 'AGILE', 'ASTRA', 'VECTRA', 'ZAFIRA', 'MERIVA', 'EQUINOX', 'TRAILBLAZER', 'CAPTIVA', 'CAMARO', 'CORVETTE', 'BOLT', 'BLAZER EV', 'EQUINOX EV', 'OPALA', 'CHEVETTE', 'KADETT', 'MONZA', 'CARAVAN', 'OMEGA', 'SONIC',
-    // Volkswagen
-    'GOL', 'POLO', 'POLO TRACK', 'VIRTUS', 'NIVUS', 'T-CROSS', 'TCROSS', 'TAOS', 'TIGUAN', 'JETTA', 'PASSAT', 'FOX', 'CROSSFOX', 'SPACEFOX', 'UP!', 'VOYAGE', 'GOLF', 'FUSCA', 'KOMBI', 'BORA', 'PARATI', 'SANTANA', 'QUANTUM', 'ID.4', 'ID.BUZZ', 'TOUAREG',
-    // Fiat
-    'ARGO', 'CRONOS', 'MOBI', 'PULSE', 'FASTBACK', 'UNO', 'MILLE', 'PALIO', 'PALIO WEEKEND', 'PALIO FIRE', 'SIENA', 'GRAND SIENA', 'PUNTO', 'BRAVO', 'LINEA', 'IDEA', 'DOBLO', 'DOBLÒ', '500', 'FIAT 500', '500E', 'STILO', 'TEMPRA', 'TIPO', 'MAREA', 'PREMIO', 'ELBA', '147', 'BRAVA', 'FREEMONT',
-    // Hyundai
-    'HB20', 'HB20S', 'HB20X', 'CRETA', 'TUCSON', 'IX35', 'SANTA FE', 'AZERA', 'ELANTRA', 'I30', 'IONIQ', 'IONIQ 5', 'KONA', 'PALISADE', 'VELOSTER', 'VERA CRUZ',
-    // Toyota
-    'COROLLA', 'COROLLA CROSS', 'COROLLA HYBRID', 'YARIS', 'ETIOS', 'RAV4', 'PRIUS', 'CAMRY', 'SW4', 'BANDEIRANTE', 'FIELDER',
-    // Honda
-    'CIVIC', 'HR-V', 'HRV', 'CR-V', 'CRV', 'WR-V', 'WRV', 'FIT', 'CITY', 'ACCORD', 'ZR-V', 'ZRV',
-    // Renault
-    'KWID', 'KWID E-TECH', 'SANDERO', 'STEPWAY', 'LOGAN', 'DUSTER', 'CAPTUR', 'KARDIAN', 'MEGANE', 'MEGANE E-TECH', 'FLUENCE', 'CLIO', 'SYMBOL', 'SCENIC', 'TWINGO', 'ZOE',
-    // Jeep
-    'RENEGADE', 'COMPASS', 'COMMANDER', 'WRANGLER', 'CHEROKEE', 'GRAND CHEROKEE',
-    // Nissan
-    'KICKS', 'VERSA', 'V-DRIVE', 'SENTRA', 'MARCH', 'TIIDA', 'LIVINA', 'LEAF', 'X-TRAIL',
-    // Ford
-    'KA', 'KA SEDAN', 'KA+', 'ECOSPORT', 'FOCUS', 'FIESTA', 'FUSION', 'TERRITORY', 'BRONCO', 'BRONCO SPORT', 'MUSTANG', 'MUSTANG MACH-E', 'EDGE', 'DEL REY', 'CORCEL', 'ESCORT',
-    // Peugeot / Citroën
-    '208', '2008', '308', '3008', '408', '5008', '206', '207', '307', 'C3', 'C3 AIRCROSS', 'C4', 'C4 CACTUS', 'C4 LOUNGE', 'C4 PICASSO', 'BASALT', 'AIRCROSS', 'DS3', 'DS4', 'DS5',
-    // BYD & GWM
-    'BYD', 'DOLPHIN', 'DOLPHIN MINI', 'DOLPHIN PLUS', 'SEAL', 'YUAN', 'YUAN PLUS', 'YUAN PRO', 'SONG', 'SONG PLUS', 'SONG PRO', 'TANG', 'HAN', 'KING', 'D1',
-    'GWM', 'HAVAL', 'HAVAL H6', 'H6 HEV', 'H6 PHEV', 'H6 GT', 'ORA 03', 'ORA', 'TANK 300', 'TANK 500',
-    // Caoa Chery
-    'TIGGO', 'TIGGO 2', 'TIGGO 3X', 'TIGGO 5X', 'TIGGO 7', 'TIGGO 8', 'ARRIZO', 'ARRIZO 5', 'ARRIZO 6', 'ICAR', 'QQ', 'CELER',
-    // Premium (BMW, Mercedes, Audi, Volvo, Porsche, Land Rover, Jaguar, Lexus, Mini, Subaru, Kia, Mitsubishi)
-    '320I', '328I', '330I', '118I', '120I', 'X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'M2', 'M3', 'M4', 'M5', 'I3', 'I4', 'IX', 'IX1', 'IX3',
-    'C180', 'C200', 'C250', 'C300', 'A200', 'A250', 'CLA', 'GLA', 'GLB', 'GLC', 'GLE', 'EQA', 'EQB', 'EQC', 'EQE', 'EQS',
-    'A1', 'A3', 'A4', 'A5', 'A6', 'Q2', 'Q3', 'Q5', 'Q7', 'Q8', 'E-TRON', 'TT', 'RS3', 'RS4', 'RS5',
-    'XC40', 'XC60', 'XC90', 'EX30', 'EX90', 'C40', 'V40', 'V60', 'S60', 'RECHARGE',
-    'TAYCAN', 'MACAN', 'CAYENNE', '911', 'PANAMERA', 'BOXSTER', 'CAYMAN',
-    'SPORTAGE', 'SELTOS', 'NIRO', 'EV6', 'EV9', 'CERATO', 'SOUL', 'PICANTO', 'SORENTO', 'CARNIVAL', 'STONIC',
-    'ASX', 'ECLIPSE CROSS', 'OUTLANDER', 'PAJERO', 'PAJERO TR4', 'PAJERO SPORT', 'LANCER',
-    'EVOQUE', 'DISCOVERY', 'DISCOVERY SPORT', 'DEFENDER', 'RANGE ROVER', 'VELAR',
-    'COOPER', 'COUNTRYMAN', 'F-PACE', 'E-PACE', 'I-PACE', 'UX 250H', 'NX 350H', 'FORESTER', 'XV', 'IMPREZA', 'JIMNY', 'VITARA'
-  ];
-
-  const hasToken = (token) => {
-    const cleanToken = (' ' + token.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') + ' ')
-      .replace(/[^A-Z0-9\.\-\/]/g, ' ')
-      .replace(/\s+/g, ' ');
-    return text.includes(cleanToken.trim());
-  };
-
-  if (motoStrictTokens.some(t => hasToken(t))) return 'moto';
-  if (motoExclusiveBrands.some(b => hasToken(b))) return 'moto';
-  if (caminhaoStrictTokens.some(t => hasToken(t))) return 'caminhao';
-  if (picapeStrictTokens.some(t => hasToken(t))) return 'picape';
-  if (carStrictTokens.some(t => hasToken(t))) return 'carro';
-
-  const currentSurveyType = document.getElementById('typeInput')?.value || '';
-  if (currentSurveyType === 'Moto') return 'moto';
-
+  // 4. PADRÃO É CARRO (cobre Duster, Onix, Gol, Corolla, BYD, GWM, etc.)
   return 'carro';
 }
 window.vpDetectVehicleTypeFromText = vpDetectVehicleTypeFromText;
@@ -6773,7 +6703,7 @@ function vpRenderParts(filterQuery = '') {
 
     if (matching.length === 0) {
       listEl.innerHTML = `
-        <div style="padding: 30px 16px; text-align: center; color: #64748b;">
+        <div style="grid-column: 1 / -1; padding: 30px 16px; text-align: center; color: #64748b;">
           <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">🔍</span>
           <b>Nenhuma peça encontrada para "${vpEscapeHtml(filterQuery)}"</b>
           <p style="font-size: 0.80rem; margin-top: 4px;">Toque no botão "+ Nova Peça" acima para cadastrá-la no catálogo.</p>
@@ -6806,7 +6736,7 @@ function vpRenderParts(filterQuery = '') {
         html += allInZ.map(item => vpRenderPartCardHtml(item)).join('');
       }
     });
-    listEl.innerHTML = html || '<div style="text-align: center; padding: 20px; color: #94a3b8;">Nenhuma peça cadastrada.</div>';
+    listEl.innerHTML = html || '<div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #94a3b8;">Nenhuma peça cadastrada.</div>';
     return;
   }
 
@@ -6822,7 +6752,7 @@ function vpRenderParts(filterQuery = '') {
 
   if (totalZoneParts.length === 0) {
     listEl.innerHTML = `
-      <div style="padding: 30px 16px; text-align: center; color: #64748b;">
+      <div style="grid-column: 1 / -1; padding: 30px 16px; text-align: center; color: #64748b;">
         <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">📂</span>
         <b>Nenhuma peça ativa nesta zona</b>
         <p style="font-size: 0.80rem; margin-top: 4px;">Toque no botão "+ Nova Peça" acima para cadastrar.</p>
@@ -6843,17 +6773,14 @@ function vpRenderPartCardHtml(item) {
 
   return `
     <div class="vp-part-card ${cardClass}">
+      <!-- 1ª LINHA: [✏️] [Descrição da Peça] [🗑️] -->
       <div class="vp-card-top">
-        <div class="vp-part-title-wrap">
-          <span class="vp-part-title">${vpEscapeHtml(item.name)}</span>
-          <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
-        </div>
-        <div style="display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;">
-          <span class="vp-part-zone-label">${item.icon} ${vpEscapeHtml(item.zoneName)}</span>
-          <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">🗑️</button>
-        </div>
+        <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
+        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}">${vpEscapeHtml(item.name)}</span>
+        <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">🗑️</button>
       </div>
 
+      <!-- 2ª LINHA: [🔁 Trocar] [🛠️ Reparar] (Exatamente do mesmo tamanho) -->
       <div class="vp-card-actions">
         <button 
           type="button" 
@@ -6876,11 +6803,10 @@ function vpRenderPartCardHtml(item) {
 
       ${isTroca ? `
         <div class="vp-inline-obs-box obs-troca">
-          <span class="vp-inline-obs-label label-troca">📝 Observação da troca (opcional):</span>
           <input 
             type="text" 
             class="vp-inline-obs-input input-troca" 
-            placeholder="Ex: quebrado / amassado sem recuperação / rasgado" 
+            placeholder="Obs da troca..." 
             value="${vpEscapeHtml(selected.obs || '')}" 
             oninput="vpChangeObs('${vpEscapeHtml(item.name)}', this.value)"
           />
@@ -6889,11 +6815,10 @@ function vpRenderPartCardHtml(item) {
 
       ${isReparo ? `
         <div class="vp-inline-obs-box obs-reparo">
-          <span class="vp-inline-obs-label label-reparo">📝 Observação do reparo (opcional):</span>
           <input 
             type="text" 
             class="vp-inline-obs-input input-reparo" 
-            placeholder="Ex: recuperar ponta e pintar / desamassar" 
+            placeholder="Obs do reparo..." 
             value="${vpEscapeHtml(selected.obs || '')}" 
             oninput="vpChangeObs('${vpEscapeHtml(item.name)}', this.value)"
           />
@@ -7262,7 +7187,10 @@ function vpEscapeHtml(str) {
 if (typeof plateInput !== 'undefined' && plateInput) {
   plateInput.addEventListener('input', () => {
     const text = plateInput.value.trim();
+    if (!text) return;
     const type = vpDetectVehicleTypeFromText(text);
+
+    // 1. Atualiza rótulo do botão de partes
     const btnSpan = document.querySelector('.btn-open-parts-selector span');
     if (btnSpan) {
       if (type === 'moto') {
@@ -7273,6 +7201,28 @@ if (typeof plateInput !== 'undefined' && plateInput) {
         btnSpan.textContent = '🛻 Selecionar Partes da Picape (Zonas)';
       } else {
         btnSpan.textContent = '🚗 Selecionar Partes do Veículo (Zonas)';
+      }
+    }
+
+    // 2. Sincroniza aba principal do formulário (Moto vs Inicial)
+    if (typeof vistoriaTypeTabs !== 'undefined' && vistoriaTypeTabs) {
+      const isCurrentlyMoto = typeof selectedType !== 'undefined' && selectedType === 'Moto';
+      if (type === 'moto' && !isCurrentlyMoto && (selectedType === 'Inicial' || !selectedType)) {
+        selectedType = 'Moto';
+        vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.type === 'Moto');
+        });
+        if (typeof typeInput !== 'undefined' && typeInput) typeInput.value = 'Moto';
+        if (typeof updateVistoriaFormTitle === 'function') updateVistoriaFormTitle();
+        if (typeof renderDynamicSurveyFields === 'function') renderDynamicSurveyFields();
+      } else if (type !== 'moto' && isCurrentlyMoto) {
+        selectedType = 'Inicial';
+        vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.type === 'Inicial');
+        });
+        if (typeof typeInput !== 'undefined' && typeInput) typeInput.value = 'Inicial';
+        if (typeof updateVistoriaFormTitle === 'function') updateVistoriaFormTitle();
+        if (typeof renderDynamicSurveyFields === 'function') renderDynamicSurveyFields();
       }
     }
   });
