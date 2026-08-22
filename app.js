@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.77';
+const CURRENT_APP_VERSION = 'v1.78';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -6773,11 +6773,11 @@ function vpRenderPartCardHtml(item) {
 
   return `
     <div class="vp-part-card ${cardClass}">
-      <!-- 1ª LINHA: [✏️] [Descrição da Peça] [🗑️] -->
+      <!-- 1ª LINHA: [❌ Excluir] [Descrição da Peça] [✏️ Editar] -->
       <div class="vp-card-top">
-        <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
+        <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
         <span class="vp-part-title" title="${vpEscapeHtml(item.name)}">${vpEscapeHtml(item.name)}</span>
-        <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">🗑️</button>
+        <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
       </div>
 
       <!-- 2ª LINHA: [🔁 Trocar] [🛠️ Reparar] (Exatamente do mesmo tamanho) -->

@@ -1631,7 +1631,7 @@ html, body {
   background: #f0f9ff;
 }
 
-/* 1ª LINHA: [✏️] [Descrição da Peça] [🗑️] */
+/* 1ª LINHA: [❌ Excluir] [Descrição da Peça] [✏️ Editar] */
 .vp-card-top {
   display: flex;
   align-items: center;
@@ -1656,28 +1656,30 @@ html, body {
   overflow: hidden;
 }
 
+.vp-btn-delete-part {
+  background: none;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.vp-btn-delete-part:hover {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
 .vp-btn-edit-name {
   background: none;
   border: none;
   font-size: 0.72rem;
-  color: #94a3b8;
-  cursor: pointer;
-  padding: 2px 3px;
-  border-radius: 3px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.vp-btn-edit-name:hover {
-  color: #2563eb;
-  background: #eff6ff;
-}
-
-.vp-btn-delete-part {
-  background: none;
-  border: none;
-  font-size: 0.72rem;
-  color: #94a3b8;
+  color: #64748b;
   cursor: pointer;
   padding: 2px 3px;
   border-radius: 3px;
@@ -1686,9 +1688,9 @@ html, body {
   transition: all 0.15s ease;
 }
 
-.vp-btn-delete-part:hover {
-  color: #dc2626;
-  background: #fee2e2;
+.vp-btn-edit-name:hover {
+  color: #2563eb;
+  background: #eff6ff;
 }
 
 /* 2ª LINHA: [🔁 Trocar] [🛠️ Reparar] (Exatamente do mesmo tamanho) */
