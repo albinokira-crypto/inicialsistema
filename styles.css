@@ -1552,3 +1552,262 @@ html, body {
   color: #0f172a;
 }
 
+/* ==========================================================================
+   MÓDULO DE PARTES DE VEÍCULOS (ZONAS E PEÇAS)
+   ========================================================================== */
+.vp-part-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.vp-part-card.selected-troca {
+  border-color: #dc2626;
+  background: #fffafa;
+}
+
+.vp-part-card.selected-reparo {
+  border-color: #0284c7;
+  background: #f0f9ff;
+}
+
+.vp-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.vp-part-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.vp-part-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.25;
+}
+
+.vp-btn-edit-name {
+  background: none;
+  border: none;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.vp-btn-edit-name:hover {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.vp-part-zone-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.vp-card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.vp-btn-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 38px;
+}
+
+.vp-btn-action.btn-trocar {
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.vp-btn-action.btn-trocar.active {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+}
+
+.vp-btn-action.btn-reparar {
+  color: #0284c7;
+  border-color: #bae6fd;
+}
+
+.vp-btn-action.btn-reparar.active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+}
+
+.vp-inline-obs-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.vp-inline-obs-box.obs-troca {
+  border-top-color: #fecaca;
+}
+
+.vp-inline-obs-box.obs-reparo {
+  border-top-color: #bae6fd;
+}
+
+.vp-inline-obs-label {
+  font-size: 0.70rem;
+  font-weight: 700;
+}
+
+.vp-inline-obs-label.label-troca {
+  color: #dc2626;
+}
+
+.vp-inline-obs-label.label-reparo {
+  color: #0284c7;
+}
+
+.vp-inline-obs-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 0.80rem;
+  font-weight: 600;
+  outline: none;
+  background: #ffffff;
+  color: #1e293b;
+}
+
+.vp-inline-obs-input.input-troca:focus {
+  border-color: #dc2626;
+}
+
+.vp-inline-obs-input.input-reparo:focus {
+  border-color: #0284c7;
+}
+
+.vp-zone-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.vp-zone-card.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.vp-zone-icon {
+  font-size: 1.2rem;
+}
+
+.vp-zone-info strong {
+  display: block;
+  font-size: 0.82rem;
+  color: #0f172a;
+}
+
+.vp-zone-info span {
+  font-size: 0.68rem;
+  color: #64748b;
+}
+
+.vp-zone-indicator {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: #2563eb;
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 999px;
+}
+
+.vp-zone-group-header {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  background: #eff6ff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 4px solid #2563eb;
+  margin-top: 6px;
+}
+
+.vp-sheet-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.vp-sheet-item-text {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.vp-btn-sheet-remove {
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  font-size: 0.80rem;
+  font-weight: 800;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+

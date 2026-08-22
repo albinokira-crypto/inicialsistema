@@ -2772,14 +2772,27 @@ function renderDynamicSurveyFields() {
   `;
 
   const trocasReparosHtml = `
-    <label style="grid-column: 1 / -1;">
-      Trocas (uma peça por linha)
-      <textarea name="trocas" rows="3" placeholder="Ex:&#10;Lateral LE&#10;Porta traseira LE"></textarea>
-    </label>
-    <label style="grid-column: 1 / -1;">
-      Reparos (uma peça por linha)
-      <textarea name="reparos" rows="3" placeholder="Ex:&#10;Coluna LE do teto&#10;Caixa de ar LE"></textarea>
-    </label>
+    <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-top: 6px; padding: 12px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div>
+          <span style="font-size: 0.90rem; font-weight: 800; color: #0f172a; display: block;">🚗 Partes do Veículo (Trocas & Reparos)</span>
+          <span style="font-size: 0.74rem; color: #64748b;">Selecione peças por zonas com 1 toque ou digite abaixo:</span>
+        </div>
+        <button type="button" class="btn-open-parts-selector" onclick="openVehiclePartsModal()" style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.82rem; cursor: pointer; box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
+          <span>🚗 Selecionar Partes (Zonas)</span>
+        </button>
+      </div>
+
+      <label style="margin: 0;">
+        <span style="font-size: 0.82rem; font-weight: 700; color: #dc2626;">🔁 Trocas (uma peça por linha)</span>
+        <textarea name="trocas" id="surveyTrocasTextarea" rows="3" placeholder="Ex:&#10;Capô do motor (dobrado)&#10;Farol dianteiro LD" style="width: 100%; box-sizing: border-box; margin-top: 4px;"></textarea>
+      </label>
+
+      <label style="margin: 0;">
+        <span style="font-size: 0.82rem; font-weight: 700; color: #0284c7;">🛠️ Reparos (uma peça por linha)</span>
+        <textarea name="reparos" id="surveyReparosTextarea" rows="3" placeholder="Ex:&#10;Para-choque dianteiro (recuperar ponta e pintar)&#10;Porta dianteira LE (desamassar vinco)" style="width: 100%; box-sizing: border-box; margin-top: 4px;"></textarea>
+      </label>
+    </div>
   `;
 
   const extraFieldsHtml = obsHtml + trocasReparosHtml;
@@ -5396,3 +5409,934 @@ window.gerarPastaNovaSupervisao = function() {
     alert('Esta funcionalidade de gerar a pasta só está disponível no aplicativo Android.');
   }
 };
+
+/* ==========================================================================
+   INTEGRAÇÃO MÓDULO DE PARTES DE VEÍCULOS (ZONAS & ORÇAMENTAÇÃO)
+   ========================================================================== */
+
+const VP_BASE_ZONES_CAR = [
+  {
+    id: 'dianteira',
+    name: 'Dianteira',
+    icon: '🚗',
+    parts: [
+      'Capô do motor',
+      'Para-choque dianteiro',
+      'Grade dianteira',
+      'Alma do para-choque dianteiro',
+      'Farol dianteiro LD',
+      'Farol dianteiro LE',
+      'Farol de milha LD',
+      'Farol de milha LE',
+      'Para-lama dianteiro LD',
+      'Para-lama dianteiro LE',
+      'Painel frontal / mini-frente',
+      'Radiador de água',
+      'Condensador do ar-condicionado',
+      'Eletroventilador / ventoinha',
+      'Guia do para-choque dianteiro LD',
+      'Guia do para-choque dianteiro LE',
+      'Emblema frontal da montadora'
+    ]
+  },
+  {
+    id: 'traseira',
+    name: 'Traseira',
+    icon: '🚘',
+    parts: [
+      'Tampa do porta-malas / traseira',
+      'Para-choque traseiro',
+      'Alma do para-choque traseiro',
+      'Lanterna traseira LD',
+      'Lanterna traseira LE',
+      'Lanterna tampa traseira LD',
+      'Lanterna tampa traseira LE',
+      'Painel traseiro',
+      'Assoalho do porta-malas',
+      'Guia do para-choque traseiro LD',
+      'Guia do para-choque traseiro LE',
+      'Refletor traseiro LD',
+      'Refletor traseiro LE',
+      'Emblema traseiro da montadora'
+    ]
+  },
+  {
+    id: 'lateral_dir',
+    name: 'Lateral LD',
+    icon: '➡️',
+    parts: [
+      'Porta dianteira LD',
+      'Porta traseira LD',
+      'Retrovisor LD completo',
+      'Capa do retrovisor LD',
+      'Espelho do retrovisor LD',
+      'Caixa de ar / soleira LD',
+      'Coluna A dianteira LD',
+      'Coluna B central LD',
+      'Coluna C traseira LD',
+      'Lateral traseira LD (painel)',
+      'Friso da porta dianteira LD',
+      'Friso da porta traseira LD',
+      'Maçaneta dianteira LD',
+      'Maçaneta traseira LD'
+    ]
+  },
+  {
+    id: 'lateral_esq',
+    name: 'Lateral LE',
+    icon: '⬅️',
+    parts: [
+      'Porta dianteira LE (motorista)',
+      'Porta traseira LE',
+      'Retrovisor LE completo',
+      'Capa do retrovisor LE',
+      'Espelho do retrovisor LE',
+      'Caixa de ar / soleira LE',
+      'Coluna A dianteira LE',
+      'Coluna B central LE',
+      'Coluna C traseira LE',
+      'Lateral traseira LE (painel)',
+      'Friso da porta dianteira LE',
+      'Friso da porta traseira LE',
+      'Maçaneta dianteira LE',
+      'Maçaneta traseira LE'
+    ]
+  },
+  {
+    id: 'estrutura_teto',
+    name: 'Teto & Estrutura',
+    icon: '🛡️',
+    parts: [
+      'Painel do teto',
+      'Travessa superior do teto',
+      'Longarina dianteira LD',
+      'Longarina dianteira LE',
+      'Ponta de longarina dianteira LD',
+      'Ponta de longarina dianteira LE',
+      'Longarina traseira LD',
+      'Longarina traseira LE',
+      'Caixa de roda dianteira LD',
+      'Caixa de roda dianteira LE',
+      'Caixa de roda traseira LD',
+      'Caixa de roda traseira LE',
+      'Painel corta-fogo'
+    ]
+  },
+  {
+    id: 'mecanica_susp',
+    name: 'Mecânica & Suspensão',
+    icon: '⚙️',
+    parts: [
+      'Amortecedor dianteiro LD',
+      'Amortecedor dianteiro LE',
+      'Amortecedor traseiro LD',
+      'Amortecedor traseiro LE',
+      'Bandeja de suspensão dianteira LD',
+      'Bandeja de suspensão dianteira LE',
+      'Quadro / agregado da suspensão',
+      'Eixo traseiro completo',
+      'Caixa de direção hidráulica/elétrica',
+      'Manga de eixo dianteira LD',
+      'Manga de eixo dianteira LE',
+      'Semi-eixo dianteiro LD',
+      'Semi-eixo dianteiro LE',
+      'Cárter de óleo do motor',
+      'Roda dianteira LD',
+      'Roda dianteira LE',
+      'Roda traseira LD',
+      'Roda traseira LE',
+      'Pneu dianteiro LD',
+      'Pneu dianteiro LE',
+      'Pneu traseiro LD',
+      'Pneu traseiro LE'
+    ]
+  },
+  {
+    id: 'vidros_interior',
+    name: 'Vidros & Interior',
+    icon: '🪟',
+    parts: [
+      'Vidro para-brisa dianteiro',
+      'Vidro traseiro / vigia',
+      'Vidro porta dianteira LD',
+      'Vidro porta dianteira LE',
+      'Vidro porta traseira LD',
+      'Vidro porta traseira LE',
+      'Bolsa do Airbag motorista (volante)',
+      'Bolsa do Airbag passageiro (painel)',
+      'Cinto de segurança dianteiro LD',
+      'Cinto de segurança dianteiro LE',
+      'Painel de instrumentos / tabelier',
+      'Forro de porta dianteiro LD',
+      'Forro de porta dianteiro LE'
+    ]
+  }
+];
+
+const VP_BASE_ZONES_MOTO = [
+  {
+    id: 'dianteira_moto',
+    name: 'Dianteira & Guidão',
+    icon: '🏍️',
+    parts: [
+      'Farol dianteiro',
+      'Carenagem do farol / bolha',
+      'Guidão',
+      'Manete de freio LD',
+      'Manete de embreagem LE',
+      'Retrovisor LD',
+      'Retrovisor LE',
+      'Painel de instrumentos digital/analógico',
+      'Para-lama dianteiro',
+      'Garfo dianteiro / bengala LD',
+      'Garfo dianteiro / bengala LE',
+      'Mesa superior e inferior da direção',
+      'Pisca dianteiro LD',
+      'Pisca dianteiro LE'
+    ]
+  },
+  {
+    id: 'chassi_tanque',
+    name: 'Tanque & Chassi',
+    icon: '⛽',
+    parts: [
+      'Tanque de combustível',
+      'Tampa do tanque',
+      'Carenagem lateral LD do tanque',
+      'Carenagem lateral LE do tanque',
+      'Banco / assento',
+      'Chassi / quadro principal',
+      'Cavalete lateral / descanso',
+      'Cavalete central'
+    ]
+  },
+  {
+    id: 'traseira_moto',
+    name: 'Traseira & Escapamento',
+    icon: '🛵',
+    parts: [
+      'Rabeta Tras LD',
+      'Rabeta Tras LE',
+      'Rabeta Tras Central',
+      'Lanterna traseira',
+      'Suporte de placa / para-lama traseiro',
+      'Pisca traseiro LD',
+      'Pisca traseiro LE',
+      'Escapamento / ponteira',
+      'Protetor do escapamento',
+      'Protetor do bico do escapamento',
+      'Balança traseira',
+      'Amortecedor Tras LD',
+      'Amortecedor Tras LE'
+    ]
+  },
+  {
+    id: 'mecanica_moto',
+    name: 'Motor & Rodas',
+    icon: '⚙️',
+    parts: [
+      'Tampa do motor lateral LD',
+      'Tampa do motor lateral LE',
+      'Pedal de câmbio / marcha',
+      'Pedal de freio traseiro',
+      'Pedaleira dianteira LD',
+      'Pedaleira dianteira LE',
+      'Pedaleira traseira LD',
+      'Pedaleira traseira LE',
+      'Roda dianteira',
+      'Roda traseira',
+      'Disco de freio dianteiro',
+      'Disco/Tambor de freio traseiro',
+      'Pneu dianteiro',
+      'Pneu traseiro'
+    ]
+  }
+];
+
+let vpActiveZones = VP_BASE_ZONES_CAR;
+let vpActiveZoneId = 'dianteira';
+let vpDetectedVehicleType = 'carro';
+let vpCurrentVehicleModelName = '';
+let vpViewAllZonesMode = false;
+
+let vpSelectedPartsMap = new Map(); // key = displayName -> { name, rawName, zoneId, zoneName, action: 'troca'|'reparo', obs: '' }
+let vpCustomPartsList = [];
+let vpCustomPartRenamesMap = {};
+
+function vpLoadState() {
+  try {
+    const savedCustom = localStorage.getItem('mobile_parts_custom');
+    if (savedCustom) vpCustomPartsList = JSON.parse(savedCustom);
+    const savedRenames = localStorage.getItem('mobile_parts_renames');
+    if (savedRenames) vpCustomPartRenamesMap = JSON.parse(savedRenames);
+  } catch(e) {}
+}
+
+function vpSaveState() {
+  try {
+    localStorage.setItem('mobile_parts_custom', JSON.stringify(vpCustomPartsList));
+    localStorage.setItem('mobile_parts_renames', JSON.stringify(vpCustomPartRenamesMap));
+  } catch(e) {}
+}
+
+function vpGetEffectivePartName(rawName) {
+  return vpCustomPartRenamesMap[rawName] || rawName;
+}
+
+window.openVehiclePartsModal = function() {
+  vpLoadState();
+
+  const plateInput = document.getElementById('plateInput');
+  const vehicleTitle = plateInput ? plateInput.value.trim() : '';
+  vpCurrentVehicleModelName = vehicleTitle;
+
+  const vUpper = vehicleTitle.toUpperCase();
+  const titleDisplay = document.getElementById('vpVehicleTitle');
+  const typeBadge = document.getElementById('vpVehicleBadge');
+
+  if (vUpper.includes('MOTO') || vUpper.includes('CG 160') || vUpper.includes('FAZER') || vUpper.includes('HONDA BIZ') || vUpper.includes('YAMAHA') || vUpper.includes('XRE') || vUpper.includes('BROS')) {
+    vpDetectedVehicleType = 'moto';
+    vpActiveZones = VP_BASE_ZONES_MOTO;
+    vpActiveZoneId = 'dianteira_moto';
+    if (typeBadge) typeBadge.textContent = '🏍️ Motocicleta';
+  } else if (vUpper.includes('HILUX') || vUpper.includes('S10') || vUpper.includes('RANGER') || vUpper.includes('TORO') || vUpper.includes('STRADA') || vUpper.includes('SAVEIRO') || vUpper.includes('AMAROK') || vUpper.includes('MONTANA') || vUpper.includes('OROCH') || vUpper.includes('FRONTIER') || vUpper.includes('L200') || vUpper.includes('RAM')) {
+    vpDetectedVehicleType = 'picape';
+    vpActiveZones = JSON.parse(JSON.stringify(VP_BASE_ZONES_CAR));
+    const trasZone = vpActiveZones.find(z => z.id === 'traseira');
+    if (trasZone) {
+      trasZone.name = 'Traseira & Caçamba';
+      trasZone.parts = [
+        'Tampa da caçamba traseira',
+        'Para-choque traseiro',
+        'Alma do para-choque traseiro',
+        'Lanterna traseira LD',
+        'Lanterna traseira LE',
+        'Protetor de caçamba',
+        'Santo Antônio',
+        'Capota marítima',
+        'Estribo lateral LD',
+        'Estribo lateral LE',
+        'Painel traseiro da cabine',
+        'Assoalho da caçamba',
+        'Emblema traseiro da montadora'
+      ];
+    }
+    vpActiveZoneId = 'dianteira';
+    if (typeBadge) typeBadge.textContent = '🛻 Picape / Caminhonete';
+  } else {
+    vpDetectedVehicleType = 'carro';
+    vpActiveZones = VP_BASE_ZONES_CAR;
+    vpActiveZoneId = 'dianteira';
+    if (typeBadge) typeBadge.textContent = '🚗 Automóvel / SUV';
+  }
+
+  if (titleDisplay) {
+    titleDisplay.textContent = vehicleTitle || 'Partes do Veículo';
+  }
+
+  // Lê os valores atuais dos textareas de trocas e reparos para sincronizar
+  vpSelectedPartsMap.clear();
+
+  const trocasTextarea = document.querySelector('textarea[name="trocas"]');
+  if (trocasTextarea && trocasTextarea.value) {
+    const lines = trocasTextarea.value.split('\n');
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      const match = trimmed.match(/^(.*?)\s*\((.*?)\)$/);
+      const name = match ? match[1].trim() : trimmed;
+      const obs = match ? match[2].trim() : '';
+      vpSelectedPartsMap.set(name, {
+        name: name,
+        rawName: name,
+        zoneId: vpActiveZoneId,
+        zoneName: 'Veículo',
+        action: 'troca',
+        obs: obs
+      });
+    });
+  }
+
+  const reparosTextarea = document.querySelector('textarea[name="reparos"]');
+  if (reparosTextarea && reparosTextarea.value) {
+    const lines = reparosTextarea.value.split('\n');
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      const match = trimmed.match(/^(.*?)\s*\((.*?)\)$/);
+      const name = match ? match[1].trim() : trimmed;
+      const obs = match ? match[2].trim() : '';
+      vpSelectedPartsMap.set(name, {
+        name: name,
+        rawName: name,
+        zoneId: vpActiveZoneId,
+        zoneName: 'Veículo',
+        action: 'reparo',
+        obs: obs
+      });
+    });
+  }
+
+  vpSetupSearch();
+  vpUpdateTriggerButton();
+  vpRenderParts();
+  vpUpdateDockAndSheet();
+
+  const modal = document.getElementById('vehiclePartsModal');
+  if (modal) modal.style.display = 'flex';
+};
+
+window.closeVehiclePartsModal = function() {
+  const modal = document.getElementById('vehiclePartsModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.vpApplyAndClose = function() {
+  const trocasList = [];
+  const reparosList = [];
+
+  for (const part of vpSelectedPartsMap.values()) {
+    const formatted = part.obs ? `${part.name} (${part.obs})` : part.name;
+    if (part.action === 'troca') {
+      trocasList.push(formatted);
+    } else if (part.action === 'reparo') {
+      reparosList.push(formatted);
+    }
+  }
+
+  const trocasTextarea = document.querySelector('textarea[name="trocas"]');
+  const reparosTextarea = document.querySelector('textarea[name="reparos"]');
+
+  if (trocasTextarea) {
+    trocasTextarea.value = trocasList.join('\n');
+    trocasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+    trocasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  if (reparosTextarea) {
+    reparosTextarea.value = reparosList.join('\n');
+    reparosTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+    reparosTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  window.closeVehiclePartsModal();
+  window.vpCloseReviewSheet();
+};
+
+function vpUpdateTriggerButton() {
+  const currentZone = vpActiveZones.find(z => z.id === vpActiveZoneId) || vpActiveZones[0];
+  const triggerIcon = document.getElementById('vpTriggerIcon');
+  const triggerTitle = document.getElementById('vpTriggerTitle');
+  const triggerBadge = document.getElementById('vpTriggerCountBadge');
+
+  if (vpViewAllZonesMode) {
+    if (triggerIcon) triggerIcon.textContent = '📋';
+    if (triggerTitle) triggerTitle.textContent = 'Todas as Zonas do Veículo';
+    if (triggerBadge) {
+      triggerBadge.style.display = vpSelectedPartsMap.size > 0 ? 'inline-block' : 'none';
+      triggerBadge.textContent = vpSelectedPartsMap.size;
+    }
+  } else if (currentZone) {
+    if (triggerIcon) triggerIcon.textContent = currentZone.icon;
+    if (triggerTitle) triggerTitle.textContent = currentZone.name;
+    const count = vpGetZoneSelectedCount(currentZone.id);
+    if (triggerBadge) {
+      triggerBadge.style.display = count > 0 ? 'inline-block' : 'none';
+      triggerBadge.textContent = count;
+    }
+  }
+}
+
+function vpGetZoneSelectedCount(zoneId) {
+  let c = 0;
+  for (const part of vpSelectedPartsMap.values()) {
+    if (part.zoneId === zoneId) c++;
+  }
+  return c;
+}
+
+window.vpOpenZonesGridModal = function() {
+  const modal = document.getElementById('vpZonesGridModal');
+  const grid = document.getElementById('vpZonesGridContent');
+  const btnAll = document.getElementById('vpViewAllBtnText');
+
+  if (btnAll) {
+    btnAll.textContent = vpViewAllZonesMode ? '📁 Voltar para Visualização por Zona' : '👁️ Ver Todas as Zonas Juntas';
+  }
+
+  if (grid) {
+    grid.innerHTML = vpActiveZones.map(zone => {
+      const count = vpGetZoneSelectedCount(zone.id);
+      const isCurrent = !vpViewAllZonesMode && zone.id === vpActiveZoneId;
+      return `
+        <button 
+          type="button" 
+          class="vp-zone-card ${isCurrent ? 'active' : ''}" 
+          onclick="vpSelectZone('${zone.id}')"
+        >
+          <span class="vp-zone-icon">${zone.icon}</span>
+          <div class="vp-zone-info">
+            <strong>${zone.name}</strong>
+            <span>${zone.parts.length} peças</span>
+          </div>
+          ${count > 0 ? `<span class="vp-zone-indicator">${count}</span>` : ''}
+        </button>
+      `;
+    }).join('');
+  }
+
+  if (modal) modal.style.display = 'flex';
+};
+
+window.vpCloseZonesGridModal = function() {
+  const modal = document.getElementById('vpZonesGridModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.vpHandleZonesOverlayClick = function(e) {
+  if (e.target.id === 'vpZonesGridModal') {
+    window.vpCloseZonesGridModal();
+  }
+};
+
+window.vpSelectZone = function(zoneId) {
+  vpViewAllZonesMode = false;
+  vpActiveZoneId = zoneId;
+  window.vpCloseZonesGridModal();
+  vpUpdateTriggerButton();
+  vpRenderParts();
+};
+
+window.vpToggleViewAllZones = function() {
+  vpViewAllZonesMode = !vpViewAllZonesMode;
+  window.vpCloseZonesGridModal();
+  vpUpdateTriggerButton();
+  vpRenderParts();
+};
+
+function vpRenderParts(filterQuery = '') {
+  const currentZone = vpActiveZones.find(z => z.id === vpActiveZoneId) || vpActiveZones[0];
+  const listEl = document.getElementById('vpPartsScrollContainer');
+  if (!listEl) return;
+
+  // BUSCA
+  if (filterQuery.trim()) {
+    const q = filterQuery.trim().toLowerCase();
+    let matching = [];
+    vpActiveZones.forEach(z => {
+      z.parts.forEach(rawP => {
+        const effective = vpGetEffectivePartName(rawP);
+        if (effective.toLowerCase().includes(q) || rawP.toLowerCase().includes(q)) {
+          matching.push({ rawName: rawP, name: effective, zoneId: z.id, zoneName: z.name, icon: z.icon });
+        }
+      });
+    });
+    vpCustomPartsList.forEach(p => {
+      const effective = vpGetEffectivePartName(p.name);
+      if (effective.toLowerCase().includes(q)) {
+        const zObj = vpActiveZones.find(z => z.id === p.zoneId);
+        matching.push({ rawName: p.name, name: effective, zoneId: p.zoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: '✨' });
+      }
+    });
+
+    if (matching.length === 0) {
+      listEl.innerHTML = `
+        <div style="padding: 30px 16px; text-align: center; color: #64748b;">
+          <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">🔍</span>
+          <b>Nenhuma peça encontrada para "${vpEscapeHtml(filterQuery)}"</b>
+          <p style="font-size: 0.80rem; margin-top: 4px;">Toque no botão "+ Nova Peça" acima para cadastrá-la.</p>
+        </div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = matching.map(item => vpRenderPartCardHtml(item)).join('');
+    return;
+  }
+
+  // VER TODAS AS ZONAS JUNTAS
+  if (vpViewAllZonesMode) {
+    let html = '';
+    vpActiveZones.forEach(z => {
+      const partsInZ = z.parts.map(rawP => ({ rawName: rawP, name: vpGetEffectivePartName(rawP), zoneId: z.id, zoneName: z.name, icon: z.icon }));
+      const customInZ = vpCustomPartsList.filter(p => p.zoneId === z.id).map(p => ({ rawName: p.name, name: vpGetEffectivePartName(p.name), zoneId: z.id, zoneName: z.name, icon: '✨' }));
+      const allInZ = [...partsInZ, ...customInZ];
+
+      html += `<div class="vp-zone-group-header">${z.icon} ${vpEscapeHtml(z.name)} (${allInZ.length})</div>`;
+      html += allInZ.map(item => vpRenderPartCardHtml(item)).join('');
+    });
+    listEl.innerHTML = html;
+    return;
+  }
+
+  // ZONA ATUAL
+  const partsInCurrent = currentZone.parts.map(rawP => ({ rawName: rawP, name: vpGetEffectivePartName(rawP), zoneId: currentZone.id, zoneName: currentZone.name, icon: currentZone.icon }));
+  const customInCurrent = vpCustomPartsList.filter(p => p.zoneId === currentZone.id).map(p => ({ rawName: p.name, name: vpGetEffectivePartName(p.name), zoneId: currentZone.id, zoneName: currentZone.name, icon: '✨' }));
+  const totalZoneParts = [...partsInCurrent, ...customInCurrent];
+
+  listEl.innerHTML = totalZoneParts.map(item => vpRenderPartCardHtml(item)).join('');
+}
+
+function vpRenderPartCardHtml(item) {
+  const selected = vpSelectedPartsMap.get(item.name);
+  const isTroca = selected && selected.action === 'troca';
+  const isReparo = selected && selected.action === 'reparo';
+  const cardClass = isTroca ? 'selected-troca' : (isReparo ? 'selected-reparo' : '');
+
+  return `
+    <div class="vp-part-card ${cardClass}">
+      <div class="vp-card-top">
+        <div class="vp-part-title-wrap">
+          <span class="vp-part-title">${vpEscapeHtml(item.name)}</span>
+          <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
+        </div>
+        <span class="vp-part-zone-label">${item.icon} ${vpEscapeHtml(item.zoneName)}</span>
+      </div>
+
+      <div class="vp-card-actions">
+        <button 
+          type="button" 
+          class="vp-btn-action btn-trocar ${isTroca ? 'active' : ''}" 
+          onclick="vpToggleAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'troca', '${vpEscapeHtml(item.rawName)}')"
+        >
+          <span>🔁</span>
+          <span>Trocar</span>
+        </button>
+        
+        <button 
+          type="button" 
+          class="vp-btn-action btn-reparar ${isReparo ? 'active' : ''}" 
+          onclick="vpToggleAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'reparo', '${vpEscapeHtml(item.rawName)}')"
+        >
+          <span>🛠️</span>
+          <span>Reparar</span>
+        </button>
+      </div>
+
+      ${isTroca ? `
+        <div class="vp-inline-obs-box obs-troca">
+          <span class="vp-inline-obs-label label-troca">📝 Observação da troca (opcional):</span>
+          <input 
+            type="text" 
+            class="vp-inline-obs-input input-troca" 
+            placeholder="Ex: quebrado / amassado sem recuperação / rasgado" 
+            value="${vpEscapeHtml(selected.obs || '')}" 
+            oninput="vpChangeObs('${vpEscapeHtml(item.name)}', this.value)"
+          />
+        </div>
+      ` : ''}
+
+      ${isReparo ? `
+        <div class="vp-inline-obs-box obs-reparo">
+          <span class="vp-inline-obs-label label-reparo">📝 Observação do reparo (opcional):</span>
+          <input 
+            type="text" 
+            class="vp-inline-obs-input input-reparo" 
+            placeholder="Ex: recuperar ponta e pintar / desamassar" 
+            value="${vpEscapeHtml(selected.obs || '')}" 
+            oninput="vpChangeObs('${vpEscapeHtml(item.name)}', this.value)"
+          />
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '') {
+  const current = vpSelectedPartsMap.get(partName);
+
+  if (current && current.action === action) {
+    vpSelectedPartsMap.delete(partName);
+  } else {
+    vpSelectedPartsMap.set(partName, {
+      name: partName,
+      rawName: rawName || partName,
+      zoneId: zoneId,
+      zoneName: zoneName,
+      action: action,
+      obs: current ? (current.obs || '') : ''
+    });
+  }
+
+  vpSaveState();
+  vpUpdateTriggerButton();
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  vpUpdateDockAndSheet();
+};
+
+window.vpChangeObs = function(partName, obsText) {
+  const part = vpSelectedPartsMap.get(partName);
+  if (part) {
+    part.obs = obsText.trim();
+    vpSaveState();
+    vpUpdateDockAndSheet();
+  }
+};
+
+window.vpRemoveSelected = function(partName) {
+  if (vpSelectedPartsMap.has(partName)) {
+    vpSelectedPartsMap.delete(partName);
+    vpSaveState();
+    vpUpdateTriggerButton();
+    vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+    vpUpdateDockAndSheet();
+  }
+};
+
+window.vpClearAllSelected = function() {
+  if (vpSelectedPartsMap.size === 0) return;
+  if (confirm('Deseja realmente desmarcar todas as peças selecionadas?')) {
+    vpSelectedPartsMap.clear();
+    vpSaveState();
+    vpUpdateTriggerButton();
+    vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+    vpUpdateDockAndSheet();
+    window.vpCloseReviewSheet();
+  }
+};
+
+function vpUpdateDockAndSheet() {
+  const trocas = [];
+  const reparos = [];
+
+  for (const part of vpSelectedPartsMap.values()) {
+    if (part.action === 'troca') trocas.push(part);
+    else if (part.action === 'reparo') reparos.push(part);
+  }
+
+  const dockTroca = document.getElementById('vpDockTrocaCount');
+  const dockReparo = document.getElementById('vpDockReparoCount');
+  const sheetTrocasCount = document.getElementById('vpSheetTrocasCount');
+  const sheetReparosCount = document.getElementById('vpSheetReparosCount');
+
+  if (dockTroca) dockTroca.textContent = trocas.length;
+  if (dockReparo) dockReparo.textContent = reparos.length;
+  if (sheetTrocasCount) sheetTrocasCount.textContent = trocas.length;
+  if (sheetReparosCount) sheetReparosCount.textContent = reparos.length;
+
+  // Sheet lists
+  const trocasContainer = document.getElementById('vpSheetTrocasListContainer');
+  if (trocasContainer) {
+    if (trocas.length === 0) {
+      trocasContainer.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 0.82rem; padding: 16px;">Nenhuma troca selecionada.</div>';
+    } else {
+      trocasContainer.innerHTML = trocas.map(p => {
+        const formatted = p.obs ? `${p.name} (${p.obs})` : p.name;
+        return `
+          <div class="vp-sheet-item-row">
+            <div>
+              <div class="vp-sheet-item-text">🔁 ${vpEscapeHtml(formatted)}</div>
+            </div>
+            <button type="button" class="vp-btn-sheet-remove" onclick="vpRemoveSelected('${vpEscapeHtml(p.name)}')">✕</button>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  const reparosContainer = document.getElementById('vpSheetReparosListContainer');
+  if (reparosContainer) {
+    if (reparos.length === 0) {
+      reparosContainer.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 0.82rem; padding: 16px;">Nenhum reparo selecionado.</div>';
+    } else {
+      reparosContainer.innerHTML = reparos.map(p => {
+        const formatted = p.obs ? `${p.name} (${p.obs})` : p.name;
+        return `
+          <div class="vp-sheet-item-row">
+            <div>
+              <div class="vp-sheet-item-text">🛠️ ${vpEscapeHtml(formatted)}</div>
+            </div>
+            <button type="button" class="vp-btn-sheet-remove" onclick="vpRemoveSelected('${vpEscapeHtml(p.name)}')">✕</button>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+}
+
+window.vpOpenReviewSheet = function() {
+  const modal = document.getElementById('vpReviewSheetModal');
+  if (modal) modal.style.display = 'flex';
+};
+
+window.vpCloseReviewSheet = function() {
+  const modal = document.getElementById('vpReviewSheetModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.vpHandleReviewOverlayClick = function(e) {
+  if (e.target.id === 'vpReviewSheetModal') {
+    window.vpCloseReviewSheet();
+  }
+};
+
+window.vpSwitchSheetTab = function(tab) {
+  const btnTrocas = document.getElementById('vpSheetTabTrocas');
+  const btnReparos = document.getElementById('vpSheetTabReparos');
+  const panelTrocas = document.getElementById('vpSheetTrocasListContainer');
+  const panelReparos = document.getElementById('vpSheetReparosListContainer');
+
+  if (tab === 'trocas') {
+    if (btnTrocas) {
+      btnTrocas.style.background = '#2563eb';
+      btnTrocas.style.borderColor = '#2563eb';
+      btnTrocas.style.color = '#ffffff';
+    }
+    if (btnReparos) {
+      btnReparos.style.background = '#ffffff';
+      btnReparos.style.borderColor = '#cbd5e1';
+      btnReparos.style.color = '#64748b';
+    }
+    if (panelTrocas) panelTrocas.style.display = 'block';
+    if (panelReparos) panelReparos.style.display = 'none';
+  } else {
+    if (btnTrocas) {
+      btnTrocas.style.background = '#ffffff';
+      btnTrocas.style.borderColor = '#cbd5e1';
+      btnTrocas.style.color = '#64748b';
+    }
+    if (btnReparos) {
+      btnReparos.style.background = '#0284c7';
+      btnReparos.style.borderColor = '#0284c7';
+      btnReparos.style.color = '#ffffff';
+    }
+    if (panelTrocas) panelTrocas.style.display = 'none';
+    if (panelReparos) panelReparos.style.display = 'block';
+  }
+};
+
+function vpSetupSearch() {
+  const input = document.getElementById('vpSearchInput');
+  const clearBtn = document.getElementById('vpClearSearchBtn');
+  if (!input) return;
+
+  input.value = '';
+  if (clearBtn) clearBtn.style.display = 'none';
+
+  input.oninput = (e) => {
+    const val = e.target.value;
+    if (clearBtn) clearBtn.style.display = val ? 'block' : 'none';
+    vpRenderParts(val);
+  };
+}
+
+window.vpClearSearch = function() {
+  const input = document.getElementById('vpSearchInput');
+  const clearBtn = document.getElementById('vpClearSearchBtn');
+  if (input) input.value = '';
+  if (clearBtn) clearBtn.style.display = 'none';
+  vpRenderParts('');
+};
+
+window.vpOpenEditPartModal = function(rawName, currentDisplayName) {
+  const modal = document.getElementById('vpEditPartModal');
+  const origInput = document.getElementById('vpEditOriginalName');
+  const nameInput = document.getElementById('vpEditNameInput');
+
+  if (origInput) origInput.value = rawName;
+  if (nameInput) nameInput.value = currentDisplayName;
+  if (modal) modal.style.display = 'flex';
+  if (nameInput) setTimeout(() => nameInput.focus(), 100);
+};
+
+window.vpCloseEditPartModal = function() {
+  const modal = document.getElementById('vpEditPartModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.vpSaveEditPartName = function(e) {
+  e.preventDefault();
+  const origInput = document.getElementById('vpEditOriginalName');
+  const nameInput = document.getElementById('vpEditNameInput');
+
+  const rawName = origInput ? origInput.value.trim() : '';
+  const newName = nameInput ? nameInput.value.trim() : '';
+
+  if (!rawName || !newName) return;
+
+  const oldEffectiveName = vpGetEffectivePartName(rawName);
+  vpCustomPartRenamesMap[rawName] = newName;
+
+  if (vpSelectedPartsMap.has(oldEffectiveName)) {
+    const prevItem = vpSelectedPartsMap.get(oldEffectiveName);
+    vpSelectedPartsMap.delete(oldEffectiveName);
+    prevItem.name = newName;
+    vpSelectedPartsMap.set(newName, prevItem);
+  }
+
+  vpSaveState();
+  window.vpCloseEditPartModal();
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  vpUpdateDockAndSheet();
+};
+
+window.vpOpenAddCustomModal = function() {
+  const select = document.getElementById('vpCustomZoneSelect');
+  if (select) {
+    select.innerHTML = vpActiveZones.map(z => `
+      <option value="${z.id}" ${z.id === vpActiveZoneId ? 'selected' : ''}>${z.icon} ${z.name}</option>
+    `).join('');
+  }
+  const nameInput = document.getElementById('vpCustomNameInput');
+  const obsInput = document.getElementById('vpCustomObsInput');
+  if (nameInput) nameInput.value = '';
+  if (obsInput) obsInput.value = '';
+  const modal = document.getElementById('vpAddCustomModal');
+  if (modal) modal.style.display = 'flex';
+  if (nameInput) setTimeout(() => nameInput.focus(), 100);
+};
+
+window.vpCloseAddCustomModal = function() {
+  const modal = document.getElementById('vpAddCustomModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.vpSaveCustomPart = function(e) {
+  e.preventDefault();
+  const zoneSelect = document.getElementById('vpCustomZoneSelect');
+  const nameInput = document.getElementById('vpCustomNameInput');
+  const obsInput = document.getElementById('vpCustomObsInput');
+  const actionRadio = document.querySelector('input[name="vpCustomAction"]:checked');
+
+  const zoneId = zoneSelect ? zoneSelect.value : vpActiveZoneId;
+  const name = nameInput ? nameInput.value.trim() : '';
+  const obs = obsInput ? obsInput.value.trim() : '';
+  const action = actionRadio ? actionRadio.value : 'troca';
+
+  if (!name) return;
+
+  const zObj = vpActiveZones.find(z => z.id === zoneId);
+  const zoneName = zObj ? zObj.name : 'Personalizada';
+
+  if (!vpCustomPartsList.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    vpCustomPartsList.push({ name, zoneId });
+  }
+
+  vpSelectedPartsMap.set(name, {
+    name: name,
+    rawName: name,
+    zoneId: zoneId,
+    zoneName: zoneName,
+    action: action,
+    obs: obs
+  });
+
+  vpSaveState();
+  window.vpCloseAddCustomModal();
+  vpActiveZoneId = zoneId;
+  vpViewAllZonesMode = false;
+  vpUpdateTriggerButton();
+  vpRenderParts();
+  vpUpdateDockAndSheet();
+};
+
+function vpEscapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
