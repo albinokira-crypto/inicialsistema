@@ -1580,15 +1580,17 @@ html, body {
 .vp-card-top {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
+  margin-bottom: 8px;
 }
 
 .vp-part-title-wrap {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1;
 }
 
 .vp-part-title {
@@ -1596,6 +1598,7 @@ html, body {
   font-weight: 700;
   color: #1e293b;
   line-height: 1.25;
+  word-break: break-word;
 }
 
 .vp-btn-edit-name {
@@ -1604,9 +1607,10 @@ html, body {
   font-size: 0.78rem;
   color: #94a3b8;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 3px 5px;
   border-radius: 4px;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .vp-btn-edit-name:hover {
@@ -1620,9 +1624,10 @@ html, body {
   font-size: 0.78rem;
   color: #94a3b8;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 3px 5px;
   border-radius: 4px;
   line-height: 1;
+  flex-shrink: 0;
   transition: all 0.15s ease;
 }
 

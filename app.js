@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.72';
+const CURRENT_APP_VERSION = 'v1.73';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -6022,6 +6022,7 @@ let vpSelectedPartsMap = new Map(); // key = displayName -> { name, rawName, zon
 let vpCustomPartsList = [];
 let vpCustomPartRenamesMap = {};
 let vpDeletedPartsList = [];
+let vpUsageStats = {}; // key: partName.toLowerCase() -> count
 let vpIsSyncingCloud = false;
 
 function vpUpdateCloudIndicator(status, text) {
@@ -6065,6 +6066,8 @@ function vpLoadState() {
     if (savedRenames) vpCustomPartRenamesMap = JSON.parse(savedRenames);
     const savedDeleted = localStorage.getItem('mobile_parts_deleted');
     if (savedDeleted) vpDeletedPartsList = JSON.parse(savedDeleted);
+    const savedStats = localStorage.getItem('mobile_parts_usage_stats');
+    if (savedStats) vpUsageStats = JSON.parse(savedStats);
   } catch(e) {}
 }
 
@@ -6073,11 +6076,43 @@ function vpSaveState(syncToCloud = false) {
     localStorage.setItem('mobile_parts_custom', JSON.stringify(vpCustomPartsList));
     localStorage.setItem('mobile_parts_renames', JSON.stringify(vpCustomPartRenamesMap));
     localStorage.setItem('mobile_parts_deleted', JSON.stringify(vpDeletedPartsList));
+    localStorage.setItem('mobile_parts_usage_stats', JSON.stringify(vpUsageStats));
   } catch(e) {}
 
   if (syncToCloud) {
     vpPushCatalogToCloud();
   }
+}
+
+function vpIncrementPartUsage(name) {
+  if (!name) return;
+  const key = name.toLowerCase().trim();
+  vpUsageStats[key] = (vpUsageStats[key] || 0) + 1;
+}
+
+function vpGetPartUsageScore(name, rawName) {
+  const nLower = (name || '').toLowerCase().trim();
+  const rLower = (rawName || '').toLowerCase().trim();
+  let score = (vpUsageStats[nLower] || 0);
+  if (rLower && rLower !== nLower) {
+    score = Math.max(score, vpUsageStats[rLower] || 0);
+  }
+
+  // Analisa ocorrências reais em vistorias salvas no sistema
+  if (typeof items !== 'undefined' && Array.isArray(items)) {
+    items.forEach(it => {
+      if (it.trocas && typeof it.trocas === 'string') {
+        const tLower = it.trocas.toLowerCase();
+        if (tLower.includes(nLower) || (rLower && tLower.includes(rLower))) score += 2;
+      }
+      if (it.reparos && typeof it.reparos === 'string') {
+        const rLowerText = it.reparos.toLowerCase();
+        if (rLowerText.includes(nLower) || (rLower && rLowerText.includes(rLower))) score += 2;
+      }
+    });
+  }
+
+  return score;
 }
 
 async function vpPushCatalogToCloud() {
@@ -6092,6 +6127,7 @@ async function vpPushCatalogToCloud() {
         customParts: vpCustomPartsList,
         deletedParts: vpDeletedPartsList,
         renames: vpCustomPartRenamesMap,
+        usageStats: vpUsageStats,
         updatedAt: Date.now()
       }
     };
@@ -6156,6 +6192,17 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
       Object.keys(cloudData.renames).forEach(orig => {
         if (!vpCustomPartRenamesMap[orig]) {
           vpCustomPartRenamesMap[orig] = cloudData.renames[orig];
+          hasChanges = true;
+        }
+      });
+    }
+
+    // 4. Merge de estatísticas de uso
+    if (cloudData.usageStats && typeof cloudData.usageStats === 'object') {
+      Object.keys(cloudData.usageStats).forEach(k => {
+        const cloudVal = cloudData.usageStats[k] || 0;
+        if ((vpUsageStats[k] || 0) < cloudVal) {
+          vpUsageStats[k] = cloudVal;
           hasChanges = true;
         }
       });
@@ -6379,9 +6426,15 @@ window.vpApplyAndClose = function() {
     const formatted = part.obs ? `${part.name} (${part.obs})` : part.name;
     if (part.action === 'troca') {
       trocasList.push(formatted);
+      vpIncrementPartUsage(part.name);
     } else if (part.action === 'reparo') {
       reparosList.push(formatted);
+      vpIncrementPartUsage(part.name);
     }
+  }
+
+  if (vpSelectedPartsMap.size > 0) {
+    vpSaveState(true);
   }
 
   const trocasTextarea = document.querySelector('textarea[name="trocas"]');
@@ -6503,6 +6556,15 @@ function vpRenderParts(filterQuery = '') {
     return !p.vehicleType || p.vehicleType === 'all' || p.vehicleType === vpDetectedVehicleType;
   };
 
+  const sortPartsByUsage = (partList) => {
+    return partList.sort((a, b) => {
+      const scoreA = vpGetPartUsageScore(a.name, a.rawName);
+      const scoreB = vpGetPartUsageScore(b.name, b.rawName);
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return a.name.localeCompare(b.name, 'pt-BR');
+    });
+  };
+
   // BUSCA
   if (filterQuery.trim()) {
     const q = filterQuery.trim().toLowerCase();
@@ -6540,6 +6602,7 @@ function vpRenderParts(filterQuery = '') {
       return;
     }
 
+    sortPartsByUsage(matching);
     listEl.innerHTML = matching.map(item => vpRenderPartCardHtml(item)).join('');
     return;
   }
@@ -6558,6 +6621,7 @@ function vpRenderParts(filterQuery = '') {
       const allInZ = [...partsInZ, ...customInZ];
 
       if (allInZ.length > 0) {
+        sortPartsByUsage(allInZ);
         html += `<div class="vp-zone-group-header">${z.icon} ${vpEscapeHtml(z.name)} (${allInZ.length})</div>`;
         html += allInZ.map(item => vpRenderPartCardHtml(item)).join('');
       }
@@ -6587,6 +6651,7 @@ function vpRenderParts(filterQuery = '') {
     return;
   }
 
+  sortPartsByUsage(totalZoneParts);
   listEl.innerHTML = totalZoneParts.map(item => vpRenderPartCardHtml(item)).join('');
 }
 
@@ -6601,12 +6666,12 @@ function vpRenderPartCardHtml(item) {
       <div class="vp-card-top">
         <div class="vp-part-title-wrap">
           <span class="vp-part-title">${vpEscapeHtml(item.name)}</span>
-          <div style="display: inline-flex; align-items: center; gap: 2px;">
-            <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
-            <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">🗑️</button>
-          </div>
+          <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
         </div>
-        <span class="vp-part-zone-label">${item.icon} ${vpEscapeHtml(item.zoneName)}</span>
+        <div style="display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;">
+          <span class="vp-part-zone-label">${item.icon} ${vpEscapeHtml(item.zoneName)}</span>
+          <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">🗑️</button>
+        </div>
       </div>
 
       <div class="vp-card-actions">
@@ -6664,6 +6729,7 @@ window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '
   if (current && current.action === action) {
     vpSelectedPartsMap.delete(partName);
   } else {
+    vpIncrementPartUsage(partName);
     vpSelectedPartsMap.set(partName, {
       name: partName,
       rawName: rawName || partName,
