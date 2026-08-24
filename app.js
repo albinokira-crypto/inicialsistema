@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.81';
+const CURRENT_APP_VERSION = 'v1.82';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -2837,7 +2837,18 @@ function renderDynamicSurveyFields() {
     </label>
   `;
 
-  const extraFieldsHtml = obsHtml;
+  const trocasReparosHtml = `
+    <label style="grid-column: 1 / -1;">
+      <span style="font-size: 0.82rem; font-weight: 700; color: #dc2626;">🔁 Trocas (uma peça por linha)</span>
+      <textarea name="trocas" id="surveyTrocasTextarea" rows="3" placeholder="Ex:&#10;Capô do motor (dobrado)&#10;Farol dianteiro LD" style="width: 100%; box-sizing: border-box; margin-top: 4px;"></textarea>
+    </label>
+    <label style="grid-column: 1 / -1;">
+      <span style="font-size: 0.82rem; font-weight: 700; color: #0284c7;">🛠️ Reparos (uma peça por linha)</span>
+      <textarea name="reparos" id="surveyReparosTextarea" rows="3" placeholder="Ex:&#10;Para-choque dianteiro (recuperar ponta e pintar)&#10;Porta dianteira LE (desamassar vinco)" style="width: 100%; box-sizing: border-box; margin-top: 4px;"></textarea>
+    </label>
+  `;
+
+  const extraFieldsHtml = obsHtml + trocasReparosHtml;
 
   if (selectedType === 'Inicial') {
     fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
@@ -2893,7 +2904,7 @@ function renderDynamicSurveyFields() {
         </div>
         <input type="hidden" id="input_tanque" name="tanqueAfetado" value="Não" />
       </div>
-    `;
+    ` + trocasReparosHtml;
   } else if (selectedType === 'Enchente') {
     fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + `
       <div class="form-toggle-field">
@@ -2983,7 +2994,7 @@ function renderDynamicSurveyFields() {
         <textarea name="reclamacao" rows="4" placeholder="Digite a reclamação..."></textarea>
       </label>
     `;
-    fieldsHtml = reclamacaoHtml;
+    fieldsHtml = reclamacaoHtml + trocasReparosHtml;
   }
 
   dynamicFieldsContainer.innerHTML = officeDropdownHtml + fieldsHtml;
