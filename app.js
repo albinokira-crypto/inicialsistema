@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.88';
+const CURRENT_APP_VERSION = 'v1.89';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -6944,51 +6944,45 @@ function vpRenderParts(filterQuery = '') {
 
     listEl.innerHTML = `
       <div class="vp-sides-section-wrapper" style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
-        <!-- OS 3 BOTÕES DOS LADOS LADO A LADO EM 100% DA LARGURA DA TELA -->
+        <!-- OS 3 BOTÕES DOS LADOS LADO A LADO EM LINHA ÚNICA (SEM QUEBRA) -->
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; width: 100%; box-sizing: border-box;">
           <!-- BOTÃO ESQUERDO -->
           <button 
             type="button" 
             onclick="vpSelectSideSection('LE')"
-            style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'LE' ? '#2563eb' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LE' ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveSideSection === 'LE' ? '0 2px 6px rgba(37,99,235,0.18)' : 'none'};"
+            title="Lado Esquerdo"
+            style="display: flex; align-items: center; justify-content: center; gap: 3px; height: 36px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'LE' ? '#2563eb' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LE' ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; white-space: nowrap; box-shadow: ${vpActiveSideSection === 'LE' ? '0 2px 6px rgba(37,99,235,0.18)' : 'none'};"
           >
-            <div style="display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.74rem; font-weight: 800; white-space: nowrap; color: ${vpActiveSideSection === 'LE' ? '#1e3a8a' : '#475569'}; line-height: 1;">
-              <span>⬅️</span><span>Esquerdo</span>
-            </div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 3px;">
-              <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'LE' ? '#2563eb' : '#64748b'}; background: ${vpActiveSideSection === 'LE' ? '#dbeafe' : '#f1f5f9'}; padding: 1px 5px; border-radius: 999px;">${leParts.length}</span>
-              ${leSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 5px; border-radius: 999px;">${leSelectedCount}</span>` : ''}
-            </div>
+            <span style="font-size: 0.76rem;">⬅️</span>
+            <span style="font-size: 0.74rem; font-weight: 800; color: ${vpActiveSideSection === 'LE' ? '#1e3a8a' : '#475569'};">Esq.</span>
+            <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'LE' ? '#2563eb' : '#64748b'}; background: ${vpActiveSideSection === 'LE' ? '#dbeafe' : '#f1f5f9'}; padding: 1px 4px; border-radius: 999px;">${leParts.length}</span>
+            ${leSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 4px; border-radius: 999px;">🔴${leSelectedCount}</span>` : ''}
           </button>
 
           <!-- BOTÃO DIREITO -->
           <button 
             type="button" 
             onclick="vpSelectSideSection('LD')"
-            style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'LD' ? '#16a34a' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LD' ? '#f0fdf4' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveSideSection === 'LD' ? '0 2px 6px rgba(22,163,74,0.18)' : 'none'};"
+            title="Lado Direito"
+            style="display: flex; align-items: center; justify-content: center; gap: 3px; height: 36px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'LD' ? '#16a34a' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LD' ? '#f0fdf4' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; white-space: nowrap; box-shadow: ${vpActiveSideSection === 'LD' ? '0 2px 6px rgba(22,163,74,0.18)' : 'none'};"
           >
-            <div style="display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.74rem; font-weight: 800; white-space: nowrap; color: ${vpActiveSideSection === 'LD' ? '#166534' : '#475569'}; line-height: 1;">
-              <span>➡️</span><span>Direito</span>
-            </div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 3px;">
-              <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'LD' ? '#16a34a' : '#64748b'}; background: ${vpActiveSideSection === 'LD' ? '#dcfce7' : '#f1f5f9'}; padding: 1px 5px; border-radius: 999px;">${ldParts.length}</span>
-              ${ldSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 5px; border-radius: 999px;">${ldSelectedCount}</span>` : ''}
-            </div>
+            <span style="font-size: 0.76rem;">➡️</span>
+            <span style="font-size: 0.74rem; font-weight: 800; color: ${vpActiveSideSection === 'LD' ? '#166534' : '#475569'};">Dir.</span>
+            <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'LD' ? '#16a34a' : '#64748b'}; background: ${vpActiveSideSection === 'LD' ? '#dcfce7' : '#f1f5f9'}; padding: 1px 4px; border-radius: 999px;">${ldParts.length}</span>
+            ${ldSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 4px; border-radius: 999px;">🔴${ldSelectedCount}</span>` : ''}
           </button>
 
           <!-- BOTÃO CENTRAIS -->
           <button 
             type="button" 
             onclick="vpSelectSideSection('CENTRAL')"
-            style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#cbd5e1'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fdf4ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveSideSection === 'CENTRAL' ? '0 2px 6px rgba(147,51,234,0.18)' : 'none'};"
+            title="Peças Centrais e Gerais"
+            style="display: flex; align-items: center; justify-content: center; gap: 3px; height: 36px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#cbd5e1'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fdf4ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; white-space: nowrap; box-shadow: ${vpActiveSideSection === 'CENTRAL' ? '0 2px 6px rgba(147,51,234,0.18)' : 'none'};"
           >
-            <div style="display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.74rem; font-weight: 800; white-space: nowrap; color: ${vpActiveSideSection === 'CENTRAL' ? '#6b21a8' : '#475569'}; line-height: 1;">
-              <span>🚙</span><span>Centrais</span>
-            </div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 3px;">
-              <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#64748b'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fae8ff' : '#f1f5f9'}; padding: 1px 5px; border-radius: 999px;">${centralParts.length}</span>
-              ${centralSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 5px; border-radius: 999px;">${centralSelectedCount}</span>` : ''}
-            </div>
+            <span style="font-size: 0.76rem;">🚙</span>
+            <span style="font-size: 0.74rem; font-weight: 800; color: ${vpActiveSideSection === 'CENTRAL' ? '#6b21a8' : '#475569'};">Cent.</span>
+            <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#64748b'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fae8ff' : '#f1f5f9'}; padding: 1px 4px; border-radius: 999px;">${centralParts.length}</span>
+            ${centralSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 4px; border-radius: 999px;">🔴${centralSelectedCount}</span>` : ''}
           </button>
         </div>
 
