@@ -1038,7 +1038,9 @@ if (partsReportPreviewBtn) {
     if (!currentReportModalId) return;
     const targetId = currentReportModalId;
     closeReportPreviewModal();
-    if (typeof window.openVehiclePartsModalForId === 'function') {
+    if (typeof window.openVehiclePartsForVistoriaId === 'function') {
+      window.openVehiclePartsForVistoriaId(targetId);
+    } else if (typeof window.openVehiclePartsModalForId === 'function') {
       window.openVehiclePartsModalForId(targetId);
     }
   });
@@ -6567,6 +6569,7 @@ window.openVehiclePartsForVistoriaId = function(id) {
   const modal = document.getElementById('vehiclePartsModal');
   if (modal) modal.style.display = 'flex';
 };
+window.openVehiclePartsModalForId = window.openVehiclePartsForVistoriaId;
 
 window.openVehiclePartsModal = function() {
   currentVistoriaIdForParts = null;
