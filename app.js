@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.86';
+const CURRENT_APP_VERSION = 'v1.87';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -6944,83 +6944,68 @@ function vpRenderParts(filterQuery = '') {
 
     listEl.innerHTML = `
       <div class="vp-sides-section-wrapper" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-        <!-- 3 BOTÕES SELETORES CLICÁVEIS (EXATAMENTE IGUAIS, 2 LINHAS SEM QUEBRA) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; width: 100%;">
-          <!-- BOTÃO LADO ESQUERDO -->
+        <!-- AS DUAS ABAS PRINCIPAIS DO MESMO TAMANHO OCUPANDO TODA A TELA (50% / 50%) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%;">
+          <!-- ABA LADO ESQUERDO -->
           <button 
             type="button" 
             onclick="vpSelectSideSection('LE')"
-            style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'LE' ? '#2563eb' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LE' ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box;"
+            style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 54px; padding: 6px 4px; border-radius: 10px; border: 2px solid ${vpActiveSideSection === 'LE' ? '#2563eb' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LE' ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveSideSection === 'LE' ? '0 2px 6px rgba(37,99,235,0.18)' : 'none'};"
           >
-            <div style="display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.74rem; font-weight: 800; white-space: nowrap; color: ${vpActiveSideSection === 'LE' ? '#1e3a8a' : '#475569'}; line-height: 1;">
-              <span>⬅️</span><span>Esquerdo</span>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.84rem; font-weight: 800; white-space: nowrap; color: ${vpActiveSideSection === 'LE' ? '#1e3a8a' : '#475569'};">
+              <span>⬅️</span><span>Lado Esquerdo</span>
             </div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 3px;">
-              <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'LE' ? '#2563eb' : '#64748b'}; background: ${vpActiveSideSection === 'LE' ? '#dbeafe' : '#f1f5f9'}; padding: 1px 5px; border-radius: 999px;">${leParts.length}</span>
-              ${leSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 5px; border-radius: 999px;">${leSelectedCount}</span>` : ''}
+            <div style="display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 3px;">
+              <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveSideSection === 'LE' ? '#2563eb' : '#64748b'}; background: ${vpActiveSideSection === 'LE' ? '#dbeafe' : '#f1f5f9'}; padding: 1px 6px; border-radius: 999px;">${leParts.length} peças</span>
+              ${leSelectedCount > 0 ? `<span style="font-size: 0.68rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 6px; border-radius: 999px;">🔴 ${leSelectedCount}</span>` : ''}
             </div>
           </button>
 
-          <!-- BOTÃO LADO DIREITO -->
+          <!-- ABA LADO DIREITO -->
           <button 
             type="button" 
             onclick="vpSelectSideSection('LD')"
-            style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'LD' ? '#16a34a' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LD' ? '#f0fdf4' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box;"
+            style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 54px; padding: 6px 4px; border-radius: 10px; border: 2px solid ${vpActiveSideSection === 'LD' ? '#16a34a' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LD' ? '#f0fdf4' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveSideSection === 'LD' ? '0 2px 6px rgba(22,163,74,0.18)' : 'none'};"
           >
-            <div style="display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.74rem; font-weight: 800; white-space: nowrap; color: ${vpActiveSideSection === 'LD' ? '#166534' : '#475569'}; line-height: 1;">
-              <span>➡️</span><span>Direito</span>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.84rem; font-weight: 800; white-space: nowrap; color: ${vpActiveSideSection === 'LD' ? '#166534' : '#475569'};">
+              <span>➡️</span><span>Lado Direito</span>
             </div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 3px;">
-              <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'LD' ? '#16a34a' : '#64748b'}; background: ${vpActiveSideSection === 'LD' ? '#dcfce7' : '#f1f5f9'}; padding: 1px 5px; border-radius: 999px;">${ldParts.length}</span>
-              ${ldSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 5px; border-radius: 999px;">${ldSelectedCount}</span>` : ''}
-            </div>
-          </button>
-
-          <!-- BOTÃO CENTRAIS E GERAIS -->
-          <button 
-            type="button" 
-            onclick="vpSelectSideSection('CENTRAL')"
-            style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#cbd5e1'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fdf4ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box;"
-          >
-            <div style="display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.74rem; font-weight: 800; white-space: nowrap; color: ${vpActiveSideSection === 'CENTRAL' ? '#6b21a8' : '#475569'}; line-height: 1;">
-              <span>🚙</span><span>Centrais</span>
-            </div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 3px;">
-              <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#64748b'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fae8ff' : '#f1f5f9'}; padding: 1px 5px; border-radius: 999px;">${centralParts.length}</span>
-              ${centralSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 5px; border-radius: 999px;">${centralSelectedCount}</span>` : ''}
+            <div style="display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 3px;">
+              <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveSideSection === 'LD' ? '#16a34a' : '#64748b'}; background: ${vpActiveSideSection === 'LD' ? '#dcfce7' : '#f1f5f9'}; padding: 1px 6px; border-radius: 999px;">${ldParts.length} peças</span>
+              ${ldSelectedCount > 0 ? `<span style="font-size: 0.68rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 6px; border-radius: 999px;">🔴 ${ldSelectedCount}</span>` : ''}
             </div>
           </button>
         </div>
 
-        <!-- CABEÇALHO DA SEÇÃO SELECIONADA -->
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: ${activeBg}; border-radius: 8px; border-left: 4px solid ${activeColor};">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="font-size: 1rem;">${activeIcon}</span>
-            <strong style="font-size: 0.82rem; color: #0f172a;">${activeTitle}</strong>
-          </div>
-          <span style="font-size: 0.70rem; font-weight: 800; color: ${activeColor}; background: #ffffff; padding: 2px 7px; border-radius: 999px; border: 1px solid #cbd5e1;">
-            ${activeList.length} peças
-          </span>
-        </div>
+        <!-- BOTÃO PEÇAS CENTRAIS E GERAIS (LARGURA TOTAL) -->
+        <button 
+          type="button" 
+          onclick="vpSelectSideSection('CENTRAL')"
+          style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 38px; padding: 4px 10px; border-radius: 8px; border: 1.5px solid ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#cbd5e1'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fdf4ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveSideSection === 'CENTRAL' ? '0 2px 6px rgba(147,51,234,0.18)' : 'none'};"
+        >
+          <span style="font-size: 0.95rem;">🚙</span>
+          <span style="font-size: 0.80rem; font-weight: 800; color: ${vpActiveSideSection === 'CENTRAL' ? '#6b21a8' : '#475569'};">Peças Centrais / Gerais (${centralParts.length})</span>
+          ${centralSelectedCount > 0 ? `<span style="font-size: 0.68rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 6px; border-radius: 999px;">🔴 ${centralSelectedCount}</span>` : ''}
+        </button>
 
-        <!-- SEÇÃO SUSPENSA NO TOPO: PEÇAS SELECIONADAS (2 COLUNAS) -->
+        <!-- SEÇÃO SUSPENSA NO TOPO: PEÇAS SELECIONADAS (100% LARGURA DA TELA) -->
         ${selectedInActive.length > 0 ? `
           <div style="display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 8px; background: #fef2f2; border: 1.5px dashed #f87171; border-radius: 10px; box-sizing: border-box;">
             <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px;">
               <div style="display: flex; align-items: center; gap: 5px;">
                 <span style="font-size: 0.95rem;">📌</span>
-                <strong style="font-size: 0.78rem; color: #991b1b;">Selecionadas neste Lado (${selectedInActive.length})</strong>
+                <strong style="font-size: 0.82rem; color: #991b1b;">Peças Selecionadas (${selectedInActive.length})</strong>
               </div>
-              <span style="font-size: 0.65rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 1px 6px; border-radius: 999px;">Fixadas</span>
+              <span style="font-size: 0.68rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 1px 6px; border-radius: 999px;">Fixadas no Topo</span>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%;">
+            <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
               ${selectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
             </div>
           </div>
         ` : ''}
 
-        <!-- RESTANTE DO CATÁLOGO DE PEÇAS (2 COLUNAS) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%;">
+        <!-- RESTANTE DO CATÁLOGO DE PEÇAS (100% LARGURA DA TELA) -->
+        <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
           ${unselectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
         </div>
       </div>
@@ -7060,16 +7045,16 @@ function vpRenderParts(filterQuery = '') {
           <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px;">
             <div style="display: flex; align-items: center; gap: 5px;">
               <span style="font-size: 0.95rem;">📌</span>
-              <strong style="font-size: 0.78rem; color: #991b1b;">Selecionadas (${selectedInZone.length})</strong>
+              <strong style="font-size: 0.82rem; color: #991b1b;">Peças Selecionadas (${selectedInZone.length})</strong>
             </div>
-            <span style="font-size: 0.65rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 1px 6px; border-radius: 999px;">Fixadas</span>
+            <span style="font-size: 0.68rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 1px 6px; border-radius: 999px;">Fixadas</span>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%;">
+          <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
             ${selectedInZone.map(item => vpRenderPartCardHtml(item)).join('')}
           </div>
         </div>
       ` : ''}
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%;">
+      <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
         ${unselectedInZone.map(item => vpRenderPartCardHtml(item)).join('')}
       </div>
     </div>
@@ -7085,20 +7070,20 @@ function vpRenderPartCardHtml(item) {
   const cardClass = isTroca ? 'selected-troca' : (isReparo ? 'selected-reparo' : '');
 
   return `
-    <div class="vp-part-card ${cardClass}" style="width: 100%; min-width: 0; box-sizing: border-box; padding: 6px; border-radius: 10px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#cbd5e1')}; background: ${isTroca ? '#fffafa' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-      <!-- 1ª LINHA: [❌ Excluir] [Descrição da Peça] [✏️ Editar] -->
-      <div class="vp-card-top" style="display: flex; align-items: center; justify-content: space-between; gap: 3px; width: 100%; min-width: 0;">
+    <div class="vp-part-card ${cardClass}" style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 10px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#cbd5e1')}; background: ${isTroca ? '#fffafa' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+      <!-- 1ª LINHA: [❌ Excluir] [Descrição Completa da Peça] [✏️ Editar] -->
+      <div class="vp-card-top" style="display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%;">
         <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
-        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.78rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${vpEscapeHtml(item.name)}</span>
+        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.88rem; font-weight: 800; color: #0f172a; flex: 1; text-align: left;">${vpEscapeHtml(item.name)}</span>
         <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
       </div>
 
-      <!-- 2ª LINHA: [Trocar (40%)] [Reparar (40%)] [Obs. (20%)] (SEM ÍCONES, SEM QUEBRA DE LINHA) -->
-      <div class="vp-card-actions" style="display: flex; gap: 2px; width: 100%;">
+      <!-- 2ª LINHA: [Trocar (40%)] [Reparar (40%)] [Obs. (20%)] (ESPACIOSOS, SEM QUEBRA) -->
+      <div class="vp-card-actions" style="display: flex; gap: 4px; width: 100%;">
         <button 
           type="button" 
           class="vp-btn-action btn-trocar ${isTroca ? 'active' : ''}" 
-          style="flex: 0 0 40%; width: 40%; padding: 5px 1px; font-size: 0.74rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap;"
+          style="flex: 0 0 calc(40% - 3px); width: 40%; padding: 7px 4px; font-size: 0.82rem; min-height: 34px; border-radius: 6px; font-weight: 800; white-space: nowrap;"
           onclick="vpToggleAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'troca', '${vpEscapeHtml(item.rawName)}')"
         >
           Trocar
@@ -7107,7 +7092,7 @@ function vpRenderPartCardHtml(item) {
         <button 
           type="button" 
           class="vp-btn-action btn-reparar ${isReparo ? 'active' : ''}" 
-          style="flex: 0 0 40%; width: 40%; padding: 5px 1px; font-size: 0.74rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap;"
+          style="flex: 0 0 calc(40% - 3px); width: 40%; padding: 7px 4px; font-size: 0.82rem; min-height: 34px; border-radius: 6px; font-weight: 800; white-space: nowrap;"
           onclick="vpToggleAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'reparo', '${vpEscapeHtml(item.rawName)}')"
         >
           Reparar
@@ -7116,7 +7101,7 @@ function vpRenderPartCardHtml(item) {
         <button 
           type="button" 
           class="vp-btn-action btn-obs ${hasObs ? 'has-obs active' : ''}" 
-          style="flex: 0 0 20%; width: 20%; padding: 5px 1px; font-size: 0.72rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'}; border-color: ${hasObs ? '#93c5fd' : '#cbd5e1'};"
+          style="flex: 0 0 20%; width: 20%; padding: 7px 2px; font-size: 0.78rem; min-height: 34px; border-radius: 6px; font-weight: 800; white-space: nowrap; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'}; border-color: ${hasObs ? '#93c5fd' : '#cbd5e1'};"
           title="${hasObs ? 'Obs: ' + vpEscapeHtml(selected.obs) : 'Adicionar Observação'}"
           onclick="vpToggleObsBox('${vpEscapeHtml(item.name)}')"
         >
@@ -7126,10 +7111,10 @@ function vpRenderPartCardHtml(item) {
 
       <!-- COMBO / CAMPO DE OBSERVAÇÃO (OCULTO POR PADRÃO, ABRE AO CLICAR EM OBS) -->
       ${isObsOpen ? `
-        <div class="vp-inline-obs-box" style="display: flex; flex-direction: column; gap: 4px; margin-top: 3px; padding: 5px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px;">
-          <div style="display: flex; gap: 2px; flex-wrap: wrap;">
+        <div class="vp-inline-obs-box" style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px; padding: 8px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px;">
+          <div style="display: flex; gap: 4px; flex-wrap: wrap;">
             ${['Pintura', 'Recuperar', 'Amassado', 'Riscado', 'Trincado', 'Quebrado', 'Desalinhado'].map(quick => `
-              <button type="button" onclick="vpSetQuickObs('${vpEscapeHtml(item.name)}', '${quick}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', '${vpEscapeHtml(item.rawName)}')" style="font-size: 0.62rem; font-weight: 700; padding: 2px 4px; border-radius: 4px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer;">
+              <button type="button" onclick="vpSetQuickObs('${vpEscapeHtml(item.name)}', '${quick}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', '${vpEscapeHtml(item.rawName)}')" style="font-size: 0.72rem; font-weight: 700; padding: 3px 6px; border-radius: 5px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer;">
                 ${quick}
               </button>
             `).join('')}
@@ -7137,10 +7122,10 @@ function vpRenderPartCardHtml(item) {
           <input 
             type="text" 
             class="vp-inline-obs-input" 
-            placeholder="Obs..." 
+            placeholder="Digite a observação..." 
             value="${vpEscapeHtml((selected && selected.obs) || '')}" 
             oninput="vpChangeObs('${vpEscapeHtml(item.name)}', this.value, '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', '${vpEscapeHtml(item.rawName)}')"
-            style="width: 100%; box-sizing: border-box; padding: 4px 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.72rem;"
+            style="width: 100%; box-sizing: border-box; padding: 6px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.78rem;"
           />
         </div>
       ` : ''}
