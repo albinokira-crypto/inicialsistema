@@ -6825,11 +6825,7 @@ function vpRenderParts(filterQuery = '') {
       const isSelA = vpSelectedPartsMap.has(a.name) ? 1 : 0;
       const isSelB = vpSelectedPartsMap.has(b.name) ? 1 : 0;
       if (isSelB !== isSelA) return isSelB - isSelA; // Selecionadas sempre no topo
-
-      const scoreA = vpGetPartUsageScore(a.name, a.rawName);
-      const scoreB = vpGetPartUsageScore(b.name, b.rawName);
-      if (scoreB !== scoreA) return scoreB - scoreA;
-      return a.name.localeCompare(b.name, 'pt-BR');
+      return a.name.localeCompare(b.name, 'pt-BR'); // Ordem alfabética estrita para retorno perfeito
     });
   };
 
@@ -7185,7 +7181,6 @@ window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '
   if (current && current.action === action) {
     vpSelectedPartsMap.delete(partName);
   } else {
-    vpIncrementPartUsage(partName);
     vpSelectedPartsMap.set(partName, {
       name: partName,
       rawName: rawName || partName,
