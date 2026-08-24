@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.82';
+const CURRENT_APP_VERSION = 'v1.83';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -34,18 +34,22 @@ async function checkForSystemUpdates(showFeedback = false) {
 
   let activeVersion = CURRENT_APP_VERSION;
   if (versionEl) versionEl.textContent = activeVersion;
+  if (serverJsonEl && serverJsonEl.textContent === '...') serverJsonEl.textContent = 'Verificando...';
 
   try {
     const timestamp = Date.now();
     const endpoints = [
-      'version.json?t=' + timestamp,
+      'https://gestao-vistoria-inicial.vercel.app/version.json?t=' + timestamp,
       '/version.json?t=' + timestamp,
-      'https://gestao-vistoria-inicial.vercel.app/version.json?t=' + timestamp
+      'version.json?t=' + timestamp
     ];
     let data = null;
     for (const url of endpoints) {
       try {
-        const res = await fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' }, signal: controller.signal });
+        clearTimeout(timeoutId);
         if (res.ok) {
           data = await res.json();
           if (data && data.version) break;
@@ -1943,9 +1947,12 @@ function render() {
             <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
             <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
           </div>
-          <div class="btn-row" style="margin-top: 4px;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+          <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
               📲 Compartilhar Vistoria (Texto + Mídias)
+            </button>
+            <button class="action-btn" type="button" data-action="parts" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+              🚗 Partes do Veículo
             </button>
           </div>
         </div>
