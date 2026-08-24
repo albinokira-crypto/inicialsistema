@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.90';
+const CURRENT_APP_VERSION = 'v1.91';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -199,7 +199,7 @@ const reportPreviewTitle = document.getElementById('reportPreviewTitle');
 const reportPreviewBadge = document.getElementById('reportPreviewBadge');
 const reportPreviewMeta = document.getElementById('reportPreviewMeta');
 const reportPreviewContent = document.getElementById('reportPreviewContent');
-const copyReportPreviewBtn = document.getElementById('copyReportPreviewBtn');
+const partsReportPreviewBtn = document.getElementById('partsReportPreviewBtn');
 const whatsappReportPreviewBtn = document.getElementById('whatsappReportPreviewBtn');
 const photosReportPreviewBtn = document.getElementById('photosReportPreviewBtn');
 let currentReportModalId = null;
@@ -1062,6 +1062,36 @@ function closeReportPreviewModal() {
   currentReportModalId = null;
 }
 
+// Listeners dos botões de ação do modal de relatório do veículo
+if (partsReportPreviewBtn) {
+  partsReportPreviewBtn.addEventListener('click', () => {
+    if (!currentReportModalId) return;
+    const targetId = currentReportModalId;
+    closeReportPreviewModal();
+    if (typeof window.openVehiclePartsModalForId === 'function') {
+      window.openVehiclePartsModalForId(targetId);
+    }
+  });
+}
+
+if (whatsappReportPreviewBtn) {
+  whatsappReportPreviewBtn.addEventListener('click', () => {
+    if (!currentReportModalId) return;
+    if (typeof shareVistoriaWhatsAppSequence === 'function') {
+      shareVistoriaWhatsAppSequence(currentReportModalId);
+    }
+  });
+}
+
+if (photosReportPreviewBtn) {
+  photosReportPreviewBtn.addEventListener('click', () => {
+    if (!currentReportModalId) return;
+    if (typeof openPhotoManagerForId === 'function') {
+      openPhotoManagerForId(currentReportModalId);
+    }
+  });
+}
+
 function formatPlateInput() {
   // No-op (plate and model are combined)
 }
@@ -1352,8 +1382,10 @@ function saveItem(event) {
   }
 
   if (editingId) {
+    const existing = items.find((i) => i.id === editingId);
+    const mergedDetails = { ...(existing?.details || {}), ...details };
     items = items.map((item) => item.id === editingId ? { 
-      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details,
+      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details: mergedDetails,
       updatedAt: new Date().toLocaleString('pt-BR'),
       updatedAtTime: Date.now()
     } : item);
@@ -2844,20 +2876,7 @@ function renderDynamicSurveyFields() {
     </label>
   `;
 
-  const trocasReparosHtml = `
-    <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
-      <label style="margin: 0; display: flex; flex-direction: column;">
-        <span style="font-size: 0.80rem; font-weight: 700; color: #dc2626; margin-bottom: 3px;">🔁 Trocas (uma por linha)</span>
-        <textarea name="trocas" id="surveyTrocasTextarea" rows="2" placeholder="Ex:&#10;Capô do motor&#10;Farol dianteiro LD" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" style="width: 100%; box-sizing: border-box; resize: none; overflow-y: hidden; min-height: 56px; line-height: 1.35; padding: 6px 8px; border-radius: 8px; border: 1.5px solid #fecaca; font-size: 0.82rem;"></textarea>
-      </label>
-      <label style="margin: 0; display: flex; flex-direction: column;">
-        <span style="font-size: 0.80rem; font-weight: 700; color: #0284c7; margin-bottom: 3px;">🛠️ Reparos (uma por linha)</span>
-        <textarea name="reparos" id="surveyReparosTextarea" rows="2" placeholder="Ex:&#10;Para-choque diant.&#10;Porta dianteira LE" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" style="width: 100%; box-sizing: border-box; resize: none; overflow-y: hidden; min-height: 56px; line-height: 1.35; padding: 6px 8px; border-radius: 8px; border: 1.5px solid #bae6fd; font-size: 0.82rem;"></textarea>
-      </label>
-    </div>
-  `;
-
-  const extraFieldsHtml = obsHtml + trocasReparosHtml;
+  const extraFieldsHtml = obsHtml;
 
   if (selectedType === 'Inicial') {
     fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
@@ -3003,7 +3022,7 @@ function renderDynamicSurveyFields() {
         <textarea name="reclamacao" rows="4" placeholder="Digite a reclamação..."></textarea>
       </label>
     `;
-    fieldsHtml = reclamacaoHtml + trocasReparosHtml;
+    fieldsHtml = reclamacaoHtml + obsHtml;
   }
 
   dynamicFieldsContainer.innerHTML = officeDropdownHtml + fieldsHtml;

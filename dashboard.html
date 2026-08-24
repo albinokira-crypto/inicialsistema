@@ -14,7 +14,7 @@
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=190" />
+    <link rel="stylesheet" href="styles.css?v=191" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -421,7 +421,7 @@
               <span style="font-size: 1.4rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v1.90</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v1.91</div>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -437,7 +437,7 @@
             <div style="display: flex; align-items: center; gap: 6px; color: #475569;">
               <span>🌐</span>
               <span>Servidor (version.json):</span>
-              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v1.90</strong>
+              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v1.91</strong>
             </div>
             <button type="button" onclick="checkForSystemUpdates(true)" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-weight: 700; font-size: 0.72rem; padding: 3px 8px; border-radius: 5px; cursor: pointer;">
               🔍 Checar
@@ -835,11 +835,11 @@
 
         <div style="display: flex; flex-direction: column; gap: 8px;">
           <div style="display: flex; gap: 8px;">
-            <button id="copyReportPreviewBtn" class="primary-btn" type="button" style="flex: 1; padding: 11px; font-weight: 700; background: #2563eb; color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-              📋 Copiar Texto
+            <button id="partsReportPreviewBtn" class="primary-btn" type="button" style="flex: 1; padding: 11px 6px; font-weight: 800; font-size: 0.85rem; background: #3b82f6; color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 6px rgba(59,130,246,0.25);">
+              🚗 Partes do Veículo
             </button>
-            <button id="whatsappReportPreviewBtn" class="primary-btn" type="button" style="flex: 1; padding: 11px; font-weight: 700; background: #16a34a; color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-              📱 WhatsApp
+            <button id="whatsappReportPreviewBtn" class="primary-btn" type="button" style="flex: 1; padding: 11px 6px; font-weight: 800; font-size: 0.85rem; background: #16a34a; color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 6px rgba(22,163,74,0.25);">
+              📲 Enviar Vistoria
             </button>
           </div>
           <button id="photosReportPreviewBtn" class="ghost-btn" type="button" style="padding: 10px; font-weight: 700; color: #1e40af; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; cursor: pointer;">
@@ -859,6 +859,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=190"></script>
+    <script src="app.js?v=191"></script>
   </body>
 </html>
