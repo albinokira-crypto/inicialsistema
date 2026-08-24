@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.84';
+const CURRENT_APP_VERSION = 'v1.85';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -6483,6 +6483,12 @@ window.vpDetectVehicleTypeFromText = vpDetectVehicleTypeFromText;
 
 let currentVistoriaIdForParts = null;
 let vpOpenObsPartNames = new Set();
+let vpActiveSideSection = 'LE'; // 'LE' | 'LD' | 'CENTRAL'
+
+window.vpSelectSideSection = function(sectionKey) {
+  vpActiveSideSection = sectionKey;
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+};
 
 function vpClassifyPartSide(item) {
   const nameUpper = (item.name || item.rawName || '').toUpperCase();
@@ -6513,6 +6519,7 @@ window.openVehiclePartsForVistoriaId = function(id) {
 
   currentVistoriaIdForParts = id;
   vpViewAllZonesMode = true;
+  vpActiveSideSection = 'LE';
   vpOpenObsPartNames.clear();
   vpLoadState();
   if (typeof window.vpSyncCatalogWithCloud === 'function') {
@@ -6575,6 +6582,7 @@ window.openVehiclePartsForVistoriaId = function(id) {
 window.openVehiclePartsModal = function() {
   currentVistoriaIdForParts = null;
   vpViewAllZonesMode = true;
+  vpActiveSideSection = 'LE';
   vpOpenObsPartNames.clear();
   vpLoadState();
   if (typeof window.vpSyncCatalogWithCloud === 'function') {
@@ -6814,6 +6822,10 @@ function vpRenderParts(filterQuery = '') {
 
   const sortPartsByUsage = (partList) => {
     return partList.sort((a, b) => {
+      const isSelA = vpSelectedPartsMap.has(a.name) ? 1 : 0;
+      const isSelB = vpSelectedPartsMap.has(b.name) ? 1 : 0;
+      if (isSelB !== isSelA) return isSelB - isSelA; // Selecionadas sempre no topo
+
       const scoreA = vpGetPartUsageScore(a.name, a.rawName);
       const scoreB = vpGetPartUsageScore(b.name, b.rawName);
       if (scoreB !== scoreA) return scoreB - scoreA;
@@ -6821,7 +6833,7 @@ function vpRenderParts(filterQuery = '') {
     });
   };
 
-  // 1. BUSCA
+  // 1. BUSCA POR TEXTO (MOSTRA RESULTADOS EM LARGURA TOTAL)
   if (filterQuery.trim()) {
     const q = filterQuery.trim().toLowerCase();
     let matching = [];
@@ -6849,7 +6861,7 @@ function vpRenderParts(filterQuery = '') {
 
     if (matching.length === 0) {
       listEl.innerHTML = `
-        <div style="grid-column: 1 / -1; padding: 30px 16px; text-align: center; color: #64748b;">
+        <div style="width: 100%; padding: 30px 16px; text-align: center; color: #64748b;">
           <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">🔍</span>
           <b>Nenhuma peça encontrada para "${vpEscapeHtml(filterQuery)}"</b>
           <p style="font-size: 0.80rem; margin-top: 4px;">Toque no botão "+ Nova Peça" acima para cadastrá-la no catálogo.</p>
@@ -6859,11 +6871,18 @@ function vpRenderParts(filterQuery = '') {
     }
 
     sortPartsByUsage(matching);
-    listEl.innerHTML = matching.map(item => vpRenderPartCardHtml(item)).join('');
+    listEl.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+        <div style="font-size: 0.76rem; font-weight: 700; color: #475569; padding: 2px 4px;">
+          Encontradas ${matching.length} peças para "${vpEscapeHtml(filterQuery)}":
+        </div>
+        ${matching.map(item => vpRenderPartCardHtml(item)).join('')}
+      </div>
+    `;
     return;
   }
 
-  // 2. VER TODAS AS ZONAS JUNTAS (DIVIDIDO EM LADO ESQUERDO, LADO DIREITO E PEÇAS CENTRAIS ABAIXO)
+  // 2. VER TODAS AS ZONAS JUNTAS (SELETORES CLICÁVEIS LE, LD E CENTRAIS + CARDS EM LARGURA TOTAL)
   if (vpViewAllZonesMode) {
     let allParts = [];
     const seenNames = new Set();
@@ -6897,42 +6916,111 @@ function vpRenderParts(filterQuery = '') {
     sortPartsByUsage(ldParts);
     sortPartsByUsage(centralParts);
 
-    listEl.innerHTML = `
-      <div class="vp-sides-container" style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
-        <!-- COLUNAS LADO A LADO: LADO ESQUERDO E LADO DIREITO -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; align-items: start;">
-          <!-- COLUNA LADO ESQUERDO -->
-          <div style="display: flex; flex-direction: column; gap: 5px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 6px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; background: #eff6ff; border-radius: 6px; border-left: 3px solid #2563eb;">
-              <strong style="font-size: 0.76rem; color: #1e3a8a;">⬅️ Lado Esquerdo</strong>
-              <span style="font-size: 0.65rem; font-weight: 800; color: #2563eb; background: #ffffff; padding: 1px 5px; border-radius: 999px;">${leParts.length}</span>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 5px;">
-              ${leParts.map(item => vpRenderPartCardHtml(item)).join('')}
-            </div>
-          </div>
+    // Contadores de selecionados por lado
+    const leSelectedCount = leParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
+    const ldSelectedCount = ldParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
+    const centralSelectedCount = centralParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
 
-          <!-- COLUNA LADO DIREITO -->
-          <div style="display: flex; flex-direction: column; gap: 5px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 6px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; background: #f0fdf4; border-radius: 6px; border-left: 3px solid #16a34a;">
-              <strong style="font-size: 0.76rem; color: #166534;">➡️ Lado Direito</strong>
-              <span style="font-size: 0.65rem; font-weight: 800; color: #16a34a; background: #ffffff; padding: 1px 5px; border-radius: 999px;">${ldParts.length}</span>
+    let activeList = leParts;
+    let activeTitle = 'Lado Esquerdo';
+    let activeIcon = '⬅️';
+    let activeColor = '#2563eb';
+    let activeBg = '#eff6ff';
+
+    if (vpActiveSideSection === 'LD') {
+      activeList = ldParts;
+      activeTitle = 'Lado Direito';
+      activeIcon = '➡️';
+      activeColor = '#16a34a';
+      activeBg = '#f0fdf4';
+    } else if (vpActiveSideSection === 'CENTRAL') {
+      activeList = centralParts;
+      activeTitle = 'Peças Centrais e Gerais';
+      activeIcon = '🚙';
+      activeColor = '#9333ea';
+      activeBg = '#fdf4ff';
+    }
+
+    const selectedInActive = activeList.filter(p => vpSelectedPartsMap.has(p.name));
+    const unselectedInActive = activeList.filter(p => !vpSelectedPartsMap.has(p.name));
+
+    listEl.innerHTML = `
+      <div class="vp-sides-section-wrapper" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+        <!-- 3 BOTÕES SELETORES CLICÁVEIS (LADO ESQUERDO, LADO DIREITO, CENTRAIS) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; width: 100%;">
+          <!-- BOTÃO LADO ESQUERDO -->
+          <button 
+            type="button" 
+            onclick="vpSelectSideSection('LE')"
+            style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 8px 4px; border-radius: 10px; border: 2px solid ${vpActiveSideSection === 'LE' ? '#2563eb' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LE' ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-shadow: ${vpActiveSideSection === 'LE' ? '0 2px 8px rgba(37, 99, 235, 0.2)' : 'none'};"
+          >
+            <span style="font-size: 1.15rem;">⬅️</span>
+            <strong style="font-size: 0.74rem; color: ${vpActiveSideSection === 'LE' ? '#1e3a8a' : '#475569'}; line-height: 1.1; text-align: center;">Lado Esquerdo</strong>
+            <div style="display: flex; align-items: center; gap: 3px; margin-top: 2px;">
+              <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'LE' ? '#2563eb' : '#64748b'}; background: ${vpActiveSideSection === 'LE' ? '#dbeafe' : '#f1f5f9'}; padding: 1px 5px; border-radius: 999px;">${leParts.length}</span>
+              ${leSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 5px; border-radius: 999px;">${leSelectedCount}</span>` : ''}
             </div>
-            <div style="display: flex; flex-direction: column; gap: 5px;">
-              ${ldParts.map(item => vpRenderPartCardHtml(item)).join('')}
+          </button>
+
+          <!-- BOTÃO LADO DIREITO -->
+          <button 
+            type="button" 
+            onclick="vpSelectSideSection('LD')"
+            style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 8px 4px; border-radius: 10px; border: 2px solid ${vpActiveSideSection === 'LD' ? '#16a34a' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LD' ? '#f0fdf4' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-shadow: ${vpActiveSideSection === 'LD' ? '0 2px 8px rgba(22, 163, 74, 0.2)' : 'none'};"
+          >
+            <span style="font-size: 1.15rem;">➡️</span>
+            <strong style="font-size: 0.74rem; color: ${vpActiveSideSection === 'LD' ? '#166534' : '#475569'}; line-height: 1.1; text-align: center;">Lado Direito</strong>
+            <div style="display: flex; align-items: center; gap: 3px; margin-top: 2px;">
+              <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'LD' ? '#16a34a' : '#64748b'}; background: ${vpActiveSideSection === 'LD' ? '#dcfce7' : '#f1f5f9'}; padding: 1px 5px; border-radius: 999px;">${ldParts.length}</span>
+              ${ldSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 5px; border-radius: 999px;">${ldSelectedCount}</span>` : ''}
             </div>
-          </div>
+          </button>
+
+          <!-- BOTÃO CENTRAIS E GERAIS -->
+          <button 
+            type="button" 
+            onclick="vpSelectSideSection('CENTRAL')"
+            style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 8px 4px; border-radius: 10px; border: 2px solid ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#cbd5e1'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fdf4ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-shadow: ${vpActiveSideSection === 'CENTRAL' ? '0 2px 8px rgba(147, 51, 234, 0.2)' : 'none'};"
+          >
+            <span style="font-size: 1.15rem;">🚙</span>
+            <strong style="font-size: 0.74rem; color: ${vpActiveSideSection === 'CENTRAL' ? '#6b21a8' : '#475569'}; line-height: 1.1; text-align: center;">Centrais/Gerais</strong>
+            <div style="display: flex; align-items: center; gap: 3px; margin-top: 2px;">
+              <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#64748b'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fae8ff' : '#f1f5f9'}; padding: 1px 5px; border-radius: 999px;">${centralParts.length}</span>
+              ${centralSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 5px; border-radius: 999px;">${centralSelectedCount}</span>` : ''}
+            </div>
+          </button>
         </div>
 
-        <!-- SEÇÃO INFERIOR: PEÇAS CENTRAIS E GERAIS (SEM LADO) -->
-        <div style="display: flex; flex-direction: column; gap: 5px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 6px; width: 100%; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; background: #fdf4ff; border-radius: 6px; border-left: 3px solid #9333ea;">
-            <strong style="font-size: 0.76rem; color: #6b21a8;">🚙 Peças Centrais e Gerais (Sem Lado)</strong>
-            <span style="font-size: 0.65rem; font-weight: 800; color: #9333ea; background: #ffffff; padding: 1px 5px; border-radius: 999px;">${centralParts.length}</span>
+        <!-- CABEÇALHO DA SEÇÃO SELECIONADA -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: ${activeBg}; border-radius: 8px; border-left: 4px solid ${activeColor};">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 1.1rem;">${activeIcon}</span>
+            <strong style="font-size: 0.85rem; color: #0f172a;">${activeTitle}</strong>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
-            ${centralParts.map(item => vpRenderPartCardHtml(item)).join('')}
+          <span style="font-size: 0.72rem; font-weight: 800; color: ${activeColor}; background: #ffffff; padding: 2px 8px; border-radius: 999px; border: 1px solid #cbd5e1;">
+            ${activeList.length} peças
+          </span>
+        </div>
+
+        <!-- SEÇÃO SUSPENSA NO TOPO: PEÇAS SELECIONADAS -->
+        ${selectedInActive.length > 0 ? `
+          <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 10px; background: #fef2f2; border: 2px dashed #f87171; border-radius: 12px; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 1.1rem;">📌</span>
+                <strong style="font-size: 0.84rem; color: #991b1b;">Peças Selecionadas neste Lado (${selectedInActive.length})</strong>
+              </div>
+              <span style="font-size: 0.68rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 2px 6px; border-radius: 999px;">Fixadas no Topo</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+              ${selectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
+            </div>
           </div>
+        ` : ''}
+
+        <!-- RESTANTE DO CATÁLOGO DE PEÇAS (LARGURA TOTAL 100%) -->
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+          ${unselectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
         </div>
       </div>
     `;
@@ -6951,7 +7039,7 @@ function vpRenderParts(filterQuery = '') {
 
   if (totalZoneParts.length === 0) {
     listEl.innerHTML = `
-      <div style="grid-column: 1 / -1; padding: 30px 16px; text-align: center; color: #64748b;">
+      <div style="width: 100%; padding: 30px 16px; text-align: center; color: #64748b;">
         <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">📂</span>
         <b>Nenhuma peça ativa nesta zona</b>
         <p style="font-size: 0.80rem; margin-top: 4px;">Toque no botão "+ Nova Peça" acima para cadastrar.</p>
@@ -6961,7 +7049,28 @@ function vpRenderParts(filterQuery = '') {
   }
 
   sortPartsByUsage(totalZoneParts);
-  listEl.innerHTML = totalZoneParts.map(item => vpRenderPartCardHtml(item)).join('');
+  const selectedInZone = totalZoneParts.filter(p => vpSelectedPartsMap.has(p.name));
+  const unselectedInZone = totalZoneParts.filter(p => !vpSelectedPartsMap.has(p.name));
+
+  listEl.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+      ${selectedInZone.length > 0 ? `
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 10px; background: #fef2f2; border: 2px dashed #f87171; border-radius: 12px; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 1.1rem;">📌</span>
+              <strong style="font-size: 0.84rem; color: #991b1b;">Peças Selecionadas (${selectedInZone.length})</strong>
+            </div>
+            <span style="font-size: 0.68rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 2px 6px; border-radius: 999px;">Fixadas no Topo</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+            ${selectedInZone.map(item => vpRenderPartCardHtml(item)).join('')}
+          </div>
+        </div>
+      ` : ''}
+      ${unselectedInZone.map(item => vpRenderPartCardHtml(item)).join('')}
+    </div>
+  `;
 }
 
 function vpRenderPartCardHtml(item) {
@@ -6973,20 +7082,20 @@ function vpRenderPartCardHtml(item) {
   const cardClass = isTroca ? 'selected-troca' : (isReparo ? 'selected-reparo' : '');
 
   return `
-    <div class="vp-part-card ${cardClass}" style="padding: 5px; gap: 3px;">
-      <!-- 1ª LINHA: [❌ Excluir] [Descrição da Peça] [✏️ Editar] -->
-      <div class="vp-card-top" style="gap: 2px;">
-        <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
-        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.74rem;">${vpEscapeHtml(item.name)}</span>
-        <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
+    <div class="vp-part-card ${cardClass}" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#cbd5e1')}; background: ${isTroca ? '#fffafa' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+      <!-- 1ª LINHA: [❌ Excluir] [Descrição da Peça em Destaque] [✏️ Editar] -->
+      <div class="vp-card-top" style="display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%;">
+        <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')" style="font-size: 0.95rem; padding: 4px 6px; color: #ef4444; background: none; border: none; cursor: pointer;">✖</button>
+        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.92rem; font-weight: 800; color: #0f172a; flex: 1; text-align: left;">${vpEscapeHtml(item.name)}</span>
+        <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')" style="font-size: 0.90rem; padding: 4px 6px; color: #64748b; background: none; border: none; cursor: pointer;">✏️</button>
       </div>
 
       <!-- 2ª LINHA: [🔁 Trocar (40%)] [🛠️ Reparar (40%)] [📝 Obs. (20%)] -->
-      <div class="vp-card-actions" style="display: flex; gap: 2px; width: 100%;">
+      <div class="vp-card-actions" style="display: flex; gap: 6px; width: 100%;">
         <button 
           type="button" 
           class="vp-btn-action btn-trocar ${isTroca ? 'active' : ''}" 
-          style="flex: 0 0 40%; width: 40%; padding: 4px 1px; font-size: 0.70rem;"
+          style="flex: 0 0 calc(40% - 4px); width: 40%; padding: 8px 4px; font-size: 0.84rem; min-height: 38px; border-radius: 8px; font-weight: 800;"
           onclick="vpToggleAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'troca', '${vpEscapeHtml(item.rawName)}')"
         >
           <span>🔁</span>
@@ -6996,7 +7105,7 @@ function vpRenderPartCardHtml(item) {
         <button 
           type="button" 
           class="vp-btn-action btn-reparar ${isReparo ? 'active' : ''}" 
-          style="flex: 0 0 40%; width: 40%; padding: 4px 1px; font-size: 0.70rem;"
+          style="flex: 0 0 calc(40% - 4px); width: 40%; padding: 8px 4px; font-size: 0.84rem; min-height: 38px; border-radius: 8px; font-weight: 800;"
           onclick="vpToggleAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'reparo', '${vpEscapeHtml(item.rawName)}')"
         >
           <span>🛠️</span>
@@ -7006,22 +7115,22 @@ function vpRenderPartCardHtml(item) {
         <button 
           type="button" 
           class="vp-btn-action btn-obs ${hasObs ? 'has-obs active' : ''}" 
-          style="flex: 0 0 20%; width: 20%; padding: 4px 1px; font-size: 0.68rem; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'}; border-color: ${hasObs ? '#93c5fd' : '#cbd5e1'};"
+          style="flex: 0 0 20%; width: 20%; padding: 8px 2px; font-size: 0.80rem; min-height: 38px; border-radius: 8px; font-weight: 800; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'}; border-color: ${hasObs ? '#93c5fd' : '#cbd5e1'};"
           title="${hasObs ? 'Obs: ' + vpEscapeHtml(selected.obs) : 'Adicionar Observação'}"
           onclick="vpToggleObsBox('${vpEscapeHtml(item.name)}')"
         >
           <span>📝</span>
           <span>Obs.</span>
-          ${hasObs ? '<span style="width: 4px; height: 4px; background: #2563eb; border-radius: 50%; display: inline-block;"></span>' : ''}
+          ${hasObs ? '<span style="width: 5px; height: 5px; background: #2563eb; border-radius: 50%; display: inline-block;"></span>' : ''}
         </button>
       </div>
 
       <!-- COMBO / CAMPO DE OBSERVAÇÃO (OCULTO POR PADRÃO, ABRE AO CLICAR EM OBS) -->
       ${isObsOpen ? `
-        <div class="vp-inline-obs-box" style="display: flex; flex-direction: column; gap: 3px; margin-top: 3px; padding: 4px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px;">
-          <div style="display: flex; gap: 2px; flex-wrap: wrap;">
+        <div class="vp-inline-obs-box" style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px; padding: 8px 10px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px;">
+          <div style="display: flex; gap: 4px; flex-wrap: wrap;">
             ${['Pintura', 'Recuperar', 'Amassado', 'Riscado', 'Trincado', 'Quebrado', 'Desalinhado'].map(quick => `
-              <button type="button" onclick="vpSetQuickObs('${vpEscapeHtml(item.name)}', '${quick}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', '${vpEscapeHtml(item.rawName)}')" style="font-size: 0.62rem; font-weight: 700; padding: 1px 4px; border-radius: 3px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer;">
+              <button type="button" onclick="vpSetQuickObs('${vpEscapeHtml(item.name)}', '${quick}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', '${vpEscapeHtml(item.rawName)}')" style="font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer;">
                 ${quick}
               </button>
             `).join('')}
@@ -7029,10 +7138,10 @@ function vpRenderPartCardHtml(item) {
           <input 
             type="text" 
             class="vp-inline-obs-input" 
-            placeholder="Obs..." 
+            placeholder="Digite a observação da peça..." 
             value="${vpEscapeHtml((selected && selected.obs) || '')}" 
             oninput="vpChangeObs('${vpEscapeHtml(item.name)}', this.value, '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', '${vpEscapeHtml(item.rawName)}')"
-            style="width: 100%; box-sizing: border-box; padding: 3px 5px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.70rem;"
+            style="width: 100%; box-sizing: border-box; padding: 7px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.82rem;"
           />
         </div>
       ` : ''}
