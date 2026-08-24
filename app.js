@@ -6341,7 +6341,7 @@ function vpIsPartDeleted(rawName, effectiveName) {
   });
 }
 
-window.vpSetVehicleType = function(type, forceRender = true) {
+window.vpSetVehicleType = function(type, forceRender = true, keepAllZonesMode = false) {
   vpDetectedVehicleType = type;
 
   const btnCarro = document.getElementById('vpTypeBtn_carro');
@@ -6382,7 +6382,9 @@ window.vpSetVehicleType = function(type, forceRender = true) {
     if (typeBadge) typeBadge.textContent = '🚗 Automóvel / SUV';
   }
 
-  vpViewAllZonesMode = false;
+  if (!keepAllZonesMode) {
+    vpViewAllZonesMode = false;
+  }
 
   if (forceRender) {
     vpUpdateTriggerButton();
@@ -6522,7 +6524,8 @@ window.openVehiclePartsForVistoriaId = function(id) {
 
   const titleDisplay = document.getElementById('vpVehicleTitle');
   const detectedType = item.type === 'Moto' ? 'moto' : vpDetectVehicleTypeFromText(vehicleTitle);
-  window.vpSetVehicleType(detectedType, false);
+  window.vpSetVehicleType(detectedType, false, true);
+  vpViewAllZonesMode = true;
 
   if (titleDisplay) {
     titleDisplay.textContent = vehicleTitle || 'Partes do Veículo';
@@ -6588,7 +6591,8 @@ window.openVehiclePartsModal = function() {
   const detectedType = vpDetectVehicleTypeFromText(vehicleTitle);
 
   // Aplica o tipo detectado e atualiza as abas
-  window.vpSetVehicleType(detectedType, false);
+  window.vpSetVehicleType(detectedType, false, true);
+  vpViewAllZonesMode = true;
 
   if (titleDisplay) {
     titleDisplay.textContent = vehicleTitle || 'Partes do Veículo';
