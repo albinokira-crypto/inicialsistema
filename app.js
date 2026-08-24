@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.80';
+const CURRENT_APP_VERSION = 'v1.81';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -338,9 +338,12 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
             <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
-          <div class="btn-row" style="margin-top: 4px;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+          <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
               📲 Compartilhar Vistoria (Texto + Mídias)
+            </button>
+            <button class="action-btn" type="button" data-action="parts" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+              🚗 Partes do Veículo
             </button>
           </div>
         </div>
@@ -2235,6 +2238,10 @@ function handleAction(action, id) {
     openPhotoManagerForId(id);
     return;
   }
+  if (action === 'parts') {
+    openVehiclePartsForVistoriaId(id);
+    return;
+  }
   if (action === 'share-whatsapp-sequence' || action === 'share-whatsapp-all' || action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-text' || action === 'share-report-text') {
     shareVistoriaWhatsAppSequence(id);
     return;
@@ -2830,31 +2837,7 @@ function renderDynamicSurveyFields() {
     </label>
   `;
 
-  const trocasReparosHtml = `
-    <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-top: 6px; padding: 12px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-        <div>
-          <span style="font-size: 0.90rem; font-weight: 800; color: #0f172a; display: block;">🚗 Partes do Veículo (Trocas & Reparos)</span>
-          <span style="font-size: 0.74rem; color: #64748b;">Selecione peças por zonas com 1 toque ou digite abaixo:</span>
-        </div>
-        <button type="button" class="btn-open-parts-selector" onclick="openVehiclePartsModal()" style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.82rem; cursor: pointer; box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
-          <span>🚗 Selecionar Partes (Zonas)</span>
-        </button>
-      </div>
-
-      <label style="margin: 0;">
-        <span style="font-size: 0.82rem; font-weight: 700; color: #dc2626;">🔁 Trocas (uma peça por linha)</span>
-        <textarea name="trocas" id="surveyTrocasTextarea" rows="3" placeholder="Ex:&#10;Capô do motor (dobrado)&#10;Farol dianteiro LD" style="width: 100%; box-sizing: border-box; margin-top: 4px;"></textarea>
-      </label>
-
-      <label style="margin: 0;">
-        <span style="font-size: 0.82rem; font-weight: 700; color: #0284c7;">🛠️ Reparos (uma peça por linha)</span>
-        <textarea name="reparos" id="surveyReparosTextarea" rows="3" placeholder="Ex:&#10;Para-choque dianteiro (recuperar ponta e pintar)&#10;Porta dianteira LE (desamassar vinco)" style="width: 100%; box-sizing: border-box; margin-top: 4px;"></textarea>
-      </label>
-    </div>
-  `;
-
-  const extraFieldsHtml = obsHtml + trocasReparosHtml;
+  const extraFieldsHtml = obsHtml;
 
   if (selectedType === 'Inicial') {
     fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
@@ -2910,7 +2893,7 @@ function renderDynamicSurveyFields() {
         </div>
         <input type="hidden" id="input_tanque" name="tanqueAfetado" value="Não" />
       </div>
-    ` + trocasReparosHtml;
+    `;
   } else if (selectedType === 'Enchente') {
     fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + `
       <div class="form-toggle-field">
@@ -3000,7 +2983,7 @@ function renderDynamicSurveyFields() {
         <textarea name="reclamacao" rows="4" placeholder="Digite a reclamação..."></textarea>
       </label>
     `;
-    fieldsHtml = reclamacaoHtml + trocasReparosHtml;
+    fieldsHtml = reclamacaoHtml;
   }
 
   dynamicFieldsContainer.innerHTML = officeDropdownHtml + fieldsHtml;
@@ -6476,7 +6459,72 @@ function vpDetectVehicleTypeFromText(rawText) {
 }
 window.vpDetectVehicleTypeFromText = vpDetectVehicleTypeFromText;
 
+let currentVistoriaIdForParts = null;
+
+window.openVehiclePartsForVistoriaId = function(id) {
+  const item = items.find(entry => entry.id === id);
+  if (!item) return;
+
+  currentVistoriaIdForParts = id;
+  vpLoadState();
+  if (typeof window.vpSyncCatalogWithCloud === 'function') {
+    window.vpSyncCatalogWithCloud(false);
+  }
+
+  const vehicleTitle = item.plate ? item.plate.trim() : '';
+  vpCurrentVehicleModelName = vehicleTitle;
+
+  const titleDisplay = document.getElementById('vpVehicleTitle');
+  const detectedType = item.type === 'Moto' ? 'moto' : vpDetectVehicleTypeFromText(vehicleTitle);
+  window.vpSetVehicleType(detectedType, false);
+
+  if (titleDisplay) {
+    titleDisplay.textContent = vehicleTitle || 'Partes do Veículo';
+  }
+
+  vpSelectedPartsMap.clear();
+
+  const trocasStr = (item.details && item.details.trocas) || item.trocas || '';
+  const reparosStr = (item.details && item.details.reparos) || item.reparos || '';
+
+  const parseLines = (text, action) => {
+    if (!text || typeof text !== 'string') return;
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    lines.forEach(line => {
+      let name = line;
+      let obs = '';
+      const match = line.match(/^(.*?)\s*\((.*?)\)$/);
+      if (match) {
+        name = match[1].trim();
+        obs = match[2].trim();
+      }
+      if (name) {
+        vpSelectedPartsMap.set(name, {
+          name: name,
+          rawName: name,
+          zoneId: vpActiveZoneId,
+          zoneName: 'Veículo',
+          action: action,
+          obs: obs
+        });
+      }
+    });
+  };
+
+  parseLines(trocasStr, 'troca');
+  parseLines(reparosStr, 'reparo');
+
+  vpSetupSearch();
+  vpUpdateTriggerButton();
+  vpRenderParts();
+  vpUpdateDockAndSheet();
+
+  const modal = document.getElementById('vehiclePartsModal');
+  if (modal) modal.style.display = 'flex';
+};
+
 window.openVehiclePartsModal = function() {
+  currentVistoriaIdForParts = null;
   vpLoadState();
   if (typeof window.vpSyncCatalogWithCloud === 'function') {
     window.vpSyncCatalogWithCloud(false);
@@ -6551,6 +6599,7 @@ window.openVehiclePartsModal = function() {
 };
 
 window.closeVehiclePartsModal = function() {
+  currentVistoriaIdForParts = null;
   const modal = document.getElementById('vehiclePartsModal');
   if (modal) modal.style.display = 'none';
 };
@@ -6572,6 +6621,24 @@ window.vpApplyAndClose = function() {
 
   if (vpSelectedPartsMap.size > 0) {
     vpSaveState(true);
+  }
+
+  if (currentVistoriaIdForParts) {
+    const item = items.find(entry => entry.id === currentVistoriaIdForParts);
+    if (item) {
+      if (!item.details) item.details = {};
+      item.details.trocas = trocasList.join('\n');
+      item.details.reparos = reparosList.join('\n');
+      item.updatedAt = new Date().toLocaleString('pt-BR');
+      item.updatedAtTime = Date.now();
+      saveItems();
+      render();
+      if (typeof updateLocalAndServerData === 'function') {
+        updateLocalAndServerData();
+      }
+      alert('✅ Partes do veículo salvas na vistoria!');
+    }
+    currentVistoriaIdForParts = null;
   }
 
   const trocasTextarea = document.querySelector('textarea[name="trocas"]');
