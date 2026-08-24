@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.89';
+const CURRENT_APP_VERSION = 'v1.90';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -6811,6 +6811,46 @@ window.vpToggleViewAllZones = function() {
   vpRenderParts();
 };
 
+const VP_DEFAULT_POPULAR_KEYWORDS = [
+  'farol', 'para-choque', 'parachoque', 'para-lama', 'paralama', 'capô', 'capo',
+  'porta dianteira', 'porta traseira', 'porta', 'retrovisor', 'lanterna', 'para-brisa',
+  'parabrisa', 'grade', 'tampa traseira', 'tampa do porta', 'painel frontal', 'alma do para',
+  'radiador', 'amortecedor', 'balança', 'bandeja', 'bieleta', 'terminal', 'caixa de roda',
+  'para-barro', 'parabarro', 'espelho', 'vidro'
+];
+
+function vpGetPartUsageScore(partName, rawName = '') {
+  let score = 0;
+  const lower = ((partName || '') + ' ' + (rawName || '')).toLowerCase();
+  
+  // 1. Pontuação base por relevância/frequência de uso em vistorias automotivas
+  for (let i = 0; i < VP_DEFAULT_POPULAR_KEYWORDS.length; i++) {
+    if (lower.includes(VP_DEFAULT_POPULAR_KEYWORDS[i])) {
+      score += (VP_DEFAULT_POPULAR_KEYWORDS.length - i) * 10;
+      break;
+    }
+  }
+
+  // 2. Pontuação adicional por histórico de uso real salvo no dispositivo
+  try {
+    const stats = JSON.parse(localStorage.getItem('vp_parts_usage_stats') || '{}');
+    if (stats[partName]) {
+      score += stats[partName] * 25;
+    }
+  } catch(e) {}
+
+  return score;
+}
+
+function vpIncrementPartUsage(partName) {
+  if (!partName) return;
+  try {
+    const stats = JSON.parse(localStorage.getItem('vp_parts_usage_stats') || '{}');
+    stats[partName] = (stats[partName] || 0) + 1;
+    localStorage.setItem('vp_parts_usage_stats', JSON.stringify(stats));
+  } catch(e) {}
+}
+
 function vpRenderParts(filterQuery = '') {
   const currentZone = vpActiveZones.find(z => z.id === vpActiveZoneId) || vpActiveZones[0];
   const listEl = document.getElementById('vpPartsScrollContainer');
@@ -6824,8 +6864,13 @@ function vpRenderParts(filterQuery = '') {
     return partList.sort((a, b) => {
       const isSelA = vpSelectedPartsMap.has(a.name) ? 1 : 0;
       const isSelB = vpSelectedPartsMap.has(b.name) ? 1 : 0;
-      if (isSelB !== isSelA) return isSelB - isSelA; // Selecionadas sempre no topo
-      return a.name.localeCompare(b.name, 'pt-BR'); // Ordem alfabética estrita para retorno perfeito
+      if (isSelB !== isSelA) return isSelB - isSelA; // 1º: Selecionadas na sessão sempre no topo
+
+      const scoreA = vpGetPartUsageScore(a.name, a.rawName);
+      const scoreB = vpGetPartUsageScore(b.name, b.rawName);
+      if (scoreB !== scoreA) return scoreB - scoreA; // 2º: Peças mais usadas/populares sempre no topo
+
+      return a.name.localeCompare(b.name, 'pt-BR'); // 3º: Ordem alfabética para desempate
     });
   };
 
