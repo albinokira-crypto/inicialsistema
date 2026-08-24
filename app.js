@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.91';
+const CURRENT_APP_VERSION = 'v1.92';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -960,36 +960,6 @@ setupOficinaCombobox({
   setSelectedOficina: (val) => { selectedVistoriaOficina = val; },
   onSelectionChange: () => render()
 });
-
-// Report Preview Modal Handlers
-if (copyReportPreviewBtn) {
-  copyReportPreviewBtn.addEventListener('click', () => {
-    if (!currentReportModalId) return;
-    const contentEl = document.getElementById('reportPreviewContent');
-    if (contentEl && contentEl.value) {
-      copyTextToClipboard(contentEl.value);
-      alert('📋 Relatório copiado para a área de transferência!');
-    }
-  });
-}
-
-if (whatsappReportPreviewBtn) {
-  whatsappReportPreviewBtn.addEventListener('click', () => {
-    if (!currentReportModalId) return;
-    const targetId = currentReportModalId;
-    closeReportPreviewModal();
-    shareVistoriaWhatsAppSequence(targetId);
-  });
-}
-
-if (photosReportPreviewBtn) {
-  photosReportPreviewBtn.addEventListener('click', () => {
-    if (!currentReportModalId) return;
-    const targetId = currentReportModalId;
-    closeReportPreviewModal();
-    openPhotoManagerForId(targetId);
-  });
-}
 
 if (shareSupervisaoTextButton) {
   shareSupervisaoTextButton.addEventListener('click', () => {
