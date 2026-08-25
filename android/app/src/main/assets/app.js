@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.96';
+const CURRENT_APP_VERSION = 'v1.97';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -4668,30 +4668,34 @@ function base64ToBlob(base64, mimeType = 'image/jpeg') {
 let pendingSequenceShare = null;
 let isCheckingSequenceShare = false;
 
-function showToastNotification(message, duration = 4000) {
+function showToastNotification(message, duration = 3000) {
   let toast = document.getElementById('appToastNotification');
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'appToastNotification';
     toast.style.cssText = `
       position: fixed;
-      bottom: 24px;
+      top: 24px;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translateX(-50%) translateY(-20px);
       background: #0f172a;
       color: #ffffff;
-      padding: 12px 20px;
-      border-radius: 12px;
-      font-size: 0.88rem;
+      padding: 13px 22px;
+      border-radius: 14px;
+      font-size: 0.90rem;
       font-weight: 700;
-      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4);
-      z-index: 99999;
+      box-shadow: 0 12px 35px -5px rgba(0,0,0,0.45);
+      z-index: 999999;
       opacity: 0;
-      transition: opacity 0.3s ease, transform 0.3s ease;
+      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       text-align: center;
       max-width: 90%;
       pointer-events: none;
-      border: 1px solid #334155;
+      border: 1.5px solid #22c55e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     `;
     document.body.appendChild(toast);
   }
@@ -4702,7 +4706,7 @@ function showToastNotification(message, duration = 4000) {
   if (window._toastTimeout) clearTimeout(window._toastTimeout);
   window._toastTimeout = setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateX(-50%) translateY(10px)';
+    toast.style.transform = 'translateX(-50%) translateY(-20px)';
   }, duration);
 }
 
@@ -6886,10 +6890,11 @@ window.vpApplyAndClose = function() {
       if (typeof updateLocalAndServerData === 'function') {
         updateLocalAndServerData();
       }
-      alert('✅ Partes do veículo salvas na vistoria!');
     }
     currentVistoriaIdForParts = null;
   }
+
+  showToastNotification('✅ Partes do veículo salvas na vistoria!', 3000);
 
   const trocasTextarea = document.querySelector('textarea[name="trocas"]');
   const reparosTextarea = document.querySelector('textarea[name="reparos"]');
