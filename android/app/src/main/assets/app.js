@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.95';
+const CURRENT_APP_VERSION = 'v1.96';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -34,21 +34,30 @@ async function checkForSystemUpdates(showFeedback = false) {
 
   let activeVersion = CURRENT_APP_VERSION;
   if (versionEl) versionEl.textContent = activeVersion;
-  if (serverJsonEl && serverJsonEl.textContent === '...') serverJsonEl.textContent = 'Verificando...';
+  if (serverJsonEl && (!serverJsonEl.textContent || serverJsonEl.textContent === '...' || serverJsonEl.textContent === 'Verificando...')) {
+    serverJsonEl.textContent = activeVersion;
+  }
 
   try {
     const timestamp = Date.now();
     const endpoints = [
-      'https://gestao-vistoria-inicial.vercel.app/version.json?t=' + timestamp,
-      '/version.json?t=' + timestamp,
-      'version.json?t=' + timestamp
+      'https://gestao-vistoria-inicial.vercel.app/version.json?_t=' + timestamp,
+      '/version.json?_t=' + timestamp,
+      'version.json?_t=' + timestamp
     ];
     let data = null;
     for (const url of endpoints) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
-        const res = await fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' }, signal: controller.signal });
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch(url, { 
+          cache: 'no-store', 
+          headers: { 
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }, 
+          signal: controller.signal 
+        });
         clearTimeout(timeoutId);
         if (res.ok) {
           data = await res.json();
@@ -93,10 +102,23 @@ async function checkForSystemUpdates(showFeedback = false) {
       }
     } else {
       if (serverJsonEl) serverJsonEl.textContent = activeVersion;
+      if (statusBadge) {
+        statusBadge.style.background = '#dcfce7';
+        statusBadge.style.borderColor = '#86efac';
+        statusBadge.style.color = '#166534';
+      }
+      if (statusDot) statusDot.style.background = '#16a34a';
       if (statusText) statusText.textContent = 'Ativo';
     }
   } catch (err) {
     if (serverJsonEl) serverJsonEl.textContent = activeVersion;
+    if (statusBadge) {
+      statusBadge.style.background = '#dcfce7';
+      statusBadge.style.borderColor = '#86efac';
+      statusBadge.style.color = '#166534';
+    }
+    if (statusDot) statusDot.style.background = '#16a34a';
+    if (statusText) statusText.textContent = 'Ativo';
     if (showFeedback) {
       alert('Não foi possível verificar a versão no servidor.');
     }
@@ -397,7 +419,7 @@ function ensureAuthentication() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('/sw.js?v=196')
       .then((registration) => {
         registration.update();
       })
@@ -406,6 +428,21 @@ function registerServiceWorker() {
       });
   }
 }
+
+// Verificação automática de versão na inicialização e ao focar no app
+setTimeout(() => {
+  checkForSystemUpdates(false);
+}, 1200);
+
+window.addEventListener('focus', () => {
+  checkForSystemUpdates(false);
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    checkForSystemUpdates(false);
+  }
+});
 
 function closeSystemSettings() {
   const modal = document.getElementById('systemSettingsModal');
@@ -3828,7 +3865,6 @@ function renderSupervisaoReport() {
           <div class="plate-badge compact-plate-badge clickable-plate-link" data-super-action="open-report" data-id="${s.id}" title="Clique para abrir o relatório" style="cursor: pointer; display: inline-flex; margin-bottom: 4px;">
             <span class="plate-badge-text">🚗 ${escapeHtml(s.vehicle || s.plate || 'Supervisão')}</span>
           </div>
-          ${s.plate ? `<div style="font-size: 0.78rem; color: #334155; font-weight: 600; margin-top: 1px;">Placa: ${escapeHtml(s.plate)}</div>` : ''}
           <div style="font-size: 0.72rem; color: #64748b; font-weight: normal; margin-top: 2px;">
             🕒 ${escapeHtml(dataUnica)}
           </div>
@@ -4426,18 +4462,16 @@ function openSystemSettings() {
   if (folderSection) folderSection.style.setProperty('display', 'none', 'important');
   const cameraSection = document.getElementById('cameraSettingsSection');
   if (cameraSection) cameraSection.style.setProperty('display', 'none', 'important');
-  let activeVersion = CURRENT_APP_VERSION;
-  if (window.AndroidInterface && typeof window.AndroidInterface.getAppVersion === 'function') {
-    try {
-      activeVersion = window.AndroidInterface.getAppVersion();
-    } catch(e) {}
-  }
+
   const versionDisplay = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
   if (versionDisplay) versionDisplay.textContent = CURRENT_APP_VERSION;
+  const serverJsonEl = document.getElementById('serverVersionJsonDisplay');
+  if (serverJsonEl) serverJsonEl.textContent = CURRENT_APP_VERSION;
+
   updateFolderLabelUI();
   updatePreferredCameraUI();
   if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
-  checkForSystemUpdates();
+  checkForSystemUpdates(false);
 }
 
 async function forceAppRefresh() {
