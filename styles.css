@@ -1030,6 +1030,10 @@ html, body {
     margin-right: auto;
   }
 
+  .report-table td:first-child::before {
+    display: none !important;
+  }
+
   .report-table td .actions {
     display: flex;
     flex-direction: row;

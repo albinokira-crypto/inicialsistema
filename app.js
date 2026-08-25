@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.94';
+const CURRENT_APP_VERSION = 'v1.95';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -282,10 +282,8 @@ function renderVistoriaOrSupervisaoCard(entry) {
           </div>
           <div class="item-details">
             <strong class="item-provider">${escapeHtml(entry.attended ? 'Atendido: ' + entry.attended : 'Sem atendente')}</strong>
-            ${entry.plate ? `<span class="item-meta">· Placa: <strong>${escapeHtml(entry.plate)}</strong></span>` : ''}
-            <span class="badge-supervisao" style="margin-left: 6px;">
-              ${escapeHtml(entry.stage || 'Supervisão')}
-            </span>
+            ${entry.plate && entry.plate !== entry.vehicle ? `<span class="item-meta">· Placa: <strong>${escapeHtml(entry.plate)}</strong></span>` : ''}
+            ${entry.stage && entry.stage !== 'Supervisão' ? `<span class="badge-supervisao" style="margin-left: 6px;">${escapeHtml(entry.stage)}</span>` : ''}
             ${ofName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(ofName)}</strong></div>` : ''}
             ${entry.partsPending === 'Sim' ? `<div class="item-meta" style="color: #b91c1c; margin-top: 2px;">Peças: <strong>${escapeHtml(entry.parts || 'Pendentes')}</strong></div>` : ''}
             <div style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">🕒 ${escapeHtml(dataUnica)}</div>
@@ -343,11 +341,11 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
           <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Enviar Vistoria
-            </button>
             <button class="action-btn" type="button" data-action="parts" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
               🚗 Partes do Veículo
+            </button>
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Enviar Vistoria
             </button>
           </div>
         </div>
@@ -1954,11 +1952,11 @@ function render() {
             <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
           </div>
           <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Enviar Vistoria
-            </button>
             <button class="action-btn" type="button" data-action="parts" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
               🚗 Partes do Veículo
+            </button>
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Enviar Vistoria
             </button>
           </div>
         </div>
@@ -6208,6 +6206,7 @@ const VP_CLOUD_ENDPOINTS = [
 let vpSelectedPartsMap = new Map(); // key = displayName -> { name, rawName, zoneId, zoneName, action: 'troca'|'reparo', obs: '' }
 let vpCustomPartsList = [];
 let vpCustomPartRenamesMap = {};
+let vpPartZoneOverridesMap = {}; // key = rawName/effectiveName -> zoneId
 let vpDeletedPartsList = [];
 let vpUsageStats = {}; // key: partName.toLowerCase() -> count
 let vpIsSyncingCloud = false;
@@ -6252,6 +6251,8 @@ function vpLoadState() {
     if (savedCustom) vpCustomPartsList = JSON.parse(savedCustom);
     const savedRenames = localStorage.getItem('mobile_parts_renames');
     if (savedRenames) vpCustomPartRenamesMap = JSON.parse(savedRenames);
+    const savedZoneOverrides = localStorage.getItem('mobile_parts_zone_overrides');
+    if (savedZoneOverrides) vpPartZoneOverridesMap = JSON.parse(savedZoneOverrides);
     const savedDeleted = localStorage.getItem('mobile_parts_deleted');
     if (savedDeleted) vpDeletedPartsList = JSON.parse(savedDeleted);
     const savedStats = localStorage.getItem('mobile_parts_usage_stats');
@@ -6263,6 +6264,7 @@ function vpSaveState(syncToCloud = false) {
   try {
     localStorage.setItem('mobile_parts_custom', JSON.stringify(vpCustomPartsList));
     localStorage.setItem('mobile_parts_renames', JSON.stringify(vpCustomPartRenamesMap));
+    localStorage.setItem('mobile_parts_zone_overrides', JSON.stringify(vpPartZoneOverridesMap));
     localStorage.setItem('mobile_parts_deleted', JSON.stringify(vpDeletedPartsList));
     localStorage.setItem('mobile_parts_usage_stats', JSON.stringify(vpUsageStats));
   } catch(e) {}
@@ -6270,6 +6272,15 @@ function vpSaveState(syncToCloud = false) {
   if (syncToCloud) {
     vpPushCatalogToCloud();
   }
+}
+
+function vpGetPartEffectiveZoneId(rawName, defaultZoneId) {
+  if (rawName && vpPartZoneOverridesMap[rawName]) return vpPartZoneOverridesMap[rawName];
+  const effective = vpGetEffectivePartName(rawName);
+  if (effective && vpPartZoneOverridesMap[effective]) return vpPartZoneOverridesMap[effective];
+  const custom = vpCustomPartsList.find(p => (p.name && p.name.toLowerCase() === (rawName || '').toLowerCase()) || (p.name && p.name.toLowerCase() === (effective || '').toLowerCase()));
+  if (custom && custom.zoneId) return custom.zoneId;
+  return defaultZoneId;
 }
 
 function vpIncrementPartUsage(name) {
@@ -6314,6 +6325,7 @@ async function vpPushCatalogToCloud() {
         customParts: vpCustomPartsList,
         deletedParts: vpDeletedPartsList,
         renames: vpCustomPartRenamesMap,
+        zoneOverrides: vpPartZoneOverridesMap,
         usageStats: vpUsageStats,
         updatedAt: Date.now()
       }
@@ -6412,7 +6424,17 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
         });
       }
 
-      // 4. Merge de estatísticas de uso
+      // 4. Merge de alterações de zona
+      if (cloudData.zoneOverrides && typeof cloudData.zoneOverrides === 'object') {
+        Object.keys(cloudData.zoneOverrides).forEach(key => {
+          if (!vpPartZoneOverridesMap[key]) {
+            vpPartZoneOverridesMap[key] = cloudData.zoneOverrides[key];
+            hasChanges = true;
+          }
+        });
+      }
+
+      // 5. Merge de estatísticas de uso
       if (cloudData.usageStats && typeof cloudData.usageStats === 'object') {
         Object.keys(cloudData.usageStats).forEach(k => {
           const cloudVal = cloudData.usageStats[k] || 0;
@@ -7017,7 +7039,9 @@ function vpRenderParts(filterQuery = '') {
         const effective = vpGetEffectivePartName(rawP);
         if (!vpIsPartDeleted(rawP, effective)) {
           if (effective.toLowerCase().includes(q) || rawP.toLowerCase().includes(q)) {
-            matching.push({ rawName: rawP, name: effective, zoneId: z.id, zoneName: z.name, icon: z.icon });
+            const actualZoneId = vpGetPartEffectiveZoneId(rawP, z.id);
+            const zObj = vpActiveZones.find(zone => zone.id === actualZoneId) || z;
+            matching.push({ rawName: rawP, name: effective, zoneId: actualZoneId, zoneName: zObj.name, icon: zObj.icon });
           }
         }
       });
@@ -7027,8 +7051,9 @@ function vpRenderParts(filterQuery = '') {
         const effective = vpGetEffectivePartName(p.name);
         if (!vpIsPartDeleted(p.name, effective)) {
           if (effective.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)) {
-            const zObj = vpActiveZones.find(z => z.id === p.zoneId);
-            matching.push({ rawName: p.name, name: effective, zoneId: p.zoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: '✨' });
+            const actualZoneId = vpGetPartEffectiveZoneId(p.name, p.zoneId);
+            const zObj = vpActiveZones.find(zone => zone.id === actualZoneId);
+            matching.push({ rawName: p.name, name: effective, zoneId: actualZoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: zObj ? zObj.icon : '✨' });
           }
         }
       }
@@ -7069,7 +7094,9 @@ function vpRenderParts(filterQuery = '') {
         const effective = vpGetEffectivePartName(rawP);
         if (!vpIsPartDeleted(rawP, effective) && !seenNames.has(effective)) {
           seenNames.add(effective);
-          allParts.push({ rawName: rawP, name: effective, zoneId: z.id, zoneName: z.name, icon: z.icon });
+          const actualZoneId = vpGetPartEffectiveZoneId(rawP, z.id);
+          const zObj = vpActiveZones.find(zone => zone.id === actualZoneId) || z;
+          allParts.push({ rawName: rawP, name: effective, zoneId: actualZoneId, zoneName: zObj.name, icon: zObj.icon });
         }
       });
     });
@@ -7079,8 +7106,9 @@ function vpRenderParts(filterQuery = '') {
         const effective = vpGetEffectivePartName(p.name);
         if (!vpIsPartDeleted(p.name, effective) && !seenNames.has(effective)) {
           seenNames.add(effective);
-          const zObj = vpActiveZones.find(z => z.id === p.zoneId);
-          allParts.push({ rawName: p.name, name: effective, zoneId: p.zoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: '✨' });
+          const actualZoneId = vpGetPartEffectiveZoneId(p.name, p.zoneId);
+          const zObj = vpActiveZones.find(zone => zone.id === actualZoneId);
+          allParts.push({ rawName: p.name, name: effective, zoneId: actualZoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: zObj ? zObj.icon : '✨' });
         }
       }
     });
@@ -7118,6 +7146,7 @@ function vpRenderParts(filterQuery = '') {
       activeBg = '#fdf4ff';
     }
 
+    sortPartsByUsage(activeList);
     const selectedInActive = activeList.filter(p => vpSelectedPartsMap.has(p.name));
     const unselectedInActive = activeList.filter(p => !vpSelectedPartsMap.has(p.name));
 
@@ -7202,13 +7231,27 @@ function vpRenderParts(filterQuery = '') {
   }
 
   // 3. ZONA ESPECÍFICA ATUAL
-  const partsInCurrent = currentZone.parts
-    .map(rawP => ({ rawName: rawP, name: vpGetEffectivePartName(rawP), zoneId: currentZone.id, zoneName: currentZone.name, icon: currentZone.icon }))
-    .filter(p => !vpIsPartDeleted(p.rawName, p.name));
+  const partsInCurrent = [];
+  vpActiveZones.forEach(z => {
+    z.parts.forEach(rawP => {
+      const effective = vpGetEffectivePartName(rawP);
+      if (!vpIsPartDeleted(rawP, effective)) {
+        const actualZoneId = vpGetPartEffectiveZoneId(rawP, z.id);
+        if (actualZoneId === currentZone.id) {
+          partsInCurrent.push({ rawName: rawP, name: effective, zoneId: currentZone.id, zoneName: currentZone.name, icon: currentZone.icon });
+        }
+      }
+    });
+  });
+
   const customInCurrent = vpCustomPartsList
-    .filter(p => p.zoneId === currentZone.id && matchesVehicleType(p))
-    .map(p => ({ rawName: p.name, name: vpGetEffectivePartName(p.name), zoneId: currentZone.id, zoneName: currentZone.name, icon: '✨' }))
-    .filter(p => !vpIsPartDeleted(p.rawName, p.name));
+    .filter(p => matchesVehicleType(p))
+    .map(p => {
+      const effective = vpGetEffectivePartName(p.name);
+      const actualZoneId = vpGetPartEffectiveZoneId(p.name, p.zoneId);
+      return { rawName: p.name, name: effective, zoneId: actualZoneId, zoneName: currentZone.name, icon: '✨' };
+    })
+    .filter(p => p.zoneId === currentZone.id && !vpIsPartDeleted(p.rawName, p.name));
   const totalZoneParts = [...partsInCurrent, ...customInCurrent];
 
   if (totalZoneParts.length === 0) {
@@ -7263,7 +7306,7 @@ function vpRenderPartCardHtml(item) {
       <div class="vp-card-top" style="display: flex; align-items: center; justify-content: space-between; gap: 2px; width: 100%; min-width: 0;">
         <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
         <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.78rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${vpEscapeHtml(item.name)}</span>
-        <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
+        <button type="button" class="vp-btn-edit-name" title="Editar nome e zona da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')">✏️</button>
       </div>
 
       <!-- 2ª LINHA: [Trocar (40%)] [Reparar (40%)] [Obs. (20%)] (SEM ÍCONES, SEM QUEBRA DE LINHA) -->
@@ -7547,10 +7590,19 @@ window.vpClearSearch = function() {
   vpRenderParts('');
 };
 
-window.vpOpenEditPartModal = function(rawName, currentDisplayName) {
+window.vpOpenEditPartModal = function(rawName, currentDisplayName, currentZoneId) {
   const modal = document.getElementById('vpEditPartModal');
   const origInput = document.getElementById('vpEditOriginalName');
   const nameInput = document.getElementById('vpEditNameInput');
+  const zoneSelect = document.getElementById('vpEditZoneSelect');
+
+  const effectiveZoneId = vpGetPartEffectiveZoneId(rawName, currentZoneId || vpActiveZoneId);
+
+  if (zoneSelect) {
+    zoneSelect.innerHTML = vpActiveZones.map(z => `
+      <option value="${z.id}" ${z.id === effectiveZoneId ? 'selected' : ''}>${z.icon} ${z.name}</option>
+    `).join('');
+  }
 
   if (origInput) origInput.value = rawName;
   if (nameInput) nameInput.value = currentDisplayName;
@@ -7612,20 +7664,49 @@ window.vpSaveEditPartName = function(e) {
   e.preventDefault();
   const origInput = document.getElementById('vpEditOriginalName');
   const nameInput = document.getElementById('vpEditNameInput');
+  const zoneSelect = document.getElementById('vpEditZoneSelect');
 
   const rawName = origInput ? origInput.value.trim() : '';
   const newName = nameInput ? nameInput.value.trim() : '';
+  const targetZoneId = zoneSelect ? zoneSelect.value : '';
 
   if (!rawName || !newName) return;
 
   const oldEffectiveName = vpGetEffectivePartName(rawName);
   vpCustomPartRenamesMap[rawName] = newName;
+  if (oldEffectiveName !== newName) {
+    vpCustomPartRenamesMap[oldEffectiveName] = newName;
+  }
+
+  // Atualiza override de zona
+  if (targetZoneId) {
+    vpPartZoneOverridesMap[rawName] = targetZoneId;
+    vpPartZoneOverridesMap[newName] = targetZoneId;
+    vpPartZoneOverridesMap[oldEffectiveName] = targetZoneId;
+
+    // Se estiver em vpCustomPartsList, atualiza a zona diretamente
+    const customItem = vpCustomPartsList.find(p => p.name.toLowerCase() === rawName.toLowerCase() || p.name.toLowerCase() === oldEffectiveName.toLowerCase());
+    if (customItem) {
+      customItem.name = newName;
+      customItem.zoneId = targetZoneId;
+    }
+  }
 
   if (vpSelectedPartsMap.has(oldEffectiveName)) {
     const prevItem = vpSelectedPartsMap.get(oldEffectiveName);
     vpSelectedPartsMap.delete(oldEffectiveName);
     prevItem.name = newName;
+    if (targetZoneId) {
+      prevItem.zoneId = targetZoneId;
+      const targetZoneObj = vpActiveZones.find(z => z.id === targetZoneId);
+      if (targetZoneObj) prevItem.zoneName = targetZoneObj.name;
+    }
     vpSelectedPartsMap.set(newName, prevItem);
+  } else if (targetZoneId && vpSelectedPartsMap.has(newName)) {
+    const prevItem = vpSelectedPartsMap.get(newName);
+    prevItem.zoneId = targetZoneId;
+    const targetZoneObj = vpActiveZones.find(z => z.id === targetZoneId);
+    if (targetZoneObj) prevItem.zoneName = targetZoneObj.name;
   }
 
   vpSaveState(true);

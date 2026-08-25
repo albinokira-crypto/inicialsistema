@@ -2,6 +2,7 @@ let cachedCatalogData = {
   customParts: [],
   deletedParts: [],
   renames: {},
+  zoneOverrides: {},
   usageStats: {},
   updatedAt: Date.now()
 };
@@ -36,6 +37,7 @@ module.exports = async (req, res) => {
         if (Array.isArray(data.customParts)) cachedCatalogData.customParts = data.customParts;
         if (Array.isArray(data.deletedParts)) cachedCatalogData.deletedParts = data.deletedParts;
         if (data.renames && typeof data.renames === 'object') cachedCatalogData.renames = data.renames;
+        if (data.zoneOverrides && typeof data.zoneOverrides === 'object') cachedCatalogData.zoneOverrides = data.zoneOverrides;
         if (data.usageStats && typeof data.usageStats === 'object') cachedCatalogData.usageStats = data.usageStats;
         cachedCatalogData.updatedAt = Date.now();
       }
