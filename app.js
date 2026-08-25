@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.93';
+const CURRENT_APP_VERSION = 'v1.94';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -469,6 +469,8 @@ function attachGlobalEventListeners() {
       openQuickAddOficinaModal('supervisao');
     });
   }
+
+  setupSupervisaoFormOficinaCombobox();
 
   const supervisaoQuickAddStage = document.getElementById('supervisaoQuickAddStage');
   if (supervisaoQuickAddStage) {
@@ -3143,6 +3145,11 @@ function handleQuickAddOficinaSubmit(e) {
     if (supervisaoOficinaSelect) {
       supervisaoOficinaSelect.value = newOficina.id;
     }
+    const supInputEl = document.getElementById('supervisaoFormOficinaComboboxInput');
+    const supClearBtn = document.getElementById('supervisaoFormOficinaComboboxClearBtn');
+    if (supInputEl) supInputEl.value = newOficina.name;
+    if (supClearBtn) supClearBtn.style.display = 'block';
+    populateSupervisaoAttendedSelect();
     if (supervisaoAttendedInput && resp) {
       supervisaoAttendedInput.value = resp;
     }
@@ -3269,6 +3276,120 @@ function setupItemFormOficinaCombobox() {
 }
 window.setupItemFormOficinaCombobox = setupItemFormOficinaCombobox;
 
+function setupSupervisaoFormOficinaCombobox() {
+  const inputEl = document.getElementById('supervisaoFormOficinaComboboxInput');
+  const clearBtn = document.getElementById('supervisaoFormOficinaComboboxClearBtn');
+  const toggleBtn = document.getElementById('supervisaoFormOficinaComboboxToggleBtn');
+  const listEl = document.getElementById('supervisaoFormOficinaComboboxList');
+  const selectEl = document.getElementById('supervisaoOficinaSelect');
+
+  if (!inputEl || !listEl || !selectEl) return;
+
+  function renderDropdown(filterText = '') {
+    const q = filterText.trim().toLowerCase();
+    const matchingOficinas = q
+      ? oficinas.filter(o => o.name.toLowerCase().includes(q) || (o.responsaveis && o.responsaveis.some(r => r.toLowerCase().includes(q))))
+      : oficinas;
+
+    if (matchingOficinas.length === 0) {
+      listEl.innerHTML = `<li style="padding: 12px 14px; font-size: 0.85rem; color: #94a3b8; text-align: center;">Nenhuma oficina encontrada</li>`;
+    } else {
+      listEl.innerHTML = matchingOficinas.map(oficina => {
+        const isSel = selectEl.value === oficina.id;
+        const respText = (oficina.responsaveis && oficina.responsaveis.length)
+          ? `<div style="font-size: 0.74rem; color: #64748b; margin-top: 2px;">👤 Resp: ${escapeHtml(oficina.responsaveis.join(', '))}</div>`
+          : '';
+        return `
+          <li data-oficina-id="${oficina.id}" data-name="${escapeHtml(oficina.name)}" style="padding: 10px 14px; font-size: 0.88rem; font-weight: 600; color: ${isSel ? '#16a34a' : '#0f172a'}; cursor: pointer; border-bottom: 1px solid #f8fafc; background: ${isSel ? '#f0fdf4' : 'transparent'};">
+            <div>${escapeHtml(oficina.name)}</div>
+            ${respText}
+          </li>
+        `;
+      }).join('');
+    }
+  }
+
+  function openDropdown() {
+    renderDropdown(inputEl.value);
+    listEl.style.display = 'block';
+  }
+
+  function closeDropdown() {
+    listEl.style.display = 'none';
+  }
+
+  function selectOficina(oficinaId, oficinaName) {
+    selectEl.value = oficinaId;
+    inputEl.value = oficinaName;
+    if (clearBtn) clearBtn.style.display = 'block';
+    closeDropdown();
+    populateSupervisaoAttendedSelect();
+  }
+
+  if (selectEl.value) {
+    const cur = oficinas.find(o => o.id === selectEl.value);
+    if (cur) {
+      inputEl.value = cur.name;
+      if (clearBtn) clearBtn.style.display = 'block';
+    }
+  }
+
+  inputEl.addEventListener('focus', () => {
+    openDropdown();
+  });
+
+  inputEl.addEventListener('input', (e) => {
+    const val = e.target.value;
+    if (clearBtn) clearBtn.style.display = val ? 'block' : 'none';
+    renderDropdown(val);
+    listEl.style.display = 'block';
+
+    const matchExact = oficinas.find(o => o.name.toLowerCase() === val.trim().toLowerCase());
+    if (matchExact) {
+      selectEl.value = matchExact.id;
+    } else {
+      selectEl.value = '';
+    }
+    populateSupervisaoAttendedSelect();
+  });
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (listEl.style.display === 'block') {
+        closeDropdown();
+      } else {
+        openDropdown();
+        inputEl.focus();
+      }
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectEl.value = '';
+      inputEl.value = '';
+      clearBtn.style.display = 'none';
+      closeDropdown();
+      populateSupervisaoAttendedSelect();
+    });
+  }
+
+  listEl.addEventListener('click', (e) => {
+    const li = e.target.closest('li[data-oficina-id]');
+    if (!li) return;
+    selectOficina(li.dataset.oficinaId, li.dataset.name);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!inputEl.contains(e.target) && !listEl.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
+      closeDropdown();
+    }
+  });
+}
+window.setupSupervisaoFormOficinaCombobox = setupSupervisaoFormOficinaCombobox;
+
 function populateSupervisaoOficinaSelect() {
   if (!supervisaoOficinaSelect) return;
   const currentVal = supervisaoOficinaSelect.value;
@@ -3276,6 +3397,13 @@ function populateSupervisaoOficinaSelect() {
   supervisaoOficinaSelect.innerHTML = `<option value="" disabled selected>${oficinas.length ? 'Selecione a oficina...' : 'Nenhuma oficina cadastrada'}</option>` + options;
   if (currentVal && oficinas.some(o => o.id === currentVal)) {
     supervisaoOficinaSelect.value = currentVal;
+  }
+  const supInputEl = document.getElementById('supervisaoFormOficinaComboboxInput');
+  const supClearBtn = document.getElementById('supervisaoFormOficinaComboboxClearBtn');
+  if (supInputEl) {
+    const cur = oficinas.find(o => o.id === supervisaoOficinaSelect.value);
+    supInputEl.value = cur ? cur.name : '';
+    if (supClearBtn) supClearBtn.style.display = cur ? 'block' : 'none';
   }
   populateSupervisaoAttendedSelect();
 }
@@ -3595,6 +3723,10 @@ function saveSupervisao(event) {
 
   saveSupervisoes();
   supervisaoForm.reset();
+  const supOficinaInput = document.getElementById('supervisaoFormOficinaComboboxInput');
+  const supOficinaClearBtn = document.getElementById('supervisaoFormOficinaComboboxClearBtn');
+  if (supOficinaInput) supOficinaInput.value = '';
+  if (supOficinaClearBtn) supOficinaClearBtn.style.display = 'none';
   if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = 'Não';
   if (supervisaoPartsPendingButtons) {
     supervisaoPartsPendingButtons.querySelectorAll('.type-btn').forEach((b) => {
@@ -3614,6 +3746,11 @@ function saveSupervisao(event) {
 function cancelSupervisaoEdit() {
   editingSupervisaoId = null;
   supervisaoForm.reset();
+  const supOficinaInput = document.getElementById('supervisaoFormOficinaComboboxInput');
+  const supOficinaClearBtn = document.getElementById('supervisaoFormOficinaComboboxClearBtn');
+  if (supOficinaInput) supOficinaInput.value = '';
+  if (supOficinaClearBtn) supOficinaClearBtn.style.display = 'none';
+  populateSupervisaoAttendedSelect();
   if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = 'Não';
   if (supervisaoPartsPendingButtons) {
     supervisaoPartsPendingButtons.querySelectorAll('.type-btn').forEach((b) => {
@@ -3796,6 +3933,11 @@ function handleSupervisaoAction(action, id) {
   editingSupervisaoId = s.id;
   supervisaoVehicleInput.value = s.vehicle || '';
   if (supervisaoOficinaSelect) supervisaoOficinaSelect.value = s.oficinaId || '';
+  const supOficinaInput = document.getElementById('supervisaoFormOficinaComboboxInput');
+  const supOficinaClearBtn = document.getElementById('supervisaoFormOficinaComboboxClearBtn');
+  const curOficina = oficinas.find(o => o.id === s.oficinaId);
+  if (supOficinaInput) supOficinaInput.value = curOficina ? curOficina.name : (s.oficinaName || '');
+  if (supOficinaClearBtn) supOficinaClearBtn.style.display = (s.oficinaId || s.oficinaName) ? 'block' : 'none';
   populateSupervisaoAttendedSelect(s.attended || '');
   if (supervisaoAttendedInput) supervisaoAttendedInput.value = s.attended || '';
   if (supervisaoStageInput) supervisaoStageInput.value = s.stage || '';

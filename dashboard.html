@@ -14,7 +14,7 @@
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=193" />
+    <link rel="stylesheet" href="styles.css?v=194" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -262,16 +262,27 @@
               </button>
             </div>
           </label>
-          <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
+          <div style="width: 100%; max-width: 100%; box-sizing: border-box; position: relative;">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
-              <span>Oficina</span>
+              <span style="font-size: 0.9rem; font-weight: 600; color: #374151;">🏢 Oficina</span>
               <a href="#" id="supervisaoQuickAddOficina" style="color: #2563eb; font-size: 0.8rem; font-weight: 700; text-decoration: none;">+ Cadastrar Nova</a>
             </div>
-            <select id="supervisaoOficinaSelect" name="oficinaId" required>
+            
+            <!-- Select nativo em segundo plano para manter integridade de submit e required -->
+            <select id="supervisaoOficinaSelect" name="oficinaId" required style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; bottom: 0; left: 0;">
               <option value="" disabled selected>Selecione a oficina...</option>
               <!-- Dynamically populated -->
             </select>
-          </label>
+
+            <div class="oficina-combobox-wrapper" style="position: relative; width: 100%;">
+              <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                <input id="supervisaoFormOficinaComboboxInput" type="text" placeholder="🔍 Digite para buscar ou clique para selecionar..." autocomplete="off" style="width: 100% !important; box-sizing: border-box; padding: 11px 40px 11px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.90rem; font-weight: 600; outline: none; background: #ffffff; color: #0f172a; cursor: pointer;" />
+                <button id="supervisaoFormOficinaComboboxClearBtn" type="button" style="display: none; position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1rem; color: #94a3b8; cursor: pointer; padding: 4px; line-height: 1;">✕</button>
+                <button id="supervisaoFormOficinaComboboxToggleBtn" type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 0.8rem; color: #64748b; cursor: pointer; padding: 4px; line-height: 1;">▼</button>
+              </div>
+              <ul id="supervisaoFormOficinaComboboxList" class="oficina-combobox-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; max-height: 220px; overflow-y: auto; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); z-index: 70; padding: 4px 0; margin: 0; list-style: none;"></ul>
+            </div>
+          </div>
           <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
               <span>Atendido por :</span>
@@ -859,6 +870,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=193"></script>
+    <script src="app.js?v=194"></script>
   </body>
 </html>

@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.80';
+const CURRENT_APP_VERSION = 'v1.94';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -34,18 +34,22 @@ async function checkForSystemUpdates(showFeedback = false) {
 
   let activeVersion = CURRENT_APP_VERSION;
   if (versionEl) versionEl.textContent = activeVersion;
+  if (serverJsonEl && serverJsonEl.textContent === '...') serverJsonEl.textContent = 'Verificando...';
 
   try {
     const timestamp = Date.now();
     const endpoints = [
-      'version.json?t=' + timestamp,
+      'https://gestao-vistoria-inicial.vercel.app/version.json?t=' + timestamp,
       '/version.json?t=' + timestamp,
-      'https://gestao-vistoria-inicial.vercel.app/version.json?t=' + timestamp
+      'version.json?t=' + timestamp
     ];
     let data = null;
     for (const url of endpoints) {
       try {
-        const res = await fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' }, signal: controller.signal });
+        clearTimeout(timeoutId);
         if (res.ok) {
           data = await res.json();
           if (data && data.version) break;
@@ -195,7 +199,7 @@ const reportPreviewTitle = document.getElementById('reportPreviewTitle');
 const reportPreviewBadge = document.getElementById('reportPreviewBadge');
 const reportPreviewMeta = document.getElementById('reportPreviewMeta');
 const reportPreviewContent = document.getElementById('reportPreviewContent');
-const copyReportPreviewBtn = document.getElementById('copyReportPreviewBtn');
+const partsReportPreviewBtn = document.getElementById('partsReportPreviewBtn');
 const whatsappReportPreviewBtn = document.getElementById('whatsappReportPreviewBtn');
 const photosReportPreviewBtn = document.getElementById('photosReportPreviewBtn');
 let currentReportModalId = null;
@@ -338,9 +342,12 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-action="edit" data-id="${entry.id}">Editar</button>
             <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
-          <div class="btn-row" style="margin-top: 4px;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Compartilhar Vistoria (Texto + Mídias)
+          <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Enviar Vistoria
+            </button>
+            <button class="action-btn" type="button" data-action="parts" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+              🚗 Partes do Veículo
             </button>
           </div>
         </div>
@@ -462,6 +469,8 @@ function attachGlobalEventListeners() {
       openQuickAddOficinaModal('supervisao');
     });
   }
+
+  setupSupervisaoFormOficinaCombobox();
 
   const supervisaoQuickAddStage = document.getElementById('supervisaoQuickAddStage');
   if (supervisaoQuickAddStage) {
@@ -954,36 +963,6 @@ setupOficinaCombobox({
   onSelectionChange: () => render()
 });
 
-// Report Preview Modal Handlers
-if (copyReportPreviewBtn) {
-  copyReportPreviewBtn.addEventListener('click', () => {
-    if (!currentReportModalId) return;
-    const contentEl = document.getElementById('reportPreviewContent');
-    if (contentEl && contentEl.value) {
-      copyTextToClipboard(contentEl.value);
-      alert('📋 Relatório copiado para a área de transferência!');
-    }
-  });
-}
-
-if (whatsappReportPreviewBtn) {
-  whatsappReportPreviewBtn.addEventListener('click', () => {
-    if (!currentReportModalId) return;
-    const targetId = currentReportModalId;
-    closeReportPreviewModal();
-    shareVistoriaWhatsAppSequence(targetId);
-  });
-}
-
-if (photosReportPreviewBtn) {
-  photosReportPreviewBtn.addEventListener('click', () => {
-    if (!currentReportModalId) return;
-    const targetId = currentReportModalId;
-    closeReportPreviewModal();
-    openPhotoManagerForId(targetId);
-  });
-}
-
 if (shareSupervisaoTextButton) {
   shareSupervisaoTextButton.addEventListener('click', () => {
     const filtered = getFilteredSupervisoes();
@@ -1053,6 +1032,38 @@ function closeReportPreviewModal() {
     modalEl.style.display = 'none';
   }
   currentReportModalId = null;
+}
+
+// Listeners dos botões de ação do modal de relatório do veículo
+if (partsReportPreviewBtn) {
+  partsReportPreviewBtn.addEventListener('click', () => {
+    if (!currentReportModalId) return;
+    const targetId = currentReportModalId;
+    closeReportPreviewModal();
+    if (typeof window.openVehiclePartsForVistoriaId === 'function') {
+      window.openVehiclePartsForVistoriaId(targetId);
+    } else if (typeof window.openVehiclePartsModalForId === 'function') {
+      window.openVehiclePartsModalForId(targetId);
+    }
+  });
+}
+
+if (whatsappReportPreviewBtn) {
+  whatsappReportPreviewBtn.addEventListener('click', () => {
+    if (!currentReportModalId) return;
+    if (typeof shareVistoriaWhatsAppSequence === 'function') {
+      shareVistoriaWhatsAppSequence(currentReportModalId);
+    }
+  });
+}
+
+if (photosReportPreviewBtn) {
+  photosReportPreviewBtn.addEventListener('click', () => {
+    if (!currentReportModalId) return;
+    if (typeof openPhotoManagerForId === 'function') {
+      openPhotoManagerForId(currentReportModalId);
+    }
+  });
 }
 
 function formatPlateInput() {
@@ -1345,8 +1356,10 @@ function saveItem(event) {
   }
 
   if (editingId) {
+    const existing = items.find((i) => i.id === editingId);
+    const mergedDetails = { ...(existing?.details || {}), ...details };
     items = items.map((item) => item.id === editingId ? { 
-      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details,
+      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details: mergedDetails,
       updatedAt: new Date().toLocaleString('pt-BR'),
       updatedAtTime: Date.now()
     } : item);
@@ -1940,9 +1953,12 @@ function render() {
             <button class="action-btn" type="button" data-action="edit" data-id="${item.id}">Editar</button>
             <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
           </div>
-          <div class="btn-row" style="margin-top: 4px;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Compartilhar Vistoria (Texto + Mídias)
+          <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Enviar Vistoria
+            </button>
+            <button class="action-btn" type="button" data-action="parts" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+              🚗 Partes do Veículo
             </button>
           </div>
         </div>
@@ -2233,6 +2249,10 @@ function handleAction(action, id) {
   }
   if (action === 'photos') {
     openPhotoManagerForId(id);
+    return;
+  }
+  if (action === 'parts') {
+    openVehiclePartsForVistoriaId(id);
     return;
   }
   if (action === 'share-whatsapp-sequence' || action === 'share-whatsapp-all' || action === 'share-whatsapp' || action === 'share-vistoria' || action === 'share-text' || action === 'share-report-text') {
@@ -2830,31 +2850,7 @@ function renderDynamicSurveyFields() {
     </label>
   `;
 
-  const trocasReparosHtml = `
-    <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-top: 6px; padding: 12px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-        <div>
-          <span style="font-size: 0.90rem; font-weight: 800; color: #0f172a; display: block;">🚗 Partes do Veículo (Trocas & Reparos)</span>
-          <span style="font-size: 0.74rem; color: #64748b;">Selecione peças por zonas com 1 toque ou digite abaixo:</span>
-        </div>
-        <button type="button" class="btn-open-parts-selector" onclick="openVehiclePartsModal()" style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.82rem; cursor: pointer; box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
-          <span>🚗 Selecionar Partes (Zonas)</span>
-        </button>
-      </div>
-
-      <label style="margin: 0;">
-        <span style="font-size: 0.82rem; font-weight: 700; color: #dc2626;">🔁 Trocas (uma peça por linha)</span>
-        <textarea name="trocas" id="surveyTrocasTextarea" rows="3" placeholder="Ex:&#10;Capô do motor (dobrado)&#10;Farol dianteiro LD" style="width: 100%; box-sizing: border-box; margin-top: 4px;"></textarea>
-      </label>
-
-      <label style="margin: 0;">
-        <span style="font-size: 0.82rem; font-weight: 700; color: #0284c7;">🛠️ Reparos (uma peça por linha)</span>
-        <textarea name="reparos" id="surveyReparosTextarea" rows="3" placeholder="Ex:&#10;Para-choque dianteiro (recuperar ponta e pintar)&#10;Porta dianteira LE (desamassar vinco)" style="width: 100%; box-sizing: border-box; margin-top: 4px;"></textarea>
-      </label>
-    </div>
-  `;
-
-  const extraFieldsHtml = obsHtml + trocasReparosHtml;
+  const extraFieldsHtml = obsHtml;
 
   if (selectedType === 'Inicial') {
     fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
@@ -3000,7 +2996,7 @@ function renderDynamicSurveyFields() {
         <textarea name="reclamacao" rows="4" placeholder="Digite a reclamação..."></textarea>
       </label>
     `;
-    fieldsHtml = reclamacaoHtml + trocasReparosHtml;
+    fieldsHtml = reclamacaoHtml + obsHtml;
   }
 
   dynamicFieldsContainer.innerHTML = officeDropdownHtml + fieldsHtml;
@@ -3149,6 +3145,11 @@ function handleQuickAddOficinaSubmit(e) {
     if (supervisaoOficinaSelect) {
       supervisaoOficinaSelect.value = newOficina.id;
     }
+    const supInputEl = document.getElementById('supervisaoFormOficinaComboboxInput');
+    const supClearBtn = document.getElementById('supervisaoFormOficinaComboboxClearBtn');
+    if (supInputEl) supInputEl.value = newOficina.name;
+    if (supClearBtn) supClearBtn.style.display = 'block';
+    populateSupervisaoAttendedSelect();
     if (supervisaoAttendedInput && resp) {
       supervisaoAttendedInput.value = resp;
     }
@@ -3275,6 +3276,120 @@ function setupItemFormOficinaCombobox() {
 }
 window.setupItemFormOficinaCombobox = setupItemFormOficinaCombobox;
 
+function setupSupervisaoFormOficinaCombobox() {
+  const inputEl = document.getElementById('supervisaoFormOficinaComboboxInput');
+  const clearBtn = document.getElementById('supervisaoFormOficinaComboboxClearBtn');
+  const toggleBtn = document.getElementById('supervisaoFormOficinaComboboxToggleBtn');
+  const listEl = document.getElementById('supervisaoFormOficinaComboboxList');
+  const selectEl = document.getElementById('supervisaoOficinaSelect');
+
+  if (!inputEl || !listEl || !selectEl) return;
+
+  function renderDropdown(filterText = '') {
+    const q = filterText.trim().toLowerCase();
+    const matchingOficinas = q
+      ? oficinas.filter(o => o.name.toLowerCase().includes(q) || (o.responsaveis && o.responsaveis.some(r => r.toLowerCase().includes(q))))
+      : oficinas;
+
+    if (matchingOficinas.length === 0) {
+      listEl.innerHTML = `<li style="padding: 12px 14px; font-size: 0.85rem; color: #94a3b8; text-align: center;">Nenhuma oficina encontrada</li>`;
+    } else {
+      listEl.innerHTML = matchingOficinas.map(oficina => {
+        const isSel = selectEl.value === oficina.id;
+        const respText = (oficina.responsaveis && oficina.responsaveis.length)
+          ? `<div style="font-size: 0.74rem; color: #64748b; margin-top: 2px;">👤 Resp: ${escapeHtml(oficina.responsaveis.join(', '))}</div>`
+          : '';
+        return `
+          <li data-oficina-id="${oficina.id}" data-name="${escapeHtml(oficina.name)}" style="padding: 10px 14px; font-size: 0.88rem; font-weight: 600; color: ${isSel ? '#16a34a' : '#0f172a'}; cursor: pointer; border-bottom: 1px solid #f8fafc; background: ${isSel ? '#f0fdf4' : 'transparent'};">
+            <div>${escapeHtml(oficina.name)}</div>
+            ${respText}
+          </li>
+        `;
+      }).join('');
+    }
+  }
+
+  function openDropdown() {
+    renderDropdown(inputEl.value);
+    listEl.style.display = 'block';
+  }
+
+  function closeDropdown() {
+    listEl.style.display = 'none';
+  }
+
+  function selectOficina(oficinaId, oficinaName) {
+    selectEl.value = oficinaId;
+    inputEl.value = oficinaName;
+    if (clearBtn) clearBtn.style.display = 'block';
+    closeDropdown();
+    populateSupervisaoAttendedSelect();
+  }
+
+  if (selectEl.value) {
+    const cur = oficinas.find(o => o.id === selectEl.value);
+    if (cur) {
+      inputEl.value = cur.name;
+      if (clearBtn) clearBtn.style.display = 'block';
+    }
+  }
+
+  inputEl.addEventListener('focus', () => {
+    openDropdown();
+  });
+
+  inputEl.addEventListener('input', (e) => {
+    const val = e.target.value;
+    if (clearBtn) clearBtn.style.display = val ? 'block' : 'none';
+    renderDropdown(val);
+    listEl.style.display = 'block';
+
+    const matchExact = oficinas.find(o => o.name.toLowerCase() === val.trim().toLowerCase());
+    if (matchExact) {
+      selectEl.value = matchExact.id;
+    } else {
+      selectEl.value = '';
+    }
+    populateSupervisaoAttendedSelect();
+  });
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (listEl.style.display === 'block') {
+        closeDropdown();
+      } else {
+        openDropdown();
+        inputEl.focus();
+      }
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectEl.value = '';
+      inputEl.value = '';
+      clearBtn.style.display = 'none';
+      closeDropdown();
+      populateSupervisaoAttendedSelect();
+    });
+  }
+
+  listEl.addEventListener('click', (e) => {
+    const li = e.target.closest('li[data-oficina-id]');
+    if (!li) return;
+    selectOficina(li.dataset.oficinaId, li.dataset.name);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!inputEl.contains(e.target) && !listEl.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
+      closeDropdown();
+    }
+  });
+}
+window.setupSupervisaoFormOficinaCombobox = setupSupervisaoFormOficinaCombobox;
+
 function populateSupervisaoOficinaSelect() {
   if (!supervisaoOficinaSelect) return;
   const currentVal = supervisaoOficinaSelect.value;
@@ -3282,6 +3397,13 @@ function populateSupervisaoOficinaSelect() {
   supervisaoOficinaSelect.innerHTML = `<option value="" disabled selected>${oficinas.length ? 'Selecione a oficina...' : 'Nenhuma oficina cadastrada'}</option>` + options;
   if (currentVal && oficinas.some(o => o.id === currentVal)) {
     supervisaoOficinaSelect.value = currentVal;
+  }
+  const supInputEl = document.getElementById('supervisaoFormOficinaComboboxInput');
+  const supClearBtn = document.getElementById('supervisaoFormOficinaComboboxClearBtn');
+  if (supInputEl) {
+    const cur = oficinas.find(o => o.id === supervisaoOficinaSelect.value);
+    supInputEl.value = cur ? cur.name : '';
+    if (supClearBtn) supClearBtn.style.display = cur ? 'block' : 'none';
   }
   populateSupervisaoAttendedSelect();
 }
@@ -3601,6 +3723,10 @@ function saveSupervisao(event) {
 
   saveSupervisoes();
   supervisaoForm.reset();
+  const supOficinaInput = document.getElementById('supervisaoFormOficinaComboboxInput');
+  const supOficinaClearBtn = document.getElementById('supervisaoFormOficinaComboboxClearBtn');
+  if (supOficinaInput) supOficinaInput.value = '';
+  if (supOficinaClearBtn) supOficinaClearBtn.style.display = 'none';
   if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = 'Não';
   if (supervisaoPartsPendingButtons) {
     supervisaoPartsPendingButtons.querySelectorAll('.type-btn').forEach((b) => {
@@ -3620,6 +3746,11 @@ function saveSupervisao(event) {
 function cancelSupervisaoEdit() {
   editingSupervisaoId = null;
   supervisaoForm.reset();
+  const supOficinaInput = document.getElementById('supervisaoFormOficinaComboboxInput');
+  const supOficinaClearBtn = document.getElementById('supervisaoFormOficinaComboboxClearBtn');
+  if (supOficinaInput) supOficinaInput.value = '';
+  if (supOficinaClearBtn) supOficinaClearBtn.style.display = 'none';
+  populateSupervisaoAttendedSelect();
   if (supervisaoPartsPendingInput) supervisaoPartsPendingInput.value = 'Não';
   if (supervisaoPartsPendingButtons) {
     supervisaoPartsPendingButtons.querySelectorAll('.type-btn').forEach((b) => {
@@ -3802,6 +3933,11 @@ function handleSupervisaoAction(action, id) {
   editingSupervisaoId = s.id;
   supervisaoVehicleInput.value = s.vehicle || '';
   if (supervisaoOficinaSelect) supervisaoOficinaSelect.value = s.oficinaId || '';
+  const supOficinaInput = document.getElementById('supervisaoFormOficinaComboboxInput');
+  const supOficinaClearBtn = document.getElementById('supervisaoFormOficinaComboboxClearBtn');
+  const curOficina = oficinas.find(o => o.id === s.oficinaId);
+  if (supOficinaInput) supOficinaInput.value = curOficina ? curOficina.name : (s.oficinaName || '');
+  if (supOficinaClearBtn) supOficinaClearBtn.style.display = (s.oficinaId || s.oficinaName) ? 'block' : 'none';
   populateSupervisaoAttendedSelect(s.attended || '');
   if (supervisaoAttendedInput) supervisaoAttendedInput.value = s.attended || '';
   if (supervisaoStageInput) supervisaoStageInput.value = s.stage || '';
@@ -6338,7 +6474,7 @@ function vpIsPartDeleted(rawName, effectiveName) {
   });
 }
 
-window.vpSetVehicleType = function(type, forceRender = true) {
+window.vpSetVehicleType = function(type, forceRender = true, keepAllZonesMode = false) {
   vpDetectedVehicleType = type;
 
   const btnCarro = document.getElementById('vpTypeBtn_carro');
@@ -6379,7 +6515,9 @@ window.vpSetVehicleType = function(type, forceRender = true) {
     if (typeBadge) typeBadge.textContent = '🚗 Automóvel / SUV';
   }
 
-  vpViewAllZonesMode = false;
+  if (!keepAllZonesMode) {
+    vpViewAllZonesMode = false;
+  }
 
   if (forceRender) {
     vpUpdateTriggerButton();
@@ -6476,7 +6614,110 @@ function vpDetectVehicleTypeFromText(rawText) {
 }
 window.vpDetectVehicleTypeFromText = vpDetectVehicleTypeFromText;
 
+let currentVistoriaIdForParts = null;
+let vpOpenObsPartNames = new Set();
+let vpActiveSideSection = 'LE'; // 'LE' | 'LD' | 'CENTRAL'
+
+window.vpSelectSideSection = function(sectionKey) {
+  vpActiveSideSection = sectionKey;
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+};
+
+function vpClassifyPartSide(item) {
+  const nameUpper = (item.name || item.rawName || '').toUpperCase();
+  const zoneId = (item.zoneId || '').toLowerCase();
+
+  const isLE = zoneId.includes('le') || 
+               /\bLE\b/.test(nameUpper) || 
+               nameUpper.includes('(LE)') || 
+               nameUpper.includes(' ESQUERD') ||
+               nameUpper.startsWith('ESQUERD') ||
+               nameUpper.includes('ESQ');
+
+  const isLD = zoneId.includes('ld') || 
+               /\bLD\b/.test(nameUpper) || 
+               nameUpper.includes('(LD)') || 
+               nameUpper.includes(' DIREIT') ||
+               nameUpper.startsWith('DIREIT') ||
+               nameUpper.includes('DIR');
+
+  if (isLE && !isLD) return 'LE';
+  if (isLD && !isLE) return 'LD';
+  return 'CENTRAL';
+}
+
+window.openVehiclePartsForVistoriaId = function(id) {
+  const item = items.find(entry => entry.id === id);
+  if (!item) return;
+
+  currentVistoriaIdForParts = id;
+  vpViewAllZonesMode = true;
+  vpActiveSideSection = 'LE';
+  vpOpenObsPartNames.clear();
+  vpLoadState();
+  if (typeof window.vpSyncCatalogWithCloud === 'function') {
+    window.vpSyncCatalogWithCloud(false);
+  }
+
+  const vehicleTitle = item.plate ? item.plate.trim() : '';
+  vpCurrentVehicleModelName = vehicleTitle;
+
+  const titleDisplay = document.getElementById('vpVehicleTitle');
+  const detectedType = item.type === 'Moto' ? 'moto' : vpDetectVehicleTypeFromText(vehicleTitle);
+  window.vpSetVehicleType(detectedType, false, true);
+  vpViewAllZonesMode = true;
+
+  if (titleDisplay) {
+    titleDisplay.textContent = vehicleTitle || 'Partes do Veículo';
+  }
+
+  vpSelectedPartsMap.clear();
+
+  const trocasStr = (item.details && item.details.trocas) || item.trocas || '';
+  const reparosStr = (item.details && item.details.reparos) || item.reparos || '';
+
+  const parseLines = (text, action) => {
+    if (!text || typeof text !== 'string') return;
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    lines.forEach(line => {
+      let name = line;
+      let obs = '';
+      const match = line.match(/^(.*?)\s*\((.*?)\)$/);
+      if (match) {
+        name = match[1].trim();
+        obs = match[2].trim();
+      }
+      if (name) {
+        vpSelectedPartsMap.set(name, {
+          name: name,
+          rawName: name,
+          zoneId: vpActiveZoneId,
+          zoneName: 'Veículo',
+          action: action,
+          obs: obs
+        });
+      }
+    });
+  };
+
+  parseLines(trocasStr, 'troca');
+  parseLines(reparosStr, 'reparo');
+
+  vpSetupSearch();
+  vpUpdateTriggerButton();
+  vpRenderParts();
+  vpUpdateDockAndSheet();
+
+  const modal = document.getElementById('vehiclePartsModal');
+  if (modal) modal.style.display = 'flex';
+};
+window.openVehiclePartsModalForId = window.openVehiclePartsForVistoriaId;
+
 window.openVehiclePartsModal = function() {
+  currentVistoriaIdForParts = null;
+  vpViewAllZonesMode = true;
+  vpActiveSideSection = 'LE';
+  vpOpenObsPartNames.clear();
   vpLoadState();
   if (typeof window.vpSyncCatalogWithCloud === 'function') {
     window.vpSyncCatalogWithCloud(false);
@@ -6492,7 +6733,8 @@ window.openVehiclePartsModal = function() {
   const detectedType = vpDetectVehicleTypeFromText(vehicleTitle);
 
   // Aplica o tipo detectado e atualiza as abas
-  window.vpSetVehicleType(detectedType, false);
+  window.vpSetVehicleType(detectedType, false, true);
+  vpViewAllZonesMode = true;
 
   if (titleDisplay) {
     titleDisplay.textContent = vehicleTitle || 'Partes do Veículo';
@@ -6551,6 +6793,7 @@ window.openVehiclePartsModal = function() {
 };
 
 window.closeVehiclePartsModal = function() {
+  currentVistoriaIdForParts = null;
   const modal = document.getElementById('vehiclePartsModal');
   if (modal) modal.style.display = 'none';
 };
@@ -6572,6 +6815,24 @@ window.vpApplyAndClose = function() {
 
   if (vpSelectedPartsMap.size > 0) {
     vpSaveState(true);
+  }
+
+  if (currentVistoriaIdForParts) {
+    const item = items.find(entry => entry.id === currentVistoriaIdForParts);
+    if (item) {
+      if (!item.details) item.details = {};
+      item.details.trocas = trocasList.join('\n');
+      item.details.reparos = reparosList.join('\n');
+      item.updatedAt = new Date().toLocaleString('pt-BR');
+      item.updatedAtTime = Date.now();
+      saveItems();
+      render();
+      if (typeof updateLocalAndServerData === 'function') {
+        updateLocalAndServerData();
+      }
+      alert('✅ Partes do veículo salvas na vistoria!');
+    }
+    currentVistoriaIdForParts = null;
   }
 
   const trocasTextarea = document.querySelector('textarea[name="trocas"]');
@@ -6601,7 +6862,7 @@ function vpUpdateTriggerButton() {
 
   if (vpViewAllZonesMode) {
     if (triggerIcon) triggerIcon.textContent = '📋';
-    if (triggerTitle) triggerTitle.textContent = 'Todas as Zonas do Veículo';
+    if (triggerTitle) triggerTitle.textContent = 'Todas as Zonas (LE, LD e Centrais)';
     if (triggerBadge) {
       triggerBadge.style.display = vpSelectedPartsMap.size > 0 ? 'inline-block' : 'none';
       triggerBadge.textContent = vpSelectedPartsMap.size;
@@ -6684,6 +6945,46 @@ window.vpToggleViewAllZones = function() {
   vpRenderParts();
 };
 
+const VP_DEFAULT_POPULAR_KEYWORDS = [
+  'farol', 'para-choque', 'parachoque', 'para-lama', 'paralama', 'capô', 'capo',
+  'porta dianteira', 'porta traseira', 'porta', 'retrovisor', 'lanterna', 'para-brisa',
+  'parabrisa', 'grade', 'tampa traseira', 'tampa do porta', 'painel frontal', 'alma do para',
+  'radiador', 'amortecedor', 'balança', 'bandeja', 'bieleta', 'terminal', 'caixa de roda',
+  'para-barro', 'parabarro', 'espelho', 'vidro'
+];
+
+function vpGetPartUsageScore(partName, rawName = '') {
+  let score = 0;
+  const lower = ((partName || '') + ' ' + (rawName || '')).toLowerCase();
+  
+  // 1. Pontuação base por relevância/frequência de uso em vistorias automotivas
+  for (let i = 0; i < VP_DEFAULT_POPULAR_KEYWORDS.length; i++) {
+    if (lower.includes(VP_DEFAULT_POPULAR_KEYWORDS[i])) {
+      score += (VP_DEFAULT_POPULAR_KEYWORDS.length - i) * 10;
+      break;
+    }
+  }
+
+  // 2. Pontuação adicional por histórico de uso real salvo no dispositivo
+  try {
+    const stats = JSON.parse(localStorage.getItem('vp_parts_usage_stats') || '{}');
+    if (stats[partName]) {
+      score += stats[partName] * 25;
+    }
+  } catch(e) {}
+
+  return score;
+}
+
+function vpIncrementPartUsage(partName) {
+  if (!partName) return;
+  try {
+    const stats = JSON.parse(localStorage.getItem('vp_parts_usage_stats') || '{}');
+    stats[partName] = (stats[partName] || 0) + 1;
+    localStorage.setItem('vp_parts_usage_stats', JSON.stringify(stats));
+  } catch(e) {}
+}
+
 function vpRenderParts(filterQuery = '') {
   const currentZone = vpActiveZones.find(z => z.id === vpActiveZoneId) || vpActiveZones[0];
   const listEl = document.getElementById('vpPartsScrollContainer');
@@ -6695,14 +6996,19 @@ function vpRenderParts(filterQuery = '') {
 
   const sortPartsByUsage = (partList) => {
     return partList.sort((a, b) => {
+      const isSelA = vpSelectedPartsMap.has(a.name) ? 1 : 0;
+      const isSelB = vpSelectedPartsMap.has(b.name) ? 1 : 0;
+      if (isSelB !== isSelA) return isSelB - isSelA; // 1º: Selecionadas na sessão sempre no topo
+
       const scoreA = vpGetPartUsageScore(a.name, a.rawName);
       const scoreB = vpGetPartUsageScore(b.name, b.rawName);
-      if (scoreB !== scoreA) return scoreB - scoreA;
-      return a.name.localeCompare(b.name, 'pt-BR');
+      if (scoreB !== scoreA) return scoreB - scoreA; // 2º: Peças mais usadas/populares sempre no topo
+
+      return a.name.localeCompare(b.name, 'pt-BR'); // 3º: Ordem alfabética para desempate
     });
   };
 
-  // BUSCA
+  // 1. BUSCA POR TEXTO (MOSTRA RESULTADOS EM LARGURA TOTAL)
   if (filterQuery.trim()) {
     const q = filterQuery.trim().toLowerCase();
     let matching = [];
@@ -6730,7 +7036,7 @@ function vpRenderParts(filterQuery = '') {
 
     if (matching.length === 0) {
       listEl.innerHTML = `
-        <div style="grid-column: 1 / -1; padding: 30px 16px; text-align: center; color: #64748b;">
+        <div style="width: 100%; padding: 30px 16px; text-align: center; color: #64748b;">
           <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">🔍</span>
           <b>Nenhuma peça encontrada para "${vpEscapeHtml(filterQuery)}"</b>
           <p style="font-size: 0.80rem; margin-top: 4px;">Toque no botão "+ Nova Peça" acima para cadastrá-la no catálogo.</p>
@@ -6740,34 +7046,162 @@ function vpRenderParts(filterQuery = '') {
     }
 
     sortPartsByUsage(matching);
-    listEl.innerHTML = matching.map(item => vpRenderPartCardHtml(item)).join('');
+    listEl.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+        <div style="font-size: 0.74rem; font-weight: 700; color: #475569; padding: 2px 4px;">
+          Encontradas ${matching.length} peças para "${vpEscapeHtml(filterQuery)}":
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%;">
+          ${matching.map(item => vpRenderPartCardHtml(item)).join('')}
+        </div>
+      </div>
+    `;
     return;
   }
 
-  // VER TODAS AS ZONAS JUNTAS
+  // 2. VER TODAS AS ZONAS JUNTAS (SELETORES CLICÁVEIS LE, LD E CENTRAIS + CARDS EM LARGURA TOTAL)
   if (vpViewAllZonesMode) {
-    let html = '';
-    vpActiveZones.forEach(z => {
-      const partsInZ = z.parts
-        .map(rawP => ({ rawName: rawP, name: vpGetEffectivePartName(rawP), zoneId: z.id, zoneName: z.name, icon: z.icon }))
-        .filter(p => !vpIsPartDeleted(p.rawName, p.name));
-      const customInZ = vpCustomPartsList
-        .filter(p => p.zoneId === z.id && matchesVehicleType(p))
-        .map(p => ({ rawName: p.name, name: vpGetEffectivePartName(p.name), zoneId: z.id, zoneName: z.name, icon: '✨' }))
-        .filter(p => !vpIsPartDeleted(p.rawName, p.name));
-      const allInZ = [...partsInZ, ...customInZ];
+    let allParts = [];
+    const seenNames = new Set();
 
-      if (allInZ.length > 0) {
-        sortPartsByUsage(allInZ);
-        html += `<div class="vp-zone-group-header">${z.icon} ${vpEscapeHtml(z.name)} (${allInZ.length})</div>`;
-        html += allInZ.map(item => vpRenderPartCardHtml(item)).join('');
+    vpActiveZones.forEach(z => {
+      z.parts.forEach(rawP => {
+        const effective = vpGetEffectivePartName(rawP);
+        if (!vpIsPartDeleted(rawP, effective) && !seenNames.has(effective)) {
+          seenNames.add(effective);
+          allParts.push({ rawName: rawP, name: effective, zoneId: z.id, zoneName: z.name, icon: z.icon });
+        }
+      });
+    });
+
+    vpCustomPartsList.forEach(p => {
+      if (matchesVehicleType(p)) {
+        const effective = vpGetEffectivePartName(p.name);
+        if (!vpIsPartDeleted(p.name, effective) && !seenNames.has(effective)) {
+          seenNames.add(effective);
+          const zObj = vpActiveZones.find(z => z.id === p.zoneId);
+          allParts.push({ rawName: p.name, name: effective, zoneId: p.zoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: '✨' });
+        }
       }
     });
-    listEl.innerHTML = html || '<div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #94a3b8;">Nenhuma peça cadastrada.</div>';
+
+    const leParts = allParts.filter(p => vpClassifyPartSide(p) === 'LE');
+    const ldParts = allParts.filter(p => vpClassifyPartSide(p) === 'LD');
+    const centralParts = allParts.filter(p => vpClassifyPartSide(p) === 'CENTRAL');
+
+    sortPartsByUsage(leParts);
+    sortPartsByUsage(ldParts);
+    sortPartsByUsage(centralParts);
+
+    // Contadores de selecionados por lado
+    const leSelectedCount = leParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
+    const ldSelectedCount = ldParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
+    const centralSelectedCount = centralParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
+
+    let activeList = leParts;
+    let activeTitle = 'Lado Esquerdo';
+    let activeIcon = '⬅️';
+    let activeColor = '#2563eb';
+    let activeBg = '#eff6ff';
+
+    if (vpActiveSideSection === 'LD') {
+      activeList = ldParts;
+      activeTitle = 'Lado Direito';
+      activeIcon = '➡️';
+      activeColor = '#16a34a';
+      activeBg = '#f0fdf4';
+    } else if (vpActiveSideSection === 'CENTRAL') {
+      activeList = centralParts;
+      activeTitle = 'Peças Centrais e Gerais';
+      activeIcon = '🚙';
+      activeColor = '#9333ea';
+      activeBg = '#fdf4ff';
+    }
+
+    const selectedInActive = activeList.filter(p => vpSelectedPartsMap.has(p.name));
+    const unselectedInActive = activeList.filter(p => !vpSelectedPartsMap.has(p.name));
+
+    listEl.innerHTML = `
+      <div class="vp-sides-section-wrapper" style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
+        <!-- OS 3 BOTÕES DOS LADOS LADO A LADO EM LINHA ÚNICA (SEM QUEBRA) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; width: 100%; box-sizing: border-box;">
+          <!-- BOTÃO ESQUERDO -->
+          <button 
+            type="button" 
+            onclick="vpSelectSideSection('LE')"
+            title="Lado Esquerdo"
+            style="display: flex; align-items: center; justify-content: center; gap: 3px; height: 36px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'LE' ? '#2563eb' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LE' ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; white-space: nowrap; box-shadow: ${vpActiveSideSection === 'LE' ? '0 2px 6px rgba(37,99,235,0.18)' : 'none'};"
+          >
+            <span style="font-size: 0.76rem;">⬅️</span>
+            <span style="font-size: 0.74rem; font-weight: 800; color: ${vpActiveSideSection === 'LE' ? '#1e3a8a' : '#475569'};">Esq.</span>
+            <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'LE' ? '#2563eb' : '#64748b'}; background: ${vpActiveSideSection === 'LE' ? '#dbeafe' : '#f1f5f9'}; padding: 1px 4px; border-radius: 999px;">${leParts.length}</span>
+            ${leSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 4px; border-radius: 999px;">🔴${leSelectedCount}</span>` : ''}
+          </button>
+
+          <!-- BOTÃO DIREITO -->
+          <button 
+            type="button" 
+            onclick="vpSelectSideSection('LD')"
+            title="Lado Direito"
+            style="display: flex; align-items: center; justify-content: center; gap: 3px; height: 36px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'LD' ? '#16a34a' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LD' ? '#f0fdf4' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; white-space: nowrap; box-shadow: ${vpActiveSideSection === 'LD' ? '0 2px 6px rgba(22,163,74,0.18)' : 'none'};"
+          >
+            <span style="font-size: 0.76rem;">➡️</span>
+            <span style="font-size: 0.74rem; font-weight: 800; color: ${vpActiveSideSection === 'LD' ? '#166534' : '#475569'};">Dir.</span>
+            <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'LD' ? '#16a34a' : '#64748b'}; background: ${vpActiveSideSection === 'LD' ? '#dcfce7' : '#f1f5f9'}; padding: 1px 4px; border-radius: 999px;">${ldParts.length}</span>
+            ${ldSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 4px; border-radius: 999px;">🔴${ldSelectedCount}</span>` : ''}
+          </button>
+
+          <!-- BOTÃO CENTRAIS -->
+          <button 
+            type="button" 
+            onclick="vpSelectSideSection('CENTRAL')"
+            title="Peças Centrais e Gerais"
+            style="display: flex; align-items: center; justify-content: center; gap: 3px; height: 36px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#cbd5e1'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fdf4ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; white-space: nowrap; box-shadow: ${vpActiveSideSection === 'CENTRAL' ? '0 2px 6px rgba(147,51,234,0.18)' : 'none'};"
+          >
+            <span style="font-size: 0.76rem;">🚙</span>
+            <span style="font-size: 0.74rem; font-weight: 800; color: ${vpActiveSideSection === 'CENTRAL' ? '#6b21a8' : '#475569'};">Cent.</span>
+            <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#64748b'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fae8ff' : '#f1f5f9'}; padding: 1px 4px; border-radius: 999px;">${centralParts.length}</span>
+            ${centralSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 4px; border-radius: 999px;">🔴${centralSelectedCount}</span>` : ''}
+          </button>
+        </div>
+
+        <!-- CABEÇALHO DO LADO ATIVO -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; background: ${activeBg}; border-radius: 8px; border-left: 4px solid ${activeColor};">
+          <div style="display: flex; align-items: center; gap: 5px;">
+            <span style="font-size: 0.95rem;">${activeIcon}</span>
+            <strong style="font-size: 0.80rem; color: #0f172a;">${activeTitle}</strong>
+          </div>
+          <span style="font-size: 0.68rem; font-weight: 800; color: ${activeColor}; background: #ffffff; padding: 2px 6px; border-radius: 999px; border: 1px solid #cbd5e1;">
+            ${activeList.length} peças
+          </span>
+        </div>
+
+        <!-- SEÇÃO SUSPENSA NO TOPO: PEÇAS SELECIONADAS (2 COLUNAS) -->
+        ${selectedInActive.length > 0 ? `
+          <div style="display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 6px; background: #fef2f2; border: 1.5px dashed #f87171; border-radius: 8px; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px;">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="font-size: 0.90rem;">📌</span>
+                <strong style="font-size: 0.76rem; color: #991b1b;">Selecionadas (${selectedInActive.length})</strong>
+              </div>
+              <span style="font-size: 0.62rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 1px 5px; border-radius: 999px;">Fixadas</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
+              ${selectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- RESTANTE DO CATÁLOGO DE PEÇAS (2 COLUNAS) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
+          ${unselectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
+        </div>
+      </div>
+    `;
     return;
   }
 
-  // ZONA ATUAL
+  // 3. ZONA ESPECÍFICA ATUAL
   const partsInCurrent = currentZone.parts
     .map(rawP => ({ rawName: rawP, name: vpGetEffectivePartName(rawP), zoneId: currentZone.id, zoneName: currentZone.name, icon: currentZone.icon }))
     .filter(p => !vpIsPartDeleted(p.rawName, p.name));
@@ -6779,7 +7213,7 @@ function vpRenderParts(filterQuery = '') {
 
   if (totalZoneParts.length === 0) {
     listEl.innerHTML = `
-      <div style="grid-column: 1 / -1; padding: 30px 16px; text-align: center; color: #64748b;">
+      <div style="width: 100%; padding: 30px 16px; text-align: center; color: #64748b;">
         <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">📂</span>
         <b>Nenhuma peça ativa nesta zona</b>
         <p style="font-size: 0.80rem; margin-top: 4px;">Toque no botão "+ Nova Peça" acima para cadastrar.</p>
@@ -6789,65 +7223,97 @@ function vpRenderParts(filterQuery = '') {
   }
 
   sortPartsByUsage(totalZoneParts);
-  listEl.innerHTML = totalZoneParts.map(item => vpRenderPartCardHtml(item)).join('');
+  const selectedInZone = totalZoneParts.filter(p => vpSelectedPartsMap.has(p.name));
+  const unselectedInZone = totalZoneParts.filter(p => !vpSelectedPartsMap.has(p.name));
+
+  listEl.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 5px; width: 100%; box-sizing: border-box;">
+      ${selectedInZone.length > 0 ? `
+        <div style="display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 6px; background: #fef2f2; border: 1.5px dashed #f87171; border-radius: 8px; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 0.90rem;">📌</span>
+              <strong style="font-size: 0.76rem; color: #991b1b;">Selecionadas (${selectedInZone.length})</strong>
+            </div>
+            <span style="font-size: 0.62rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 1px 5px; border-radius: 999px;">Fixadas</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
+            ${selectedInZone.map(item => vpRenderPartCardHtml(item)).join('')}
+          </div>
+        </div>
+      ` : ''}
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
+        ${unselectedInZone.map(item => vpRenderPartCardHtml(item)).join('')}
+      </div>
+    </div>
+  `;
 }
 
 function vpRenderPartCardHtml(item) {
   const selected = vpSelectedPartsMap.get(item.name);
   const isTroca = selected && selected.action === 'troca';
   const isReparo = selected && selected.action === 'reparo';
+  const hasObs = selected && selected.obs && selected.obs.trim().length > 0;
+  const isObsOpen = vpOpenObsPartNames.has(item.name) || hasObs;
   const cardClass = isTroca ? 'selected-troca' : (isReparo ? 'selected-reparo' : '');
 
   return `
-    <div class="vp-part-card ${cardClass}">
+    <div class="vp-part-card ${cardClass}" style="width: 100%; min-width: 0; box-sizing: border-box; padding: 6px 6px; border-radius: 8px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#cbd5e1')}; background: ${isTroca ? '#fffafa' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
       <!-- 1ª LINHA: [❌ Excluir] [Descrição da Peça] [✏️ Editar] -->
-      <div class="vp-card-top">
+      <div class="vp-card-top" style="display: flex; align-items: center; justify-content: space-between; gap: 2px; width: 100%; min-width: 0;">
         <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
-        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}">${vpEscapeHtml(item.name)}</span>
+        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.78rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${vpEscapeHtml(item.name)}</span>
         <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
       </div>
 
-      <!-- 2ª LINHA: [🔁 Trocar] [🛠️ Reparar] (Exatamente do mesmo tamanho) -->
-      <div class="vp-card-actions">
+      <!-- 2ª LINHA: [Trocar (40%)] [Reparar (40%)] [Obs. (20%)] (SEM ÍCONES, SEM QUEBRA DE LINHA) -->
+      <div class="vp-card-actions" style="display: flex; gap: 2px; width: 100%;">
         <button 
           type="button" 
           class="vp-btn-action btn-trocar ${isTroca ? 'active' : ''}" 
+          style="flex: 0 0 40%; width: 40%; padding: 5px 1px; font-size: 0.74rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap;"
           onclick="vpToggleAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'troca', '${vpEscapeHtml(item.rawName)}')"
         >
-          <span>🔁</span>
-          <span>Trocar</span>
+          Trocar
         </button>
         
         <button 
           type="button" 
           class="vp-btn-action btn-reparar ${isReparo ? 'active' : ''}" 
+          style="flex: 0 0 40%; width: 40%; padding: 5px 1px; font-size: 0.74rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap;"
           onclick="vpToggleAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'reparo', '${vpEscapeHtml(item.rawName)}')"
         >
-          <span>🛠️</span>
-          <span>Reparar</span>
+          Reparar
+        </button>
+
+        <button 
+          type="button" 
+          class="vp-btn-action btn-obs ${hasObs ? 'has-obs active' : ''}" 
+          style="flex: 0 0 20%; width: 20%; padding: 5px 1px; font-size: 0.72rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'}; border-color: ${hasObs ? '#93c5fd' : '#cbd5e1'};"
+          title="${hasObs ? 'Obs: ' + vpEscapeHtml(selected.obs) : 'Adicionar Observação'}"
+          onclick="vpToggleObsBox('${vpEscapeHtml(item.name)}')"
+        >
+          Obs.
         </button>
       </div>
 
-      ${isTroca ? `
-        <div class="vp-inline-obs-box obs-troca">
+      <!-- COMBO / CAMPO DE OBSERVAÇÃO (OCULTO POR PADRÃO, ABRE AO CLICAR EM OBS) -->
+      ${isObsOpen ? `
+        <div class="vp-inline-obs-box" style="display: flex; flex-direction: column; gap: 4px; margin-top: 3px; padding: 5px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px;">
+          <div style="display: flex; gap: 2px; flex-wrap: wrap;">
+            ${['Pintura', 'Recuperar', 'Amassado', 'Riscado', 'Trincado', 'Quebrado', 'Desalinhado'].map(quick => `
+              <button type="button" onclick="vpSetQuickObs('${vpEscapeHtml(item.name)}', '${quick}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', '${vpEscapeHtml(item.rawName)}')" style="font-size: 0.62rem; font-weight: 700; padding: 2px 4px; border-radius: 4px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer;">
+                ${quick}
+              </button>
+            `).join('')}
+          </div>
           <input 
             type="text" 
-            class="vp-inline-obs-input input-troca" 
-            placeholder="Obs da troca..." 
-            value="${vpEscapeHtml(selected.obs || '')}" 
-            oninput="vpChangeObs('${vpEscapeHtml(item.name)}', this.value)"
-          />
-        </div>
-      ` : ''}
-
-      ${isReparo ? `
-        <div class="vp-inline-obs-box obs-reparo">
-          <input 
-            type="text" 
-            class="vp-inline-obs-input input-reparo" 
-            placeholder="Obs do reparo..." 
-            value="${vpEscapeHtml(selected.obs || '')}" 
-            oninput="vpChangeObs('${vpEscapeHtml(item.name)}', this.value)"
+            class="vp-inline-obs-input" 
+            placeholder="Obs..." 
+            value="${vpEscapeHtml((selected && selected.obs) || '')}" 
+            oninput="vpChangeObs('${vpEscapeHtml(item.name)}', this.value, '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', '${vpEscapeHtml(item.rawName)}')"
+            style="width: 100%; box-sizing: border-box; padding: 4px 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.72rem;"
           />
         </div>
       ` : ''}
@@ -6855,13 +7321,42 @@ function vpRenderPartCardHtml(item) {
   `;
 }
 
+window.vpToggleObsBox = function(partName) {
+  if (vpOpenObsPartNames.has(partName)) {
+    vpOpenObsPartNames.delete(partName);
+  } else {
+    vpOpenObsPartNames.add(partName);
+  }
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+};
+
+window.vpSetQuickObs = function(partName, quickText, zoneId, zoneName, rawName = '') {
+  let item = vpSelectedPartsMap.get(partName);
+  if (!item) {
+    item = {
+      name: partName,
+      rawName: rawName || partName,
+      zoneId: zoneId || vpActiveZoneId,
+      zoneName: zoneName || 'Veículo',
+      action: 'reparo',
+      obs: quickText
+    };
+    vpSelectedPartsMap.set(partName, item);
+  } else {
+    item.obs = quickText;
+  }
+  vpSaveState();
+  vpUpdateTriggerButton();
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  vpUpdateDockAndSheet();
+};
+
 window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '') {
   const current = vpSelectedPartsMap.get(partName);
 
   if (current && current.action === action) {
     vpSelectedPartsMap.delete(partName);
   } else {
-    vpIncrementPartUsage(partName);
     vpSelectedPartsMap.set(partName, {
       name: partName,
       rawName: rawName || partName,
@@ -6878,13 +7373,23 @@ window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '
   vpUpdateDockAndSheet();
 };
 
-window.vpChangeObs = function(partName, obsText) {
-  const part = vpSelectedPartsMap.get(partName);
-  if (part) {
-    part.obs = obsText.trim();
-    vpSaveState();
-    vpUpdateDockAndSheet();
+window.vpChangeObs = function(partName, obsText, zoneId, zoneName, rawName = '') {
+  let item = vpSelectedPartsMap.get(partName);
+  if (!item && obsText.trim()) {
+    item = {
+      name: partName,
+      rawName: rawName || partName,
+      zoneId: zoneId || vpActiveZoneId,
+      zoneName: zoneName || 'Veículo',
+      action: 'reparo',
+      obs: obsText.trim()
+    };
+    vpSelectedPartsMap.set(partName, item);
+  } else if (item) {
+    item.obs = obsText.trim();
   }
+  vpSaveState();
+  vpUpdateDockAndSheet();
 };
 
 window.vpRemoveSelected = function(partName) {
