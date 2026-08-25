@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.97';
+const CURRENT_APP_VERSION = 'v1.98';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -4710,6 +4710,88 @@ function showToastNotification(message, duration = 3000) {
   }, duration);
 }
 
+function showCenteredSuccessModal(message, duration = 3000, callback = null) {
+  let overlay = document.getElementById('appCenteredSuccessOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'appCenteredSuccessOverlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999999;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      padding: 20px;
+      box-sizing: border-box;
+    `;
+
+    const card = document.createElement('div');
+    card.id = 'appCenteredSuccessCard';
+    card.style.cssText = `
+      background: #ffffff;
+      color: #0f172a;
+      padding: 26px 28px;
+      border-radius: 20px;
+      box-shadow: 0 20px 45px -10px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      transform: scale(0.9);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 2px solid #22c55e;
+    `;
+
+    card.innerHTML = `
+      <div style="width: 58px; height: 58px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 1.9rem; font-weight: 900; box-shadow: 0 4px 14px rgba(34,197,94,0.3);">
+        ✓
+      </div>
+      <div id="appCenteredSuccessMsg" style="font-size: 1.08rem; font-weight: 800; color: #0f172a; line-height: 1.35; margin-top: 4px;">
+        ${message}
+      </div>
+      <div style="font-size: 0.78rem; font-weight: 700; color: #16a34a; background: #f0fdf4; padding: 4px 14px; border-radius: 999px; border: 1px solid #bbf7d0; margin-top: 2px;">
+        Retornando à vistoria em instantes...
+      </div>
+    `;
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+  } else {
+    const msgEl = document.getElementById('appCenteredSuccessMsg');
+    if (msgEl) msgEl.textContent = message;
+  }
+
+  const card = document.getElementById('appCenteredSuccessCard');
+  overlay.style.display = 'flex';
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    if (card) card.style.transform = 'scale(1)';
+  });
+
+  if (window._centeredSuccessTimeout) clearTimeout(window._centeredSuccessTimeout);
+  window._centeredSuccessTimeout = setTimeout(() => {
+    overlay.style.opacity = '0';
+    if (card) card.style.transform = 'scale(0.9)';
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      if (typeof callback === 'function') callback();
+    }, 250);
+  }, duration);
+}
+
 // Verifica se existem fotos ou vídeos associados ao veículo/supervisão
 async function checkHasMediaForVehicle(vehicleName, isSupervisao) {
   if (!vehicleName || !vehicleName.trim()) return false;
@@ -6894,8 +6976,6 @@ window.vpApplyAndClose = function() {
     currentVistoriaIdForParts = null;
   }
 
-  showToastNotification('✅ Partes do veículo salvas na vistoria!', 3000);
-
   const trocasTextarea = document.querySelector('textarea[name="trocas"]');
   const reparosTextarea = document.querySelector('textarea[name="reparos"]');
 
@@ -6911,8 +6991,11 @@ window.vpApplyAndClose = function() {
     reparosTextarea.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
-  window.closeVehiclePartsModal();
-  window.vpCloseReviewSheet();
+  // Exibe a tela com a mensagem no centro da tela por 3 segundos e só depois volta para a tela de vistoria
+  showCenteredSuccessModal('Partes do veículo salvas na vistoria!', 3000, () => {
+    window.closeVehiclePartsModal();
+    window.vpCloseReviewSheet();
+  });
 };
 
 function vpUpdateTriggerButton() {
