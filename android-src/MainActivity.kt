@@ -1483,6 +1483,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
+            val isSupervision = reportText.contains("Supervisão") || reportText.contains("Supervisao")
             val filesToShare = ArrayList<java.io.File>()
             val addedNames = HashSet<String>()
 
