@@ -14,7 +14,7 @@
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=198" />
+    <link rel="stylesheet" href="styles.css?v=199" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -299,11 +299,11 @@
           </label>
           
           <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
-              <span>Em que parte do serviço esta?:</span>
-              <div style="display: flex; gap: 10px; align-items: center;">
-                <a href="#" id="supervisaoManageStages" onclick="openStageManagerModal(); return false;" style="color: #dc2626; font-size: 0.78rem; font-weight: 700; text-decoration: none;">❌ Excluir Etapa</a>
-                <a href="#" id="supervisaoQuickAddStage" style="color: #2563eb; font-size: 0.78rem; font-weight: 700; text-decoration: none;">+ Cadastrar Nova</a>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
+              <span style="font-size: 0.88rem; font-weight: 600; color: #27435f;">Em que parte do serviço esta?:</span>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <a href="#" id="supervisaoManageStages" onclick="openStageManagerModal(); return false;" style="color: #dc2626; font-size: 0.78rem; font-weight: 700; text-decoration: none; white-space: nowrap;">❌ Excluir Etapa</a>
+                <a href="#" id="supervisaoQuickAddStage" style="color: #2563eb; font-size: 0.78rem; font-weight: 700; text-decoration: none; white-space: nowrap;">+ Cadastrar Nova</a>
               </div>
             </div>
             <select id="supervisaoStageInput" name="stage" required>
@@ -342,20 +342,20 @@
             <input id="supervisaoFinishInput" name="finish" type="text" placeholder="Ex: 10 dias úteis" />
           </label>
 
-          <div class="form-actions">
-            <button id="saveSupervisaoButton" class="primary-btn" type="submit">Salvar</button>
-            <button id="supervisaoFormPhotosButton" class="ghost-btn" type="button" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 12px; font-weight: 700; padding: 12px 16px;">📸 Fotos</button>
-            <button id="cancelSupervisaoEditButton" class="ghost-btn" type="button" hidden>Cancelar</button>
+          <div class="form-actions" style="display: flex; flex-wrap: wrap; gap: 10px; width: 100%; box-sizing: border-box;">
+            <button id="saveSupervisaoButton" class="primary-btn" type="submit" style="flex: 1 1 auto; min-width: 120px;">Salvar</button>
+            <button id="supervisaoFormPhotosButton" class="ghost-btn" type="button" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 12px; font-weight: 700; padding: 12px 16px; flex: 1 1 auto; min-width: 120px;">📸 Fotos</button>
+            <button id="cancelSupervisaoEditButton" class="ghost-btn" type="button" hidden style="flex: 1 1 auto; min-width: 120px;">Cancelar</button>
           </div>
         </form>
       </section>
 
-      <section class="card" id="supervisaoRecordsCard" hidden>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-          <h2>Registros de Supervisão</h2>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button id="shareSupervisaoTextButton" class="primary-btn" type="button">📱 Compartilhar Relatório (Texto)</button>
-            <button id="copySupervisaoTextButton" class="ghost-btn" type="button">📋 Copiar Texto</button>
+      <section class="card" id="supervisaoRecordsCard" hidden style="width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; width: 100%; box-sizing: border-box;">
+          <h2 style="margin: 0; font-size: 1.15rem; word-break: break-word;">Registros de Supervisão</h2>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
+            <button id="shareSupervisaoTextButton" class="primary-btn" type="button" style="flex: 1 1 auto; min-width: 160px; font-size: 0.82rem; padding: 10px 12px;">📱 Compartilhar Relatório</button>
+            <button id="copySupervisaoTextButton" class="ghost-btn" type="button" style="flex: 1 1 auto; min-width: 120px; font-size: 0.82rem; padding: 10px 12px;">📋 Copiar Texto</button>
           </div>
         </div>
         
@@ -432,7 +432,7 @@
               <span style="font-size: 1.4rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v1.98</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v1.99</div>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -654,17 +654,22 @@
         </div>
 
         <!-- DOCK FLUTUANTE INFERIOR -->
-        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e2e8f0; padding: 10px 16px; box-shadow: 0 -4px 15px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; z-index: 10;">
-          <div onclick="vpOpenReviewSheet()" style="display: flex; gap: 8px; cursor: pointer; align-items: center;">
-            <span style="background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; font-size: 0.78rem; font-weight: 800; padding: 5px 10px; border-radius: 999px;">
-              🔁 Trocas: <span id="vpDockTrocaCount">0</span>
-            </span>
-            <span style="background: #f0f9ff; border: 1px solid #bae6fd; color: #0284c7; font-size: 0.78rem; font-weight: 800; padding: 5px 10px; border-radius: 999px;">
-              🛠️ Reparos: <span id="vpDockReparoCount">0</span>
-            </span>
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e2e8f0; padding: 8px 12px; box-shadow: 0 -4px 15px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; gap: 6px; z-index: 10; box-sizing: border-box; flex-wrap: wrap;">
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; flex: 1; min-width: 0;">
+            <div onclick="vpOpenReviewSheet()" style="display: flex; gap: 6px; cursor: pointer; align-items: center; flex-wrap: wrap;">
+              <span style="background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; font-size: 0.76rem; font-weight: 800; padding: 5px 8px; border-radius: 999px; white-space: nowrap;">
+                🔁 Trocas: <span id="vpDockTrocaCount">0</span>
+              </span>
+              <span style="background: #f0f9ff; border: 1px solid #bae6fd; color: #0284c7; font-size: 0.76rem; font-weight: 800; padding: 5px 8px; border-radius: 999px; white-space: nowrap;">
+                🛠️ Reparos: <span id="vpDockReparoCount">0</span>
+              </span>
+            </div>
+            <button type="button" id="vpDockCameraButton" onclick="vpOpenPhotosFromDock()" title="Abrir Câmera / Fotos do Veículo" style="background: #eff6ff; border: 1.5px solid #93c5fd; color: #1e40af; font-size: 0.78rem; font-weight: 800; padding: 5px 10px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 5px rgba(37,99,235,0.15); flex-shrink: 0; white-space: nowrap;">
+              📸 <span style="font-size: 0.74rem;">Fotos</span>
+            </button>
           </div>
-          <button type="button" onclick="vpApplyAndClose()" style="background: #16a34a; color: white; border: none; font-size: 0.85rem; font-weight: 700; padding: 10px 16px; border-radius: 10px; cursor: pointer; box-shadow: 0 2px 6px rgba(22,163,74,0.3);">
-            ✓ Concluir Seleção
+          <button type="button" onclick="vpApplyAndClose()" style="background: #16a34a; color: white; border: none; font-size: 0.82rem; font-weight: 700; padding: 8px 12px; border-radius: 10px; cursor: pointer; box-shadow: 0 2px 6px rgba(22,163,74,0.3); flex-shrink: 0; white-space: nowrap;">
+            ✓ Concluir
           </button>
         </div>
 

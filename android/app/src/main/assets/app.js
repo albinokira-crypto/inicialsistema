@@ -6940,6 +6940,31 @@ window.closeVehiclePartsModal = function() {
   if (modal) modal.style.display = 'none';
 };
 
+window.vpOpenPhotosFromDock = function() {
+  let vehicleName = (typeof vpCurrentVehicleModelName === 'string' && vpCurrentVehicleModelName.trim()) ? vpCurrentVehicleModelName.trim() : '';
+  if (!vehicleName) {
+    const plateInput = document.getElementById('plateInput');
+    if (plateInput && plateInput.value) {
+      vehicleName = plateInput.value.trim();
+    }
+  }
+  if (!vehicleName) {
+    const superInput = document.getElementById('supervisaoVehicleInput');
+    if (superInput && superInput.value) {
+      vehicleName = superInput.value.trim();
+    }
+  }
+  const targetId = currentVistoriaIdForParts || (typeof editingId !== 'undefined' ? editingId : null) || (typeof editingSupervisaoId !== 'undefined' ? editingSupervisaoId : null) || 'active_vehicle_parts';
+  if (!vehicleName) {
+    vehicleName = 'Veículo';
+  }
+  if (typeof openPhotoManagerForVehicle === 'function') {
+    openPhotoManagerForVehicle(targetId, vehicleName);
+  } else if (typeof openPhotoManagerForId === 'function') {
+    openPhotoManagerForId(targetId);
+  }
+};
+
 window.vpApplyAndClose = function() {
   const trocasList = [];
   const reparosList = [];

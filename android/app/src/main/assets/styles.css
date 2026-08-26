@@ -1154,6 +1154,24 @@ html, body {
     text-align: center;
     box-sizing: border-box !important;
   }
+
+  #supervisaoFormCard,
+  #supervisaoRecordsCard,
+  #supervisaoForm,
+  .supervisao-filter-bar {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  #supervisaoRecordsCard .primary-btn,
+  #supervisaoRecordsCard .ghost-btn {
+    white-space: normal !important;
+    word-break: break-word !important;
+    font-size: 0.80rem !important;
+    padding: 8px 10px !important;
+  }
 }
 
 @media (max-width: 480px) {

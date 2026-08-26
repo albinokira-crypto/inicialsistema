@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Valeiros Guerrentes - Sistema de Gerenciamento</title>
   <meta name="description" content="Um sistema completo de criação de fichas e gerenciamento de combate para Valeiros Guerrentes seguindo estritamente as regras oficiais do Livro do Jogador.">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=20260823_03">
   <link rel="icon" type="image/png" href="rpg-icon.png">
   <link rel="apple-touch-icon" href="rpg-icon.png">
   <link rel="manifest" href="manifest.json">
@@ -238,6 +238,41 @@
 
           <!-- PANE 1: FORM -->
           <div id="enemy-creator-pane-form" style="display:block;">
+            
+            <!-- Quick Generator Bar -->
+            <div style="background: linear-gradient(135deg, rgba(212,175,55,0.12), rgba(0,0,0,0.5)); border: 1.5px solid var(--accent-gold); border-radius: 8px; padding: 12px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <strong style="color:var(--accent-gold); font-size:0.88rem; display:flex; align-items:center; gap:5px;">
+                  ⚡ Gerador Automático de Inimigo por Nível
+                </strong>
+                <span style="font-size:0.7rem; color:var(--text-muted);">D&D 3.0 / 3.5</span>
+              </div>
+              
+              <div style="display:grid; grid-template-columns: 1fr 1.4fr auto; gap:8px; align-items:flex-end;">
+                <div>
+                  <label class="rpg-label" style="font-size:0.68rem; margin-bottom:3px; display:block;">Nível (1 a 50)</label>
+                  <input type="number" id="enemy-gen-level" class="rpg-input" value="1" min="1" max="99" style="height:32px; text-align:center; font-weight:bold; font-size:0.88rem;" placeholder="Nvl">
+                </div>
+                <div>
+                  <label class="rpg-label" style="font-size:0.68rem; margin-bottom:3px; display:block;">Arquétipo / Tipo</label>
+                  <select id="enemy-gen-archetype" class="rpg-select" style="height:32px; font-size:0.75rem; width:100%; padding:2px 4px;">
+                    <option value="random">🎲 Aleatório</option>
+                    <option value="brute">⚔️ Combatente / Bruto</option>
+                    <option value="rogue">🏹 Assassino / Ladino</option>
+                    <option value="mage">🧙‍♂️ Mago / Conjurador</option>
+                    <option value="cleric">✝️ Clérigo / Sombrio</option>
+                    <option value="dragon">🐉 Dragão / Besta</option>
+                    <option value="undead">💀 Morto-Vivo / Lich</option>
+                  </select>
+                </div>
+                <div>
+                  <button type="button" class="rpg-btn" style="height:32px; padding:0 14px; font-size:0.78rem; background: linear-gradient(135deg, var(--accent-gold), #854d0e); white-space:nowrap; display:flex; align-items:center; gap:4px;" onclick="app.generateEnemyByLevel()">
+                    ⚡ Gerar
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <form id="enemy-creator-form" onsubmit="event.preventDefault(); app.saveCustomMonster();">
               <input type="hidden" id="enemy-id">
               
@@ -607,17 +642,23 @@
                 </div>
               </div>
               
-              <div id="dm-combat-list" class="responsive-combat-list">
+              <div id="dm-combat-list" class="responsive-combat-list" style="max-height: 480px; overflow-y: auto; padding-right: 5px;">
                 <!-- Players cards render here -->
               </div>
 
-              <div style="display: flex; gap: 8px; margin-top: 1.2rem; justify-content: flex-end; border-top: 1px solid rgba(170,124,17,0.15); padding-top: 12px; flex-wrap: wrap;">
-                <button class="rpg-btn" style="padding: 5px 10px; font-size: 0.72rem; background: linear-gradient(135deg, var(--accent-gold), #854d0e);" onclick="app.dmSendBattleInvite()">⚔️ Enviar Convite de Batalha</button>
-                <button class="rpg-btn rpg-btn-secondary" style="padding: 5px 10px; font-size: 0.72rem; border-color: #ff4444; color: #ff4444;" onclick="app.dmClearCombat()">🧹 Limpar Combate</button>
+              <div style="display: flex; gap: 8px; margin-top: 1.2rem; border-top: 1px solid rgba(170,124,17,0.15); padding-top: 12px; justify-content: space-between;">
+                <button class="rpg-btn" style="flex: 1; min-height: 54px; padding: 6px 4px; font-size: 0.72rem; font-weight: bold; background: linear-gradient(135deg, var(--accent-gold), #854d0e); text-align: center; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2;" onclick="app.dmSendBattleInvite()">
+                  <span style="font-size: 1.1rem; margin-bottom: 2px;">⚔️</span>
+                  <span>Convite de Batalha</span>
+                </button>
+                <button class="rpg-btn rpg-btn-secondary" style="flex: 1; min-height: 54px; padding: 6px 4px; font-size: 0.72rem; font-weight: bold; border-color: #ff4444; color: #ff4444; text-align: center; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2;" onclick="app.dmClearCombat()">
+                  <span style="font-size: 1.1rem; margin-bottom: 2px;">🧹</span>
+                  <span>Limpar Combate</span>
+                </button>
               </div>
 
               <!-- Controle de Convites de Batalha (Mestre) -->
-              <div id="dm-invite-control-container" style="margin-top: 15px; border-top: 1px dashed rgba(170,124,17,0.15); padding-top: 15px;">
+              <div id="dm-invite-control-container" style="margin-top: 12px;">
                 <!-- Renders dynamically in renderDMCombatTracker -->
               </div>
             </div>
@@ -671,55 +712,96 @@
                 <option value="">-- Jogador Geral --</option>
               </select>
             </div>
-            <label class="rpg-label" style="margin-bottom: 10px; display: block;">Clique para Rolar:</label>
+            <label class="rpg-label" style="margin-bottom: 10px; display: block;">Selecione a Quantidade e Clique no Dado para Rolar:</label>
               <div class="dice-grid">
-                <button class="die-btn-large" onclick="app.rollDie(4)">
-                  <span class="die-icon">🔺</span>
-                  <span class="die-name">d4</span>
-                </button>
-                <button class="die-btn-large" onclick="app.rollDie(6)">
-                  <span class="die-icon">🎲</span>
-                  <span class="die-name">d6</span>
-                </button>
-                <button class="die-btn-large" onclick="app.rollDie(8)">
-                  <span class="die-icon">💎</span>
-                  <span class="die-name">d8</span>
-                </button>
-                <button class="die-btn-large" onclick="app.rollDie(10)">
-                  <span class="die-icon">🧿</span>
-                  <span class="die-name">d10</span>
-                </button>
-                <button class="die-btn-large" onclick="app.rollDie(12)">
-                  <span class="die-icon">🛡️</span>
-                  <span class="die-name">d12</span>
-                </button>
-                <button class="die-btn-large" onclick="app.rollDie(20)">
-                  <span class="die-icon">⚔️</span>
-                  <span class="die-name">d20</span>
-                </button>
-                <button class="die-btn-large" onclick="app.rollDie(100)">
-                  <span class="die-icon">💯</span>
-                  <span class="die-name">d%</span>
-                </button>
-              </div>
-
-              <div style="margin-top: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div class="rpg-form-group">
-                  <label for="dice-qty-input" class="rpg-label">Qtd de Dados</label>
-                  <input type="number" id="dice-qty-input" class="rpg-input" style="width: 100%; text-align: center;" value="1" min="1" max="100">
+                <!-- d4 -->
+                <div class="die-card-wrapper">
+                  <button class="die-btn-large" onclick="app.rollDie(4)" title="Clique para rolar d4">
+                    <span class="die-icon">🔺</span>
+                    <span class="die-name">d4</span>
+                  </button>
+                  <div class="die-counter-controls">
+                    <button class="die-step-btn" onclick="app.changeDieCount(4, -1)" title="Diminuir quantidade">-</button>
+                    <span class="die-count-display" id="die-count-4">1</span>
+                    <button class="die-step-btn" onclick="app.changeDieCount(4, 1)" title="Aumentar quantidade">+</button>
+                  </div>
                 </div>
-                <div class="rpg-form-group">
-                  <label for="dice-mod-input" class="rpg-label">Modificador (+/-)</label>
-                  <input type="number" id="dice-mod-input" class="rpg-input" style="width: 100%; text-align: center;" value="0">
-                </div>
-              </div>
 
-              <div style="margin-top: 1.5rem;">
-                <div class="rpg-form-group">
-                  <label for="custom-roll-input" class="rpg-label">Rolagem Customizada (ex: 3d6+2 ou 1d20-1)</label>
-                  <div style="display: flex; gap: 10px;">
-                    <input type="text" id="custom-roll-input" class="rpg-input" style="flex: 1;" placeholder="Ex: 2d10+4" onkeydown="if(event.key === 'Enter') app.rollCustomDice()">
-                    <button class="rpg-btn" onclick="app.rollCustomDice()">Rolar</button>
+                <!-- d6 -->
+                <div class="die-card-wrapper">
+                  <button class="die-btn-large" onclick="app.rollDie(6)" title="Clique para rolar d6">
+                    <span class="die-icon">🎲</span>
+                    <span class="die-name">d6</span>
+                  </button>
+                  <div class="die-counter-controls">
+                    <button class="die-step-btn" onclick="app.changeDieCount(6, -1)" title="Diminuir quantidade">-</button>
+                    <span class="die-count-display" id="die-count-6">1</span>
+                    <button class="die-step-btn" onclick="app.changeDieCount(6, 1)" title="Aumentar quantidade">+</button>
+                  </div>
+                </div>
+
+                <!-- d8 -->
+                <div class="die-card-wrapper">
+                  <button class="die-btn-large" onclick="app.rollDie(8)" title="Clique para rolar d8">
+                    <span class="die-icon">💎</span>
+                    <span class="die-name">d8</span>
+                  </button>
+                  <div class="die-counter-controls">
+                    <button class="die-step-btn" onclick="app.changeDieCount(8, -1)" title="Diminuir quantidade">-</button>
+                    <span class="die-count-display" id="die-count-8">1</span>
+                    <button class="die-step-btn" onclick="app.changeDieCount(8, 1)" title="Aumentar quantidade">+</button>
+                  </div>
+                </div>
+
+                <!-- d10 -->
+                <div class="die-card-wrapper">
+                  <button class="die-btn-large" onclick="app.rollDie(10)" title="Clique para rolar d10">
+                    <span class="die-icon">🧿</span>
+                    <span class="die-name">d10</span>
+                  </button>
+                  <div class="die-counter-controls">
+                    <button class="die-step-btn" onclick="app.changeDieCount(10, -1)" title="Diminuir quantidade">-</button>
+                    <span class="die-count-display" id="die-count-10">1</span>
+                    <button class="die-step-btn" onclick="app.changeDieCount(10, 1)" title="Aumentar quantidade">+</button>
+                  </div>
+                </div>
+
+                <!-- d12 -->
+                <div class="die-card-wrapper">
+                  <button class="die-btn-large" onclick="app.rollDie(12)" title="Clique para rolar d12">
+                    <span class="die-icon">🛡️</span>
+                    <span class="die-name">d12</span>
+                  </button>
+                  <div class="die-counter-controls">
+                    <button class="die-step-btn" onclick="app.changeDieCount(12, -1)" title="Diminuir quantidade">-</button>
+                    <span class="die-count-display" id="die-count-12">1</span>
+                    <button class="die-step-btn" onclick="app.changeDieCount(12, 1)" title="Aumentar quantidade">+</button>
+                  </div>
+                </div>
+
+                <!-- d20 -->
+                <div class="die-card-wrapper">
+                  <button class="die-btn-large" onclick="app.rollDie(20)" title="Clique para rolar d20">
+                    <span class="die-icon">⚔️</span>
+                    <span class="die-name">d20</span>
+                  </button>
+                  <div class="die-counter-controls">
+                    <button class="die-step-btn" onclick="app.changeDieCount(20, -1)" title="Diminuir quantidade">-</button>
+                    <span class="die-count-display" id="die-count-20">1</span>
+                    <button class="die-step-btn" onclick="app.changeDieCount(20, 1)" title="Aumentar quantidade">+</button>
+                  </div>
+                </div>
+
+                <!-- d100 -->
+                <div class="die-card-wrapper">
+                  <button class="die-btn-large" onclick="app.rollDie(100)" title="Clique para rolar d100">
+                    <span class="die-icon">💯</span>
+                    <span class="die-name">d%</span>
+                  </button>
+                  <div class="die-counter-controls">
+                    <button class="die-step-btn" onclick="app.changeDieCount(100, -1)" title="Diminuir quantidade">-</button>
+                    <span class="die-count-display" id="die-count-100">1</span>
+                    <button class="die-step-btn" onclick="app.changeDieCount(100, 1)" title="Aumentar quantidade">+</button>
                   </div>
                 </div>
               </div>
@@ -769,10 +851,10 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
   <!-- Firebase Config -->
-  <script src="js/firebase-config.js?v=20260806_11"></script>
+  <script src="js/firebase-config.js?v=20260823_01"></script>
 
   <!-- Main JS Logic -->
-  <script src="js/app.js?v=20260810_02"></script>
+  <script src="js/app.js?v=20260823_05"></script>
 
   <!-- PWA: mata o Service Worker antigo e limpa todos os caches -->
   <script>
