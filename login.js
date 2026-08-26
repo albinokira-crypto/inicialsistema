@@ -126,7 +126,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     window.location.reload();
   });
-  navigator.serviceWorker.register('/sw.js?v=200')
+  navigator.serviceWorker.register('/sw.js?v=201')
     .then((registration) => {
       registration.update();
     })

@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v2.00';
+const CURRENT_APP_VERSION = 'v2.01';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -429,7 +429,7 @@ function registerServiceWorker() {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
     });
-    navigator.serviceWorker.register('/sw.js?v=200')
+    navigator.serviceWorker.register('/sw.js?v=201')
       .then((registration) => {
         registration.update();
       })
@@ -442,6 +442,11 @@ function registerServiceWorker() {
 // Verificação automática de versão na inicialização e ao focar no app
 setTimeout(() => {
   checkForSystemUpdates(false);
+  try {
+    if (window.AndroidInterface && typeof window.AndroidInterface.cleanupShareTemp === 'function') {
+      window.AndroidInterface.cleanupShareTemp();
+    }
+  } catch (e) {}
 }, 1200);
 
 window.addEventListener('focus', () => {
