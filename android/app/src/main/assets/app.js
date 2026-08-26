@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.98';
+const CURRENT_APP_VERSION = 'v2.00';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -80,6 +80,13 @@ async function checkForSystemUpdates(showFeedback = false) {
         if (statusDot) statusDot.style.background = '#d97706';
         if (statusText) statusText.textContent = `Atualização ${serverVer}`;
         if (versionEl) versionEl.textContent = `${activeVersion} (Disponível ${serverVer})`;
+
+        const lastAutoUpdate = sessionStorage.getItem('last_auto_update_target');
+        if (lastAutoUpdate !== serverVer) {
+          sessionStorage.setItem('last_auto_update_target', serverVer);
+          forceAppRefresh();
+          return;
+        }
 
         if (showFeedback) {
           if (confirm(`Uma nova versão (${serverVer}) foi encontrada no servidor! Deseja atualizar o aplicativo agora?`)) {
@@ -419,7 +426,10 @@ function ensureAuthentication() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js?v=196')
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
+    navigator.serviceWorker.register('/sw.js?v=200')
       .then((registration) => {
         registration.update();
       })
