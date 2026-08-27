@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v2.01';
+const CURRENT_APP_VERSION = 'v2.02';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -429,7 +429,7 @@ function registerServiceWorker() {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
     });
-    navigator.serviceWorker.register('/sw.js?v=201')
+    navigator.serviceWorker.register('/sw.js?v=202')
       .then((registration) => {
         registration.update();
       })
@@ -2112,8 +2112,9 @@ function getSurveyText(id) {
       sections.push(fireDetails.join('\n'));
     }
 
-    if (details.obs) {
-      sections.push(`Observações Complementares : ${details.obs}`);
+    const obsVal = details.obs || details.obsIncendio || '';
+    if (obsVal) {
+      sections.push(`Observações Complementares : ${obsVal}`);
     }
   } else if (item.type === 'Pós entrega') {
     sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
@@ -2909,7 +2910,7 @@ function renderDynamicSurveyFields() {
   } else if (selectedType === 'Roubo Recuperado') {
     fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Incêndio') {
-    fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + obsHtml + `
+    fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + `
       <label style="grid-column: 1 / -1;">
         Ponto de Origem do Incêndio
         <input type="text" name="origemIncendio" placeholder="Ex: Compartimento do motor" />
@@ -2956,7 +2957,7 @@ function renderDynamicSurveyFields() {
         </div>
         <input type="hidden" id="input_tanque" name="tanqueAfetado" value="Não" />
       </div>
-    ` + trocasReparosHtml;
+    ` + extraFieldsHtml;
   } else if (selectedType === 'Enchente') {
     fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + `
       <div class="form-toggle-field">
