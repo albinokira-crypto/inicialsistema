@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v2.03';
+const CURRENT_APP_VERSION = 'v2.04';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -429,7 +429,7 @@ function registerServiceWorker() {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
     });
-    navigator.serviceWorker.register('/sw.js?v=203')
+    navigator.serviceWorker.register('/sw.js?v=204')
       .then((registration) => {
         registration.update();
       })
@@ -2104,10 +2104,29 @@ function getSurveyText(id) {
 
     let fireDetails = [];
     if (details.origemIncendio) fireDetails.push(`Ponto de Origem do Incêndio : ${details.origemIncendio}`);
-    if (details.sistemaCombustivel) fireDetails.push(`Avaliação do Sistema de Combustível e Fluidos : ${details.sistemaCombustivel}`);
-    if (details.sistemaEletrico) fireDetails.push(`Avaliação do Sistema Elétrico : ${details.sistemaEletrico}`);
-    if (details.residuosExtincao) fireDetails.push(`Resíduos de Extinção do Incêndio : ${getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao')}`);
-    if (details.tanqueAfetado) fireDetails.push(`Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}`);
+    
+    if (details.sistemaCombustivel) {
+      const scVal = details.sistemaCombustivel;
+      const scObs = (details.obsSistemaCombustivel || '').trim();
+      fireDetails.push(`Avaliação do Sistema de Combustível e Fluidos : ${scVal}${scObs ? ` (${scObs})` : ''}`);
+    }
+
+    if (details.sistemaEletrico) {
+      const seVal = details.sistemaEletrico;
+      const seObs = (details.obsSistemaEletrico || '').trim();
+      fireDetails.push(`Avaliação do Sistema Elétrico : ${seVal}${seObs ? ` (${seObs})` : ''}`);
+    }
+
+    if (details.residuosExtincao) {
+      const resVal = details.residuosExtincao === 'Obs' ? 'Obs' : getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao');
+      const resObs = (details.obsResiduosExtincao || '').trim();
+      fireDetails.push(`Resíduos de Extinção do Incêndio : ${resVal}${resObs ? ` (${resObs})` : ''}`);
+    }
+
+    if (details.tanqueAfetado) {
+      fireDetails.push(`Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}`);
+    }
+
     if (fireDetails.length > 0) {
       sections.push(fireDetails.join('\n'));
     }
@@ -2377,6 +2396,13 @@ function handleAction(action, id) {
           if (brandInput) {
             brandInput.style.display = item.details[key] === 'Outra' ? 'block' : 'none';
             brandInput.required = item.details[key] === 'Outra';
+          }
+        }
+
+        if (container && container.dataset.obsId) {
+          const obsInput = document.getElementById(container.dataset.obsId);
+          if (obsInput) {
+            obsInput.style.display = (item.details[key] === 'Obs' || (item.details[obsInput.name] && item.details[obsInput.name].trim())) ? 'block' : 'none';
           }
         }
       }
@@ -2916,34 +2942,37 @@ function renderDynamicSurveyFields() {
       
       <div class="form-toggle-field" style="grid-column: 1 / -1;">
         <span class="status-label">Avaliação do Sistema de Combustível e Fluidos</span>
-        <div class="type-buttons-container" data-input-id="input_sistema_combustivel">
+        <div class="type-buttons-container inc-toggle-obs" data-input-id="input_sistema_combustivel" data-obs-id="input_obs_sistema_combustivel">
           <button type="button" class="type-btn active" data-value="Ok">Ok</button>
           <button type="button" class="type-btn" data-value="Parcialmente Avariado">Parcialmente Avariado</button>
           <button type="button" class="type-btn" data-value="Totalmente Avariado">Totalmente Avariado</button>
-          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+          <button type="button" class="type-btn" data-value="Obs">Obs</button>
         </div>
         <input type="hidden" id="input_sistema_combustivel" name="sistemaCombustivel" value="Ok" />
+        <input type="text" id="input_obs_sistema_combustivel" name="obsSistemaCombustivel" placeholder="Digite a observação do sistema de combustível..." style="display: none; margin-top: 6px; width: 100%; box-sizing: border-box;" />
       </div>
 
       <div class="form-toggle-field" style="grid-column: 1 / -1;">
         <span class="status-label">Avaliação do Sistema Elétrico</span>
-        <div class="type-buttons-container" data-input-id="input_sistema_eletrico">
+        <div class="type-buttons-container inc-toggle-obs" data-input-id="input_sistema_eletrico" data-obs-id="input_obs_sistema_eletrico">
           <button type="button" class="type-btn active" data-value="Ok">Ok</button>
           <button type="button" class="type-btn" data-value="Parcialmente Avariado">Parcialmente Avariado</button>
           <button type="button" class="type-btn" data-value="Totalmente Avariado">Totalmente Avariado</button>
-          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+          <button type="button" class="type-btn" data-value="Obs">Obs</button>
         </div>
         <input type="hidden" id="input_sistema_eletrico" name="sistemaEletrico" value="Ok" />
+        <input type="text" id="input_obs_sistema_eletrico" name="obsSistemaEletrico" placeholder="Digite a observação do sistema elétrico..." style="display: none; margin-top: 6px; width: 100%; box-sizing: border-box;" />
       </div>
 
-      <div class="form-toggle-field">
+      <div class="form-toggle-field" style="grid-column: 1 / -1;">
         <span class="status-label">Resíduos de Extinção do Incêndio?</span>
-        <div class="type-buttons-container" data-input-id="input_residuos">
+        <div class="type-buttons-container inc-toggle-obs" data-input-id="input_residuos" data-obs-id="input_obs_residuos">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
           <button type="button" class="type-btn active" data-value="Não">Não</button>
-          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+          <button type="button" class="type-btn" data-value="Obs">Obs</button>
         </div>
         <input type="hidden" id="input_residuos" name="residuosExtincao" value="Não" />
+        <input type="text" id="input_obs_residuos" name="obsResiduosExtincao" placeholder="Digite a observação dos resíduos de extinção..." style="display: none; margin-top: 6px; width: 100%; box-sizing: border-box;" />
       </div>
 
       <div class="form-toggle-field">
@@ -3101,6 +3130,16 @@ function renderDynamicSurveyFields() {
         if (brandInput) {
           brandInput.style.display = value === 'Outra' ? 'block' : 'none';
           brandInput.required = value === 'Outra';
+        }
+      }
+
+      if (container.dataset.obsId) {
+        const obsInput = document.getElementById(container.dataset.obsId);
+        if (obsInput) {
+          obsInput.style.display = value === 'Obs' ? 'block' : 'none';
+          if (value === 'Obs') {
+            setTimeout(() => obsInput.focus(), 50);
+          }
         }
       }
 
