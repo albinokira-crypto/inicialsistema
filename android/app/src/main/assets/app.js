@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v2.02';
+const CURRENT_APP_VERSION = 'v2.03';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -429,7 +429,7 @@ function registerServiceWorker() {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
     });
-    navigator.serviceWorker.register('/sw.js?v=202')
+    navigator.serviceWorker.register('/sw.js?v=203')
       .then((registration) => {
         registration.update();
       })
@@ -2193,16 +2193,14 @@ function getSurveyText(id) {
     }
   } else {
     // Universal fields (Trocas & Reparos)
-    if (details.trocas) {
-      sections.push(`Trocas\n${details.trocas}`);
-    } else if (item.type === 'Incêndio') {
-      sections.push(`Trocas`);
+    const trocasVal = (details.trocas || item.trocas || '').trim();
+    if (trocasVal) {
+      sections.push(`Trocas\n${trocasVal}`);
     }
 
-    if (details.reparos) {
-      sections.push(`Reparos\n${details.reparos}`);
-    } else if (item.type === 'Incêndio') {
-      sections.push(`Reparos`);
+    const reparosVal = (details.reparos || item.reparos || '').trim();
+    if (reparosVal) {
+      sections.push(`Reparos\n${reparosVal}`);
     }
   }
 
