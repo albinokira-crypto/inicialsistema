@@ -1,11 +1,11 @@
-const CACHE_NAME = 'projeto-planilha-mobile-v204';
+const CACHE_NAME = 'projeto-planilha-mobile-v199';
 const ASSETS = [
   '/',
   '/index.html',
   '/dashboard.html',
-  '/styles.css?v=204',
-  '/app.js?v=204',
-  '/login.js?v=204',
+  '/styles.css',
+  '/app.js',
+  '/login.js',
   '/manifest.webmanifest',
   '/icon-192.png',
   '/icon-512.png'
@@ -20,18 +20,19 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  self.clients.claim();
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
       keys.filter((key) => key !== CACHE_NAME)
           .map((key) => caches.delete(key))
-    )).then(() => self.clients.claim())
+    ))
   );
 });
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 1. NUNCA armazenar em cache version.json, chamadas de API ou requisições dinâmicas
+  // 1. NUNCA armazenar em cache version.json, chamadas de API ou requisições que não sejam GET
   if (
     event.request.method !== 'GET' ||
     url.pathname.endsWith('version.json') ||
@@ -45,11 +46,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Busca na rede primeiro (Network First) para garantir que sempre pega os arquivos novos
+  // 2. Para os assets estáticos normais, busca na rede e atualiza cache em segundo plano
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        if (response && response.status === 200) {
+        if (response && response.status === 200 && response.type === 'basic') {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
         }

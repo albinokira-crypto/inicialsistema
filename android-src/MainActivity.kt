@@ -354,46 +354,6 @@ class MainActivity : ComponentActivity() {
 
         // Request Permissions
         checkPermissions()
-
-        // Limpeza automática de pastas temporárias legadas de compartilhamento (.share_temp)
-        cleanupAllLegacyShareTemp()
-    }
-
-    fun cleanupAllLegacyShareTemp() {
-        Thread {
-            try {
-                val cacheDir = java.io.File(cacheDir, "share_temp")
-                if (cacheDir.exists()) {
-                    cacheDir.deleteRecursively()
-                }
-                cacheDir.listFiles { file -> file.isDirectory && file.name.startsWith("share_temp") }?.forEach {
-                    try { it.deleteRecursively() } catch (e: Exception) {}
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            try {
-                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
-                if (vistoriasBaseDir.exists()) {
-                    vistoriasBaseDir.walkTopDown().filter { it.isDirectory && (it.name == ".share_temp" || it.name == "share_temp") }.forEach {
-                        try { it.deleteRecursively() } catch (e: Exception) {}
-                    }
-                }
-                val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
-                val customFolderName = prefs.getString("selected_folder_name", null) ?: prefs.getString("photo_folder_name_friendly", null) ?: ""
-                if (customFolderName.isNotEmpty()) {
-                    val customDir = java.io.File(picturesDir, customFolderName)
-                    if (customDir.exists()) {
-                        customDir.walkTopDown().filter { it.isDirectory && (it.name == ".share_temp" || it.name == "share_temp") }.forEach {
-                            try { it.deleteRecursively() } catch (e: Exception) {}
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }.start()
     }
 
     internal var checkPhotosStartTime: Long = 0
@@ -401,7 +361,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        cleanupAllLegacyShareTemp()
         val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
         val shouldCheck = prefs.getBoolean("should_check_new_photos", false)
         if (shouldCheck) {
@@ -1359,13 +1318,32 @@ class AndroidInterface(private val activity: ComponentActivity) {
     @JavascriptInterface
     fun clearTempShare() {
         tempShareFiles.clear()
-        (activity as? MainActivity)?.cleanupAllLegacyShareTemp()
-    }
-
-    @JavascriptInterface
-    fun cleanupShareTemp(): String {
-        (activity as? MainActivity)?.cleanupAllLegacyShareTemp()
-        return "cleaned"
+        try {
+            val cacheDir = java.io.File(activity.cacheDir, "share_temp")
+            if (cacheDir.exists()) {
+                cacheDir.deleteRecursively()
+            }
+            cacheDir.mkdirs()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        try {
+            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
+            if (vistoriasBaseDir.exists()) {
+                val subDirs = vistoriasBaseDir.listFiles { file -> file.isDirectory }
+                if (subDirs != null) {
+                    for (dir in subDirs) {
+                        val tempDir = java.io.File(dir, ".share_temp")
+                        if (tempDir.exists()) {
+                            tempDir.deleteRecursively()
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     @JavascriptInterface
@@ -1483,7 +1461,6 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
-            val isSupervision = reportText.contains("Supervisão") || reportText.contains("Supervisao")
             val filesToShare = ArrayList<java.io.File>()
             val addedNames = HashSet<String>()
 
@@ -1649,7 +1626,8 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 })
             val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
 
-            val shareTempDir = java.io.File(activity.cacheDir, "share_temp")
+            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val shareTempDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName/.share_temp")
             try {
                 if (shareTempDir.exists()) {
                     shareTempDir.deleteRecursively()

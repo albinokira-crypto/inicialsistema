@@ -14,7 +14,7 @@
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=204" />
+    <link rel="stylesheet" href="styles.css?v=199" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -249,9 +249,9 @@
         </table>
       </section>
 
-      <section class="card" id="supervisaoFormCard" hidden style="width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden;">
-        <h2 id="supervisaoFormTitle" style="margin: 0 0 10px; font-size: 1.25rem; line-height: 1.35; word-break: break-word; overflow-wrap: anywhere; max-width: 100%; white-space: normal;">Novo Registro de Supervisão</h2>
-        <form id="supervisaoForm" class="form-grid" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden;">
+      <section class="card" id="supervisaoFormCard" hidden>
+        <h2 id="supervisaoFormTitle">Novo Registro de Supervisão</h2>
+        <form id="supervisaoForm" class="form-grid">
           <label>
             Veículo (Modelo e Placa)
             <div style="display: flex; gap: 8px; align-items: stretch;">
@@ -352,7 +352,7 @@
 
       <section class="card" id="supervisaoRecordsCard" hidden style="width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; width: 100%; box-sizing: border-box;">
-          <h2 style="margin: 0; font-size: 1.15rem; line-height: 1.35; word-break: break-word; overflow-wrap: anywhere; max-width: 100%; white-space: normal;">Registros de Supervisão</h2>
+          <h2 style="margin: 0; font-size: 1.15rem; word-break: break-word;">Registros de Supervisão</h2>
           <div style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
             <button id="shareSupervisaoTextButton" class="primary-btn" type="button" style="flex: 1 1 auto; min-width: 160px; font-size: 0.82rem; padding: 10px 12px;">📱 Compartilhar Relatório</button>
             <button id="copySupervisaoTextButton" class="ghost-btn" type="button" style="flex: 1 1 auto; min-width: 120px; font-size: 0.82rem; padding: 10px 12px;">📋 Copiar Texto</button>
@@ -432,7 +432,7 @@
               <span style="font-size: 1.4rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.04</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v1.99</div>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -879,6 +879,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=204"></script>
+    <script src="app.js?v=198"></script>
   </body>
 </html>
