@@ -1,11 +1,11 @@
-const CACHE_NAME = 'projeto-planilha-mobile-v204';
+const CACHE_NAME = 'projeto-planilha-mobile-v205';
 const ASSETS = [
   '/',
   '/index.html',
   '/dashboard.html',
-  '/styles.css?v=204',
-  '/app.js?v=204',
-  '/login.js?v=204',
+  '/styles.css?v=205',
+  '/app.js?v=205',
+  '/login.js?v=205',
   '/manifest.webmanifest',
   '/icon-192.png',
   '/icon-512.png'
