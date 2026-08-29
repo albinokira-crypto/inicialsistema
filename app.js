@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v2.05';
+const CURRENT_APP_VERSION = 'v2.06';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');

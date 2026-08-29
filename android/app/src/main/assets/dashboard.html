@@ -14,7 +14,7 @@
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=205" />
+    <link rel="stylesheet" href="styles.css?v=206" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -631,21 +631,6 @@
             <input type="text" id="vpSearchInput" placeholder="Buscar peça (ex: Capô, Farol, Amortecedor)..." autocomplete="off" style="width: 100% !important; box-sizing: border-box; padding: 6px 30px 6px 28px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.82rem; font-weight: 600; outline: none; background: #ffffff;" />
             <button id="vpClearSearchBtn" type="button" onclick="vpClearSearch()" style="display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 0.80rem; color: #94a3b8; cursor: pointer;">✕</button>
           </div>
-
-          <!-- BOTÃO MENU DE ZONAS -->
-          <button type="button" onclick="vpOpenZonesGridModal()" style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f0f7ff; border: 1.5px solid #bfdbfe; border-radius: 8px; cursor: pointer;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span id="vpTriggerIcon" style="font-size: 1.05rem;">🚗</span>
-              <div style="text-align: left;">
-                <span style="font-size: 0.60rem; font-weight: 700; color: #2563eb; text-transform: uppercase; display: block; line-height: 1;">Zona Atual:</span>
-                <strong id="vpTriggerTitle" style="font-size: 0.82rem; font-weight: 800; color: #1e3a8a;">Dianteira</strong>
-              </div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <span id="vpTriggerCountBadge" style="display: none; background: #2563eb; color: white; font-size: 0.65rem; font-weight: 800; padding: 1px 5px; border-radius: 999px;">0</span>
-              <span style="font-size: 0.70rem; color: #2563eb; font-weight: 800;">▼</span>
-            </div>
-          </button>
         </div>
 
         <!-- LISTA DE PEÇAS ROLÁVEL COMPACTA -->
@@ -673,22 +658,6 @@
           </button>
         </div>
 
-      </div>
-    </div>
-
-    <!-- MODAL DO MENU DE ZONAS (GRID 2 COLUNAS) -->
-    <div id="vpZonesGridModal" class="photo-modal-overlay" style="display: none; z-index: 10000;" onclick="vpHandleZonesOverlayClick(event)">
-      <div class="photo-modal" style="max-width: 440px; background: white; padding: 18px; border-radius: 16px; max-height: 85vh; overflow-y: auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a;">📂 Escolha a Zona do Veículo</h3>
-          <button type="button" onclick="vpCloseZonesGridModal()" style="background: none; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer;">✕</button>
-        </div>
-        <div id="vpZonesGridContent" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-          <!-- Gerado via JS -->
-        </div>
-        <button type="button" onclick="vpToggleViewAllZones()" style="width: 100%; padding: 10px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.82rem; font-weight: 700; color: #0f172a; cursor: pointer;">
-          <span id="vpViewAllBtnText">👁️ Ver Todas as Zonas Juntas</span>
-        </button>
       </div>
     </div>
 
@@ -879,6 +848,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=205"></script>
+    <script src="app.js?v=206"></script>
   </body>
 </html>
