@@ -20,6 +20,8 @@
   <script src="data/spells.js"></script>
   <script src="data/monsters.js"></script>
   <script src="data/deities.js"></script>
+  <!-- Leitor e Gerador de Planilhas Excel (.xlsx) para Celular e PC -->
+  <script src="js/xlsx.full.min.js"></script>
 </head>
 <body>
   <!-- Authentication Container -->
@@ -481,9 +483,15 @@
       <section id="tab-sheets" class="tab-content" style="display:none;">
         <div id="sheets-list-view">
           <div class="rpg-card">
-            <div class="card-title-container">
+            <div class="card-title-container" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
               <h2>Personagens Criados</h2>
-              <button class="rpg-btn" onclick="app.switchTab('creator')">Novo Personagem</button>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <label class="rpg-btn" style="background:linear-gradient(135deg, #1e40af, #2563eb); border-color:#1d4ed8; color:#ffffff; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:bold; padding:6px 14px; font-size:0.85rem; border-radius:4px; box-shadow:0 2px 6px rgba(0,0,0,0.3); margin:0;">
+                  📥 Importar Ficha (.xlsx)
+                  <input type="file" accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;" onchange="app.importCharacterFromExcel(event)">
+                </label>
+                <button class="rpg-btn" onclick="app.switchTab('creator')">Novo Personagem</button>
+              </div>
             </div>
             <div id="saved-sheets-container">
               <!-- Dynamically populated or message if empty -->
@@ -771,8 +779,11 @@
   <!-- Firebase Config -->
   <script src="js/firebase-config.js?v=20260806_11"></script>
 
+  <!-- Excel SheetJS Library (Importação/Exportação de Fichas) -->
+  <script src="js/xlsx.full.min.js"></script>
+
   <!-- Main JS Logic -->
-  <script src="js/app.js?v=20260810_02"></script>
+  <script src="js/app.js?v=20260829_xlsx"></script>
 
   <!-- PWA: mata o Service Worker antigo e limpa todos os caches -->
   <script>
