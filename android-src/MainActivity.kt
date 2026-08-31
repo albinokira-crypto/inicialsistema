@@ -2394,7 +2394,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
             val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
             val savedUriStr = prefs.getString("selected_folder_uri", null)
             
-            var createdInSaf = false
+            var folderCreated = false
             if (savedUriStr != null) {
                 try {
                     val rootUri = android.net.Uri.parse(savedUriStr)
@@ -2403,30 +2403,29 @@ class AndroidInterface(private val activity: ComponentActivity) {
                         val existing = rootFolder.findFile(cleanVehicleName)
                         if (existing == null || !existing.isDirectory) {
                             val created = rootFolder.createDirectory(cleanVehicleName)
-                            if (created != null) createdInSaf = true
+                            folderCreated = (created != null)
                         } else {
-                            createdInSaf = true
+                            folderCreated = true
                         }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-            }
-            
-            // Cria também no armazenamento padrão Pictures/Vistorias/$cleanVehicleName/
-            var createdInDefault = false
-            try {
-                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                val defaultVistoriaDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
-                if (!defaultVistoriaDir.exists()) {
-                    defaultVistoriaDir.mkdirs()
+            } else {
+                // Se não há pasta personalizada, cria no armazenamento padrão Pictures/Vistorias/$cleanVehicleName/
+                try {
+                    val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                    val defaultVistoriaDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
+                    if (!defaultVistoriaDir.exists()) {
+                        defaultVistoriaDir.mkdirs()
+                    }
+                    folderCreated = defaultVistoriaDir.exists()
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-                createdInDefault = defaultVistoriaDir.exists()
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
 
-            if (createdInSaf || createdInDefault) {
+            if (folderCreated) {
                 android.widget.Toast.makeText(activity, "Pasta '$cleanVehicleName' gerada com sucesso!", android.widget.Toast.LENGTH_SHORT).show()
             } else {
                 android.widget.Toast.makeText(activity, "Erro ao criar pasta '$cleanVehicleName'.", android.widget.Toast.LENGTH_SHORT).show()
