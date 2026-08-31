@@ -4603,38 +4603,47 @@ async function forceAppRefresh() {
   const btn = document.getElementById('forceRefreshAppBtn');
   if (btn) {
     btn.disabled = true;
-    btn.textContent = '⏳ Atualizando sistema...';
+    btn.textContent = '⏳ Sincronizando arquivos offline...';
   }
 
-  // 1. Limpa todos os caches locais do Service Worker
-  if ('caches' in window) {
-    try {
-      const keys = await caches.keys();
-      await Promise.all(keys.map(key => caches.delete(key)));
-    } catch(e) {}
-  }
-
-  // 2. Desregistra Service Worker ativo para forçar download novo
+  // 1. Atualiza Service Worker sem desregistrar
   if ('serviceWorker' in navigator) {
     try {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const reg of registrations) {
-        await reg.unregister();
-      }
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) await reg.update();
     } catch(e) {}
   }
 
-  // 3. Notifica interface nativa do Android se disponível
-  if (window.AndroidInterface && typeof window.AndroidInterface.clearAppCache === 'function') {
+  // 2. Garante pré-carregamento de todos os arquivos offline
+  if ('caches' in window) {
     try {
-      window.AndroidInterface.clearAppCache();
+      const cache = await caches.open('projeto-planilha-mobile-v208');
+      const assets = [
+        '/',
+        '/index.html',
+        '/dashboard.html',
+        '/styles.css?v=208',
+        '/app.js?v=208',
+        '/login.js?v=208',
+        '/manifest.webmanifest',
+        '/icon-192.png',
+        '/icon-512.png',
+        'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
+      ];
+      await Promise.allSettled(
+        assets.map(url =>
+          fetch(url, { cache: 'reload' }).then(res => {
+            if (res && res.status === 200) return cache.put(url, res);
+          })
+        )
+      );
     } catch(e) {}
   }
 
-  // 4. Recarrega a página forçando bypass de cache
+  // 3. Recarrega a página
   setTimeout(() => {
-    window.location.href = 'dashboard.html?t=' + Date.now() + '&v=' + CURRENT_APP_VERSION;
-  }, 250);
+    window.location.reload();
+  }, 400);
 }
 window.forceAppRefresh = forceAppRefresh;
 
