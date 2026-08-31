@@ -42,51 +42,64 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 1. Apenas requisições de version.json e APIs tentam rede primeiro (para OTA)
+  // Ignora requisições não-GET
+  if (event.request.method !== 'GET' || !url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // 1. Version.json e chamadas de API
   if (url.pathname.endsWith('version.json') || url.pathname.includes('/api/')) {
     event.respondWith(
-      fetch(event.request, { cache: 'no-store' })
-        .catch(() =>
-          caches.match(event.request, { ignoreSearch: true }).then(
-            (cached) =>
-              cached ||
-              new Response(
-                JSON.stringify({ offline: true, version: "2.08" }),
-                { headers: { 'Content-Type': 'application/json' } }
-              )
-          )
-        )
+      fetch(event.request, { cache: 'no-store' }).catch(() => {
+        return caches.match(event.request, { ignoreSearch: true }).then((cached) => {
+          return (
+            cached ||
+            new Response(
+              JSON.stringify({ offline: true, version: "2.08" }),
+              { headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        });
+      })
     );
     return;
   }
 
-  // 2. Estratégia Stale-While-Revalidate / Cache-First para páginas e assets:
-  // Responde INSTANTANEAMENTE do cache para o Android WebView nunca dar erro nem cair para file:///
+  // 2. Demais páginas e arquivos estáticos (Cache com fallback seguro para Rede)
   event.respondWith(
-    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
-      // Faz revalidação em segundo plano se houver conexão
-      const fetchPromise = fetch(event.request)
+    caches.match(event.request, { ignoreSearch: true }).then((cached) => {
+      if (cached) {
+        // Revalidação em segundo plano sem bloquear a resposta
+        fetch(event.request)
+          .then((res) => {
+            if (res && res.status === 200) {
+              const resClone = res.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
+            }
+          })
+          .catch(() => {});
+        return cached;
+      }
+
+      // Se não estava no cache, faz a requisição na rede normalmente
+      return fetch(event.request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+            const resClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
           }
           return networkResponse;
         })
-        .catch(() => null);
-
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      // Se não estava no cache exato, tenta fallback para dashboard.html ou index.html para navegação
-      if (event.request.mode === 'navigate' || event.request.destination === 'document') {
-        return caches.match('/dashboard.html', { ignoreSearch: true })
-          .then((dashCached) => dashCached || caches.match('/index.html', { ignoreSearch: true }))
-          .then((navCached) => navCached || fetchPromise);
-      }
-
-      return fetchPromise.then((netRes) => netRes || cachedResponse);
+        .catch(() => {
+          // Se a rede falhou (offline), tenta recuperar dashboard.html ou index.html
+          if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+            return caches.match('/dashboard.html', { ignoreSearch: true }).then((dash) => {
+              if (dash) return dash;
+              return caches.match('/index.html', { ignoreSearch: true });
+            });
+          }
+          return caches.match(event.request, { ignoreSearch: true });
+        });
     })
   );
 });
