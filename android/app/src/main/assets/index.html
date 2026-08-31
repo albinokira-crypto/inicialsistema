@@ -11,6 +11,9 @@
           if (window.AndroidInterface || window.location.protocol === 'file:') {
             localStorage.setItem('authenticated', 'true');
           }
+          if (window.location.protocol === 'file:' && navigator.onLine) {
+            window.location.replace('https://gestao-vistoria-inicial.vercel.app/index.html');
+          }
         } catch(e) {}
       })();
     </script>
