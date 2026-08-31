@@ -1311,13 +1311,21 @@ window.homeClearWeek = function() {
 };
 
 window.openSystemSettings = function() {
-  const modal = document.getElementById('systemSettingsModal');
-  if (modal) modal.style.display = 'flex';
+  if (typeof openSystemSettings === 'function') {
+    openSystemSettings();
+  } else {
+    const modal = document.getElementById('systemSettingsModal');
+    if (modal) modal.style.display = 'flex';
+  }
 };
 
 window.closeSystemSettings = function() {
-  const modal = document.getElementById('systemSettingsModal');
-  if (modal) modal.style.display = 'none';
+  if (typeof closeSystemSettings === 'function') {
+    closeSystemSettings();
+  } else {
+    const modal = document.getElementById('systemSettingsModal');
+    if (modal) modal.style.display = 'none';
+  }
 };
 
 function attachMenuListeners() {
@@ -1343,6 +1351,7 @@ function initializeApp() {
     render();
     renderInsurers();
     renderOficinas();
+    checkForSystemUpdates(false);
   } catch (error) {
     console.error('Erro ao iniciar o app:', error);
   }
@@ -4523,8 +4532,14 @@ function openSystemSettings() {
 
   updateFolderLabelUI();
   updatePreferredCameraUI();
-  if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
+  const modal = document.getElementById('systemSettingsModal') || systemSettingsModal;
+  if (modal) modal.style.display = 'flex';
   checkForSystemUpdates(false);
+}
+
+function closeSystemSettings() {
+  const modal = document.getElementById('systemSettingsModal') || systemSettingsModal;
+  if (modal) modal.style.display = 'none';
 }
 
 async function forceAppRefresh() {
