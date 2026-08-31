@@ -33,7 +33,7 @@
         </div>
         <div class="hero-actions" style="display: flex; gap: 8px;">
           <button id="installButton" class="primary-btn" type="button" hidden>Instalar atalho</button>
-          <button id="systemSettingsBtn" onclick="openSystemSettings()" style="background: white; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 6px;">⚙️ Configurações</button>
+          <button id="systemSettingsBtn" onclick="if(window.openSystemSettings){window.openSystemSettings();}else{const m=document.getElementById('systemSettingsModal');if(m)m.style.display='flex';}" style="background: white; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 6px;">⚙️ Configurações</button>
         </div>
       </header>
 
@@ -481,7 +481,7 @@
         </div>
 
         <div class="photo-modal-actions" style="margin-top: 24px;">
-          <button id="closeSystemSettingsBtn" class="cancel-btn" type="button" onclick="closeSystemSettings()" style="width: 100%;">Fechar</button>
+          <button id="closeSystemSettingsBtn" class="cancel-btn" type="button" onclick="if(window.closeSystemSettings){window.closeSystemSettings();}else{const m=document.getElementById('systemSettingsModal');if(m)m.style.display='none';}" style="width: 100%;">Fechar</button>
         </div>
       </div>
     </div>

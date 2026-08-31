@@ -1310,23 +1310,6 @@ window.homeClearWeek = function() {
   }
 };
 
-window.openSystemSettings = function() {
-  if (typeof openSystemSettings === 'function') {
-    openSystemSettings();
-  } else {
-    const modal = document.getElementById('systemSettingsModal');
-    if (modal) modal.style.display = 'flex';
-  }
-};
-
-window.closeSystemSettings = function() {
-  if (typeof closeSystemSettings === 'function') {
-    closeSystemSettings();
-  } else {
-    const modal = document.getElementById('systemSettingsModal');
-    if (modal) modal.style.display = 'none';
-  }
-};
 
 function attachMenuListeners() {
   if (backToMenuButton) {
@@ -4520,27 +4503,35 @@ function updateFolderLabelUI() {
 }
 
 function openSystemSettings() {
-  const folderSection = document.getElementById('folderSettingsSection');
-  if (folderSection) folderSection.style.setProperty('display', 'none', 'important');
-  const cameraSection = document.getElementById('cameraSettingsSection');
-  if (cameraSection) cameraSection.style.setProperty('display', 'none', 'important');
+  try {
+    const folderSection = document.getElementById('folderSettingsSection');
+    if (folderSection) folderSection.style.setProperty('display', 'none', 'important');
+    const cameraSection = document.getElementById('cameraSettingsSection');
+    if (cameraSection) cameraSection.style.setProperty('display', 'none', 'important');
 
-  const versionDisplay = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
-  if (versionDisplay) versionDisplay.textContent = CURRENT_APP_VERSION;
-  const serverJsonEl = document.getElementById('serverVersionJsonDisplay');
-  if (serverJsonEl) serverJsonEl.textContent = CURRENT_APP_VERSION;
+    const versionDisplay = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
+    if (versionDisplay) versionDisplay.textContent = CURRENT_APP_VERSION;
+    const serverJsonEl = document.getElementById('serverVersionJsonDisplay');
+    if (serverJsonEl) serverJsonEl.textContent = CURRENT_APP_VERSION;
 
-  updateFolderLabelUI();
-  updatePreferredCameraUI();
-  const modal = document.getElementById('systemSettingsModal') || systemSettingsModal;
-  if (modal) modal.style.display = 'flex';
-  checkForSystemUpdates(false);
+    if (typeof updateFolderLabelUI === 'function') updateFolderLabelUI();
+    if (typeof updatePreferredCameraUI === 'function') updatePreferredCameraUI();
+    const modal = document.getElementById('systemSettingsModal') || (typeof systemSettingsModal !== 'undefined' ? systemSettingsModal : null);
+    if (modal) modal.style.display = 'flex';
+    if (typeof checkForSystemUpdates === 'function') checkForSystemUpdates(false);
+  } catch (err) {
+    console.error('Erro ao abrir configurações:', err);
+    const modal = document.getElementById('systemSettingsModal');
+    if (modal) modal.style.display = 'flex';
+  }
 }
+window.openSystemSettings = openSystemSettings;
 
 function closeSystemSettings() {
-  const modal = document.getElementById('systemSettingsModal') || systemSettingsModal;
+  const modal = document.getElementById('systemSettingsModal') || (typeof systemSettingsModal !== 'undefined' ? systemSettingsModal : null);
   if (modal) modal.style.display = 'none';
 }
+window.closeSystemSettings = closeSystemSettings;
 
 async function forceAppRefresh() {
   const btn = document.getElementById('forceRefreshAppBtn');
