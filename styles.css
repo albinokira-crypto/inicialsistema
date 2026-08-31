@@ -798,10 +798,12 @@ html, body {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
+    flex-wrap: wrap !important;
     gap: 6px !important;
-    padding: 10px 12px !important;
+    padding: 8px 10px !important;
     margin-bottom: 12px !important;
     width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
@@ -817,13 +819,15 @@ html, body {
     font-size: 0.82rem !important;
     font-weight: 800 !important;
     color: #1e40af !important;
-    white-space: nowrap !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
     text-align: center !important;
     background: #eff6ff !important;
     padding: 5px 10px !important;
     border-radius: 999px !important;
     border: 1px solid #bfdbfe !important;
     display: inline-block !important;
+    max-width: 100% !important;
     visibility: visible !important;
     opacity: 1 !important;
   }
@@ -1030,6 +1034,10 @@ html, body {
     margin-right: auto;
   }
 
+  .report-table td:first-child::before {
+    display: none !important;
+  }
+
   .report-table td .actions {
     display: flex;
     flex-direction: row;
@@ -1149,6 +1157,37 @@ html, body {
     width: 100% !important;
     text-align: center;
     box-sizing: border-box !important;
+  }
+
+  #supervisaoFormCard,
+  #supervisaoRecordsCard,
+  #supervisaoForm,
+  .supervisao-filter-bar {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  #supervisaoFormCard h2,
+  #supervisaoRecordsCard h2,
+  #supervisaoFormTitle,
+  #supervisaoForm label,
+  #supervisaoForm span,
+  #supervisaoRecordsCard span,
+  #supervisaoRecordsCard strong {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    max-width: 100% !important;
+  }
+
+  #supervisaoRecordsCard .primary-btn,
+  #supervisaoRecordsCard .ghost-btn {
+    white-space: normal !important;
+    word-break: break-word !important;
+    font-size: 0.80rem !important;
+    padding: 8px 10px !important;
   }
 }
 
@@ -1601,6 +1640,28 @@ html, body {
   padding: 4px 8px;
   border-radius: 6px;
   margin-top: 4px;
+}
+
+.vp-category-section-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.vp-category-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 4px 1px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
 }
 
 .vp-part-card {

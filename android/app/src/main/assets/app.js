@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v1.94';
+const CURRENT_APP_VERSION = 'v2.07';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -34,21 +34,30 @@ async function checkForSystemUpdates(showFeedback = false) {
 
   let activeVersion = CURRENT_APP_VERSION;
   if (versionEl) versionEl.textContent = activeVersion;
-  if (serverJsonEl && serverJsonEl.textContent === '...') serverJsonEl.textContent = 'Verificando...';
+  if (serverJsonEl && (!serverJsonEl.textContent || serverJsonEl.textContent === '...' || serverJsonEl.textContent === 'Verificando...')) {
+    serverJsonEl.textContent = activeVersion;
+  }
 
   try {
     const timestamp = Date.now();
     const endpoints = [
-      'https://gestao-vistoria-inicial.vercel.app/version.json?t=' + timestamp,
-      '/version.json?t=' + timestamp,
-      'version.json?t=' + timestamp
+      'https://gestao-vistoria-inicial.vercel.app/version.json?_t=' + timestamp,
+      '/version.json?_t=' + timestamp,
+      'version.json?_t=' + timestamp
     ];
     let data = null;
     for (const url of endpoints) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
-        const res = await fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' }, signal: controller.signal });
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch(url, { 
+          cache: 'no-store', 
+          headers: { 
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }, 
+          signal: controller.signal 
+        });
         clearTimeout(timeoutId);
         if (res.ok) {
           data = await res.json();
@@ -72,6 +81,13 @@ async function checkForSystemUpdates(showFeedback = false) {
         if (statusText) statusText.textContent = `Atualização ${serverVer}`;
         if (versionEl) versionEl.textContent = `${activeVersion} (Disponível ${serverVer})`;
 
+        const lastAutoUpdate = sessionStorage.getItem('last_auto_update_target');
+        if (lastAutoUpdate !== serverVer) {
+          sessionStorage.setItem('last_auto_update_target', serverVer);
+          forceAppRefresh();
+          return;
+        }
+
         if (showFeedback) {
           if (confirm(`Uma nova versão (${serverVer}) foi encontrada no servidor! Deseja atualizar o aplicativo agora?`)) {
             forceAppRefresh();
@@ -93,10 +109,23 @@ async function checkForSystemUpdates(showFeedback = false) {
       }
     } else {
       if (serverJsonEl) serverJsonEl.textContent = activeVersion;
+      if (statusBadge) {
+        statusBadge.style.background = '#dcfce7';
+        statusBadge.style.borderColor = '#86efac';
+        statusBadge.style.color = '#166534';
+      }
+      if (statusDot) statusDot.style.background = '#16a34a';
       if (statusText) statusText.textContent = 'Ativo';
     }
   } catch (err) {
     if (serverJsonEl) serverJsonEl.textContent = activeVersion;
+    if (statusBadge) {
+      statusBadge.style.background = '#dcfce7';
+      statusBadge.style.borderColor = '#86efac';
+      statusBadge.style.color = '#166534';
+    }
+    if (statusDot) statusDot.style.background = '#16a34a';
+    if (statusText) statusText.textContent = 'Ativo';
     if (showFeedback) {
       alert('Não foi possível verificar a versão no servidor.');
     }
@@ -282,10 +311,8 @@ function renderVistoriaOrSupervisaoCard(entry) {
           </div>
           <div class="item-details">
             <strong class="item-provider">${escapeHtml(entry.attended ? 'Atendido: ' + entry.attended : 'Sem atendente')}</strong>
-            ${entry.plate ? `<span class="item-meta">· Placa: <strong>${escapeHtml(entry.plate)}</strong></span>` : ''}
-            <span class="badge-supervisao" style="margin-left: 6px;">
-              ${escapeHtml(entry.stage || 'Supervisão')}
-            </span>
+            ${entry.plate && entry.plate !== entry.vehicle ? `<span class="item-meta">· Placa: <strong>${escapeHtml(entry.plate)}</strong></span>` : ''}
+            ${entry.stage && entry.stage !== 'Supervisão' ? `<span class="badge-supervisao" style="margin-left: 6px;">${escapeHtml(entry.stage)}</span>` : ''}
             ${ofName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(ofName)}</strong></div>` : ''}
             ${entry.partsPending === 'Sim' ? `<div class="item-meta" style="color: #b91c1c; margin-top: 2px;">Peças: <strong>${escapeHtml(entry.parts || 'Pendentes')}</strong></div>` : ''}
             <div style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">🕒 ${escapeHtml(dataUnica)}</div>
@@ -343,11 +370,11 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
           <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Enviar Vistoria
-            </button>
             <button class="action-btn" type="button" data-action="parts" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
               🚗 Partes do Veículo
+            </button>
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Enviar Vistoria
             </button>
           </div>
         </div>
@@ -399,7 +426,10 @@ function ensureAuthentication() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
+    navigator.serviceWorker.register('/sw.js?v=204')
       .then((registration) => {
         registration.update();
       })
@@ -408,6 +438,26 @@ function registerServiceWorker() {
       });
   }
 }
+
+// Verificação automática de versão na inicialização e ao focar no app
+setTimeout(() => {
+  checkForSystemUpdates(false);
+  try {
+    if (window.AndroidInterface && typeof window.AndroidInterface.cleanupShareTemp === 'function') {
+      window.AndroidInterface.cleanupShareTemp();
+    }
+  } catch (e) {}
+}, 1200);
+
+window.addEventListener('focus', () => {
+  checkForSystemUpdates(false);
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    checkForSystemUpdates(false);
+  }
+});
 
 function closeSystemSettings() {
   const modal = document.getElementById('systemSettingsModal');
@@ -1954,11 +2004,11 @@ function render() {
             <button class="action-btn" type="button" data-action="delete" data-id="${item.id}">Excluir</button>
           </div>
           <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Enviar Vistoria
-            </button>
             <button class="action-btn" type="button" data-action="parts" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
               🚗 Partes do Veículo
+            </button>
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
+              📲 Enviar Vistoria
             </button>
           </div>
         </div>
@@ -2054,16 +2104,36 @@ function getSurveyText(id) {
 
     let fireDetails = [];
     if (details.origemIncendio) fireDetails.push(`Ponto de Origem do Incêndio : ${details.origemIncendio}`);
-    if (details.sistemaCombustivel) fireDetails.push(`Avaliação do Sistema de Combustível e Fluidos : ${details.sistemaCombustivel}`);
-    if (details.sistemaEletrico) fireDetails.push(`Avaliação do Sistema Elétrico : ${details.sistemaEletrico}`);
-    if (details.residuosExtincao) fireDetails.push(`Resíduos de Extinção do Incêndio : ${getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao')}`);
-    if (details.tanqueAfetado) fireDetails.push(`Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}`);
+    
+    if (details.sistemaCombustivel) {
+      const scVal = details.sistemaCombustivel;
+      const scObs = (details.obsSistemaCombustivel || '').trim();
+      fireDetails.push(`Avaliação do Sistema de Combustível e Fluidos : ${scVal}${scObs ? ` (${scObs})` : ''}`);
+    }
+
+    if (details.sistemaEletrico) {
+      const seVal = details.sistemaEletrico;
+      const seObs = (details.obsSistemaEletrico || '').trim();
+      fireDetails.push(`Avaliação do Sistema Elétrico : ${seVal}${seObs ? ` (${seObs})` : ''}`);
+    }
+
+    if (details.residuosExtincao) {
+      const resVal = details.residuosExtincao === 'Obs' ? 'Obs' : getCheckmark(details.residuosExtincao || 'Não', 'residuosExtincao');
+      const resObs = (details.obsResiduosExtincao || '').trim();
+      fireDetails.push(`Resíduos de Extinção do Incêndio : ${resVal}${resObs ? ` (${resObs})` : ''}`);
+    }
+
+    if (details.tanqueAfetado) {
+      fireDetails.push(`Tanque de combustível foi afetado ?: ${getCheckmark(details.tanqueAfetado || 'Não', 'tanqueAfetado')}`);
+    }
+
     if (fireDetails.length > 0) {
       sections.push(fireDetails.join('\n'));
     }
 
-    if (details.obs) {
-      sections.push(`Observações Complementares : ${details.obs}`);
+    const obsVal = details.obs || details.obsIncendio || '';
+    if (obsVal) {
+      sections.push(`Observações Complementares : ${obsVal}`);
     }
   } else if (item.type === 'Pós entrega') {
     sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
@@ -2142,16 +2212,14 @@ function getSurveyText(id) {
     }
   } else {
     // Universal fields (Trocas & Reparos)
-    if (details.trocas) {
-      sections.push(`Trocas\n${details.trocas}`);
-    } else if (item.type === 'Incêndio') {
-      sections.push(`Trocas`);
+    const trocasVal = (details.trocas || item.trocas || '').trim();
+    if (trocasVal) {
+      sections.push(`Trocas\n${trocasVal}`);
     }
 
-    if (details.reparos) {
-      sections.push(`Reparos\n${details.reparos}`);
-    } else if (item.type === 'Incêndio') {
-      sections.push(`Reparos`);
+    const reparosVal = (details.reparos || item.reparos || '').trim();
+    if (reparosVal) {
+      sections.push(`Reparos\n${reparosVal}`);
     }
   }
 
@@ -2328,6 +2396,13 @@ function handleAction(action, id) {
           if (brandInput) {
             brandInput.style.display = item.details[key] === 'Outra' ? 'block' : 'none';
             brandInput.required = item.details[key] === 'Outra';
+          }
+        }
+
+        if (container && container.dataset.obsId) {
+          const obsInput = document.getElementById(container.dataset.obsId);
+          if (obsInput) {
+            obsInput.style.display = (item.details[key] === 'Obs' || (item.details[obsInput.name] && item.details[obsInput.name].trim())) ? 'block' : 'none';
           }
         }
       }
@@ -2859,7 +2934,7 @@ function renderDynamicSurveyFields() {
   } else if (selectedType === 'Roubo Recuperado') {
     fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Incêndio') {
-    fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + obsHtml + `
+    fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + `
       <label style="grid-column: 1 / -1;">
         Ponto de Origem do Incêndio
         <input type="text" name="origemIncendio" placeholder="Ex: Compartimento do motor" />
@@ -2867,34 +2942,37 @@ function renderDynamicSurveyFields() {
       
       <div class="form-toggle-field" style="grid-column: 1 / -1;">
         <span class="status-label">Avaliação do Sistema de Combustível e Fluidos</span>
-        <div class="type-buttons-container" data-input-id="input_sistema_combustivel">
+        <div class="type-buttons-container inc-toggle-obs" data-input-id="input_sistema_combustivel" data-obs-id="input_obs_sistema_combustivel">
           <button type="button" class="type-btn active" data-value="Ok">Ok</button>
           <button type="button" class="type-btn" data-value="Parcialmente Avariado">Parcialmente Avariado</button>
           <button type="button" class="type-btn" data-value="Totalmente Avariado">Totalmente Avariado</button>
-          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+          <button type="button" class="type-btn" data-value="Obs">Obs</button>
         </div>
         <input type="hidden" id="input_sistema_combustivel" name="sistemaCombustivel" value="Ok" />
+        <input type="text" id="input_obs_sistema_combustivel" name="obsSistemaCombustivel" placeholder="Digite a observação do sistema de combustível..." style="display: none; margin-top: 6px; width: 100%; box-sizing: border-box;" />
       </div>
 
       <div class="form-toggle-field" style="grid-column: 1 / -1;">
         <span class="status-label">Avaliação do Sistema Elétrico</span>
-        <div class="type-buttons-container" data-input-id="input_sistema_eletrico">
+        <div class="type-buttons-container inc-toggle-obs" data-input-id="input_sistema_eletrico" data-obs-id="input_obs_sistema_eletrico">
           <button type="button" class="type-btn active" data-value="Ok">Ok</button>
           <button type="button" class="type-btn" data-value="Parcialmente Avariado">Parcialmente Avariado</button>
           <button type="button" class="type-btn" data-value="Totalmente Avariado">Totalmente Avariado</button>
-          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+          <button type="button" class="type-btn" data-value="Obs">Obs</button>
         </div>
         <input type="hidden" id="input_sistema_eletrico" name="sistemaEletrico" value="Ok" />
+        <input type="text" id="input_obs_sistema_eletrico" name="obsSistemaEletrico" placeholder="Digite a observação do sistema elétrico..." style="display: none; margin-top: 6px; width: 100%; box-sizing: border-box;" />
       </div>
 
-      <div class="form-toggle-field">
+      <div class="form-toggle-field" style="grid-column: 1 / -1;">
         <span class="status-label">Resíduos de Extinção do Incêndio?</span>
-        <div class="type-buttons-container" data-input-id="input_residuos">
+        <div class="type-buttons-container inc-toggle-obs" data-input-id="input_residuos" data-obs-id="input_obs_residuos">
           <button type="button" class="type-btn" data-value="Sim">Sim</button>
           <button type="button" class="type-btn active" data-value="Não">Não</button>
-          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+          <button type="button" class="type-btn" data-value="Obs">Obs</button>
         </div>
         <input type="hidden" id="input_residuos" name="residuosExtincao" value="Não" />
+        <input type="text" id="input_obs_residuos" name="obsResiduosExtincao" placeholder="Digite a observação dos resíduos de extinção..." style="display: none; margin-top: 6px; width: 100%; box-sizing: border-box;" />
       </div>
 
       <div class="form-toggle-field">
@@ -2906,7 +2984,7 @@ function renderDynamicSurveyFields() {
         </div>
         <input type="hidden" id="input_tanque" name="tanqueAfetado" value="Não" />
       </div>
-    ` + trocasReparosHtml;
+    ` + extraFieldsHtml;
   } else if (selectedType === 'Enchente') {
     fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + `
       <div class="form-toggle-field">
@@ -3052,6 +3130,16 @@ function renderDynamicSurveyFields() {
         if (brandInput) {
           brandInput.style.display = value === 'Outra' ? 'block' : 'none';
           brandInput.required = value === 'Outra';
+        }
+      }
+
+      if (container.dataset.obsId) {
+        const obsInput = document.getElementById(container.dataset.obsId);
+        if (obsInput) {
+          obsInput.style.display = value === 'Obs' ? 'block' : 'none';
+          if (value === 'Obs') {
+            setTimeout(() => obsInput.focus(), 50);
+          }
         }
       }
 
@@ -3830,7 +3918,6 @@ function renderSupervisaoReport() {
           <div class="plate-badge compact-plate-badge clickable-plate-link" data-super-action="open-report" data-id="${s.id}" title="Clique para abrir o relatório" style="cursor: pointer; display: inline-flex; margin-bottom: 4px;">
             <span class="plate-badge-text">🚗 ${escapeHtml(s.vehicle || s.plate || 'Supervisão')}</span>
           </div>
-          ${s.plate ? `<div style="font-size: 0.78rem; color: #334155; font-weight: 600; margin-top: 1px;">Placa: ${escapeHtml(s.plate)}</div>` : ''}
           <div style="font-size: 0.72rem; color: #64748b; font-weight: normal; margin-top: 2px;">
             🕒 ${escapeHtml(dataUnica)}
           </div>
@@ -4428,18 +4515,16 @@ function openSystemSettings() {
   if (folderSection) folderSection.style.setProperty('display', 'none', 'important');
   const cameraSection = document.getElementById('cameraSettingsSection');
   if (cameraSection) cameraSection.style.setProperty('display', 'none', 'important');
-  let activeVersion = CURRENT_APP_VERSION;
-  if (window.AndroidInterface && typeof window.AndroidInterface.getAppVersion === 'function') {
-    try {
-      activeVersion = window.AndroidInterface.getAppVersion();
-    } catch(e) {}
-  }
+
   const versionDisplay = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
   if (versionDisplay) versionDisplay.textContent = CURRENT_APP_VERSION;
+  const serverJsonEl = document.getElementById('serverVersionJsonDisplay');
+  if (serverJsonEl) serverJsonEl.textContent = CURRENT_APP_VERSION;
+
   updateFolderLabelUI();
   updatePreferredCameraUI();
   if (systemSettingsModal) systemSettingsModal.style.display = 'flex';
-  checkForSystemUpdates();
+  checkForSystemUpdates(false);
 }
 
 async function forceAppRefresh() {
@@ -4636,30 +4721,34 @@ function base64ToBlob(base64, mimeType = 'image/jpeg') {
 let pendingSequenceShare = null;
 let isCheckingSequenceShare = false;
 
-function showToastNotification(message, duration = 4000) {
+function showToastNotification(message, duration = 3000) {
   let toast = document.getElementById('appToastNotification');
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'appToastNotification';
     toast.style.cssText = `
       position: fixed;
-      bottom: 24px;
+      top: 24px;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translateX(-50%) translateY(-20px);
       background: #0f172a;
       color: #ffffff;
-      padding: 12px 20px;
-      border-radius: 12px;
-      font-size: 0.88rem;
+      padding: 13px 22px;
+      border-radius: 14px;
+      font-size: 0.90rem;
       font-weight: 700;
-      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4);
-      z-index: 99999;
+      box-shadow: 0 12px 35px -5px rgba(0,0,0,0.45);
+      z-index: 999999;
       opacity: 0;
-      transition: opacity 0.3s ease, transform 0.3s ease;
+      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       text-align: center;
       max-width: 90%;
       pointer-events: none;
-      border: 1px solid #334155;
+      border: 1.5px solid #22c55e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     `;
     document.body.appendChild(toast);
   }
@@ -4670,7 +4759,89 @@ function showToastNotification(message, duration = 4000) {
   if (window._toastTimeout) clearTimeout(window._toastTimeout);
   window._toastTimeout = setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateX(-50%) translateY(10px)';
+    toast.style.transform = 'translateX(-50%) translateY(-20px)';
+  }, duration);
+}
+
+function showCenteredSuccessModal(message, duration = 3000, callback = null) {
+  let overlay = document.getElementById('appCenteredSuccessOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'appCenteredSuccessOverlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999999;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      padding: 20px;
+      box-sizing: border-box;
+    `;
+
+    const card = document.createElement('div');
+    card.id = 'appCenteredSuccessCard';
+    card.style.cssText = `
+      background: #ffffff;
+      color: #0f172a;
+      padding: 26px 28px;
+      border-radius: 20px;
+      box-shadow: 0 20px 45px -10px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      transform: scale(0.9);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 2px solid #22c55e;
+    `;
+
+    card.innerHTML = `
+      <div style="width: 58px; height: 58px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 1.9rem; font-weight: 900; box-shadow: 0 4px 14px rgba(34,197,94,0.3);">
+        ✓
+      </div>
+      <div id="appCenteredSuccessMsg" style="font-size: 1.08rem; font-weight: 800; color: #0f172a; line-height: 1.35; margin-top: 4px;">
+        ${message}
+      </div>
+      <div style="font-size: 0.78rem; font-weight: 700; color: #16a34a; background: #f0fdf4; padding: 4px 14px; border-radius: 999px; border: 1px solid #bbf7d0; margin-top: 2px;">
+        Retornando à vistoria em instantes...
+      </div>
+    `;
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+  } else {
+    const msgEl = document.getElementById('appCenteredSuccessMsg');
+    if (msgEl) msgEl.textContent = message;
+  }
+
+  const card = document.getElementById('appCenteredSuccessCard');
+  overlay.style.display = 'flex';
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    if (card) card.style.transform = 'scale(1)';
+  });
+
+  if (window._centeredSuccessTimeout) clearTimeout(window._centeredSuccessTimeout);
+  window._centeredSuccessTimeout = setTimeout(() => {
+    overlay.style.opacity = '0';
+    if (card) card.style.transform = 'scale(0.9)';
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      if (typeof callback === 'function') callback();
+    }, 250);
   }, duration);
 }
 
@@ -5146,6 +5317,9 @@ if (photoSystemCameraInput) {
 
 async function handlePhotoFilesSelected(files) {
   if (!files || files.length === 0) return;
+  if (!activePhotoVehicleName) {
+    activePhotoVehicleName = localStorage.getItem('active_photo_vehicle_name') || 'Veículo';
+  }
   
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -6208,6 +6382,7 @@ const VP_CLOUD_ENDPOINTS = [
 let vpSelectedPartsMap = new Map(); // key = displayName -> { name, rawName, zoneId, zoneName, action: 'troca'|'reparo', obs: '' }
 let vpCustomPartsList = [];
 let vpCustomPartRenamesMap = {};
+let vpPartZoneOverridesMap = {}; // key = rawName/effectiveName -> zoneId
 let vpDeletedPartsList = [];
 let vpUsageStats = {}; // key: partName.toLowerCase() -> count
 let vpIsSyncingCloud = false;
@@ -6252,6 +6427,8 @@ function vpLoadState() {
     if (savedCustom) vpCustomPartsList = JSON.parse(savedCustom);
     const savedRenames = localStorage.getItem('mobile_parts_renames');
     if (savedRenames) vpCustomPartRenamesMap = JSON.parse(savedRenames);
+    const savedZoneOverrides = localStorage.getItem('mobile_parts_zone_overrides');
+    if (savedZoneOverrides) vpPartZoneOverridesMap = JSON.parse(savedZoneOverrides);
     const savedDeleted = localStorage.getItem('mobile_parts_deleted');
     if (savedDeleted) vpDeletedPartsList = JSON.parse(savedDeleted);
     const savedStats = localStorage.getItem('mobile_parts_usage_stats');
@@ -6263,6 +6440,7 @@ function vpSaveState(syncToCloud = false) {
   try {
     localStorage.setItem('mobile_parts_custom', JSON.stringify(vpCustomPartsList));
     localStorage.setItem('mobile_parts_renames', JSON.stringify(vpCustomPartRenamesMap));
+    localStorage.setItem('mobile_parts_zone_overrides', JSON.stringify(vpPartZoneOverridesMap));
     localStorage.setItem('mobile_parts_deleted', JSON.stringify(vpDeletedPartsList));
     localStorage.setItem('mobile_parts_usage_stats', JSON.stringify(vpUsageStats));
   } catch(e) {}
@@ -6270,6 +6448,15 @@ function vpSaveState(syncToCloud = false) {
   if (syncToCloud) {
     vpPushCatalogToCloud();
   }
+}
+
+function vpGetPartEffectiveZoneId(rawName, defaultZoneId) {
+  if (rawName && vpPartZoneOverridesMap[rawName]) return vpPartZoneOverridesMap[rawName];
+  const effective = vpGetEffectivePartName(rawName);
+  if (effective && vpPartZoneOverridesMap[effective]) return vpPartZoneOverridesMap[effective];
+  const custom = vpCustomPartsList.find(p => (p.name && p.name.toLowerCase() === (rawName || '').toLowerCase()) || (p.name && p.name.toLowerCase() === (effective || '').toLowerCase()));
+  if (custom && custom.zoneId) return custom.zoneId;
+  return defaultZoneId;
 }
 
 function vpIncrementPartUsage(name) {
@@ -6314,6 +6501,7 @@ async function vpPushCatalogToCloud() {
         customParts: vpCustomPartsList,
         deletedParts: vpDeletedPartsList,
         renames: vpCustomPartRenamesMap,
+        zoneOverrides: vpPartZoneOverridesMap,
         usageStats: vpUsageStats,
         updatedAt: Date.now()
       }
@@ -6412,7 +6600,17 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
         });
       }
 
-      // 4. Merge de estatísticas de uso
+      // 4. Merge de alterações de zona
+      if (cloudData.zoneOverrides && typeof cloudData.zoneOverrides === 'object') {
+        Object.keys(cloudData.zoneOverrides).forEach(key => {
+          if (!vpPartZoneOverridesMap[key]) {
+            vpPartZoneOverridesMap[key] = cloudData.zoneOverrides[key];
+            hasChanges = true;
+          }
+        });
+      }
+
+      // 5. Merge de estatísticas de uso
       if (cloudData.usageStats && typeof cloudData.usageStats === 'object') {
         Object.keys(cloudData.usageStats).forEach(k => {
           const cloudVal = cloudData.usageStats[k] || 0;
@@ -6616,34 +6814,53 @@ window.vpDetectVehicleTypeFromText = vpDetectVehicleTypeFromText;
 
 let currentVistoriaIdForParts = null;
 let vpOpenObsPartNames = new Set();
-let vpActiveSideSection = 'LE'; // 'LE' | 'LD' | 'CENTRAL'
+let vpActiveCategory = 'DIANTEIRA'; // 'DIANTEIRA' | 'TRASEIRA' | 'LATERAIS' | 'DEMAIS' | 'TODAS'
 
-window.vpSelectSideSection = function(sectionKey) {
-  vpActiveSideSection = sectionKey;
+window.vpSelectCategory = function(categoryKey) {
+  vpActiveCategory = categoryKey;
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
 };
 
-function vpClassifyPartSide(item) {
-  const nameUpper = (item.name || item.rawName || '').toUpperCase();
+function vpClassifyPartCategory(item) {
   const zoneId = (item.zoneId || '').toLowerCase();
+  const nameUpper = (item.name || item.rawName || '').toUpperCase();
 
-  const isLE = zoneId.includes('le') || 
-               /\bLE\b/.test(nameUpper) || 
-               nameUpper.includes('(LE)') || 
-               nameUpper.includes(' ESQUERD') ||
-               nameUpper.startsWith('ESQUERD') ||
-               nameUpper.includes('ESQ');
+  // 1. DIANTEIRA EXPLÍCITA (peças frontais que possuem LD/LE continuam na Dianteira)
+  const isDiantExplicit = /\b(CAPO|CAPÔ|GRADE DIANT|GRADE FRONTAL|ALMA DO PARA-CHOQUE DIANT|ALMA DO PARACHOQUE DIANT|FAROL|FAROIS|FARÓIS|FAROL DE MILHA|PARA-LAMA DIANT|PARALAMA DIANT|PAINEL FRONTAL|MINI-FRENTE|MINI FRENTE|RADIADOR|CONDENSADOR|ELETROVENTILADOR|VENTOINHA|GUIA DO PARA-CHOQUE DIANT|GUIA DO PARACHOQUE DIANT|EMBLEMA FRONTAL|QUEBRA-SOL|TAPA-SOL|DEFLETOR DE AR|GUIDAO|GUIDÃO|GARFO DIANT|BENGALA|MESA SUPERIOR|MESA INFERIOR|PISCA DIANT|PARA-BRISA|PARABRISA)\b/i.test(nameUpper);
 
-  const isLD = zoneId.includes('ld') || 
-               /\bLD\b/.test(nameUpper) || 
-               nameUpper.includes('(LD)') || 
-               nameUpper.includes(' DIREIT') ||
-               nameUpper.startsWith('DIREIT') ||
-               nameUpper.includes('DIR');
+  if (isDiantExplicit) {
+    return 'DIANTEIRA';
+  }
 
-  if (isLE && !isLD) return 'LE';
-  if (isLD && !isLE) return 'LD';
-  return 'CENTRAL';
+  // 2. TRASEIRA EXPLÍCITA (peças traseiras que possuem LD/LE continuam na Traseira)
+  const isTrasExplicit = /\b(PORTA-MALAS|PORTA MALAS|TAMPA TRAS|TAMPA DA CACAMBA|TAMPA DA CAÇAMBA|PARA-CHOQUE TRAS|PARACHOQUE TRAS|ALMA DO PARA-CHOQUE TRAS|ALMA DO PARACHOQUE TRAS|LANTERNA TRAS|LANTERNAS TRAS|LANTERNA TAMPA|REFLETOR TRAS|PAINEL TRAS|ASSOALHO DO PORTA-MALAS|ASSOALHO DA CACAMBA|ASSOALHO DA CAÇAMBA|GUIA DO PARA-CHOQUE TRAS|GUIA DO PARACHOQUE TRAS|EMBLEMA TRAS|PROTETOR DE CACAMBA|PROTETOR DE CAÇAMBA|SANTO ANTONIO|SANTO ANTÔNIO|CAPOTA MARITIMA|CAPOTA MARÍTIMA|ESTRIBO TRAS|RABETA TRAS|ESCAPAMENTO|PONTEIRA|PROTETOR DO ESCAPAMENTO|BALANCA TRAS|BALANÇA TRAS|ALCA TRAS|ALÇA TRAS|FAIXAS REFLETIVAS|PORTAS TRAS DO BAU|PORTAS TRAS DO BAÚ|ENGATE DE REBOQUE|VIGIA|VIDRO TRAS)\b/i.test(nameUpper);
+
+  if (isTrasExplicit) {
+    return 'TRASEIRA';
+  }
+
+  // 3. LATERAIS: Portas, retrovisores, vidros de portas, caixas de ar/soleiras, colunas A/B/C, laterais traseiras, frisos, maçanetas, estribos laterais, spoilers/saias laterais, forros de portas, carenagens laterais
+  const isLateralZone = zoneId === 'lateral_dir' || zoneId === 'lateral_esq' || zoneId === 'portas_cabine';
+  const isLateralKeyword = /\b(PORTA|PORTAS|RETROVISOR|RETROVISORES|ESPELHO DO RETROVISOR|CAPA DO RETROVISOR|BRACO DO RETROVISOR|BRAÇO DO RETROVISOR|CAIXA DE AR|SOLEIRA|COLUNA A|COLUNA B|COLUNA C|LATERAL TRAS|LATERAL EXTERNA|FRISO DA PORTA|FRISO DE PORTA|MACANETA|MAÇANETA|ESTRIBO LATERAL|ESTRIBO DE ACESSO|MOLDURA \/ ALARGADOR|ALARGADOR DE PARA-LAMA|SPOILER \/ SAIA LATERAL|SAIA LATERAL|VIDRO DA PORTA|VIDRO PORTA|FORRO DE PORTA|CARENAGEM LATERAL|TAMPA LATERAL)\b/i.test(nameUpper);
+
+  if (isLateralKeyword || isLateralZone) {
+    return 'LATERAIS';
+  }
+
+  // 4. DIANTEIRA GERAL
+  const isDianteiraZone = zoneId === 'dianteira' || zoneId === 'dianteira_moto' || zoneId === 'cabine_dianteira';
+  if (isDianteiraZone || /\b(DIANT|FRONTAL|DIANTEIR[OA])\b/i.test(nameUpper)) {
+    return 'DIANTEIRA';
+  }
+
+  // 5. TRASEIRA GERAL
+  const isTraseiraZone = zoneId === 'traseira' || zoneId === 'traseira_moto' || zoneId === 'traseira_cacamba' || zoneId === 'traseira_implemento';
+  if (isTraseiraZone || /\b(TRAS|TRASEIR[OA]|TRASEIRA)\b/i.test(nameUpper)) {
+    return 'TRASEIRA';
+  }
+
+  // 6. DEMAIS PEÇAS (Teto, Estrutura, Mecânica, Suspensão, Interior, Rodas, Pneus, Freios, etc.)
+  return 'DEMAIS';
 }
 
 window.openVehiclePartsForVistoriaId = function(id) {
@@ -6652,7 +6869,7 @@ window.openVehiclePartsForVistoriaId = function(id) {
 
   currentVistoriaIdForParts = id;
   vpViewAllZonesMode = true;
-  vpActiveSideSection = 'LE';
+  vpActiveCategory = 'DIANTEIRA';
   vpOpenObsPartNames.clear();
   vpLoadState();
   if (typeof window.vpSyncCatalogWithCloud === 'function') {
@@ -6672,9 +6889,6 @@ window.openVehiclePartsForVistoriaId = function(id) {
   }
 
   vpSelectedPartsMap.clear();
-
-  const trocasStr = (item.details && item.details.trocas) || item.trocas || '';
-  const reparosStr = (item.details && item.details.reparos) || item.reparos || '';
 
   const parseLines = (text, action) => {
     if (!text || typeof text !== 'string') return;
@@ -6700,8 +6914,15 @@ window.openVehiclePartsForVistoriaId = function(id) {
     });
   };
 
-  parseLines(trocasStr, 'troca');
-  parseLines(reparosStr, 'reparo');
+  if (item.type === 'Vistoria Rio log') {
+    const avariasStr = (item.details && item.details.avarias) || item.avarias || '';
+    parseLines(avariasStr, 'troca');
+  } else {
+    const trocasStr = (item.details && item.details.trocas) || item.trocas || '';
+    const reparosStr = (item.details && item.details.reparos) || item.reparos || '';
+    parseLines(trocasStr, 'troca');
+    parseLines(reparosStr, 'reparo');
+  }
 
   vpSetupSearch();
   vpUpdateTriggerButton();
@@ -6716,7 +6937,7 @@ window.openVehiclePartsModalForId = window.openVehiclePartsForVistoriaId;
 window.openVehiclePartsModal = function() {
   currentVistoriaIdForParts = null;
   vpViewAllZonesMode = true;
-  vpActiveSideSection = 'LE';
+  vpActiveCategory = 'DIANTEIRA';
   vpOpenObsPartNames.clear();
   vpLoadState();
   if (typeof window.vpSyncCatalogWithCloud === 'function') {
@@ -6730,7 +6951,7 @@ window.openVehiclePartsModal = function() {
   const titleDisplay = document.getElementById('vpVehicleTitle');
 
   // Auto-detecção inteligente de tipo com catálogo completo de marcas e modelos
-  const detectedType = vpDetectVehicleTypeFromText(vehicleTitle);
+  const detectedType = (typeof selectedType !== 'undefined' && selectedType === 'Moto') ? 'moto' : vpDetectVehicleTypeFromText(vehicleTitle);
 
   // Aplica o tipo detectado e atualiza as abas
   window.vpSetVehicleType(detectedType, false, true);
@@ -6740,12 +6961,16 @@ window.openVehiclePartsModal = function() {
     titleDisplay.textContent = vehicleTitle || 'Partes do Veículo';
   }
 
-  // Lê os valores atuais dos textareas de trocas e reparos para sincronizar
+  // Lê os valores atuais dos textareas para sincronizar
   vpSelectedPartsMap.clear();
 
+  const isRioLog = (typeof selectedType !== 'undefined' && selectedType === 'Vistoria Rio log');
+  const avariasTextarea = document.querySelector('textarea[name="avarias"]');
   const trocasTextarea = document.querySelector('textarea[name="trocas"]');
-  if (trocasTextarea && trocasTextarea.value) {
-    const lines = trocasTextarea.value.split('\n');
+  const reparosTextarea = document.querySelector('textarea[name="reparos"]');
+
+  if (isRioLog && avariasTextarea && avariasTextarea.value) {
+    const lines = avariasTextarea.value.split('\n');
     lines.forEach(line => {
       const trimmed = line.trim();
       if (!trimmed) return;
@@ -6761,26 +6986,44 @@ window.openVehiclePartsModal = function() {
         obs: obs
       });
     });
-  }
-
-  const reparosTextarea = document.querySelector('textarea[name="reparos"]');
-  if (reparosTextarea && reparosTextarea.value) {
-    const lines = reparosTextarea.value.split('\n');
-    lines.forEach(line => {
-      const trimmed = line.trim();
-      if (!trimmed) return;
-      const match = trimmed.match(/^(.*?)\s*\((.*?)\)$/);
-      const name = match ? match[1].trim() : trimmed;
-      const obs = match ? match[2].trim() : '';
-      vpSelectedPartsMap.set(name, {
-        name: name,
-        rawName: name,
-        zoneId: vpActiveZoneId,
-        zoneName: 'Veículo',
-        action: 'reparo',
-        obs: obs
+  } else {
+    if (trocasTextarea && trocasTextarea.value) {
+      const lines = trocasTextarea.value.split('\n');
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        const match = trimmed.match(/^(.*?)\s*\((.*?)\)$/);
+        const name = match ? match[1].trim() : trimmed;
+        const obs = match ? match[2].trim() : '';
+        vpSelectedPartsMap.set(name, {
+          name: name,
+          rawName: name,
+          zoneId: vpActiveZoneId,
+          zoneName: 'Veículo',
+          action: 'troca',
+          obs: obs
+        });
       });
-    });
+    }
+
+    if (reparosTextarea && reparosTextarea.value) {
+      const lines = reparosTextarea.value.split('\n');
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        const match = trimmed.match(/^(.*?)\s*\((.*?)\)$/);
+        const name = match ? match[1].trim() : trimmed;
+        const obs = match ? match[2].trim() : '';
+        vpSelectedPartsMap.set(name, {
+          name: name,
+          rawName: name,
+          zoneId: vpActiveZoneId,
+          zoneName: 'Veículo',
+          action: 'reparo',
+          obs: obs
+        });
+      });
+    }
   }
 
   vpSetupSearch();
@@ -6798,12 +7041,45 @@ window.closeVehiclePartsModal = function() {
   if (modal) modal.style.display = 'none';
 };
 
+window.vpOpenPhotosFromDock = function() {
+  let vehicleName = '';
+  const plateInput = document.getElementById('plateInput');
+  if (plateInput && plateInput.value && plateInput.value.trim()) {
+    vehicleName = plateInput.value.trim();
+  }
+  if (!vehicleName) {
+    const superInput = document.getElementById('supervisaoVehicleInput');
+    if (superInput && superInput.value && superInput.value.trim()) {
+      vehicleName = superInput.value.trim();
+    }
+  }
+  if (!vehicleName && currentVistoriaIdForParts && Array.isArray(window.vistorias)) {
+    const vist = window.vistorias.find(v => v.id === currentVistoriaIdForParts);
+    if (vist && vist.placa) vehicleName = vist.placa.trim();
+    else if (vist && vist.veiculo) vehicleName = vist.veiculo.trim();
+  }
+  if (!vehicleName && typeof vpCurrentVehicleModelName === 'string' && vpCurrentVehicleModelName.trim()) {
+    vehicleName = vpCurrentVehicleModelName.trim();
+  }
+  const targetId = currentVistoriaIdForParts || (typeof editingId !== 'undefined' ? editingId : null) || (typeof editingSupervisaoId !== 'undefined' ? editingSupervisaoId : null) || 'active_vehicle_parts';
+  if (!vehicleName) {
+    vehicleName = 'Veículo';
+  }
+  if (typeof openPhotoManagerForVehicle === 'function') {
+    openPhotoManagerForVehicle(targetId, vehicleName);
+  } else if (typeof openPhotoManagerForId === 'function') {
+    openPhotoManagerForId(targetId);
+  }
+};
+
 window.vpApplyAndClose = function() {
   const trocasList = [];
   const reparosList = [];
+  const allPartsList = [];
 
   for (const part of vpSelectedPartsMap.values()) {
     const formatted = part.obs ? `${part.name} (${part.obs})` : part.name;
+    allPartsList.push(formatted);
     if (part.action === 'troca') {
       trocasList.push(formatted);
       vpIncrementPartUsage(part.name);
@@ -6821,8 +7097,12 @@ window.vpApplyAndClose = function() {
     const item = items.find(entry => entry.id === currentVistoriaIdForParts);
     if (item) {
       if (!item.details) item.details = {};
-      item.details.trocas = trocasList.join('\n');
-      item.details.reparos = reparosList.join('\n');
+      if (item.type === 'Vistoria Rio log') {
+        item.details.avarias = allPartsList.join('\n');
+      } else {
+        item.details.trocas = trocasList.join('\n');
+        item.details.reparos = reparosList.join('\n');
+      }
       item.updatedAt = new Date().toLocaleString('pt-BR');
       item.updatedAtTime = Date.now();
       saveItems();
@@ -6830,28 +7110,44 @@ window.vpApplyAndClose = function() {
       if (typeof updateLocalAndServerData === 'function') {
         updateLocalAndServerData();
       }
-      alert('✅ Partes do veículo salvas na vistoria!');
     }
     currentVistoriaIdForParts = null;
   }
 
+  const isRioLog = (typeof selectedType !== 'undefined' && selectedType === 'Vistoria Rio log');
   const trocasTextarea = document.querySelector('textarea[name="trocas"]');
   const reparosTextarea = document.querySelector('textarea[name="reparos"]');
+  const avariasTextarea = document.querySelector('textarea[name="avarias"]');
 
-  if (trocasTextarea) {
-    trocasTextarea.value = trocasList.join('\n');
-    trocasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-    trocasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+  if (isRioLog && avariasTextarea) {
+    avariasTextarea.value = allPartsList.join('\n');
+    avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+    avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+  } else {
+    if (trocasTextarea) {
+      trocasTextarea.value = trocasList.join('\n');
+      trocasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+      trocasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    if (reparosTextarea) {
+      reparosTextarea.value = reparosList.join('\n');
+      reparosTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+      reparosTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    if (avariasTextarea && !trocasTextarea && !reparosTextarea) {
+      avariasTextarea.value = allPartsList.join('\n');
+      avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+      avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+    }
   }
 
-  if (reparosTextarea) {
-    reparosTextarea.value = reparosList.join('\n');
-    reparosTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-    reparosTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-
-  window.closeVehiclePartsModal();
-  window.vpCloseReviewSheet();
+  // Exibe a tela com a mensagem no centro da tela por 3 segundos e só depois volta para a tela de vistoria
+  showCenteredSuccessModal('Partes do veículo salvas na vistoria!', 3000, () => {
+    window.closeVehiclePartsModal();
+    window.vpCloseReviewSheet();
+  });
 };
 
 function vpUpdateTriggerButton() {
@@ -6860,21 +7156,26 @@ function vpUpdateTriggerButton() {
   const triggerTitle = document.getElementById('vpTriggerTitle');
   const triggerBadge = document.getElementById('vpTriggerCountBadge');
 
-  if (vpViewAllZonesMode) {
-    if (triggerIcon) triggerIcon.textContent = '📋';
-    if (triggerTitle) triggerTitle.textContent = 'Todas as Zonas (LE, LD e Centrais)';
-    if (triggerBadge) {
-      triggerBadge.style.display = vpSelectedPartsMap.size > 0 ? 'inline-block' : 'none';
-      triggerBadge.textContent = vpSelectedPartsMap.size;
-    }
-  } else if (currentZone) {
-    if (triggerIcon) triggerIcon.textContent = currentZone.icon;
-    if (triggerTitle) triggerTitle.textContent = currentZone.name;
-    const count = vpGetZoneSelectedCount(currentZone.id);
-    if (triggerBadge) {
-      triggerBadge.style.display = count > 0 ? 'inline-block' : 'none';
-      triggerBadge.textContent = count;
-    }
+  const categoryTitles = {
+    'DIANTEIRA': 'Dianteira (LD, LE e Centrais)',
+    'TRASEIRA': 'Traseira (LD, LE e Centrais)',
+    'LATERAIS': 'Laterais (Todos os Lados)',
+    'DEMAIS': 'Demais Peças (Teto, Mecânica, Interior)',
+    'TODAS': 'Todas as Peças do Catálogo'
+  };
+  const categoryIcons = {
+    'DIANTEIRA': '🚗',
+    'TRASEIRA': '🚘',
+    'LATERAIS': '↔️',
+    'DEMAIS': '⚙️',
+    'TODAS': '📋'
+  };
+
+  if (triggerIcon) triggerIcon.textContent = categoryIcons[vpActiveCategory] || '🚗';
+  if (triggerTitle) triggerTitle.textContent = categoryTitles[vpActiveCategory] || 'Partes do Veículo';
+  if (triggerBadge) {
+    triggerBadge.style.display = vpSelectedPartsMap.size > 0 ? 'inline-block' : 'none';
+    triggerBadge.textContent = vpSelectedPartsMap.size;
   }
 }
 
@@ -6892,28 +7193,40 @@ window.vpOpenZonesGridModal = function() {
   const btnAll = document.getElementById('vpViewAllBtnText');
 
   if (btnAll) {
-    btnAll.textContent = vpViewAllZonesMode ? '📁 Voltar para Visualização por Zona' : '👁️ Ver Todas as Zonas Juntas';
+    btnAll.textContent = '👁️ Ver Todas as Peças do Catálogo';
   }
 
   if (grid) {
-    grid.innerHTML = vpActiveZones.map(zone => {
-      const count = vpGetZoneSelectedCount(zone.id);
-      const isCurrent = !vpViewAllZonesMode && zone.id === vpActiveZoneId;
-      return `
-        <button 
-          type="button" 
-          class="vp-zone-card ${isCurrent ? 'active' : ''}" 
-          onclick="vpSelectZone('${zone.id}')"
-        >
-          <span class="vp-zone-icon">${zone.icon}</span>
-          <div class="vp-zone-info">
-            <strong>${zone.name}</strong>
-            <span>${zone.parts.length} peças</span>
-          </div>
-          ${count > 0 ? `<span class="vp-zone-indicator">${count}</span>` : ''}
-        </button>
-      `;
-    }).join('');
+    grid.innerHTML = `
+      <button type="button" class="vp-zone-card ${vpActiveCategory === 'DIANTEIRA' ? 'active' : ''}" onclick="vpSelectCategory('DIANTEIRA'); vpCloseZonesGridModal();">
+        <span class="vp-zone-icon">🚗</span>
+        <div class="vp-zone-info">
+          <strong>Dianteira</strong>
+          <span>Todas da frente (LD/LE)</span>
+        </div>
+      </button>
+      <button type="button" class="vp-zone-card ${vpActiveCategory === 'TRASEIRA' ? 'active' : ''}" onclick="vpSelectCategory('TRASEIRA'); vpCloseZonesGridModal();">
+        <span class="vp-zone-icon">🚘</span>
+        <div class="vp-zone-info">
+          <strong>Traseira</strong>
+          <span>Todas de trás (LD/LE)</span>
+        </div>
+      </button>
+      <button type="button" class="vp-zone-card ${vpActiveCategory === 'LATERAIS' ? 'active' : ''}" onclick="vpSelectCategory('LATERAIS'); vpCloseZonesGridModal();">
+        <span class="vp-zone-icon">↔️</span>
+        <div class="vp-zone-info">
+          <strong>Laterais</strong>
+          <span>Portas, espelhos, saias</span>
+        </div>
+      </button>
+      <button type="button" class="vp-zone-card ${vpActiveCategory === 'DEMAIS' ? 'active' : ''}" onclick="vpSelectCategory('DEMAIS'); vpCloseZonesGridModal();">
+        <span class="vp-zone-icon">⚙️</span>
+        <div class="vp-zone-info">
+          <strong>Demais Peças</strong>
+          <span>Teto, mecânica, interior</span>
+        </div>
+      </button>
+    `;
   }
 
   if (modal) modal.style.display = 'flex';
@@ -6931,15 +7244,13 @@ window.vpHandleZonesOverlayClick = function(e) {
 };
 
 window.vpSelectZone = function(zoneId) {
-  vpViewAllZonesMode = false;
-  vpActiveZoneId = zoneId;
   window.vpCloseZonesGridModal();
   vpUpdateTriggerButton();
   vpRenderParts();
 };
 
 window.vpToggleViewAllZones = function() {
-  vpViewAllZonesMode = !vpViewAllZonesMode;
+  vpActiveCategory = 'TODAS';
   window.vpCloseZonesGridModal();
   vpUpdateTriggerButton();
   vpRenderParts();
@@ -6986,7 +7297,6 @@ function vpIncrementPartUsage(partName) {
 }
 
 function vpRenderParts(filterQuery = '') {
-  const currentZone = vpActiveZones.find(z => z.id === vpActiveZoneId) || vpActiveZones[0];
   const listEl = document.getElementById('vpPartsScrollContainer');
   if (!listEl) return;
 
@@ -7017,7 +7327,9 @@ function vpRenderParts(filterQuery = '') {
         const effective = vpGetEffectivePartName(rawP);
         if (!vpIsPartDeleted(rawP, effective)) {
           if (effective.toLowerCase().includes(q) || rawP.toLowerCase().includes(q)) {
-            matching.push({ rawName: rawP, name: effective, zoneId: z.id, zoneName: z.name, icon: z.icon });
+            const actualZoneId = vpGetPartEffectiveZoneId(rawP, z.id);
+            const zObj = vpActiveZones.find(zone => zone.id === actualZoneId) || z;
+            matching.push({ rawName: rawP, name: effective, zoneId: actualZoneId, zoneName: zObj.name, icon: zObj.icon });
           }
         }
       });
@@ -7027,8 +7339,9 @@ function vpRenderParts(filterQuery = '') {
         const effective = vpGetEffectivePartName(p.name);
         if (!vpIsPartDeleted(p.name, effective)) {
           if (effective.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)) {
-            const zObj = vpActiveZones.find(z => z.id === p.zoneId);
-            matching.push({ rawName: p.name, name: effective, zoneId: p.zoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: '✨' });
+            const actualZoneId = vpGetPartEffectiveZoneId(p.name, p.zoneId);
+            const zObj = vpActiveZones.find(zone => zone.id === actualZoneId);
+            matching.push({ rawName: p.name, name: effective, zoneId: actualZoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: zObj ? zObj.icon : '✨' });
           }
         }
       }
@@ -7059,191 +7372,198 @@ function vpRenderParts(filterQuery = '') {
     return;
   }
 
-  // 2. VER TODAS AS ZONAS JUNTAS (SELETORES CLICÁVEIS LE, LD E CENTRAIS + CARDS EM LARGURA TOTAL)
-  if (vpViewAllZonesMode) {
-    let allParts = [];
-    const seenNames = new Set();
+  // 2. VISUALIZAÇÃO PADRÃO DIVIDIDA EM 5 CATEGORIAS: DIANTEIRA, TRASEIRA, LATERAIS, DEMAIS E TODAS
+  let allParts = [];
+  const seenNames = new Set();
 
-    vpActiveZones.forEach(z => {
-      z.parts.forEach(rawP => {
-        const effective = vpGetEffectivePartName(rawP);
-        if (!vpIsPartDeleted(rawP, effective) && !seenNames.has(effective)) {
-          seenNames.add(effective);
-          allParts.push({ rawName: rawP, name: effective, zoneId: z.id, zoneName: z.name, icon: z.icon });
-        }
-      });
-    });
-
-    vpCustomPartsList.forEach(p => {
-      if (matchesVehicleType(p)) {
-        const effective = vpGetEffectivePartName(p.name);
-        if (!vpIsPartDeleted(p.name, effective) && !seenNames.has(effective)) {
-          seenNames.add(effective);
-          const zObj = vpActiveZones.find(z => z.id === p.zoneId);
-          allParts.push({ rawName: p.name, name: effective, zoneId: p.zoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: '✨' });
-        }
+  vpActiveZones.forEach(z => {
+    z.parts.forEach(rawP => {
+      const effective = vpGetEffectivePartName(rawP);
+      if (!vpIsPartDeleted(rawP, effective) && !seenNames.has(effective)) {
+        seenNames.add(effective);
+        const actualZoneId = vpGetPartEffectiveZoneId(rawP, z.id);
+        const zObj = vpActiveZones.find(zone => zone.id === actualZoneId) || z;
+        allParts.push({ rawName: rawP, name: effective, zoneId: actualZoneId, zoneName: zObj.name, icon: zObj.icon });
       }
     });
+  });
 
-    const leParts = allParts.filter(p => vpClassifyPartSide(p) === 'LE');
-    const ldParts = allParts.filter(p => vpClassifyPartSide(p) === 'LD');
-    const centralParts = allParts.filter(p => vpClassifyPartSide(p) === 'CENTRAL');
-
-    sortPartsByUsage(leParts);
-    sortPartsByUsage(ldParts);
-    sortPartsByUsage(centralParts);
-
-    // Contadores de selecionados por lado
-    const leSelectedCount = leParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
-    const ldSelectedCount = ldParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
-    const centralSelectedCount = centralParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
-
-    let activeList = leParts;
-    let activeTitle = 'Lado Esquerdo';
-    let activeIcon = '⬅️';
-    let activeColor = '#2563eb';
-    let activeBg = '#eff6ff';
-
-    if (vpActiveSideSection === 'LD') {
-      activeList = ldParts;
-      activeTitle = 'Lado Direito';
-      activeIcon = '➡️';
-      activeColor = '#16a34a';
-      activeBg = '#f0fdf4';
-    } else if (vpActiveSideSection === 'CENTRAL') {
-      activeList = centralParts;
-      activeTitle = 'Peças Centrais e Gerais';
-      activeIcon = '🚙';
-      activeColor = '#9333ea';
-      activeBg = '#fdf4ff';
+  vpCustomPartsList.forEach(p => {
+    if (matchesVehicleType(p)) {
+      const effective = vpGetEffectivePartName(p.name);
+      if (!vpIsPartDeleted(p.name, effective) && !seenNames.has(effective)) {
+        seenNames.add(effective);
+        const actualZoneId = vpGetPartEffectiveZoneId(p.name, p.zoneId);
+        const zObj = vpActiveZones.find(zone => zone.id === actualZoneId);
+        allParts.push({ rawName: p.name, name: effective, zoneId: actualZoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: zObj ? zObj.icon : '✨' });
+      }
     }
+  });
 
-    const selectedInActive = activeList.filter(p => vpSelectedPartsMap.has(p.name));
-    const unselectedInActive = activeList.filter(p => !vpSelectedPartsMap.has(p.name));
+  const diantParts = allParts.filter(p => vpClassifyPartCategory(p) === 'DIANTEIRA');
+  const trasParts = allParts.filter(p => vpClassifyPartCategory(p) === 'TRASEIRA');
+  const latParts = allParts.filter(p => vpClassifyPartCategory(p) === 'LATERAIS');
+  const demaisParts = allParts.filter(p => vpClassifyPartCategory(p) === 'DEMAIS');
+  const todasParts = [...allParts];
 
-    listEl.innerHTML = `
-      <div class="vp-sides-section-wrapper" style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
-        <!-- OS 3 BOTÕES DOS LADOS LADO A LADO EM LINHA ÚNICA (SEM QUEBRA) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; width: 100%; box-sizing: border-box;">
-          <!-- BOTÃO ESQUERDO -->
-          <button 
-            type="button" 
-            onclick="vpSelectSideSection('LE')"
-            title="Lado Esquerdo"
-            style="display: flex; align-items: center; justify-content: center; gap: 3px; height: 36px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'LE' ? '#2563eb' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LE' ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; white-space: nowrap; box-shadow: ${vpActiveSideSection === 'LE' ? '0 2px 6px rgba(37,99,235,0.18)' : 'none'};"
-          >
-            <span style="font-size: 0.76rem;">⬅️</span>
-            <span style="font-size: 0.74rem; font-weight: 800; color: ${vpActiveSideSection === 'LE' ? '#1e3a8a' : '#475569'};">Esq.</span>
-            <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'LE' ? '#2563eb' : '#64748b'}; background: ${vpActiveSideSection === 'LE' ? '#dbeafe' : '#f1f5f9'}; padding: 1px 4px; border-radius: 999px;">${leParts.length}</span>
-            ${leSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 4px; border-radius: 999px;">🔴${leSelectedCount}</span>` : ''}
-          </button>
+  sortPartsByUsage(diantParts);
+  sortPartsByUsage(trasParts);
+  sortPartsByUsage(latParts);
+  sortPartsByUsage(demaisParts);
+  sortPartsByUsage(todasParts);
 
-          <!-- BOTÃO DIREITO -->
-          <button 
-            type="button" 
-            onclick="vpSelectSideSection('LD')"
-            title="Lado Direito"
-            style="display: flex; align-items: center; justify-content: center; gap: 3px; height: 36px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'LD' ? '#16a34a' : '#cbd5e1'}; background: ${vpActiveSideSection === 'LD' ? '#f0fdf4' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; white-space: nowrap; box-shadow: ${vpActiveSideSection === 'LD' ? '0 2px 6px rgba(22,163,74,0.18)' : 'none'};"
-          >
-            <span style="font-size: 0.76rem;">➡️</span>
-            <span style="font-size: 0.74rem; font-weight: 800; color: ${vpActiveSideSection === 'LD' ? '#166534' : '#475569'};">Dir.</span>
-            <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'LD' ? '#16a34a' : '#64748b'}; background: ${vpActiveSideSection === 'LD' ? '#dcfce7' : '#f1f5f9'}; padding: 1px 4px; border-radius: 999px;">${ldParts.length}</span>
-            ${ldSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 4px; border-radius: 999px;">🔴${ldSelectedCount}</span>` : ''}
-          </button>
+  const diantSelCount = diantParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
+  const trasSelCount = trasParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
+  const latSelCount = latParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
+  const demaisSelCount = demaisParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
+  const todasSelCount = todasParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
 
-          <!-- BOTÃO CENTRAIS -->
-          <button 
-            type="button" 
-            onclick="vpSelectSideSection('CENTRAL')"
-            title="Peças Centrais e Gerais"
-            style="display: flex; align-items: center; justify-content: center; gap: 3px; height: 36px; padding: 4px 2px; border-radius: 8px; border: 2px solid ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#cbd5e1'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fdf4ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; white-space: nowrap; box-shadow: ${vpActiveSideSection === 'CENTRAL' ? '0 2px 6px rgba(147,51,234,0.18)' : 'none'};"
-          >
-            <span style="font-size: 0.76rem;">🚙</span>
-            <span style="font-size: 0.74rem; font-weight: 800; color: ${vpActiveSideSection === 'CENTRAL' ? '#6b21a8' : '#475569'};">Cent.</span>
-            <span style="font-size: 0.64rem; font-weight: 800; color: ${vpActiveSideSection === 'CENTRAL' ? '#9333ea' : '#64748b'}; background: ${vpActiveSideSection === 'CENTRAL' ? '#fae8ff' : '#f1f5f9'}; padding: 1px 4px; border-radius: 999px;">${centralParts.length}</span>
-            ${centralSelectedCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 4px; border-radius: 999px;">🔴${centralSelectedCount}</span>` : ''}
-          </button>
-        </div>
+  let activeList = diantParts;
+  let activeTitle = 'Dianteira (LD, LE e Centrais)';
+  let activeIcon = '🚗';
+  let activeColor = '#2563eb';
+  let activeBg = '#eff6ff';
 
-        <!-- CABEÇALHO DO LADO ATIVO -->
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; background: ${activeBg}; border-radius: 8px; border-left: 4px solid ${activeColor};">
-          <div style="display: flex; align-items: center; gap: 5px;">
-            <span style="font-size: 0.95rem;">${activeIcon}</span>
-            <strong style="font-size: 0.80rem; color: #0f172a;">${activeTitle}</strong>
-          </div>
-          <span style="font-size: 0.68rem; font-weight: 800; color: ${activeColor}; background: #ffffff; padding: 2px 6px; border-radius: 999px; border: 1px solid #cbd5e1;">
-            ${activeList.length} peças
-          </span>
-        </div>
-
-        <!-- SEÇÃO SUSPENSA NO TOPO: PEÇAS SELECIONADAS (2 COLUNAS) -->
-        ${selectedInActive.length > 0 ? `
-          <div style="display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 6px; background: #fef2f2; border: 1.5px dashed #f87171; border-radius: 8px; box-sizing: border-box;">
-            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px;">
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <span style="font-size: 0.90rem;">📌</span>
-                <strong style="font-size: 0.76rem; color: #991b1b;">Selecionadas (${selectedInActive.length})</strong>
-              </div>
-              <span style="font-size: 0.62rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 1px 5px; border-radius: 999px;">Fixadas</span>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
-              ${selectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- RESTANTE DO CATÁLOGO DE PEÇAS (2 COLUNAS) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
-          ${unselectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
-        </div>
-      </div>
-    `;
-    return;
+  if (vpActiveCategory === 'TRASEIRA') {
+    activeList = trasParts;
+    activeTitle = 'Traseira (LD, LE e Centrais)';
+    activeIcon = '🚘';
+    activeColor = '#ea580c';
+    activeBg = '#fff7ed';
+  } else if (vpActiveCategory === 'LATERAIS') {
+    activeList = latParts;
+    activeTitle = 'Laterais (Todos os Lados)';
+    activeIcon = '↔️';
+    activeColor = '#16a34a';
+    activeBg = '#f0fdf4';
+  } else if (vpActiveCategory === 'DEMAIS') {
+    activeList = demaisParts;
+    activeTitle = 'Demais Peças (Teto, Mecânica, Interior)';
+    activeIcon = '⚙️';
+    activeColor = '#9333ea';
+    activeBg = '#fdf4ff';
+  } else if (vpActiveCategory === 'TODAS') {
+    activeList = todasParts;
+    activeTitle = 'Todas as Peças do Catálogo';
+    activeIcon = '📋';
+    activeColor = '#0f766e';
+    activeBg = '#f0fdfa';
   }
 
-  // 3. ZONA ESPECÍFICA ATUAL
-  const partsInCurrent = currentZone.parts
-    .map(rawP => ({ rawName: rawP, name: vpGetEffectivePartName(rawP), zoneId: currentZone.id, zoneName: currentZone.name, icon: currentZone.icon }))
-    .filter(p => !vpIsPartDeleted(p.rawName, p.name));
-  const customInCurrent = vpCustomPartsList
-    .filter(p => p.zoneId === currentZone.id && matchesVehicleType(p))
-    .map(p => ({ rawName: p.name, name: vpGetEffectivePartName(p.name), zoneId: currentZone.id, zoneName: currentZone.name, icon: '✨' }))
-    .filter(p => !vpIsPartDeleted(p.rawName, p.name));
-  const totalZoneParts = [...partsInCurrent, ...customInCurrent];
-
-  if (totalZoneParts.length === 0) {
-    listEl.innerHTML = `
-      <div style="width: 100%; padding: 30px 16px; text-align: center; color: #64748b;">
-        <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">📂</span>
-        <b>Nenhuma peça ativa nesta zona</b>
-        <p style="font-size: 0.80rem; margin-top: 4px;">Toque no botão "+ Nova Peça" acima para cadastrar.</p>
-      </div>
-    `;
-    return;
-  }
-
-  sortPartsByUsage(totalZoneParts);
-  const selectedInZone = totalZoneParts.filter(p => vpSelectedPartsMap.has(p.name));
-  const unselectedInZone = totalZoneParts.filter(p => !vpSelectedPartsMap.has(p.name));
+  sortPartsByUsage(activeList);
+  const selectedInActive = activeList.filter(p => vpSelectedPartsMap.has(p.name));
+  const unselectedInActive = activeList.filter(p => !vpSelectedPartsMap.has(p.name));
 
   listEl.innerHTML = `
-    <div style="display: flex; flex-direction: column; gap: 5px; width: 100%; box-sizing: border-box;">
-      ${selectedInZone.length > 0 ? `
+    <div class="vp-category-section-wrapper" style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
+      <!-- AS 5 ABAS DE CATEGORIAS: DIANTEIRA, TRASEIRA, LATERAIS, DEMAIS E TODAS -->
+      <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; width: 100%; box-sizing: border-box;">
+        <!-- DIANTEIRA -->
+        <button 
+          type="button" 
+          onclick="vpSelectCategory('DIANTEIRA')"
+          title="Dianteira (inclusive LD e LE)"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 1px; border-radius: 8px; border: 2px solid ${vpActiveCategory === 'DIANTEIRA' ? '#2563eb' : '#cbd5e1'}; background: ${vpActiveCategory === 'DIANTEIRA' ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveCategory === 'DIANTEIRA' ? '0 2px 6px rgba(37,99,235,0.18)' : 'none'};"
+        >
+          <span style="font-size: 0.85rem; line-height: 1;">🚗</span>
+          <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveCategory === 'DIANTEIRA' ? '#1e3a8a' : '#475569'}; line-height: 1.1;">Diant.</span>
+          <div style="display: flex; align-items: center; gap: 2px;">
+            <span style="font-size: 0.60rem; font-weight: 800; color: ${vpActiveCategory === 'DIANTEIRA' ? '#2563eb' : '#64748b'}; background: ${vpActiveCategory === 'DIANTEIRA' ? '#dbeafe' : '#f1f5f9'}; padding: 0.5px 3px; border-radius: 999px;">${diantParts.length}</span>
+            ${diantSelCount > 0 ? `<span style="font-size: 0.58rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 0.5px 3px; border-radius: 999px;">${diantSelCount}</span>` : ''}
+          </div>
+        </button>
+
+        <!-- TRASEIRA -->
+        <button 
+          type="button" 
+          onclick="vpSelectCategory('TRASEIRA')"
+          title="Traseira (inclusive LD e LE)"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 1px; border-radius: 8px; border: 2px solid ${vpActiveCategory === 'TRASEIRA' ? '#ea580c' : '#cbd5e1'}; background: ${vpActiveCategory === 'TRASEIRA' ? '#fff7ed' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveCategory === 'TRASEIRA' ? '0 2px 6px rgba(234,88,12,0.18)' : 'none'};"
+        >
+          <span style="font-size: 0.85rem; line-height: 1;">🚘</span>
+          <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveCategory === 'TRASEIRA' ? '#9a3412' : '#475569'}; line-height: 1.1;">Tras.</span>
+          <div style="display: flex; align-items: center; gap: 2px;">
+            <span style="font-size: 0.60rem; font-weight: 800; color: ${vpActiveCategory === 'TRASEIRA' ? '#ea580c' : '#64748b'}; background: ${vpActiveCategory === 'TRASEIRA' ? '#ffedd5' : '#f1f5f9'}; padding: 0.5px 3px; border-radius: 999px;">${trasParts.length}</span>
+            ${trasSelCount > 0 ? `<span style="font-size: 0.58rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 0.5px 3px; border-radius: 999px;">${trasSelCount}</span>` : ''}
+          </div>
+        </button>
+
+        <!-- LATERAIS -->
+        <button 
+          type="button" 
+          onclick="vpSelectCategory('LATERAIS')"
+          title="Laterais (independente do lado)"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 1px; border-radius: 8px; border: 2px solid ${vpActiveCategory === 'LATERAIS' ? '#16a34a' : '#cbd5e1'}; background: ${vpActiveCategory === 'LATERAIS' ? '#f0fdf4' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveCategory === 'LATERAIS' ? '0 2px 6px rgba(22,163,74,0.18)' : 'none'};"
+        >
+          <span style="font-size: 0.85rem; line-height: 1;">↔️</span>
+          <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveCategory === 'LATERAIS' ? '#166534' : '#475569'}; line-height: 1.1;">Laterais</span>
+          <div style="display: flex; align-items: center; gap: 2px;">
+            <span style="font-size: 0.60rem; font-weight: 800; color: ${vpActiveCategory === 'LATERAIS' ? '#16a34a' : '#64748b'}; background: ${vpActiveCategory === 'LATERAIS' ? '#dcfce7' : '#f1f5f9'}; padding: 0.5px 3px; border-radius: 999px;">${latParts.length}</span>
+            ${latSelCount > 0 ? `<span style="font-size: 0.58rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 0.5px 3px; border-radius: 999px;">${latSelCount}</span>` : ''}
+          </div>
+        </button>
+
+        <!-- DEMAIS PEÇAS -->
+        <button 
+          type="button" 
+          onclick="vpSelectCategory('DEMAIS')"
+          title="Demais peças (não dianteira, traseira ou laterais)"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 1px; border-radius: 8px; border: 2px solid ${vpActiveCategory === 'DEMAIS' ? '#9333ea' : '#cbd5e1'}; background: ${vpActiveCategory === 'DEMAIS' ? '#fdf4ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveCategory === 'DEMAIS' ? '0 2px 6px rgba(147,51,234,0.18)' : 'none'};"
+        >
+          <span style="font-size: 0.85rem; line-height: 1;">⚙️</span>
+          <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveCategory === 'DEMAIS' ? '#6b21a8' : '#475569'}; line-height: 1.1;">Demais</span>
+          <div style="display: flex; align-items: center; gap: 2px;">
+            <span style="font-size: 0.60rem; font-weight: 800; color: ${vpActiveCategory === 'DEMAIS' ? '#9333ea' : '#64748b'}; background: ${vpActiveCategory === 'DEMAIS' ? '#fae8ff' : '#f1f5f9'}; padding: 0.5px 3px; border-radius: 999px;">${demaisParts.length}</span>
+            ${demaisSelCount > 0 ? `<span style="font-size: 0.58rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 0.5px 3px; border-radius: 999px;">${demaisSelCount}</span>` : ''}
+          </div>
+        </button>
+
+        <!-- TODAS AS PEÇAS -->
+        <button 
+          type="button" 
+          onclick="vpSelectCategory('TODAS')"
+          title="Todas as peças"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 1px; border-radius: 8px; border: 2px solid ${vpActiveCategory === 'TODAS' ? '#0f766e' : '#cbd5e1'}; background: ${vpActiveCategory === 'TODAS' ? '#f0fdfa' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveCategory === 'TODAS' ? '0 2px 6px rgba(15,118,110,0.18)' : 'none'};"
+        >
+          <span style="font-size: 0.85rem; line-height: 1;">📋</span>
+          <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveCategory === 'TODAS' ? '#115e59' : '#475569'}; line-height: 1.1;">Todas</span>
+          <div style="display: flex; align-items: center; gap: 2px;">
+            <span style="font-size: 0.60rem; font-weight: 800; color: ${vpActiveCategory === 'TODAS' ? '#0f766e' : '#64748b'}; background: ${vpActiveCategory === 'TODAS' ? '#ccfbf1' : '#f1f5f9'}; padding: 0.5px 3px; border-radius: 999px;">${todasParts.length}</span>
+            ${todasSelCount > 0 ? `<span style="font-size: 0.58rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 0.5px 3px; border-radius: 999px;">${todasSelCount}</span>` : ''}
+          </div>
+        </button>
+      </div>
+
+      <!-- CABEÇALHO DA CATEGORIA ATIVA -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; background: ${activeBg}; border-radius: 8px; border-left: 4px solid ${activeColor};">
+        <div style="display: flex; align-items: center; gap: 5px;">
+          <span style="font-size: 0.95rem;">${activeIcon}</span>
+          <strong style="font-size: 0.80rem; color: #0f172a;">${activeTitle}</strong>
+        </div>
+        <span style="font-size: 0.68rem; font-weight: 800; color: ${activeColor}; background: #ffffff; padding: 2px 6px; border-radius: 999px; border: 1px solid #cbd5e1;">
+          ${activeList.length} peças
+        </span>
+      </div>
+
+      <!-- SEÇÃO SUSPENSA NO TOPO: PEÇAS SELECIONADAS (2 COLUNAS) -->
+      ${selectedInActive.length > 0 ? `
         <div style="display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 6px; background: #fef2f2; border: 1.5px dashed #f87171; border-radius: 8px; box-sizing: border-box;">
           <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px;">
             <div style="display: flex; align-items: center; gap: 4px;">
               <span style="font-size: 0.90rem;">📌</span>
-              <strong style="font-size: 0.76rem; color: #991b1b;">Selecionadas (${selectedInZone.length})</strong>
+              <strong style="font-size: 0.76rem; color: #991b1b;">Selecionadas (${selectedInActive.length})</strong>
             </div>
             <span style="font-size: 0.62rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 1px 5px; border-radius: 999px;">Fixadas</span>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
-            ${selectedInZone.map(item => vpRenderPartCardHtml(item)).join('')}
+            ${selectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
           </div>
         </div>
       ` : ''}
+
+      <!-- RESTANTE DO CATÁLOGO DE PEÇAS (2 COLUNAS) -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
-        ${unselectedInZone.map(item => vpRenderPartCardHtml(item)).join('')}
+        ${unselectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
       </div>
     </div>
   `;
@@ -7263,7 +7583,7 @@ function vpRenderPartCardHtml(item) {
       <div class="vp-card-top" style="display: flex; align-items: center; justify-content: space-between; gap: 2px; width: 100%; min-width: 0;">
         <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
         <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.78rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${vpEscapeHtml(item.name)}</span>
-        <button type="button" class="vp-btn-edit-name" title="Editar nome da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✏️</button>
+        <button type="button" class="vp-btn-edit-name" title="Editar nome e zona da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')">✏️</button>
       </div>
 
       <!-- 2ª LINHA: [Trocar (40%)] [Reparar (40%)] [Obs. (20%)] (SEM ÍCONES, SEM QUEBRA DE LINHA) -->
@@ -7547,10 +7867,19 @@ window.vpClearSearch = function() {
   vpRenderParts('');
 };
 
-window.vpOpenEditPartModal = function(rawName, currentDisplayName) {
+window.vpOpenEditPartModal = function(rawName, currentDisplayName, currentZoneId) {
   const modal = document.getElementById('vpEditPartModal');
   const origInput = document.getElementById('vpEditOriginalName');
   const nameInput = document.getElementById('vpEditNameInput');
+  const zoneSelect = document.getElementById('vpEditZoneSelect');
+
+  const effectiveZoneId = vpGetPartEffectiveZoneId(rawName, currentZoneId || vpActiveZoneId);
+
+  if (zoneSelect) {
+    zoneSelect.innerHTML = vpActiveZones.map(z => `
+      <option value="${z.id}" ${z.id === effectiveZoneId ? 'selected' : ''}>${z.icon} ${z.name}</option>
+    `).join('');
+  }
 
   if (origInput) origInput.value = rawName;
   if (nameInput) nameInput.value = currentDisplayName;
@@ -7612,20 +7941,49 @@ window.vpSaveEditPartName = function(e) {
   e.preventDefault();
   const origInput = document.getElementById('vpEditOriginalName');
   const nameInput = document.getElementById('vpEditNameInput');
+  const zoneSelect = document.getElementById('vpEditZoneSelect');
 
   const rawName = origInput ? origInput.value.trim() : '';
   const newName = nameInput ? nameInput.value.trim() : '';
+  const targetZoneId = zoneSelect ? zoneSelect.value : '';
 
   if (!rawName || !newName) return;
 
   const oldEffectiveName = vpGetEffectivePartName(rawName);
   vpCustomPartRenamesMap[rawName] = newName;
+  if (oldEffectiveName !== newName) {
+    vpCustomPartRenamesMap[oldEffectiveName] = newName;
+  }
+
+  // Atualiza override de zona
+  if (targetZoneId) {
+    vpPartZoneOverridesMap[rawName] = targetZoneId;
+    vpPartZoneOverridesMap[newName] = targetZoneId;
+    vpPartZoneOverridesMap[oldEffectiveName] = targetZoneId;
+
+    // Se estiver em vpCustomPartsList, atualiza a zona diretamente
+    const customItem = vpCustomPartsList.find(p => p.name.toLowerCase() === rawName.toLowerCase() || p.name.toLowerCase() === oldEffectiveName.toLowerCase());
+    if (customItem) {
+      customItem.name = newName;
+      customItem.zoneId = targetZoneId;
+    }
+  }
 
   if (vpSelectedPartsMap.has(oldEffectiveName)) {
     const prevItem = vpSelectedPartsMap.get(oldEffectiveName);
     vpSelectedPartsMap.delete(oldEffectiveName);
     prevItem.name = newName;
+    if (targetZoneId) {
+      prevItem.zoneId = targetZoneId;
+      const targetZoneObj = vpActiveZones.find(z => z.id === targetZoneId);
+      if (targetZoneObj) prevItem.zoneName = targetZoneObj.name;
+    }
     vpSelectedPartsMap.set(newName, prevItem);
+  } else if (targetZoneId && vpSelectedPartsMap.has(newName)) {
+    const prevItem = vpSelectedPartsMap.get(newName);
+    prevItem.zoneId = targetZoneId;
+    const targetZoneObj = vpActiveZones.find(z => z.id === targetZoneId);
+    if (targetZoneObj) prevItem.zoneName = targetZoneObj.name;
   }
 
   vpSaveState(true);

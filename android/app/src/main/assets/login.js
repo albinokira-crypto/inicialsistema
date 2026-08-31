@@ -123,7 +123,10 @@ if (localStorage.getItem('authenticated') === 'true') {
 }
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js')
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+  navigator.serviceWorker.register('/sw.js?v=207')
     .then((registration) => {
       registration.update();
     })

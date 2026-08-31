@@ -354,6 +354,46 @@ class MainActivity : ComponentActivity() {
 
         // Request Permissions
         checkPermissions()
+
+        // Limpeza automática de pastas temporárias legadas de compartilhamento (.share_temp)
+        cleanupAllLegacyShareTemp()
+    }
+
+    fun cleanupAllLegacyShareTemp() {
+        Thread {
+            try {
+                val cacheDir = java.io.File(cacheDir, "share_temp")
+                if (cacheDir.exists()) {
+                    cacheDir.deleteRecursively()
+                }
+                cacheDir.listFiles { file -> file.isDirectory && file.name.startsWith("share_temp") }?.forEach {
+                    try { it.deleteRecursively() } catch (e: Exception) {}
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            try {
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
+                if (vistoriasBaseDir.exists()) {
+                    vistoriasBaseDir.walkTopDown().filter { it.isDirectory && (it.name == ".share_temp" || it.name == "share_temp") }.forEach {
+                        try { it.deleteRecursively() } catch (e: Exception) {}
+                    }
+                }
+                val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+                val customFolderName = prefs.getString("selected_folder_name", null) ?: prefs.getString("photo_folder_name_friendly", null) ?: ""
+                if (customFolderName.isNotEmpty()) {
+                    val customDir = java.io.File(picturesDir, customFolderName)
+                    if (customDir.exists()) {
+                        customDir.walkTopDown().filter { it.isDirectory && (it.name == ".share_temp" || it.name == "share_temp") }.forEach {
+                            try { it.deleteRecursively() } catch (e: Exception) {}
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }.start()
     }
 
     internal var checkPhotosStartTime: Long = 0
@@ -361,30 +401,36 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        cleanupAllLegacyShareTemp()
         val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
         val shouldCheck = prefs.getBoolean("should_check_new_photos", false)
         if (shouldCheck) {
             photoResultReceived = false
             prefs.edit().putBoolean("should_check_new_photos", false).apply()
-            webView.evaluateJavascript("typeof window.onPhotoCapturedFromAndroid") { result ->
-                if (result != null && result.contains("function")) {
-                    checkPhotosStartTime = prefs.getLong("check_photos_start_time", 0)
-                    activeCameraVehicleName = prefs.getString("active_camera_vehicle_name", "") ?: ""
-                    shouldCheckNewPhotos = false
+            checkPhotosStartTime = prefs.getLong("check_photos_start_time", 0)
+            activeCameraVehicleName = prefs.getString("active_camera_vehicle_name", "") ?: ""
+            shouldCheckNewPhotos = false
 
-                    Toast.makeText(this, "Importando fotos para a pasta da vistoria...", Toast.LENGTH_SHORT).show()
-                    webView.postDelayed({
-                        importedPhotoNames.clear()
-                        scanDirectoriesForNewPhotos(checkPhotosStartTime)
-                    }, 800)
-                }
+            if (checkPhotosStartTime > 0L && activeCameraVehicleName.isNotEmpty()) {
+                Toast.makeText(this, "Importando fotos para a pasta da vistoria...", Toast.LENGTH_SHORT).show()
+                webView.postDelayed({
+                    importedPhotoNames.clear()
+                    scanDirectoriesForNewPhotos(checkPhotosStartTime)
+                }, 600)
             }
         }
     }
 
     private fun scanPhysicalCameraFolder(startTime: Long): Int {
         var importedCount = 0
-        if (startTime == 0L || System.currentTimeMillis() - startTime > 300_000) return 0
+        // Permite sessões de vistoria de até 2 horas (7.200.000 ms) sem descartar fotos
+        if (startTime == 0L || System.currentTimeMillis() - startTime > 7_200_000L) return 0
+        val targetVehicle = activeCameraVehicleName.ifEmpty {
+            val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+            prefs.getString("active_camera_vehicle_name", "") ?: ""
+        }
+        if (targetVehicle.isEmpty()) return 0
+
         val dcim = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
         val movies = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
         val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
@@ -415,11 +461,11 @@ class MainActivity : ComponentActivity() {
                             continue
                         }
                         
-                        // Check if file was modified after camera session started (with 15s margin)
-                        if (file.lastModified() >= (startTime - 15000)) {
+                        // Verifica se o arquivo foi criado após o início da sessão (com margem de segurança de 30 segundos)
+                        if (file.lastModified() >= (startTime - 30000)) {
                             try {
                                 val saved = java.io.FileInputStream(file).use { inputStream ->
-                                    savePhotoDirectly(activeCameraVehicleName, name, inputStream)
+                                    savePhotoDirectly(targetVehicle, name, inputStream)
                                 }
                                 if (saved) {
                                     val deleted = file.delete()
@@ -447,7 +493,7 @@ class MainActivity : ComponentActivity() {
                                     )
                                     deleteOriginalPhoto(name)
                                     runOnUiThread {
-                                        webView.evaluateJavascript("window.onPhotoCapturedFromAndroid('$activeCameraVehicleName', '$name', '')", null)
+                                        webView.evaluateJavascript("window.onPhotoCapturedFromAndroid('$targetVehicle', '$name', '')", null)
                                     }
                                     importedPhotoNames.add(name)
                                     importedCount++
@@ -470,7 +516,7 @@ class MainActivity : ComponentActivity() {
         
         Thread {
             var toastShown = false
-            for (attempt in 1..40) { // Check for 40 seconds
+            for (attempt in 1..60) { // Verifica por até 60 segundos
                 val physCount = scanPhysicalCameraFolder(startTime)
                 val imagesCount = queryMediaStoreForNewMedia(startTime, isVideo = false)
                 val videosCount = queryMediaStoreForNewMedia(startTime, isVideo = true)
@@ -478,10 +524,10 @@ class MainActivity : ComponentActivity() {
                 if (totalImported > 0 && !toastShown) {
                     toastShown = true
                     runOnUiThread {
-                        Toast.makeText(this, "✅ $totalImported arquivo(s) importado(s)!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "✅ $totalImported arquivo(s) importado(s) para a pasta!", Toast.LENGTH_SHORT).show()
                     }
-                    // Após importar com sucesso, aguarda mais alguns segundos e para
-                    Thread.sleep(5000)
+                    // Após importar com sucesso, aguarda mais alguns segundos para capturar fotos em fila e para
+                    Thread.sleep(4000)
                     break
                 }
                 
@@ -495,7 +541,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun queryMediaStoreForNewMedia(startTime: Long, isVideo: Boolean): Int {
-        if (startTime == 0L || System.currentTimeMillis() - startTime > 300_000) return 0
+        // Permite sessões de vistoria de até 2 horas (7.200.000 ms) sem descartar fotos
+        if (startTime == 0L || System.currentTimeMillis() - startTime > 7_200_000L) return 0
+        val targetVehicle = activeCameraVehicleName.ifEmpty {
+            val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+            prefs.getString("active_camera_vehicle_name", "") ?: ""
+        }
+        if (targetVehicle.isEmpty()) return 0
+
         val uri = if (isVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
             MediaStore.MediaColumns._ID,
@@ -506,7 +559,7 @@ class MainActivity : ComponentActivity() {
         )
         val sortOrder = "${MediaStore.MediaColumns.DATE_ADDED} DESC"
         val selection = "${MediaStore.MediaColumns.DATE_ADDED} >= ?"
-        val selectionArgs = arrayOf(((startTime / 1000) - 15).toString()) // margin of 15 seconds
+        val selectionArgs = arrayOf(((startTime / 1000) - 30).toString()) // margem de 30 segundos
         var importedCount = 0
         val limit = 500
         
@@ -542,7 +595,7 @@ class MainActivity : ComponentActivity() {
                     val dateAddedMs = dateAddedSec * 1000
                     val timestampToUse = if (dateTakenMs > 0) dateTakenMs else dateAddedMs
                     
-                    if (timestampToUse >= (startTime - 15000)) {
+                    if (timestampToUse >= (startTime - 30000)) {
                         // Pula se já importamos este ID ou nome nesta sessão
                         if (importedMediaStoreIds.contains(id)) continue
                         if (importedPhotoNames.contains(name)) continue
@@ -550,7 +603,7 @@ class MainActivity : ComponentActivity() {
                         val contentUri = Uri.withAppendedPath(uri, id.toString())
                         try {
                             val saved = contentResolver.openInputStream(contentUri)?.use { inputStream ->
-                                savePhotoDirectly(activeCameraVehicleName, name, inputStream)
+                                savePhotoDirectly(targetVehicle, name, inputStream)
                             } ?: false
                             
                             if (saved) {
@@ -565,7 +618,7 @@ class MainActivity : ComponentActivity() {
                                 deleteOriginalPhoto(name)
 
                                 runOnUiThread {
-                                    webView.evaluateJavascript("window.onPhotoCapturedFromAndroid('$activeCameraVehicleName', '$name', '')", null)
+                                    webView.evaluateJavascript("window.onPhotoCapturedFromAndroid('$targetVehicle', '$name', '')", null)
                                 }
                                 importedCount++
                             }
@@ -586,7 +639,10 @@ class MainActivity : ComponentActivity() {
         if (requestCode == CAMERA_CAPTURE_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
                 photoResultReceived = true
-                val vehicleName = activeCameraVehicleName
+                val vehicleName = activeCameraVehicleName.ifEmpty {
+                    val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+                    prefs.getString("active_camera_vehicle_name", "") ?: ""
+                }
                 val photoFile = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "IMG_temp.jpg")
                 val videoFile = File(getExternalFilesDir(Environment.DIRECTORY_MOVIES), "VID_temp.mp4")
                 val dataUri = data?.data
@@ -763,8 +819,7 @@ class MainActivity : ComponentActivity() {
                     photoResultReceived = true // O usuário selecionou arquivos
                     val currentVehicleName = activeCameraVehicleName.ifEmpty {
                         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-                        prefs.edit().putString("active_camera_vehicle_name", "").apply()
-                        ""
+                        prefs.getString("active_camera_vehicle_name", "") ?: ""
                     }
                     if (currentVehicleName.isNotEmpty()) {
                         Thread {
@@ -996,7 +1051,10 @@ class MainActivity : ComponentActivity() {
     }
 
     fun sanitizeFilename(name: String): String {
-        return name.replace("[\\\\/:*?\"<>|]".toRegex(), "_")
+        val sanitized = name.replace("[\\\\/:*?\"<>|]".toRegex(), "_")
+            .replace("\\s+".toRegex(), " ")
+            .trim()
+        return if (sanitized.isEmpty()) "Vistoria_Sem_Nome" else sanitized
     }
 
     fun findVehicleMediaFiles(cleanVehicleName: String, isSupervision: Boolean): List<java.io.File> {
@@ -1027,6 +1085,9 @@ class MainActivity : ComponentActivity() {
         }
 
         try {
+            val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
+
+            // 1. Pictures/Vistorias/$cleanVehicleName
             val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
             val vistoriasDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
             if (vistoriasDir.exists()) {
@@ -1038,14 +1099,14 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            // 2. Subdiretórios em Pictures/Vistorias/ (correspondência exata ou por chave unificada)
             val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
             if (vistoriasBaseDir.exists()) {
                 val subDirs = vistoriasBaseDir.listFiles { file -> file.isDirectory }
                 if (subDirs != null) {
-                    val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
                     for (dir in subDirs) {
                         val dirNameLower = dir.name.lowercase().replace(" ", "").replace("-", "")
-                        if (dirNameLower.contains(cleanLower) || (cleanLower.length > 3 && dirNameLower.contains(cleanLower))) {
+                        if (dirNameLower == cleanLower || dir.name.equals(cleanVehicleName, ignoreCase = true)) {
                             val files = dir.listFiles()
                             if (files != null) {
                                 for (file in files) {
@@ -1057,32 +1118,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            val dcimDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
-            val cameraDirs = listOf(
-                java.io.File(dcimDir, "Camera"),
-                java.io.File(dcimDir, "Vistorias/$cleanVehicleName"),
-                java.io.File(picturesDir, "Camera"),
-                getExternalFilesDir(Environment.DIRECTORY_PICTURES),
-                getExternalFilesDir(null)
-            )
-
-            val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
-            for (cDir in cameraDirs) {
-                if (cDir != null && cDir.exists()) {
-                    val files = cDir.listFiles()
-                    if (files != null) {
-                        for (file in files) {
-                            if (file.isFile && file.length() > 0) {
-                                val nameLower = file.name.lowercase()
-                                if (nameLower.contains(cleanLower) || (cleanLower.length > 3 && nameLower.contains(cleanLower))) {
-                                    checkAndAddFile(file)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
+            // 3. Pasta personalizada SAF
             val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
             val savedUriStr = prefs.getString("selected_folder_uri", null)
             if (savedUriStr != null) {
@@ -1120,27 +1156,6 @@ class MainActivity : ComponentActivity() {
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                }
-            }
-
-            if (filesToShare.isEmpty() && vistoriasBaseDir.exists()) {
-                val now = System.currentTimeMillis()
-                val twoDaysAgo = now - (48 * 3600 * 1000L)
-                val allFiles = vistoriasBaseDir.listFiles()
-                if (allFiles != null) {
-                    for (file in allFiles) {
-                        if (file.isFile && file.length() > 0 && file.lastModified() >= twoDaysAgo) {
-                            if (isSupervision) {
-                                val fileDate = java.util.Date(file.lastModified())
-                                val today = java.util.Date()
-                                val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
-                                if (fmt.format(fileDate) != fmt.format(today)) {
-                                    continue
-                                }
-                            }
-                            checkAndAddFile(file)
-                        }
-                    }
                 }
             }
         } catch (e: Exception) {
@@ -1318,32 +1333,13 @@ class AndroidInterface(private val activity: ComponentActivity) {
     @JavascriptInterface
     fun clearTempShare() {
         tempShareFiles.clear()
-        try {
-            val cacheDir = java.io.File(activity.cacheDir, "share_temp")
-            if (cacheDir.exists()) {
-                cacheDir.deleteRecursively()
-            }
-            cacheDir.mkdirs()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        try {
-            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-            val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
-            if (vistoriasBaseDir.exists()) {
-                val subDirs = vistoriasBaseDir.listFiles { file -> file.isDirectory }
-                if (subDirs != null) {
-                    for (dir in subDirs) {
-                        val tempDir = java.io.File(dir, ".share_temp")
-                        if (tempDir.exists()) {
-                            tempDir.deleteRecursively()
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        (activity as? MainActivity)?.cleanupAllLegacyShareTemp()
+    }
+
+    @JavascriptInterface
+    fun cleanupShareTemp(): String {
+        (activity as? MainActivity)?.cleanupAllLegacyShareTemp()
+        return "cleaned"
     }
 
     @JavascriptInterface
@@ -1461,154 +1457,10 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 e.printStackTrace()
             }
 
+            val isSupervision = reportText.contains("Supervisão") || reportText.contains("Supervisao")
             val filesToShare = ArrayList<java.io.File>()
-            val addedNames = HashSet<String>()
-
-            fun checkAndAddFile(file: java.io.File) {
-                if (file.exists() && file.isFile && file.length() > 0) {
-                    val name = file.name.lowercase()
-                    if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
-                        name.endsWith(".png") || name.endsWith(".mp4") ||
-                        name.endsWith(".mov") || name.endsWith(".3gp") ||
-                        name.endsWith(".mkv") || name.endsWith(".webm")) {
-                        if (!addedNames.contains(name)) {
-                            addedNames.add(name)
-                            filesToShare.add(file)
-                        }
-                    }
-                }
-            }
-
-            try {
-                // 1. Pictures/Vistorias/$cleanVehicleName
-                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                val vistoriasDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
-                if (vistoriasDir.exists()) {
-                    val files = vistoriasDir.listFiles()
-                    if (files != null) {
-                        for (file in files) {
-                            checkAndAddFile(file)
-                        }
-                    }
-                }
-
-                // 2. Subdiretórios em Pictures/Vistorias/
-                val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
-                if (vistoriasBaseDir.exists()) {
-                    val subDirs = vistoriasBaseDir.listFiles { file -> file.isDirectory }
-                    if (subDirs != null) {
-                        val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
-                        for (dir in subDirs) {
-                            val dirNameLower = dir.name.lowercase().replace(" ", "").replace("-", "")
-                            if (dirNameLower.contains(cleanLower) || (cleanLower.length > 3 && dirNameLower.contains(cleanLower))) {
-                                val files = dir.listFiles()
-                                if (files != null) {
-                                    for (file in files) {
-                                        checkAndAddFile(file)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 3. Diretórios de Câmera padrão (DCIM/Camera, Pictures/Camera, DCIM/Vistorias)
-                val dcimDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
-                val cameraDirs = listOf(
-                    java.io.File(dcimDir, "Camera"),
-                    java.io.File(dcimDir, "Vistorias/$cleanVehicleName"),
-                    java.io.File(picturesDir, "Camera"),
-                    activity.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
-                    activity.getExternalFilesDir(null)
-                )
-
-                val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
-                for (cDir in cameraDirs) {
-                    if (cDir != null && cDir.exists()) {
-                        val files = cDir.listFiles()
-                        if (files != null) {
-                            for (file in files) {
-                                if (file.isFile && file.length() > 0) {
-                                    val nameLower = file.name.lowercase()
-                                    if (nameLower.contains(cleanLower) || (cleanLower.length > 3 && nameLower.contains(cleanLower))) {
-                                        checkAndAddFile(file)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 4. Arquivos do SAF (se pasta personalizada foi selecionada)
-                val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
-                val savedUriStr = prefs.getString("selected_folder_uri", null)
-                if (savedUriStr != null) {
-                    try {
-                        val rootUri = Uri.parse(savedUriStr)
-                        val rootFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(activity, rootUri)
-                        if (rootFolder != null && rootFolder.exists()) {
-                            val vehicleFolder = mainAct.getOrCreateDirectory(rootFolder, cleanVehicleName)
-                            if (vehicleFolder != null && vehicleFolder.exists()) {
-                                val files = vehicleFolder.listFiles()
-                                for (file in files) {
-                                    if (file.isFile) {
-                                        val name = file.name ?: ""
-                                        val lowerName = name.lowercase()
-                                        if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") ||
-                                            lowerName.endsWith(".png") || lowerName.endsWith(".mp4") ||
-                                            lowerName.endsWith(".mov") || lowerName.endsWith(".3gp") ||
-                                            lowerName.endsWith(".mkv") || lowerName.endsWith(".webm")) {
-                                            if (!addedNames.contains(lowerName)) {
-                                                try {
-                                                    val tempFile = java.io.File(cacheDir, name)
-                                                    activity.contentResolver.openInputStream(file.uri)?.use { input ->
-                                                        java.io.FileOutputStream(tempFile).use { output ->
-                                                            input.copyTo(output)
-                                                        }
-                                                    }
-                                                    if (tempFile.exists() && tempFile.length() > 0) {
-                                                        addedNames.add(lowerName)
-                                                        filesToShare.add(tempFile)
-                                                        tempShareFiles.add(tempFile)
-                                                    }
-                                                } catch (e: Exception) {
-                                                    e.printStackTrace()
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-
-                // 5. Fallback: Se nenhuma mídia foi encontrada pela placa, varre mídias criadas nas últimas 48h em Pictures/Vistorias/
-                if (filesToShare.isEmpty() && vistoriasBaseDir.exists()) {
-                    val now = System.currentTimeMillis()
-                    val twoDaysAgo = now - (48 * 3600 * 1000L)
-                    val allFiles = vistoriasBaseDir.listFiles()
-                    if (allFiles != null) {
-                        for (file in allFiles) {
-                            if (file.isFile && file.length() > 0 && file.lastModified() >= twoDaysAgo) {
-                                if (isSupervision) {
-                                    val fileDate = java.util.Date(file.lastModified())
-                                    val today = java.util.Date()
-                                    val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
-                                    if (fmt.format(fileDate) != fmt.format(today)) {
-                                        continue
-                                    }
-                                }
-                                checkAndAddFile(file)
-                            }
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            val foundMedia = mainAct.findVehicleMediaFiles(cleanVehicleName, isSupervision)
+            filesToShare.addAll(foundMedia)
 
             val imageExtensions = listOf("jpg", "jpeg", "png")
             val videoExtensions = listOf("mp4", "3gp", "mov", "mkv", "webm")
@@ -1626,8 +1478,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                 })
             val otherFiles = filesToShare.filter { it.extension.lowercase() !in imageExtensions && it.extension.lowercase() !in videoExtensions }
 
-            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-            val shareTempDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName/.share_temp")
+            val shareTempDir = java.io.File(activity.cacheDir, "share_temp")
             try {
                 if (shareTempDir.exists()) {
                     shareTempDir.deleteRecursively()
@@ -1885,7 +1736,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
                         val cleanLower = cleanVehicleName.lowercase().replace(" ", "").replace("-", "")
                         for (dir in subDirs) {
                             val dirNameLower = dir.name.lowercase().replace(" ", "").replace("-", "")
-                            if (dirNameLower.contains(cleanLower) || (cleanLower.length > 3 && dirNameLower.contains(cleanLower))) {
+                            if (dirNameLower == cleanLower || dir.name.equals(cleanVehicleName, ignoreCase = true)) {
                                 val files = dir.listFiles()
                                 if (files != null) {
                                     for (file in files) {
@@ -2536,33 +2387,49 @@ class AndroidInterface(private val activity: ComponentActivity) {
         val mainAct = activity as MainActivity
         mainAct.runOnUiThread {
             val cleanVehicleName = mainAct.sanitizeFilename(vehicleName)
+            if (cleanVehicleName.isEmpty()) {
+                android.widget.Toast.makeText(activity, "Nome do veículo inválido.", android.widget.Toast.LENGTH_SHORT).show()
+                return@runOnUiThread
+            }
             val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
             val savedUriStr = prefs.getString("selected_folder_uri", null)
             
+            var createdInSaf = false
             if (savedUriStr != null) {
                 try {
                     val rootUri = android.net.Uri.parse(savedUriStr)
                     val rootFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(activity, rootUri)
                     if (rootFolder != null && rootFolder.exists()) {
                         val existing = rootFolder.findFile(cleanVehicleName)
-                        if (existing != null && existing.isDirectory) {
-                            android.widget.Toast.makeText(activity, "A pasta '$cleanVehicleName' já existe!", android.widget.Toast.LENGTH_SHORT).show()
-                        } else {
+                        if (existing == null || !existing.isDirectory) {
                             val created = rootFolder.createDirectory(cleanVehicleName)
-                            if (created != null) {
-                                android.widget.Toast.makeText(activity, "Pasta '$cleanVehicleName' gerada com sucesso!", android.widget.Toast.LENGTH_SHORT).show()
-                            } else {
-                                android.widget.Toast.makeText(activity, "Erro ao gerar pasta customizada.", android.widget.Toast.LENGTH_SHORT).show()
-                            }
+                            if (created != null) createdInSaf = true
+                        } else {
+                            createdInSaf = true
                         }
-                    } else {
-                        android.widget.Toast.makeText(activity, "Pasta raiz não encontrada. Configure o local de salvamento novamente.", android.widget.Toast.LENGTH_LONG).show()
                     }
                 } catch (e: Exception) {
-                    android.widget.Toast.makeText(activity, "Erro: " + e.message, android.widget.Toast.LENGTH_LONG).show()
+                    e.printStackTrace()
                 }
+            }
+            
+            // Cria também no armazenamento padrão Pictures/Vistorias/$cleanVehicleName/
+            var createdInDefault = false
+            try {
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val defaultVistoriaDir = java.io.File(picturesDir, "Vistorias/$cleanVehicleName")
+                if (!defaultVistoriaDir.exists()) {
+                    defaultVistoriaDir.mkdirs()
+                }
+                createdInDefault = defaultVistoriaDir.exists()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            if (createdInSaf || createdInDefault) {
+                android.widget.Toast.makeText(activity, "Pasta '$cleanVehicleName' gerada com sucesso!", android.widget.Toast.LENGTH_SHORT).show()
             } else {
-                android.widget.Toast.makeText(activity, "Local de salvamento não configurado. Por favor, configure primeiro.", android.widget.Toast.LENGTH_LONG).show()
+                android.widget.Toast.makeText(activity, "Erro ao criar pasta '$cleanVehicleName'.", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
     }
