@@ -38,37 +38,65 @@ showLoginLink.addEventListener('click', (e) => {
   loginForm.reset();
 });
 
-// Load registered users from localStorage
+function getSafeStorage(key, defaultVal) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw && raw !== 'null' && raw !== 'undefined') {
+      const parsed = JSON.parse(raw);
+      if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+        window.AndroidInterface.saveNativeData(key, raw);
+      }
+      return parsed;
+    }
+  } catch (e) {}
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.getNativeData === 'function') {
+    try {
+      const nativeRaw = window.AndroidInterface.getNativeData(key);
+      if (nativeRaw && nativeRaw !== 'null' && nativeRaw !== 'undefined' && nativeRaw !== '') {
+        const parsed = JSON.parse(nativeRaw);
+        localStorage.setItem(key, nativeRaw);
+        return parsed;
+      }
+    } catch (e) {}
+  }
+  return defaultVal;
+}
+
+function setSafeStorage(key, value) {
+  const jsonStr = typeof value === 'string' ? value : JSON.stringify(value);
+  try {
+    localStorage.setItem(key, jsonStr);
+  } catch (e) {}
+  if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+    try {
+      window.AndroidInterface.saveNativeData(key, jsonStr);
+    } catch (e) {}
+  }
+}
+
+// Load registered users from localStorage / AndroidInterface
 function getRegisteredUsers() {
-  const raw = localStorage.getItem(USERS_STORAGE_KEY);
   const defaultUsers = {
     "admin": "1234",
     "Diego": "Irons365.",
     "diego": "Irons365."
   };
-  if (!raw) {
+  const parsed = getSafeStorage(USERS_STORAGE_KEY, null);
+  if (!parsed || typeof parsed !== 'object' || Object.keys(parsed).length === 0) {
     return defaultUsers;
   }
-  try {
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || Object.keys(parsed).length === 0) {
-      return defaultUsers;
-    }
-    if (!parsed["admin"]) parsed["admin"] = "1234";
-    if (!parsed["Diego"]) parsed["Diego"] = "Irons365.";
-    if (!parsed["diego"]) parsed["diego"] = "Irons365.";
-    return parsed;
-  } catch (error) {
-    console.warn('Falha ao ler usuários do localStorage:', error);
-    return defaultUsers;
-  }
+  if (!parsed["admin"]) parsed["admin"] = "1234";
+  if (!parsed["Diego"]) parsed["Diego"] = "Irons365.";
+  if (!parsed["diego"]) parsed["diego"] = "Irons365.";
+  return parsed;
 }
 
 // Save registered users
 function saveRegisteredUser(username, password) {
   const users = getRegisteredUsers();
   users[username] = password;
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  setSafeStorage(USERS_STORAGE_KEY, users);
 }
 
 // Register handler
@@ -126,7 +154,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     window.location.reload();
   });
-  navigator.serviceWorker.register('/sw.js?v=207')
+  navigator.serviceWorker.register('/sw.js?v=208')
     .then((registration) => {
       registration.update();
     })

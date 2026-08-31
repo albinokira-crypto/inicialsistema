@@ -1,11 +1,11 @@
-const CACHE_NAME = 'projeto-planilha-mobile-v207';
+const CACHE_NAME = 'projeto-planilha-mobile-v208';
 const ASSETS = [
   '/',
   '/index.html',
   '/dashboard.html',
-  '/styles.css?v=207',
-  '/app.js?v=207',
-  '/login.js?v=207',
+  '/styles.css?v=208',
+  '/app.js?v=208',
+  '/login.js?v=208',
   '/manifest.webmanifest',
   '/icon-192.png',
   '/icon-512.png'
@@ -31,21 +31,37 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 1. NUNCA armazenar em cache version.json, chamadas de API ou requisições dinâmicas
-  if (
-    event.request.method !== 'GET' ||
-    url.pathname.endsWith('version.json') ||
-    url.pathname.includes('/api/') ||
-    url.searchParams.has('t') ||
-    url.searchParams.has('_t')
-  ) {
+  // 1. Para version.json e APIs: sempre tenta rede primeiro, mas nunca quebra a tela se offline
+  if (url.pathname.endsWith('version.json') || url.pathname.includes('/api/')) {
     event.respondWith(
-      fetch(event.request, { cache: 'no-store' }).catch(() => caches.match(event.request))
+      fetch(event.request, { cache: 'no-store' })
+        .catch(() => caches.match(event.request, { ignoreSearch: true })
+          .then(cached => cached || new Response(JSON.stringify({ offline: true, version: "2.07" }), { headers: { 'Content-Type': 'application/json' } }))
+        )
     );
     return;
   }
 
-  // 2. Busca na rede primeiro (Network First) para garantir que sempre pega os arquivos novos
+  // 2. Para requisições de navegação HTML (ex: dashboard.html?t=..., index.html):
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request, { ignoreSearch: true })
+            .then(cached => cached || (url.pathname.includes('dashboard') ? caches.match('/dashboard.html') : caches.match('/index.html')));
+        })
+    );
+    return;
+  }
+
+  // 3. Demais recursos (JS, CSS, Imagens, Fontes): Network First com Cache Fallback (ignoreSearch)
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -55,6 +71,6 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(event.request, { ignoreSearch: true }))
   );
 });

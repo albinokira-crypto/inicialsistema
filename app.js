@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v2.07';
+const CURRENT_APP_VERSION = 'v2.08';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -247,18 +247,49 @@ const DEFAULT_STAGES = [
   "Finalizado"
 ];
 
-function loadStages() {
-  const raw = localStorage.getItem(STAGES_STORAGE_KEY);
-  if (!raw) return DEFAULT_STAGES;
+function getSafeStorage(key, defaultVal) {
   try {
-    return JSON.parse(raw);
-  } catch (e) {
-    return DEFAULT_STAGES;
+    const raw = localStorage.getItem(key);
+    if (raw && raw !== 'null' && raw !== 'undefined') {
+      const parsed = JSON.parse(raw);
+      if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+        try { window.AndroidInterface.saveNativeData(key, raw); } catch(e) {}
+      }
+      return parsed;
+    }
+  } catch (e) {}
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.getNativeData === 'function') {
+    try {
+      const nativeRaw = window.AndroidInterface.getNativeData(key);
+      if (nativeRaw && nativeRaw !== 'null' && nativeRaw !== 'undefined' && nativeRaw !== '') {
+        const parsed = JSON.parse(nativeRaw);
+        try { localStorage.setItem(key, nativeRaw); } catch(e) {}
+        return parsed;
+      }
+    } catch (e) {}
+  }
+  return defaultVal;
+}
+
+function setSafeStorage(key, value) {
+  const jsonStr = typeof value === 'string' ? value : JSON.stringify(value);
+  try {
+    localStorage.setItem(key, jsonStr);
+  } catch (e) {}
+  if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+    try {
+      window.AndroidInterface.saveNativeData(key, jsonStr);
+    } catch (e) {}
   }
 }
 
+function loadStages() {
+  return getSafeStorage(STAGES_STORAGE_KEY, DEFAULT_STAGES);
+}
+
 function saveStages() {
-  localStorage.setItem(STAGES_STORAGE_KEY, JSON.stringify(stages));
+  setSafeStorage(STAGES_STORAGE_KEY, stages);
 }
 
 let deferredPrompt = null;
@@ -429,7 +460,7 @@ function registerServiceWorker() {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
     });
-    navigator.serviceWorker.register('/sw.js?v=204')
+    navigator.serviceWorker.register('/sw.js?v=208')
       .then((registration) => {
         registration.update();
       })
@@ -1322,6 +1353,42 @@ function attachMenuListeners() {
   }
 }
 
+function setupNetworkStatusMonitor() {
+  const showBanner = (isOnline) => {
+    let banner = document.getElementById('networkStatusFloatingBanner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'networkStatusFloatingBanner';
+      banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999999;padding:10px 18px;border-radius:24px;font-size:0.88rem;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,0.3);transition:all 0.4s ease;display:flex;align-items:center;gap:8px;pointer-events:none;max-width:90%;text-align:center;';
+      document.body.appendChild(banner);
+    }
+
+    if (isOnline) {
+      banner.style.opacity = '1';
+      banner.style.background = '#059669';
+      banner.style.color = '#ffffff';
+      banner.innerHTML = '🟢 Conexão restabelecida • Sistema online';
+      setTimeout(() => {
+        if (banner) banner.style.opacity = '0';
+      }, 3500);
+      if (typeof vpSyncCatalogWithCloud === 'function') vpSyncCatalogWithCloud(false);
+      if (typeof checkForSystemUpdates === 'function') checkForSystemUpdates(false);
+    } else {
+      banner.style.opacity = '1';
+      banner.style.background = '#d97706';
+      banner.style.color = '#ffffff';
+      banner.innerHTML = '📡 Modo Offline • Tudo continua sendo salvo no aparelho';
+    }
+  };
+
+  window.addEventListener('online', () => showBanner(true));
+  window.addEventListener('offline', () => showBanner(false));
+
+  if (!navigator.onLine) {
+    setTimeout(() => showBanner(false), 500);
+  }
+}
+
 function initializeApp() {
   if (appInitialized) return;
   appInitialized = true;
@@ -1329,6 +1396,7 @@ function initializeApp() {
   try {
     ensureAuthentication();
     registerServiceWorker();
+    setupNetworkStatusMonitor();
     updateFormState();
     populateProviderSelect();
     render();
@@ -2605,14 +2673,13 @@ function handleInsurerAction(action, id) {
 }
 
 function loadOficinas() {
-  const raw = localStorage.getItem('web-system-oficinas-v1');
-  const arr = raw ? safeParseJson(raw, []) : [];
-  return arr.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+  const arr = getSafeStorage('web-system-oficinas-v1', []);
+  return (Array.isArray(arr) ? arr : []).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }));
 }
 
 function saveOficinas() {
-  oficinas.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
-  localStorage.setItem('web-system-oficinas-v1', JSON.stringify(oficinas));
+  oficinas.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }));
+  setSafeStorage('web-system-oficinas-v1', oficinas);
 }
 
 function getResponsaveisFromForm() {
@@ -3699,22 +3766,21 @@ function autoFixItemDays(rawItems) {
 }
 
 function loadItems() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  const parsed = raw ? safeParseJson(raw, []) : [];
-  return autoFixItemDays(parsed);
+  const parsed = getSafeStorage(STORAGE_KEY, []);
+  return autoFixItemDays(Array.isArray(parsed) ? parsed : []);
 }
 
 function saveItems() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  setSafeStorage(STORAGE_KEY, items);
 }
 
 function loadInsurers() {
-  const raw = localStorage.getItem('web-system-insurers-v1');
-  return raw ? safeParseJson(raw, []) : [];
+  const parsed = getSafeStorage('web-system-insurers-v1', []);
+  return Array.isArray(parsed) ? parsed : [];
 }
 
 function saveInsurers() {
-  localStorage.setItem('web-system-insurers-v1', JSON.stringify(insurers));
+  setSafeStorage('web-system-insurers-v1', insurers);
 }
 
 function escapeHtml(value) {
@@ -3735,12 +3801,12 @@ function updateTypeButtonsHighlight() {
 }
 
 function loadSupervisoes() {
-  const raw = localStorage.getItem('web-system-supervisoes-v1');
-  return raw ? safeParseJson(raw, []) : [];
+  const parsed = getSafeStorage('web-system-supervisoes-v1', []);
+  return Array.isArray(parsed) ? parsed : [];
 }
 
 function saveSupervisoes() {
-  localStorage.setItem('web-system-supervisoes-v1', JSON.stringify(supervisoes));
+  setSafeStorage('web-system-supervisoes-v1', supervisoes);
 }
 
 function saveSupervisao(event) {
@@ -6429,26 +6495,26 @@ function vpUpdateCloudIndicator(status, text) {
 
 function vpLoadState() {
   try {
-    const savedCustom = localStorage.getItem('mobile_parts_custom');
-    if (savedCustom) vpCustomPartsList = JSON.parse(savedCustom);
-    const savedRenames = localStorage.getItem('mobile_parts_renames');
-    if (savedRenames) vpCustomPartRenamesMap = JSON.parse(savedRenames);
-    const savedZoneOverrides = localStorage.getItem('mobile_parts_zone_overrides');
-    if (savedZoneOverrides) vpPartZoneOverridesMap = JSON.parse(savedZoneOverrides);
-    const savedDeleted = localStorage.getItem('mobile_parts_deleted');
-    if (savedDeleted) vpDeletedPartsList = JSON.parse(savedDeleted);
-    const savedStats = localStorage.getItem('mobile_parts_usage_stats');
-    if (savedStats) vpUsageStats = JSON.parse(savedStats);
+    const savedCustom = getSafeStorage('mobile_parts_custom', null);
+    if (savedCustom && Array.isArray(savedCustom)) vpCustomPartsList = savedCustom;
+    const savedRenames = getSafeStorage('mobile_parts_renames', null);
+    if (savedRenames && typeof savedRenames === 'object') vpCustomPartRenamesMap = savedRenames;
+    const savedZoneOverrides = getSafeStorage('mobile_parts_zone_overrides', null);
+    if (savedZoneOverrides && typeof savedZoneOverrides === 'object') vpPartZoneOverridesMap = savedZoneOverrides;
+    const savedDeleted = getSafeStorage('mobile_parts_deleted', null);
+    if (savedDeleted && Array.isArray(savedDeleted)) vpDeletedPartsList = savedDeleted;
+    const savedStats = getSafeStorage('mobile_parts_usage_stats', null);
+    if (savedStats && typeof savedStats === 'object') vpUsageStats = savedStats;
   } catch(e) {}
 }
 
 function vpSaveState(syncToCloud = false) {
   try {
-    localStorage.setItem('mobile_parts_custom', JSON.stringify(vpCustomPartsList));
-    localStorage.setItem('mobile_parts_renames', JSON.stringify(vpCustomPartRenamesMap));
-    localStorage.setItem('mobile_parts_zone_overrides', JSON.stringify(vpPartZoneOverridesMap));
-    localStorage.setItem('mobile_parts_deleted', JSON.stringify(vpDeletedPartsList));
-    localStorage.setItem('mobile_parts_usage_stats', JSON.stringify(vpUsageStats));
+    setSafeStorage('mobile_parts_custom', vpCustomPartsList);
+    setSafeStorage('mobile_parts_renames', vpCustomPartRenamesMap);
+    setSafeStorage('mobile_parts_zone_overrides', vpPartZoneOverridesMap);
+    setSafeStorage('mobile_parts_deleted', vpDeletedPartsList);
+    setSafeStorage('mobile_parts_usage_stats', vpUsageStats);
   } catch(e) {}
 
   if (syncToCloud) {

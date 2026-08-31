@@ -64,7 +64,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         webView = WebView(this)
-        webView.clearCache(true)
         val container = android.widget.FrameLayout(this).apply {
             fitsSystemWindows = true
             addView(webView)
@@ -84,6 +83,7 @@ class MainActivity : ComponentActivity() {
         settings.domStorageEnabled = true
         settings.allowFileAccess = true
         settings.databaseEnabled = true
+        settings.cacheMode = WebSettings.LOAD_DEFAULT
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
 
         // Interface bridge to JS
@@ -1307,6 +1307,27 @@ class MainActivity : ComponentActivity() {
 
 class AndroidInterface(private val activity: ComponentActivity) {
     private val tempShareFiles = ArrayList<java.io.File>()
+
+    @JavascriptInterface
+    fun saveNativeData(key: String, jsonString: String) {
+        try {
+            val prefs = activity.getSharedPreferences("offline_data_store", android.content.Context.MODE_PRIVATE)
+            prefs.edit().putString(key, jsonString).apply()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    @JavascriptInterface
+    fun getNativeData(key: String): String {
+        try {
+            val prefs = activity.getSharedPreferences("offline_data_store", android.content.Context.MODE_PRIVATE)
+            return prefs.getString(key, "") ?: ""
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return ""
+        }
+    }
 
     @JavascriptInterface
     fun onPageLoaded() {
