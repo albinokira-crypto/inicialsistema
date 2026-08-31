@@ -90,14 +90,93 @@ class MainActivity : ComponentActivity() {
         webView.addJavascriptInterface(AndroidInterface(this), "AndroidInterface")
 
         webView.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(
+                view: WebView?,
+                request: android.webkit.WebResourceRequest?
+            ): android.webkit.WebResourceResponse? {
+                val url = request?.url ?: return null
+                val host = url.host ?: ""
+                
+                if (host.contains("gestao-vistoria-inicial.vercel.app")) {
+                    val path = url.path ?: "/"
+                    val assetName = when {
+                        path == "/" || path.endsWith("/index.html") || path.endsWith("/index") -> "index.html"
+                        path.endsWith("/dashboard.html") || path.endsWith("/dashboard") -> "dashboard.html"
+                        path.endsWith("/app.js") -> "app.js"
+                        path.endsWith("/login.js") -> "login.js"
+                        path.endsWith("/styles.css") -> "styles.css"
+                        path.endsWith("/sw.js") -> "sw.js"
+                        path.endsWith("/version.json") -> "version.json"
+                        path.endsWith("/manifest.webmanifest") -> "manifest.webmanifest"
+                        path.endsWith("/icon-192.png") -> "icon-192.png"
+                        path.endsWith("/icon-512.png") -> "icon-512.png"
+                        else -> null
+                    }
+
+                    if (assetName != null) {
+                        val isConnected = try {
+                            val cm = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+                            val network = cm.activeNetwork
+                            val caps = cm.getNetworkCapabilities(network)
+                            caps?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+                        } catch (e: Exception) {
+                            false
+                        }
+
+                        // Se estiver sem internet, entrega o arquivo local embutido mantendo a origem https://
+                        if (!isConnected) {
+                            try {
+                                val mimeType = when {
+                                    assetName.endsWith(".html") -> "text/html"
+                                    assetName.endsWith(".js") -> "application/javascript"
+                                    assetName.endsWith(".css") -> "text/css"
+                                    assetName.endsWith(".json") || assetName.endsWith(".webmanifest") -> "application/json"
+                                    assetName.endsWith(".png") -> "image/png"
+                                    else -> "application/octet-stream"
+                                }
+                                val inputStream = assets.open(assetName)
+                                val response = android.webkit.WebResourceResponse(mimeType, "UTF-8", inputStream)
+                                response.responseHeaders = mapOf(
+                                    "Access-Control-Allow-Origin" to "*",
+                                    "Cache-Control" to "no-cache"
+                                )
+                                return response
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }
+                return super.shouldInterceptRequest(view, request)
+            }
+
             override fun onReceivedError(
                 view: WebView?,
                 request: android.webkit.WebResourceRequest?,
                 error: android.webkit.WebResourceError?
             ) {
-                super.onReceivedError(view, request, error)
+                // Não chama super.onReceivedError para não exibir a tela feia net::ERR
                 if (request?.isForMainFrame == true) {
-                    view?.loadUrl("file:///android_asset/index.html")
+                    val path = request.url?.path ?: ""
+                    val targetAsset = if (path.contains("dashboard")) "dashboard.html" else "index.html"
+                    view?.post {
+                        view.loadUrl("file:///android_asset/$targetAsset")
+                    }
+                }
+            }
+
+            @Suppress("DEPRECATION")
+            override fun onReceivedError(
+                view: WebView?,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                if (failingUrl?.contains("gestao-vistoria-inicial.vercel.app") == true) {
+                    val targetAsset = if (failingUrl.contains("dashboard")) "dashboard.html" else "index.html"
+                    view?.post {
+                        view.loadUrl("file:///android_asset/$targetAsset")
+                    }
                 }
             }
         }
