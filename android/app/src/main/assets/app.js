@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v2.08';
+const CURRENT_APP_VERSION = 'v2.09';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -460,7 +460,7 @@ function registerServiceWorker() {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
     });
-    navigator.serviceWorker.register('/sw.js?v=208')
+    navigator.serviceWorker.register('/sw.js?v=209')
       .then((registration) => {
         registration.update();
       })
