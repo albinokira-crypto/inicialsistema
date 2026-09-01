@@ -4639,6 +4639,11 @@ async function forceAppRefresh(targetVer = null) {
     sessionStorage.removeItem('last_auto_update_target');
   } catch(e) {}
 
+  if (window.AndroidInterface && typeof window.AndroidInterface.clearAppCache === 'function') {
+    window.AndroidInterface.clearAppCache();
+    return;
+  }
+
   // 4. Redireciona com cache-busting completo
   const verParam = targetVer ? encodeURIComponent(String(targetVer).replace(/^v/i, '')) : '210';
   const cleanPath = (window.location.pathname.split('?')[0] || '/dashboard.html');

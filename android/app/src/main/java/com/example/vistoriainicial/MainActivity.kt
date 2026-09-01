@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
         settings.domStorageEnabled = true
         settings.allowFileAccess = true
         settings.databaseEnabled = true
-        settings.cacheMode = WebSettings.LOAD_DEFAULT
+        settings.cacheMode = WebSettings.LOAD_NO_CACHE
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
 
         // Interface bridge to JS
@@ -1386,6 +1386,16 @@ class MainActivity : ComponentActivity() {
 
 class AndroidInterface(private val activity: ComponentActivity) {
     private val tempShareFiles = ArrayList<java.io.File>()
+
+    @JavascriptInterface
+    fun clearAppCache() {
+        val mainAct = activity as MainActivity
+        mainAct.runOnUiThread {
+            mainAct.webView.clearCache(true)
+            android.widget.Toast.makeText(mainAct, "Cache limpo! Recarregando sistema...", android.widget.Toast.LENGTH_SHORT).show()
+            mainAct.webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/dashboard.html?v=210&_t=" + System.currentTimeMillis())
+        }
+    }
 
     @JavascriptInterface
     fun saveNativeData(key: String, jsonString: String) {
