@@ -25,6 +25,17 @@ window.homeLogout = homeLogout;
 
 const CURRENT_APP_VERSION = 'v2.10';
 
+function parseVersionNum(v) {
+  if (!v) return 0;
+  const cleaned = String(v).replace(/[^0-9.]/g, '');
+  const parts = cleaned.split('.').map(n => parseInt(n, 10) || 0);
+  let num = 0;
+  if (parts.length >= 1) num += parts[0] * 100000;
+  if (parts.length >= 2) num += parts[1] * 1000;
+  if (parts.length >= 3) num += parts[2];
+  return num;
+}
+
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
   const serverJsonEl = document.getElementById('serverVersionJsonDisplay');
@@ -42,8 +53,7 @@ async function checkForSystemUpdates(showFeedback = false) {
     const timestamp = Date.now();
     const endpoints = [
       'https://gestao-vistoria-inicial.vercel.app/version.json?_t=' + timestamp,
-      '/version.json?_t=' + timestamp,
-      'version.json?_t=' + timestamp
+      '/version.json?_t=' + timestamp
     ];
     let data = null;
     for (const url of endpoints) {
@@ -68,10 +78,10 @@ async function checkForSystemUpdates(showFeedback = false) {
 
     if (data && data.version) {
       const serverVer = data.version.startsWith('v') ? data.version : 'v' + data.version;
-      if (serverJsonEl) serverJsonEl.textContent = serverVer;
+      const isNewer = parseVersionNum(serverVer) > parseVersionNum(activeVersion);
 
-      const isNewer = serverVer !== activeVersion;
       if (isNewer) {
+        if (serverJsonEl) serverJsonEl.textContent = serverVer;
         if (statusBadge) {
           statusBadge.style.background = '#fef3c7';
           statusBadge.style.borderColor = '#fde68a';
@@ -86,6 +96,7 @@ async function checkForSystemUpdates(showFeedback = false) {
           return;
         }
       } else {
+        if (serverJsonEl) serverJsonEl.textContent = activeVersion;
         if (statusBadge) {
           statusBadge.style.background = '#dcfce7';
           statusBadge.style.borderColor = '#86efac';
