@@ -459,10 +459,7 @@ function ensureAuthentication() {
 }
 
 function registerServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      window.location.reload();
-    });
+  if ('serviceWorker' in navigator && !window.AndroidInterface) {
     navigator.serviceWorker.register('/sw.js?v=210')
       .then((registration) => {
         registration.update();
