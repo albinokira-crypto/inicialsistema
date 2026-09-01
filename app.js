@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v2.09';
+const CURRENT_APP_VERSION = 'v2.10';
 
 async function checkForSystemUpdates(showFeedback = false) {
   const versionEl = document.getElementById('systemAppVersionDisplay') || document.getElementById('systemVersionText');
@@ -357,8 +357,8 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-super-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
           <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
-            <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Compartilhar (Texto + Fotos)
+            <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: ${entry.sent ? '#059669' : '#16a34a'}; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: ${entry.sent ? '0 2px 4px rgba(5,150,105,0.35)' : '0 2px 4px rgba(22,163,74,0.2)'};">
+              ${entry.sent ? '✅ Enviado' : '📲 Enviar Supervisão'}
             </button>
             <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${entry.id}" style="font-weight: 700; font-size: 0.80rem !important; padding: 10px 6px !important; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
               💬 Só Texto
@@ -404,8 +404,8 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-action="parts" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
               🚗 Partes do Veículo
             </button>
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Enviar Vistoria
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: ${entry.sent ? '#059669' : '#16a34a'}; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: ${entry.sent ? '0 2px 4px rgba(5,150,105,0.35)' : '0 2px 4px rgba(22,163,74,0.2)'};">
+              ${entry.sent ? '✅ Enviado' : '📲 Enviar Vistoria'}
             </button>
           </div>
         </div>
@@ -1100,6 +1100,16 @@ function openReportModal(id) {
   }
   if (contentEl) {
     contentEl.value = reportText;
+  }
+
+  if (whatsappReportPreviewBtn) {
+    if (item.sent) {
+      whatsappReportPreviewBtn.innerHTML = '✅ Enviado';
+      whatsappReportPreviewBtn.style.background = '#059669';
+    } else {
+      whatsappReportPreviewBtn.innerHTML = isInspection ? '📲 Enviar Vistoria' : '📲 Enviar Supervisão';
+      whatsappReportPreviewBtn.style.background = '#16a34a';
+    }
   }
 
   if (modalEl) {
@@ -2067,8 +2077,8 @@ function render() {
             <button class="action-btn" type="button" data-action="parts" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
               🚗 Partes do Veículo
             </button>
-            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-              📲 Enviar Vistoria
+            <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: ${item.sent ? '#059669' : '#16a34a'}; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: ${item.sent ? '0 2px 4px rgba(5,150,105,0.35)' : '0 2px 4px rgba(22,163,74,0.2)'};">
+              ${item.sent ? '✅ Enviado' : '📲 Enviar Vistoria'}
             </button>
           </div>
         </div>
@@ -3996,8 +4006,8 @@ function renderSupervisaoReport() {
               <button class="action-btn" type="button" data-super-action="delete" data-id="${s.id}">Excluir</button>
             </div>
             <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
-              <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${s.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #16a34a; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(22,163,74,0.2);">
-                📲 Compartilhar (Texto + Fotos)
+              <button class="action-btn" type="button" data-super-action="share-whatsapp-sequence" data-id="${s.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: ${s.sent ? '#059669' : '#16a34a'}; color: #ffffff; border: none; border-radius: 10px; flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: ${s.sent ? '0 2px 4px rgba(5,150,105,0.35)' : '0 2px 4px rgba(22,163,74,0.2)'};">
+                ${s.sent ? '✅ Enviado' : '📲 Enviar Supervisão'}
               </button>
               <button class="action-btn" type="button" data-super-action="share-whatsapp-text" data-id="${s.id}" style="font-weight: 700; font-size: 0.80rem !important; padding: 10px 6px !important; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
                 💬 Só Texto
@@ -4970,8 +4980,41 @@ async function checkHasMediaForVehicle(vehicleName, isSupervisao) {
 }
 window.checkHasMediaForVehicle = checkHasMediaForVehicle;
 
+function markAsSent(id) {
+  if (!id) return;
+  let changed = false;
+  const insp = items.find(entry => entry.id === id);
+  if (insp) {
+    insp.sent = true;
+    insp.sentAt = new Date().toISOString();
+    saveItems();
+    changed = true;
+  }
+  const sup = supervisoes.find(s => s.id === id);
+  if (sup) {
+    sup.sent = true;
+    sup.sentAt = new Date().toISOString();
+    saveSupervisoes();
+    changed = true;
+  }
+
+  // Atualiza imediatamente todos os botões de envio do registro na interface
+  document.querySelectorAll(`[data-id="${id}"][data-action="share-whatsapp-sequence"], [data-id="${id}"][data-super-action="share-whatsapp-sequence"]`).forEach(btn => {
+    btn.innerHTML = '✅ Enviado';
+    btn.style.background = '#059669';
+    btn.style.boxShadow = '0 2px 4px rgba(5,150,105,0.35)';
+  });
+
+  if (whatsappReportPreviewBtn && currentReportModalId === id) {
+    whatsappReportPreviewBtn.innerHTML = '✅ Enviado';
+    whatsappReportPreviewBtn.style.background = '#059669';
+  }
+}
+window.markAsSent = markAsSent;
+
 // Compartilhamento Sequencial Automático (1 clique: Texto primeiro, depois Mídias no retorno)
 async function shareVistoriaWhatsAppSequence(id) {
+  markAsSent(id);
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
     alert('Registro não encontrado!');
@@ -5019,6 +5062,7 @@ async function checkPendingSequenceShare() {
     // Dispara somente se o envio do texto ocorreu entre 800ms e 10 minutos atrás
     if (elapsed > 800 && elapsed < 10 * 60 * 1000) {
       isCheckingSequenceShare = true;
+      if (pending.id) markAsSent(pending.id);
       pendingSequenceShare = null;
       try {
         sessionStorage.removeItem('pending_sequence_share');
@@ -5044,6 +5088,7 @@ document.addEventListener('visibilitychange', () => {
 
 // Compartilha fotos + relatório. Se não há fotos, compartilha só o relatório.
 async function shareVistoriaWhatsApp(id, shareMode) {
+  markAsSent(id);
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
     alert('Registro não encontrado!');
