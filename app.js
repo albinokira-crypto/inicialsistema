@@ -79,19 +79,18 @@ async function checkForSystemUpdates(showFeedback = false) {
         }
         if (statusDot) statusDot.style.background = '#d97706';
         if (statusText) statusText.textContent = `Atualização ${serverVer}`;
-        if (versionEl) versionEl.textContent = `${activeVersion} (Disponível ${serverVer})`;
+        if (versionEl) versionEl.textContent = `${activeVersion} (Nova: ${serverVer})`;
+
+        if (showFeedback) {
+          forceAppRefresh(serverVer);
+          return;
+        }
 
         const lastAutoUpdate = sessionStorage.getItem('last_auto_update_target');
         if (lastAutoUpdate !== serverVer) {
           sessionStorage.setItem('last_auto_update_target', serverVer);
-          forceAppRefresh();
+          forceAppRefresh(serverVer);
           return;
-        }
-
-        if (showFeedback) {
-          if (confirm(`Uma nova versão (${serverVer}) foi encontrada no servidor! Deseja atualizar o aplicativo agora?`)) {
-            forceAppRefresh();
-          }
         }
       } else {
         if (statusBadge) {
@@ -104,7 +103,8 @@ async function checkForSystemUpdates(showFeedback = false) {
         if (versionEl) versionEl.textContent = `${activeVersion}`;
 
         if (showFeedback) {
-          alert(`✅ Seu aplicativo está na versão mais recente (${activeVersion}) conectada diretamente ao servidor!`);
+          forceAppRefresh(activeVersion);
+          return;
         }
       }
     } else {
@@ -4609,51 +4609,45 @@ function closeSystemSettings() {
 }
 window.closeSystemSettings = closeSystemSettings;
 
-async function forceAppRefresh() {
+async function forceAppRefresh(targetVer = null) {
   const btn = document.getElementById('forceRefreshAppBtn');
   if (btn) {
     btn.disabled = true;
-    btn.textContent = '⏳ Sincronizando arquivos offline...';
+    btn.textContent = '⏳ Sincronizando nova versão...';
   }
 
-  // 1. Atualiza Service Worker sem desregistrar
-  if ('serviceWorker' in navigator) {
-    try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (reg) await reg.update();
-    } catch(e) {}
-  }
-
-  // 2. Garante pré-carregamento de todos os arquivos offline
+  // 1. Limpa todas as caches locais
   if ('caches' in window) {
     try {
-      const cache = await caches.open('projeto-planilha-mobile-v210');
-      const assets = [
-        '/',
-        '/index.html',
-        '/dashboard.html',
-        '/styles.css?v=210',
-        '/app.js?v=210',
-        '/login.js?v=210',
-        '/manifest.webmanifest',
-        '/icon-192.png',
-        '/icon-512.png',
-        'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
-      ];
-      await Promise.allSettled(
-        assets.map(url =>
-          fetch(url, { cache: 'reload' }).then(res => {
-            if (res && res.status === 200) return cache.put(url, res);
-          })
-        )
-      );
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
     } catch(e) {}
   }
 
-  // 3. Recarrega a página
+  // 2. Limpa Service Workers
+  if ('serviceWorker' in navigator) {
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        await reg.unregister();
+      }
+    } catch(e) {}
+  }
+
+  // 3. Limpa travas de sessionStorage
+  try {
+    sessionStorage.removeItem('last_auto_update_target');
+  } catch(e) {}
+
+  // 4. Redireciona com cache-busting completo
+  const verParam = targetVer ? encodeURIComponent(String(targetVer).replace(/^v/i, '')) : '210';
+  const cleanPath = (window.location.pathname.split('?')[0] || '/dashboard.html');
+  const targetPath = cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath;
+  const targetUrl = `https://gestao-vistoria-inicial.vercel.app${targetPath}?v=${verParam}&_t=${Date.now()}`;
+
   setTimeout(() => {
-    window.location.reload();
-  }, 400);
+    window.location.replace(targetUrl);
+  }, 200);
 }
 window.forceAppRefresh = forceAppRefresh;
 
