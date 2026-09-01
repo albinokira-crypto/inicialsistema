@@ -44,7 +44,12 @@ jobs:
           cp app.js android/app/src/main/assets/
           cp styles.css android/app/src/main/assets/
           cp login.js android/app/src/main/assets/ || true
+          cp sw.js android/app/src/main/assets/ || true
+          cp version.json android/app/src/main/assets/ || true
+          cp manifest.webmanifest android/app/src/main/assets/ || true
           cp logo.png android/app/src/main/assets/ || true
+          cp icon-192.png android/app/src/main/assets/ || true
+          cp icon-512.png android/app/src/main/assets/ || true
 
       - name: Build Debug APK
         run: |
