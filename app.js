@@ -85,13 +85,6 @@ async function checkForSystemUpdates(showFeedback = false) {
           forceAppRefresh(serverVer);
           return;
         }
-
-        const lastAutoUpdate = sessionStorage.getItem('last_auto_update_target');
-        if (lastAutoUpdate !== serverVer) {
-          sessionStorage.setItem('last_auto_update_target', serverVer);
-          forceAppRefresh(serverVer);
-          return;
-        }
       } else {
         if (statusBadge) {
           statusBadge.style.background = '#dcfce7';
@@ -103,8 +96,7 @@ async function checkForSystemUpdates(showFeedback = false) {
         if (versionEl) versionEl.textContent = `${activeVersion}`;
 
         if (showFeedback) {
-          forceAppRefresh(activeVersion);
-          return;
+          alert(`✅ Seu aplicativo está na versão mais recente (${activeVersion}) conectada diretamente ao servidor!`);
         }
       }
     } else {
