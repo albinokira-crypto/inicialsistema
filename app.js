@@ -4976,15 +4976,16 @@ window.checkHasMediaForVehicle = checkHasMediaForVehicle;
 
 function markAsSent(id) {
   if (!id) return;
+  const strId = String(id);
   let changed = false;
-  const insp = items.find(entry => entry.id === id);
+  const insp = items.find(entry => String(entry.id) === strId);
   if (insp) {
     insp.sent = true;
     insp.sentAt = new Date().toISOString();
     saveItems();
     changed = true;
   }
-  const sup = supervisoes.find(s => s.id === id);
+  const sup = supervisoes.find(s => String(s.id) === strId);
   if (sup) {
     sup.sent = true;
     sup.sentAt = new Date().toISOString();
@@ -4993,13 +4994,13 @@ function markAsSent(id) {
   }
 
   // Atualiza imediatamente todos os botões de envio do registro na interface
-  document.querySelectorAll(`[data-id="${id}"][data-action="share-whatsapp-sequence"], [data-id="${id}"][data-super-action="share-whatsapp-sequence"]`).forEach(btn => {
+  document.querySelectorAll(`[data-id="${id}"][data-action="share-whatsapp-sequence"], [data-id="${id}"][data-super-action="share-whatsapp-sequence"], [data-id="${strId}"][data-action="share-whatsapp-sequence"], [data-id="${strId}"][data-super-action="share-whatsapp-sequence"]`).forEach(btn => {
     btn.innerHTML = '✅ Enviado';
     btn.style.background = '#059669';
     btn.style.boxShadow = '0 2px 4px rgba(5,150,105,0.35)';
   });
 
-  if (whatsappReportPreviewBtn && currentReportModalId === id) {
+  if (whatsappReportPreviewBtn && (currentReportModalId === id || String(currentReportModalId) === strId)) {
     whatsappReportPreviewBtn.innerHTML = '✅ Enviado';
     whatsappReportPreviewBtn.style.background = '#059669';
   }
