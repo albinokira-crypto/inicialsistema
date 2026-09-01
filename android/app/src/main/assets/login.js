@@ -138,7 +138,7 @@ loginForm.addEventListener('submit', (event) => {
   const users = getRegisteredUsers();
   if (users[username] && users[username] === password) {
     localStorage.setItem('authenticated', 'true');
-    window.location.href = 'dashboard.html?v=210';
+    window.location.href = 'dashboard.html';
     return;
   }
 
@@ -147,7 +147,7 @@ loginForm.addEventListener('submit', (event) => {
 });
 
 if (localStorage.getItem('authenticated') === 'true') {
-  window.location.href = 'dashboard.html?v=210';
+  window.location.href = 'dashboard.html';
 }
 
 if ('serviceWorker' in navigator) {
