@@ -460,7 +460,7 @@ function registerServiceWorker() {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
     });
-    navigator.serviceWorker.register('/sw.js?v=209')
+    navigator.serviceWorker.register('/sw.js?v=210')
       .then((registration) => {
         registration.update();
       })
@@ -4627,14 +4627,14 @@ async function forceAppRefresh() {
   // 2. Garante pré-carregamento de todos os arquivos offline
   if ('caches' in window) {
     try {
-      const cache = await caches.open('projeto-planilha-mobile-v208');
+      const cache = await caches.open('projeto-planilha-mobile-v210');
       const assets = [
         '/',
         '/index.html',
         '/dashboard.html',
-        '/styles.css?v=208',
-        '/app.js?v=208',
-        '/login.js?v=208',
+        '/styles.css?v=210',
+        '/app.js?v=210',
+        '/login.js?v=210',
         '/manifest.webmanifest',
         '/icon-192.png',
         '/icon-512.png',
