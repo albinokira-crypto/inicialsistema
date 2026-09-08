@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v2.10';
+const CURRENT_APP_VERSION = 'v2.11';
 
 function parseVersionNum(v) {
   if (!v) return 0;
@@ -7161,10 +7161,94 @@ window.openVehiclePartsModal = function() {
   if (modal) modal.style.display = 'flex';
 };
 
-window.closeVehiclePartsModal = function() {
+window.vpSaveSelectedParts = function() {
+  if (typeof vpSelectedPartsMap === 'undefined' || !vpSelectedPartsMap) return false;
+
+  const trocasList = [];
+  const reparosList = [];
+  const allPartsList = [];
+
+  for (const part of vpSelectedPartsMap.values()) {
+    const formatted = part.obs ? `${part.name} (${part.obs})` : part.name;
+    allPartsList.push(formatted);
+    if (part.action === 'troca') {
+      trocasList.push(formatted);
+      if (typeof vpIncrementPartUsage === 'function') vpIncrementPartUsage(part.name);
+    } else if (part.action === 'reparo') {
+      reparosList.push(formatted);
+      if (typeof vpIncrementPartUsage === 'function') vpIncrementPartUsage(part.name);
+    }
+  }
+
+  if (vpSelectedPartsMap.size > 0 && typeof vpSaveState === 'function') {
+    vpSaveState(true);
+  }
+
+  if (currentVistoriaIdForParts && typeof items !== 'undefined' && Array.isArray(items)) {
+    const item = items.find(entry => entry.id === currentVistoriaIdForParts);
+    if (item) {
+      if (!item.details) item.details = {};
+      if (item.type === 'Vistoria Rio log') {
+        item.details.avarias = allPartsList.join('\n');
+      } else {
+        item.details.trocas = trocasList.join('\n');
+        item.details.reparos = reparosList.join('\n');
+      }
+      item.updatedAt = new Date().toLocaleString('pt-BR');
+      item.updatedAtTime = Date.now();
+      if (typeof saveItems === 'function') saveItems();
+      if (typeof render === 'function') render();
+      if (typeof updateLocalAndServerData === 'function') {
+        updateLocalAndServerData();
+      }
+    }
+  }
+
+  const isRioLog = (typeof selectedType !== 'undefined' && selectedType === 'Vistoria Rio log');
+  const trocasTextarea = document.querySelector('textarea[name="trocas"]');
+  const reparosTextarea = document.querySelector('textarea[name="reparos"]');
+  const avariasTextarea = document.querySelector('textarea[name="avarias"]');
+
+  if (isRioLog && avariasTextarea) {
+    avariasTextarea.value = allPartsList.join('\n');
+    avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+    avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+  } else {
+    if (trocasTextarea) {
+      trocasTextarea.value = trocasList.join('\n');
+      trocasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+      trocasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    if (reparosTextarea) {
+      reparosTextarea.value = reparosList.join('\n');
+      reparosTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+      reparosTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    if (avariasTextarea && !trocasTextarea && !reparosTextarea) {
+      avariasTextarea.value = allPartsList.join('\n');
+      avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+      avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
+  return true;
+};
+
+window.closeVehiclePartsModal = function(skipSave = false) {
+  if (!skipSave && typeof vpSelectedPartsMap !== 'undefined' && vpSelectedPartsMap.size > 0) {
+    window.vpSaveSelectedParts();
+    if (typeof showToastNotification === 'function') {
+      showToastNotification('Peças listadas salvas com sucesso!', 3000);
+    }
+  }
   currentVistoriaIdForParts = null;
   const modal = document.getElementById('vehiclePartsModal');
   if (modal) modal.style.display = 'none';
+  if (typeof window.vpCloseReviewSheet === 'function') {
+    window.vpCloseReviewSheet();
+  }
 };
 
 window.vpOpenPhotosFromDock = function() {
@@ -7199,79 +7283,11 @@ window.vpOpenPhotosFromDock = function() {
 };
 
 window.vpApplyAndClose = function() {
-  const trocasList = [];
-  const reparosList = [];
-  const allPartsList = [];
-
-  for (const part of vpSelectedPartsMap.values()) {
-    const formatted = part.obs ? `${part.name} (${part.obs})` : part.name;
-    allPartsList.push(formatted);
-    if (part.action === 'troca') {
-      trocasList.push(formatted);
-      vpIncrementPartUsage(part.name);
-    } else if (part.action === 'reparo') {
-      reparosList.push(formatted);
-      vpIncrementPartUsage(part.name);
-    }
-  }
-
-  if (vpSelectedPartsMap.size > 0) {
-    vpSaveState(true);
-  }
-
-  if (currentVistoriaIdForParts) {
-    const item = items.find(entry => entry.id === currentVistoriaIdForParts);
-    if (item) {
-      if (!item.details) item.details = {};
-      if (item.type === 'Vistoria Rio log') {
-        item.details.avarias = allPartsList.join('\n');
-      } else {
-        item.details.trocas = trocasList.join('\n');
-        item.details.reparos = reparosList.join('\n');
-      }
-      item.updatedAt = new Date().toLocaleString('pt-BR');
-      item.updatedAtTime = Date.now();
-      saveItems();
-      render();
-      if (typeof updateLocalAndServerData === 'function') {
-        updateLocalAndServerData();
-      }
-    }
-    currentVistoriaIdForParts = null;
-  }
-
-  const isRioLog = (typeof selectedType !== 'undefined' && selectedType === 'Vistoria Rio log');
-  const trocasTextarea = document.querySelector('textarea[name="trocas"]');
-  const reparosTextarea = document.querySelector('textarea[name="reparos"]');
-  const avariasTextarea = document.querySelector('textarea[name="avarias"]');
-
-  if (isRioLog && avariasTextarea) {
-    avariasTextarea.value = allPartsList.join('\n');
-    avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-    avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-  } else {
-    if (trocasTextarea) {
-      trocasTextarea.value = trocasList.join('\n');
-      trocasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-      trocasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    if (reparosTextarea) {
-      reparosTextarea.value = reparosList.join('\n');
-      reparosTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-      reparosTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    if (avariasTextarea && !trocasTextarea && !reparosTextarea) {
-      avariasTextarea.value = allPartsList.join('\n');
-      avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-      avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-  }
+  window.vpSaveSelectedParts();
 
   // Exibe a tela com a mensagem no centro da tela por 3 segundos e só depois volta para a tela de vistoria
   showCenteredSuccessModal('Partes do veículo salvas na vistoria!', 3000, () => {
-    window.closeVehiclePartsModal();
+    window.closeVehiclePartsModal(true);
     window.vpCloseReviewSheet();
   });
 };
