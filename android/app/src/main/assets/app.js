@@ -91,6 +91,14 @@ async function checkForSystemUpdates(showFeedback = false) {
         if (statusText) statusText.textContent = `Atualização ${serverVer}`;
         if (versionEl) versionEl.textContent = `${activeVersion} (Nova: ${serverVer})`;
 
+        // Auto-atualização instantânea: recarrega automaticamente ao detectar nova versão
+        const autoKey = 'last_auto_applied_' + serverVer;
+        if (!sessionStorage.getItem(autoKey)) {
+          sessionStorage.setItem(autoKey, 'true');
+          forceAppRefresh(serverVer);
+          return;
+        }
+
         if (showFeedback) {
           forceAppRefresh(serverVer);
           return;
@@ -460,7 +468,7 @@ function ensureAuthentication() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator && !window.AndroidInterface) {
-    navigator.serviceWorker.register('/sw.js?v=210')
+    navigator.serviceWorker.register('/sw.js?v=211')
       .then((registration) => {
         registration.update();
       })
@@ -4645,7 +4653,7 @@ async function forceAppRefresh(targetVer = null) {
   }
 
   // 4. Redireciona com cache-busting completo
-  const verParam = targetVer ? encodeURIComponent(String(targetVer).replace(/^v/i, '')) : '210';
+  const verParam = targetVer ? encodeURIComponent(String(targetVer).replace(/^v/i, '')) : '211';
   const cleanPath = (window.location.pathname.split('?')[0] || '/dashboard.html');
   const targetPath = cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath;
   const targetUrl = `https://gestao-vistoria-inicial.vercel.app${targetPath}?v=${verParam}&_t=${Date.now()}`;
