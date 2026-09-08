@@ -138,7 +138,7 @@ loginForm.addEventListener('submit', (event) => {
   const users = getRegisteredUsers();
   if (users[username] && users[username] === password) {
     localStorage.setItem('authenticated', 'true');
-    window.location.href = 'dashboard.html';
+    window.location.href = 'dashboard.html?v=211&_t=' + Date.now();
     return;
   }
 
@@ -147,11 +147,11 @@ loginForm.addEventListener('submit', (event) => {
 });
 
 if (localStorage.getItem('authenticated') === 'true') {
-  window.location.href = 'dashboard.html';
+  window.location.href = 'dashboard.html?v=211&_t=' + Date.now();
 }
 
 if ('serviceWorker' in navigator && !window.AndroidInterface) {
-  navigator.serviceWorker.register('/sw.js?v=210')
+  navigator.serviceWorker.register('/sw.js?v=211')
     .then((registration) => {
       registration.update();
     })

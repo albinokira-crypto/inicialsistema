@@ -1393,7 +1393,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
         mainAct.runOnUiThread {
             mainAct.webView.clearCache(true)
             android.widget.Toast.makeText(mainAct, "Cache limpo! Recarregando sistema...", android.widget.Toast.LENGTH_SHORT).show()
-            mainAct.webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/dashboard.html?v=210&_t=" + System.currentTimeMillis())
+            mainAct.webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/dashboard.html?v=211&_t=" + System.currentTimeMillis())
         }
     }
 
