@@ -116,11 +116,15 @@ class MainActivity : ComponentActivity() {
                     if (assetName != null) {
                         val isConnected = try {
                             val cm = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-                            val network = cm.activeNetwork
-                            val caps = cm.getNetworkCapabilities(network)
-                            caps?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+                            if (checkSelfPermission(android.Manifest.permission.ACCESS_NETWORK_STATE) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                val network = cm.activeNetwork
+                                val caps = cm.getNetworkCapabilities(network)
+                                caps?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+                            } else {
+                                true
+                            }
                         } catch (e: Exception) {
-                            false
+                            true
                         }
 
                         // Se estiver sem internet, entrega o arquivo local embutido mantendo a origem https://
