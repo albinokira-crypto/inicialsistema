@@ -1,4 +1,4 @@
-// Service Worker - Versão 2.11 Limpa e Segura (Pass-Through Instantâneo)
+// Service Worker - Versão 2.12 Limpa e Segura (Pass-Through Instantâneo)
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });

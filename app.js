@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v2.11';
+const CURRENT_APP_VERSION = 'v2.12';
 
 function parseVersionNum(v) {
   if (!v) return 0;
@@ -468,7 +468,7 @@ function ensureAuthentication() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator && !window.AndroidInterface) {
-    navigator.serviceWorker.register('/sw.js?v=211')
+    navigator.serviceWorker.register('/sw.js?v=212')
       .then((registration) => {
         registration.update();
       })
@@ -1069,6 +1069,9 @@ if (copySupervisaoTextButton) {
 }
 
 function openReportModal(id) {
+  if (typeof checkAndResetSupervisoesDaily === 'function' && checkAndResetSupervisoesDaily(supervisoes)) {
+    saveSupervisoes();
+  }
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);
   if (!item) {
     alert('Registro não encontrado!');
@@ -1563,6 +1566,9 @@ function saveInsurer(event) {
 }
 
 function render() {
+  if (typeof checkAndResetSupervisoesDaily === 'function' && checkAndResetSupervisoesDaily(supervisoes)) {
+    saveSupervisoes();
+  }
   const query = searchInput.value.toLowerCase();
   const isTodasVistorias = selectedDay === 'Todas as vistorias';
 
@@ -3818,9 +3824,48 @@ function updateTypeButtonsHighlight() {
   }
 }
 
+function isSupervisaoSentToday(s) {
+  if (!s || !s.sent) return false;
+  const today = getTodayDateValue();
+  if (s.sentDate) {
+    return s.sentDate === today;
+  }
+  if (s.sentAt) {
+    try {
+      const d = new Date(s.sentAt);
+      if (!isNaN(d.getTime())) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}` === today;
+      }
+    } catch (e) {}
+  }
+  if (s.date && s.date === today) {
+    return true;
+  }
+  return false;
+}
+
+function checkAndResetSupervisoesDaily(list = supervisoes) {
+  if (!Array.isArray(list)) return false;
+  let changed = false;
+  list.forEach((s) => {
+    if (s.sent && !isSupervisaoSentToday(s)) {
+      s.sent = false;
+      changed = true;
+    }
+  });
+  return changed;
+}
+
 function loadSupervisoes() {
   const parsed = getSafeStorage('web-system-supervisoes-v1', []);
-  return Array.isArray(parsed) ? parsed : [];
+  const list = Array.isArray(parsed) ? parsed : [];
+  if (checkAndResetSupervisoesDaily(list)) {
+    setSafeStorage('web-system-supervisoes-v1', list);
+  }
+  return list;
 }
 
 function saveSupervisoes() {
@@ -3928,6 +3973,9 @@ function cancelSupervisaoEdit() {
 
 function renderSupervisaoReport() {
   if (!supervisaoReportContent) return;
+  if (typeof checkAndResetSupervisoesDaily === 'function' && checkAndResetSupervisoesDaily(supervisoes)) {
+    saveSupervisoes();
+  }
 
   const searchInputEl = document.getElementById('supervisaoOficinaComboboxInput');
   const searchText = searchInputEl ? searchInputEl.value.trim().toLowerCase() : '';
@@ -5002,6 +5050,7 @@ function markAsSent(id) {
   if (sup) {
     sup.sent = true;
     sup.sentAt = new Date().toISOString();
+    sup.sentDate = getTodayDateValue();
     saveSupervisoes();
     changed = true;
   }
@@ -8267,4 +8316,24 @@ if (typeof plateInput !== 'undefined' && plateInput) {
     }
   });
 }
+
+// Monitoramento diário automático: reseta o status 'enviado' somente das supervisões na virada do dia
+function refreshSupervisoesIfDayChanged() {
+  if (typeof checkAndResetSupervisoesDaily === 'function' && checkAndResetSupervisoesDaily(supervisoes)) {
+    saveSupervisoes();
+    if (typeof renderSupervisaoReport === 'function') {
+      renderSupervisaoReport();
+    }
+    if (typeof render === 'function') {
+      render();
+    }
+  }
+}
+window.addEventListener('focus', refreshSupervisoesIfDayChanged);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    refreshSupervisoesIfDayChanged();
+  }
+});
+setInterval(refreshSupervisoesIfDayChanged, 60000);
 
