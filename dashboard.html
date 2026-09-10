@@ -17,7 +17,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <link rel="stylesheet" href="styles.css?v=212" />
+    <link rel="stylesheet" href="styles.css?v=213" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -252,9 +252,9 @@
         </table>
       </section>
 
-      <section class="card" id="supervisaoFormCard" hidden style="width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden;">
+      <section class="card" id="supervisaoFormCard" hidden style="width: 100%; max-width: 100%; box-sizing: border-box;">
         <h2 id="supervisaoFormTitle" style="margin: 0 0 10px; font-size: 1.25rem; line-height: 1.35; word-break: break-word; overflow-wrap: anywhere; max-width: 100%; white-space: normal;">Novo Registro de Supervisão</h2>
-        <form id="supervisaoForm" class="form-grid" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden;">
+        <form id="supervisaoForm" class="form-grid" style="width: 100%; max-width: 100%; box-sizing: border-box;">
           <label>
             Veículo (Modelo e Placa)
             <div style="display: flex; gap: 8px; align-items: stretch;">
@@ -283,7 +283,7 @@
                 <button id="supervisaoFormOficinaComboboxClearBtn" type="button" style="display: none; position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1rem; color: #94a3b8; cursor: pointer; padding: 4px; line-height: 1;">✕</button>
                 <button id="supervisaoFormOficinaComboboxToggleBtn" type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 0.8rem; color: #64748b; cursor: pointer; padding: 4px; line-height: 1;">▼</button>
               </div>
-              <ul id="supervisaoFormOficinaComboboxList" class="oficina-combobox-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; max-height: 220px; overflow-y: auto; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); z-index: 70; padding: 4px 0; margin: 0; list-style: none;"></ul>
+              <ul id="supervisaoFormOficinaComboboxList" class="oficina-combobox-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; max-height: 220px; overflow-y: auto; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); z-index: 1000; padding: 4px 0; margin: 0; list-style: none;"></ul>
             </div>
           </div>
           <label style="width: 100%; max-width: 100%; box-sizing: border-box;">
@@ -353,29 +353,27 @@
         </form>
       </section>
 
-      <section class="card" id="supervisaoRecordsCard" hidden style="width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; width: 100%; box-sizing: border-box;">
-          <h2 style="margin: 0; font-size: 1.15rem; line-height: 1.35; word-break: break-word; overflow-wrap: anywhere; max-width: 100%; white-space: normal;">Registros de Supervisão</h2>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
-            <button id="shareSupervisaoTextButton" class="primary-btn" type="button" style="flex: 1 1 auto; min-width: 160px; font-size: 0.82rem; padding: 10px 12px;">📱 Compartilhar Relatório</button>
-            <button id="copySupervisaoTextButton" class="ghost-btn" type="button" style="flex: 1 1 auto; min-width: 120px; font-size: 0.82rem; padding: 10px 12px;">📋 Copiar Texto</button>
-          </div>
-        </div>
-        
-        <div class="filter-group supervisao-filter-bar" style="margin-bottom: 16px; background: #f8fafc; padding: 12px 14px; border-radius: 14px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px;">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <label class="status-label" style="margin: 0; font-weight: 700; color: #1e293b; font-size: 0.85rem;">🏢 Filtrar por Oficina</label>
-            <span id="supervisaoOficinaFilterCount" style="font-size: 0.75rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 8px; border-radius: 999px; border: 1px solid #bfdbfe;">Total: 0</span>
+      <section class="card" id="supervisaoRecordsCard" hidden style="width: 100%; max-width: 100%; box-sizing: border-box;">
+        <div class="toolbar" style="display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 100%; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h2 style="margin: 0; font-size: 1.15rem; line-height: 1.35; word-break: break-word; overflow-wrap: anywhere; max-width: 100%; white-space: normal;">Registros de Supervisão</h2>
+              <span id="supervisaoOficinaFilterCount" style="font-size: 0.75rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 8px; border-radius: 999px; border: 1px solid #bfdbfe;">Total: 0</span>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button id="shareSupervisaoTextButton" class="primary-btn" type="button" style="flex: 1 1 auto; min-width: 150px; font-size: 0.82rem; padding: 8px 12px;">📱 Compartilhar Relatório</button>
+              <button id="copySupervisaoTextButton" class="ghost-btn" type="button" style="flex: 1 1 auto; min-width: 110px; font-size: 0.82rem; padding: 8px 12px;">📋 Copiar Texto</button>
+            </div>
           </div>
 
-          <!-- Campo Único Unificado de Busca + Menu Dropdown de Oficina na Supervisão -->
-          <div class="oficina-combobox-wrapper" style="position: relative; width: 100%;">
+          <!-- Filtro Único Unificado por Oficina na Supervisão (idêntico ao da Vistoria) -->
+          <div class="oficina-combobox-wrapper" style="position: relative; width: 100%; margin-top: 2px;">
             <div style="position: relative; display: flex; align-items: center; width: 100%;">
-              <input id="supervisaoOficinaComboboxInput" type="text" placeholder="🏢 Todas as Oficinas (digite ou selecione...)" autocomplete="off" style="width: 100% !important; box-sizing: border-box; padding: 10px 42px 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.90rem; font-weight: 600; outline: none; background: #ffffff; color: #0f172a; cursor: pointer;" />
+              <input id="supervisaoOficinaComboboxInput" type="text" placeholder="🏢 Todas as Oficinas (digite ou selecione...)" autocomplete="off" style="width: 100% !important; box-sizing: border-box; padding: 10px 42px 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600; outline: none; background: #ffffff; color: #0f172a; cursor: pointer;" />
               <button id="supervisaoOficinaComboboxClearBtn" type="button" style="display: none; position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1rem; color: #94a3b8; cursor: pointer; padding: 4px; line-height: 1;">✕</button>
               <button id="supervisaoOficinaComboboxToggleBtn" type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 0.8rem; color: #64748b; cursor: pointer; padding: 4px; line-height: 1;">▼</button>
             </div>
-            <ul id="supervisaoOficinaComboboxList" class="oficina-combobox-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; max-height: 220px; overflow-y: auto; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); z-index: 60; padding: 4px 0; margin: 0; list-style: none;"></ul>
+            <ul id="supervisaoOficinaComboboxList" class="oficina-combobox-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; max-height: 220px; overflow-y: auto; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); z-index: 1000; padding: 4px 0; margin: 0; list-style: none;"></ul>
           </div>
         </div>
 
@@ -851,6 +849,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=212"></script>
+    <script src="app.js?v=213"></script>
   </body>
 </html>

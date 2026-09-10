@@ -1986,5 +1986,23 @@ html, body {
   transform: scale(0.97);
 }
 
+/* Oficina Combobox Dropdown - z-index elevado para sobreposicao livre */
+.oficina-combobox-dropdown {
+  z-index: 1000 !important;
+}
 
-
+/* Botao de Estrela de Favoritos nas Pecas */
+.vp-btn-fav-part {
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 2px 3px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
+  user-select: none;
+}
+.vp-btn-fav-part:active {
+  transform: scale(1.3) !important;
+}
