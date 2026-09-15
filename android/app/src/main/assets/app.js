@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v2.12';
+let CURRENT_APP_VERSION = 'v2.14';
 
 function parseVersionNum(v) {
   if (!v) return 0;
@@ -78,6 +78,7 @@ async function checkForSystemUpdates(showFeedback = false) {
 
     if (data && data.version) {
       const serverVer = data.version.startsWith('v') ? data.version : 'v' + data.version;
+      CURRENT_APP_VERSION = serverVer;
       const isNewer = parseVersionNum(serverVer) > parseVersionNum(activeVersion);
 
       if (isNewer) {
@@ -104,7 +105,7 @@ async function checkForSystemUpdates(showFeedback = false) {
           return;
         }
       } else {
-        if (serverJsonEl) serverJsonEl.textContent = activeVersion;
+        if (serverJsonEl) serverJsonEl.textContent = serverVer;
         if (statusBadge) {
           statusBadge.style.background = '#dcfce7';
           statusBadge.style.borderColor = '#86efac';
@@ -112,7 +113,7 @@ async function checkForSystemUpdates(showFeedback = false) {
         }
         if (statusDot) statusDot.style.background = '#16a34a';
         if (statusText) statusText.textContent = 'Ativo / Atualizado';
-        if (versionEl) versionEl.textContent = `${activeVersion}`;
+        if (versionEl) versionEl.textContent = `${serverVer}`;
 
         if (showFeedback) {
           alert(`✅ Seu aplicativo está na versão mais recente (${activeVersion}) conectada diretamente ao servidor!`);
@@ -333,7 +334,8 @@ function renderVistoriaOrSupervisaoCard(entry) {
     'Moto': 'badge-moto',
     'Complemento': 'badge-complemento',
     'Pós entrega': 'badge-pos',
-    'Vistoria Rio log': 'badge-riolog'
+    'Vistoria Rio log': 'badge-riolog',
+    'Vistoria final': 'badge-final'
   };
 
   if (entry.isSupervisao) {
@@ -807,7 +809,8 @@ function updateVistoriaFormTitle() {
     'Moto': 'badge-moto',
     'Complemento': 'badge-complemento',
     'Pós entrega': 'badge-pos',
-    'Vistoria Rio log': 'badge-riolog'
+    'Vistoria Rio log': 'badge-riolog',
+    'Vistoria final': 'badge-final'
   };
   const typeIcons = {
     'Inicial': '🚗',
@@ -815,9 +818,10 @@ function updateVistoriaFormTitle() {
     'Incêndio': '🔥',
     'Enchente': '🌊',
     'Moto': '🏍️',
-    'Complemento': '📄',
+    'Complemento': '➕',
     'Pós entrega': '📦',
-    'Vistoria Rio log': '🚛'
+    'Vistoria Rio log': '🚛',
+    'Vistoria final': '🏁'
   };
 
   const badgeClass = badgeClasses[typeName] || 'badge-inicial';
@@ -845,8 +849,8 @@ function updateVistoriaFormTitle() {
 
 if (vistoriaTypeTabs) {
   vistoriaTypeTabs.addEventListener('click', (event) => {
-    const btn = event.target;
-    if (!btn.matches('.tab-btn')) return;
+    const btn = event.target.closest('.tab-btn');
+    if (!btn) return;
     selectedType = btn.dataset.type;
     vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.type === selectedType);
@@ -1183,12 +1187,23 @@ function isValidPlate(value) {
 function cancelEdit() {
   editingId = null;
   form.reset();
+  if (typeof vpSelectedPartsMap !== 'undefined' && vpSelectedPartsMap) {
+    vpSelectedPartsMap.clear();
+  }
+  currentVistoriaIdForParts = null;
+  const avariasReset = document.querySelector('textarea[name="avarias"]');
+  if (avariasReset) avariasReset.value = '';
+  const avaliacaoReset = document.querySelector('textarea[name="avaliacao"]');
+  if (avaliacaoReset) avaliacaoReset.value = '';
+  const avaliacaoInput = document.getElementById('avaliacaoItemInput');
+  if (avaliacaoInput) avaliacaoInput.value = '';
   if (providerSelect) providerSelect.value = '';
   if (typeInput) typeInput.value = selectedType || 'Inicial';
   updateTypeButtonsHighlight();
   updateInsurerButtonsHighlight();
   updateFormState();
   updateFormDisplay();
+  renderDynamicSurveyFields();
 }
 
 function cancelInsurerEdit() {
@@ -1515,6 +1530,16 @@ function saveItem(event) {
 
   saveItems();
   form.reset();
+  if (typeof vpSelectedPartsMap !== 'undefined' && vpSelectedPartsMap) {
+    vpSelectedPartsMap.clear();
+  }
+  currentVistoriaIdForParts = null;
+  const avariasReset = document.querySelector('textarea[name="avarias"]');
+  if (avariasReset) avariasReset.value = '';
+  const avaliacaoReset = document.querySelector('textarea[name="avaliacao"]');
+  if (avaliacaoReset) avaliacaoReset.value = '';
+  const avaliacaoInput = document.getElementById('avaliacaoItemInput');
+  if (avaliacaoInput) avaliacaoInput.value = '';
   if (providerSelect) providerSelect.value = '';
   if (typeInput) typeInput.value = selectedType || 'Inicial';
   updateTypeButtonsHighlight();
@@ -1522,6 +1547,7 @@ function saveItem(event) {
   editingId = null;
   updateFormState();
   updateFormDisplay();
+  renderDynamicSurveyFields();
   render();
   updateLocalAndServerData();
 }
@@ -2055,7 +2081,8 @@ function render() {
     'Moto': 'badge-moto',
     'Complemento': 'badge-complemento',
     'Pós entrega': 'badge-pos',
-    'Vistoria Rio log': 'badge-riolog'
+    'Vistoria Rio log': 'badge-riolog',
+    'Vistoria final': 'badge-final'
   };
 
   itemList.innerHTML = filtered.map((item) => {
@@ -2236,6 +2263,28 @@ function getSurveyText(id) {
 
     if (details.reparos && details.reparos.trim()) {
       sections.push(`Reparos\n${details.reparos.trim()}`);
+    }
+
+    return sections.join('\n\n');
+  } else if (item.type === 'Vistoria final') {
+    const ofName = item.oficinaName || 'Sem oficina';
+    sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${ofName} - FINAL - Vistorias - ${ofName}`);
+    sections.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
+
+    let checklist = [];
+    checklist.push(`VEICULO COM CHAVE?: ${(details.chaveVeiculo || 'Sim').toLowerCase()}`);
+    checklist.push(`MOTOR FUNCIONA?: ${(details.motorFunciona || 'Sim').toLowerCase()}`);
+    checklist.push(`AR CONDICIONADO?: ${(details.arCondicionado || 'Sim').toLowerCase()}`);
+    sections.push(checklist.join('\n'));
+
+    if (details.avaliacao && details.avaliacao.trim()) {
+      sections.push(`Avaliação: \n${details.avaliacao.trim()}`);
+    } else {
+      sections.push(`Avaliação:`);
+    }
+
+    if (details.obs && details.obs.trim()) {
+      sections.push(`Obs.: ${details.obs.trim()}`);
     }
 
     return sections.join('\n\n');
@@ -3158,6 +3207,54 @@ function renderDynamicSurveyFields() {
       </label>
     `;
     fieldsHtml = reclamacaoHtml + obsHtml;
+  } else if (selectedType === 'Vistoria final') {
+    const finalChecklistHtml = `
+      <div class="form-toggle-field">
+        <span class="status-label">Veículo com chave?</span>
+        <div class="type-buttons-container" data-input-id="input_chave_veiculo">
+          <button type="button" class="type-btn active" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+        </div>
+        <input type="hidden" id="input_chave_veiculo" name="chaveVeiculo" value="Sim" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Motor funciona?</span>
+        <div class="type-buttons-container" data-input-id="input_motor">
+          <button type="button" class="type-btn active" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+        </div>
+        <input type="hidden" id="input_motor" name="motorFunciona" value="Sim" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Ar Condicionado?</span>
+        <div class="type-buttons-container" data-input-id="input_ar_condicionado">
+          <button type="button" class="type-btn active" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+        </div>
+        <input type="hidden" id="input_ar_condicionado" name="arCondicionado" value="Sim" />
+      </div>
+    `;
+
+    const avaliacaoHtml = `
+      <div class="avaliacao-box" style="grid-column: 1 / -1;">
+        <label style="margin-bottom: 6px; font-weight: 600; color: #1e293b;">Adicionar item na Avaliação</label>
+        <div class="avaliacao-input-row">
+          <input type="text" id="avaliacaoItemInput" placeholder="Ex: Acabamento LE do para-lama está quebrado..." />
+          <button type="button" id="btnSalvarAvaliacao" class="btn-salvar-avaliacao">💾 Salvar Avaliação</button>
+        </div>
+        <label style="margin-top: 10px; font-weight: 600; color: #1e293b;">
+          Avaliação (Itens Salvos)
+          <textarea id="avaliacaoTextarea" name="avaliacao" rows="5" placeholder="1- Item de avaliação&#10;2- Outro item..."></textarea>
+        </label>
+      </div>
+    `;
+
+    fieldsHtml = finalChecklistHtml + avaliacaoHtml + obsHtml;
   }
 
   dynamicFieldsContainer.innerHTML = officeDropdownHtml + fieldsHtml;
@@ -3260,6 +3357,47 @@ function renderDynamicSurveyFields() {
       }
     });
   });
+
+  // Configuração do botão "Salvar Avaliação" para Vistoria Final
+  const btnSalvar = dynamicFieldsContainer.querySelector('#btnSalvarAvaliacao');
+  const inputAvaliacao = dynamicFieldsContainer.querySelector('#avaliacaoItemInput');
+  const textareaAvaliacao = dynamicFieldsContainer.querySelector('#avaliacaoTextarea');
+
+  if (btnSalvar && inputAvaliacao && textareaAvaliacao) {
+    const handleSalvarAvaliacao = () => {
+      let val = inputAvaliacao.value.trim();
+      if (!val) return;
+
+      // Remove numeração manual se o usuário já tiver digitado (ex: "1- ", "1. ")
+      val = val.replace(/^[0-9]+[\s\.\-]+/, '').trim();
+      if (!val) return;
+
+      const lines = textareaAvaliacao.value.split('\n').map(l => l.trim()).filter(Boolean);
+      const nextNum = lines.length + 1;
+      const newLine = `${nextNum}- ${val}`;
+
+      if (textareaAvaliacao.value.trim().length > 0) {
+        textareaAvaliacao.value = textareaAvaliacao.value.trim() + '\n' + newLine;
+      } else {
+        textareaAvaliacao.value = newLine;
+      }
+
+      inputAvaliacao.value = '';
+      inputAvaliacao.focus();
+    };
+
+    btnSalvar.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleSalvarAvaliacao();
+    });
+
+    inputAvaliacao.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSalvarAvaliacao();
+      }
+    });
+  }
 
   // Initialize searchable combobox in the dynamic fields form
   setupItemFormOficinaCombobox();
@@ -7261,32 +7399,35 @@ window.vpSaveSelectedParts = function() {
     }
   }
 
-  const isRioLog = (typeof selectedType !== 'undefined' && selectedType === 'Vistoria Rio log');
-  const trocasTextarea = document.querySelector('textarea[name="trocas"]');
-  const reparosTextarea = document.querySelector('textarea[name="reparos"]');
-  const avariasTextarea = document.querySelector('textarea[name="avarias"]');
+  // Só atualiza os textareas do formulário aberto na tela se NÃO for edição direta de um card já salvo (currentVistoriaIdForParts)
+  if (!currentVistoriaIdForParts) {
+    const isRioLog = (typeof selectedType !== 'undefined' && selectedType === 'Vistoria Rio log');
+    const trocasTextarea = document.querySelector('textarea[name="trocas"]');
+    const reparosTextarea = document.querySelector('textarea[name="reparos"]');
+    const avariasTextarea = document.querySelector('textarea[name="avarias"]');
 
-  if (isRioLog && avariasTextarea) {
-    avariasTextarea.value = allPartsList.join('\n');
-    avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-    avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-  } else {
-    if (trocasTextarea) {
-      trocasTextarea.value = trocasList.join('\n');
-      trocasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-      trocasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    if (reparosTextarea) {
-      reparosTextarea.value = reparosList.join('\n');
-      reparosTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-      reparosTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    if (avariasTextarea && !trocasTextarea && !reparosTextarea) {
+    if (isRioLog && avariasTextarea) {
       avariasTextarea.value = allPartsList.join('\n');
       avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
       avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+      if (trocasTextarea) {
+        trocasTextarea.value = trocasList.join('\n');
+        trocasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        trocasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      if (reparosTextarea) {
+        reparosTextarea.value = reparosList.join('\n');
+        reparosTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        reparosTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      if (avariasTextarea && !trocasTextarea && !reparosTextarea) {
+        avariasTextarea.value = allPartsList.join('\n');
+        avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     }
   }
 
@@ -7300,7 +7441,12 @@ window.closeVehiclePartsModal = function(skipSave = false) {
       showToastNotification('Peças listadas salvas com sucesso!', 3000);
     }
   }
-  currentVistoriaIdForParts = null;
+  if (currentVistoriaIdForParts) {
+    if (typeof vpSelectedPartsMap !== 'undefined' && vpSelectedPartsMap) {
+      vpSelectedPartsMap.clear();
+    }
+    currentVistoriaIdForParts = null;
+  }
   const modal = document.getElementById('vehiclePartsModal');
   if (modal) modal.style.display = 'none';
   if (typeof window.vpCloseReviewSheet === 'function') {
