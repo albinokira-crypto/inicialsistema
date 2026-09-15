@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-const CURRENT_APP_VERSION = 'v2.12';
+let CURRENT_APP_VERSION = 'v2.14';
 
 function parseVersionNum(v) {
   if (!v) return 0;
@@ -78,6 +78,7 @@ async function checkForSystemUpdates(showFeedback = false) {
 
     if (data && data.version) {
       const serverVer = data.version.startsWith('v') ? data.version : 'v' + data.version;
+      CURRENT_APP_VERSION = serverVer;
       const isNewer = parseVersionNum(serverVer) > parseVersionNum(activeVersion);
 
       if (isNewer) {
@@ -104,7 +105,7 @@ async function checkForSystemUpdates(showFeedback = false) {
           return;
         }
       } else {
-        if (serverJsonEl) serverJsonEl.textContent = activeVersion;
+        if (serverJsonEl) serverJsonEl.textContent = serverVer;
         if (statusBadge) {
           statusBadge.style.background = '#dcfce7';
           statusBadge.style.borderColor = '#86efac';
@@ -112,7 +113,7 @@ async function checkForSystemUpdates(showFeedback = false) {
         }
         if (statusDot) statusDot.style.background = '#16a34a';
         if (statusText) statusText.textContent = 'Ativo / Atualizado';
-        if (versionEl) versionEl.textContent = `${activeVersion}`;
+        if (versionEl) versionEl.textContent = `${serverVer}`;
 
         if (showFeedback) {
           alert(`✅ Seu aplicativo está na versão mais recente (${activeVersion}) conectada diretamente ao servidor!`);
@@ -333,7 +334,8 @@ function renderVistoriaOrSupervisaoCard(entry) {
     'Moto': 'badge-moto',
     'Complemento': 'badge-complemento',
     'Pós entrega': 'badge-pos',
-    'Vistoria Rio log': 'badge-riolog'
+    'Vistoria Rio log': 'badge-riolog',
+    'Vistoria final': 'badge-final'
   };
 
   if (entry.isSupervisao) {
@@ -807,7 +809,8 @@ function updateVistoriaFormTitle() {
     'Moto': 'badge-moto',
     'Complemento': 'badge-complemento',
     'Pós entrega': 'badge-pos',
-    'Vistoria Rio log': 'badge-riolog'
+    'Vistoria Rio log': 'badge-riolog',
+    'Vistoria final': 'badge-final'
   };
   const typeIcons = {
     'Inicial': '🚗',
@@ -815,9 +818,10 @@ function updateVistoriaFormTitle() {
     'Incêndio': '🔥',
     'Enchente': '🌊',
     'Moto': '🏍️',
-    'Complemento': '📄',
+    'Complemento': '➕',
     'Pós entrega': '📦',
-    'Vistoria Rio log': '🚛'
+    'Vistoria Rio log': '🚛',
+    'Vistoria final': '🏁'
   };
 
   const badgeClass = badgeClasses[typeName] || 'badge-inicial';
@@ -845,8 +849,8 @@ function updateVistoriaFormTitle() {
 
 if (vistoriaTypeTabs) {
   vistoriaTypeTabs.addEventListener('click', (event) => {
-    const btn = event.target;
-    if (!btn.matches('.tab-btn')) return;
+    const btn = event.target.closest('.tab-btn');
+    if (!btn) return;
     selectedType = btn.dataset.type;
     vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.type === selectedType);
@@ -1183,12 +1187,23 @@ function isValidPlate(value) {
 function cancelEdit() {
   editingId = null;
   form.reset();
+  if (typeof vpSelectedPartsMap !== 'undefined' && vpSelectedPartsMap) {
+    vpSelectedPartsMap.clear();
+  }
+  currentVistoriaIdForParts = null;
+  const avariasReset = document.querySelector('textarea[name="avarias"]');
+  if (avariasReset) avariasReset.value = '';
+  const avaliacaoReset = document.querySelector('textarea[name="avaliacao"]');
+  if (avaliacaoReset) avaliacaoReset.value = '';
+  const avaliacaoInput = document.getElementById('avaliacaoItemInput');
+  if (avaliacaoInput) avaliacaoInput.value = '';
   if (providerSelect) providerSelect.value = '';
   if (typeInput) typeInput.value = selectedType || 'Inicial';
   updateTypeButtonsHighlight();
   updateInsurerButtonsHighlight();
   updateFormState();
   updateFormDisplay();
+  renderDynamicSurveyFields();
 }
 
 function cancelInsurerEdit() {
@@ -1515,6 +1530,16 @@ function saveItem(event) {
 
   saveItems();
   form.reset();
+  if (typeof vpSelectedPartsMap !== 'undefined' && vpSelectedPartsMap) {
+    vpSelectedPartsMap.clear();
+  }
+  currentVistoriaIdForParts = null;
+  const avariasReset = document.querySelector('textarea[name="avarias"]');
+  if (avariasReset) avariasReset.value = '';
+  const avaliacaoReset = document.querySelector('textarea[name="avaliacao"]');
+  if (avaliacaoReset) avaliacaoReset.value = '';
+  const avaliacaoInput = document.getElementById('avaliacaoItemInput');
+  if (avaliacaoInput) avaliacaoInput.value = '';
   if (providerSelect) providerSelect.value = '';
   if (typeInput) typeInput.value = selectedType || 'Inicial';
   updateTypeButtonsHighlight();
@@ -1522,6 +1547,7 @@ function saveItem(event) {
   editingId = null;
   updateFormState();
   updateFormDisplay();
+  renderDynamicSurveyFields();
   render();
   updateLocalAndServerData();
 }
@@ -2055,7 +2081,8 @@ function render() {
     'Moto': 'badge-moto',
     'Complemento': 'badge-complemento',
     'Pós entrega': 'badge-pos',
-    'Vistoria Rio log': 'badge-riolog'
+    'Vistoria Rio log': 'badge-riolog',
+    'Vistoria final': 'badge-final'
   };
 
   itemList.innerHTML = filtered.map((item) => {
@@ -2236,6 +2263,28 @@ function getSurveyText(id) {
 
     if (details.reparos && details.reparos.trim()) {
       sections.push(`Reparos\n${details.reparos.trim()}`);
+    }
+
+    return sections.join('\n\n');
+  } else if (item.type === 'Vistoria final') {
+    const ofName = item.oficinaName || 'Sem oficina';
+    sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${ofName} - FINAL - Vistorias - ${ofName}`);
+    sections.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
+
+    let checklist = [];
+    checklist.push(`VEICULO COM CHAVE?: ${(details.chaveVeiculo || 'Sim').toLowerCase()}`);
+    checklist.push(`MOTOR FUNCIONA?: ${(details.motorFunciona || 'Sim').toLowerCase()}`);
+    checklist.push(`AR CONDICIONADO?: ${(details.arCondicionado || 'Sim').toLowerCase()}`);
+    sections.push(checklist.join('\n'));
+
+    if (details.avaliacao && details.avaliacao.trim()) {
+      sections.push(`Avaliação: \n${details.avaliacao.trim()}`);
+    } else {
+      sections.push(`Avaliação:`);
+    }
+
+    if (details.obs && details.obs.trim()) {
+      sections.push(`Obs.: ${details.obs.trim()}`);
     }
 
     return sections.join('\n\n');
@@ -3158,6 +3207,54 @@ function renderDynamicSurveyFields() {
       </label>
     `;
     fieldsHtml = reclamacaoHtml + obsHtml;
+  } else if (selectedType === 'Vistoria final') {
+    const finalChecklistHtml = `
+      <div class="form-toggle-field">
+        <span class="status-label">Veículo com chave?</span>
+        <div class="type-buttons-container" data-input-id="input_chave_veiculo">
+          <button type="button" class="type-btn active" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+        </div>
+        <input type="hidden" id="input_chave_veiculo" name="chaveVeiculo" value="Sim" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Motor funciona?</span>
+        <div class="type-buttons-container" data-input-id="input_motor">
+          <button type="button" class="type-btn active" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+        </div>
+        <input type="hidden" id="input_motor" name="motorFunciona" value="Sim" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Ar Condicionado?</span>
+        <div class="type-buttons-container" data-input-id="input_ar_condicionado">
+          <button type="button" class="type-btn active" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+        </div>
+        <input type="hidden" id="input_ar_condicionado" name="arCondicionado" value="Sim" />
+      </div>
+    `;
+
+    const avaliacaoHtml = `
+      <div class="avaliacao-box" style="grid-column: 1 / -1;">
+        <label style="margin-bottom: 6px; font-weight: 600; color: #1e293b;">Adicionar item na Avaliação</label>
+        <div class="avaliacao-input-row">
+          <input type="text" id="avaliacaoItemInput" placeholder="Ex: Acabamento LE do para-lama está quebrado..." />
+          <button type="button" id="btnSalvarAvaliacao" class="btn-salvar-avaliacao">💾 Salvar Avaliação</button>
+        </div>
+        <label style="margin-top: 10px; font-weight: 600; color: #1e293b;">
+          Avaliação (Itens Salvos)
+          <textarea id="avaliacaoTextarea" name="avaliacao" rows="5" placeholder="1- Item de avaliação&#10;2- Outro item..."></textarea>
+        </label>
+      </div>
+    `;
+
+    fieldsHtml = finalChecklistHtml + avaliacaoHtml + obsHtml;
   }
 
   dynamicFieldsContainer.innerHTML = officeDropdownHtml + fieldsHtml;
@@ -3260,6 +3357,47 @@ function renderDynamicSurveyFields() {
       }
     });
   });
+
+  // Configuração do botão "Salvar Avaliação" para Vistoria Final
+  const btnSalvar = dynamicFieldsContainer.querySelector('#btnSalvarAvaliacao');
+  const inputAvaliacao = dynamicFieldsContainer.querySelector('#avaliacaoItemInput');
+  const textareaAvaliacao = dynamicFieldsContainer.querySelector('#avaliacaoTextarea');
+
+  if (btnSalvar && inputAvaliacao && textareaAvaliacao) {
+    const handleSalvarAvaliacao = () => {
+      let val = inputAvaliacao.value.trim();
+      if (!val) return;
+
+      // Remove numeração manual se o usuário já tiver digitado (ex: "1- ", "1. ")
+      val = val.replace(/^[0-9]+[\s\.\-]+/, '').trim();
+      if (!val) return;
+
+      const lines = textareaAvaliacao.value.split('\n').map(l => l.trim()).filter(Boolean);
+      const nextNum = lines.length + 1;
+      const newLine = `${nextNum}- ${val}`;
+
+      if (textareaAvaliacao.value.trim().length > 0) {
+        textareaAvaliacao.value = textareaAvaliacao.value.trim() + '\n' + newLine;
+      } else {
+        textareaAvaliacao.value = newLine;
+      }
+
+      inputAvaliacao.value = '';
+      inputAvaliacao.focus();
+    };
+
+    btnSalvar.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleSalvarAvaliacao();
+    });
+
+    inputAvaliacao.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSalvarAvaliacao();
+      }
+    });
+  }
 
   // Initialize searchable combobox in the dynamic fields form
   setupItemFormOficinaCombobox();
@@ -6997,7 +7135,7 @@ window.vpDetectVehicleTypeFromText = vpDetectVehicleTypeFromText;
 
 let currentVistoriaIdForParts = null;
 let vpOpenObsPartNames = new Set();
-let vpActiveCategory = 'DIANTEIRA'; // 'DIANTEIRA' | 'TRASEIRA' | 'LATERAIS' | 'DEMAIS' | 'TODAS'
+let vpActiveCategory = 'DIANTEIRA'; // 'FAVORITOS' | 'DIANTEIRA' | 'TRASEIRA' | 'LATERAIS' | 'DEMAIS' | 'TODAS'
 
 window.vpSelectCategory = function(categoryKey) {
   vpActiveCategory = categoryKey;
@@ -7261,32 +7399,35 @@ window.vpSaveSelectedParts = function() {
     }
   }
 
-  const isRioLog = (typeof selectedType !== 'undefined' && selectedType === 'Vistoria Rio log');
-  const trocasTextarea = document.querySelector('textarea[name="trocas"]');
-  const reparosTextarea = document.querySelector('textarea[name="reparos"]');
-  const avariasTextarea = document.querySelector('textarea[name="avarias"]');
+  // Só atualiza os textareas do formulário aberto na tela se NÃO for edição direta de um card já salvo (currentVistoriaIdForParts)
+  if (!currentVistoriaIdForParts) {
+    const isRioLog = (typeof selectedType !== 'undefined' && selectedType === 'Vistoria Rio log');
+    const trocasTextarea = document.querySelector('textarea[name="trocas"]');
+    const reparosTextarea = document.querySelector('textarea[name="reparos"]');
+    const avariasTextarea = document.querySelector('textarea[name="avarias"]');
 
-  if (isRioLog && avariasTextarea) {
-    avariasTextarea.value = allPartsList.join('\n');
-    avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-    avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-  } else {
-    if (trocasTextarea) {
-      trocasTextarea.value = trocasList.join('\n');
-      trocasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-      trocasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    if (reparosTextarea) {
-      reparosTextarea.value = reparosList.join('\n');
-      reparosTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-      reparosTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    if (avariasTextarea && !trocasTextarea && !reparosTextarea) {
+    if (isRioLog && avariasTextarea) {
       avariasTextarea.value = allPartsList.join('\n');
       avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
       avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+      if (trocasTextarea) {
+        trocasTextarea.value = trocasList.join('\n');
+        trocasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        trocasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      if (reparosTextarea) {
+        reparosTextarea.value = reparosList.join('\n');
+        reparosTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        reparosTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      if (avariasTextarea && !trocasTextarea && !reparosTextarea) {
+        avariasTextarea.value = allPartsList.join('\n');
+        avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     }
   }
 
@@ -7300,7 +7441,12 @@ window.closeVehiclePartsModal = function(skipSave = false) {
       showToastNotification('Peças listadas salvas com sucesso!', 3000);
     }
   }
-  currentVistoriaIdForParts = null;
+  if (currentVistoriaIdForParts) {
+    if (typeof vpSelectedPartsMap !== 'undefined' && vpSelectedPartsMap) {
+      vpSelectedPartsMap.clear();
+    }
+    currentVistoriaIdForParts = null;
+  }
   const modal = document.getElementById('vehiclePartsModal');
   if (modal) modal.style.display = 'none';
   if (typeof window.vpCloseReviewSheet === 'function') {
@@ -7397,6 +7543,13 @@ window.vpOpenZonesGridModal = function() {
 
   if (grid) {
     grid.innerHTML = `
+      <button type="button" class="vp-zone-card ${vpActiveCategory === 'FAVORITOS' ? 'active' : ''}" onclick="vpSelectCategory('FAVORITOS'); vpCloseZonesGridModal();">
+        <span class="vp-zone-icon">⭐</span>
+        <div class="vp-zone-info">
+          <strong>Favoritos</strong>
+          <span>Peças mais usadas marcadas</span>
+        </div>
+      </button>
       <button type="button" class="vp-zone-card ${vpActiveCategory === 'DIANTEIRA' ? 'active' : ''}" onclick="vpSelectCategory('DIANTEIRA'); vpCloseZonesGridModal();">
         <span class="vp-zone-icon">🚗</span>
         <div class="vp-zone-info">
@@ -7463,10 +7616,51 @@ const VP_DEFAULT_POPULAR_KEYWORDS = [
   'para-barro', 'parabarro', 'espelho', 'vidro'
 ];
 
+function vpGetFavoriteParts() {
+  try {
+    const raw = localStorage.getItem('vp_favorite_parts');
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch(e) {
+    return new Set();
+  }
+}
+
+function vpSaveFavoriteParts(favSet) {
+  try {
+    localStorage.setItem('vp_favorite_parts', JSON.stringify(Array.from(favSet)));
+  } catch(e) {}
+}
+
+function vpIsPartFavorite(partName) {
+  if (!partName) return false;
+  return vpGetFavoriteParts().has(partName);
+}
+
+function vpToggleFavoritePart(partName) {
+  if (!partName) return;
+  const favs = vpGetFavoriteParts();
+  const wasFav = favs.has(partName);
+  if (wasFav) {
+    favs.delete(partName);
+  } else {
+    favs.add(partName);
+  }
+  vpSaveFavoriteParts(favs);
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+}
+window.vpToggleFavoritePart = vpToggleFavoritePart;
+
 function vpGetPartUsageScore(partName, rawName = '') {
   let score = 0;
   const lower = ((partName || '') + ' ' + (rawName || '')).toLowerCase();
   
+  // 0. Peças favoritadas recebem prioridade máxima
+  if (vpIsPartFavorite(partName)) {
+    score += 500;
+  }
+
   // 1. Pontuação base por relevância/frequência de uso em vistorias automotivas
   for (let i = 0; i < VP_DEFAULT_POPULAR_KEYWORDS.length; i++) {
     if (lower.includes(VP_DEFAULT_POPULAR_KEYWORDS[i])) {
@@ -7599,18 +7793,21 @@ function vpRenderParts(filterQuery = '') {
     }
   });
 
+  const favParts = allParts.filter(p => vpIsPartFavorite(p.name));
   const diantParts = allParts.filter(p => vpClassifyPartCategory(p) === 'DIANTEIRA');
   const trasParts = allParts.filter(p => vpClassifyPartCategory(p) === 'TRASEIRA');
   const latParts = allParts.filter(p => vpClassifyPartCategory(p) === 'LATERAIS');
   const demaisParts = allParts.filter(p => vpClassifyPartCategory(p) === 'DEMAIS');
   const todasParts = [...allParts];
 
+  sortPartsByUsage(favParts);
   sortPartsByUsage(diantParts);
   sortPartsByUsage(trasParts);
   sortPartsByUsage(latParts);
   sortPartsByUsage(demaisParts);
   sortPartsByUsage(todasParts);
 
+  const favSelCount = favParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
   const diantSelCount = diantParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
   const trasSelCount = trasParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
   const latSelCount = latParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
@@ -7623,7 +7820,13 @@ function vpRenderParts(filterQuery = '') {
   let activeColor = '#2563eb';
   let activeBg = '#eff6ff';
 
-  if (vpActiveCategory === 'TRASEIRA') {
+  if (vpActiveCategory === 'FAVORITOS') {
+    activeList = favParts;
+    activeTitle = 'Peças Favoritas (Mais Usadas)';
+    activeIcon = '⭐';
+    activeColor = '#ca8a04';
+    activeBg = '#fefce8';
+  } else if (vpActiveCategory === 'TRASEIRA') {
     activeList = trasParts;
     activeTitle = 'Traseira (LD, LE e Centrais)';
     activeIcon = '🚘';
@@ -7655,8 +7858,23 @@ function vpRenderParts(filterQuery = '') {
 
   listEl.innerHTML = `
     <div class="vp-category-section-wrapper" style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
-      <!-- AS 5 ABAS DE CATEGORIAS: DIANTEIRA, TRASEIRA, LATERAIS, DEMAIS E TODAS -->
-      <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; width: 100%; box-sizing: border-box;">
+      <!-- AS 6 ABAS DE CATEGORIAS: FAVORITOS, DIANTEIRA, TRASEIRA, LATERAIS, DEMAIS E TODAS -->
+      <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; width: 100%; box-sizing: border-box;">
+        <!-- FAVORITOS -->
+        <button 
+          type="button" 
+          onclick="vpSelectCategory('FAVORITOS')"
+          title="Peças Favoritas (Mais Usadas)"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 1px; border-radius: 8px; border: 2px solid ${vpActiveCategory === 'FAVORITOS' ? '#eab308' : '#cbd5e1'}; background: ${vpActiveCategory === 'FAVORITOS' ? '#fefce8' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveCategory === 'FAVORITOS' ? '0 2px 6px rgba(234,179,8,0.22)' : 'none'};"
+        >
+          <span style="font-size: 0.85rem; line-height: 1;">⭐</span>
+          <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveCategory === 'FAVORITOS' ? '#854d0e' : '#475569'}; line-height: 1.1;">Fav.</span>
+          <div style="display: flex; align-items: center; gap: 2px;">
+            <span style="font-size: 0.60rem; font-weight: 800; color: ${vpActiveCategory === 'FAVORITOS' ? '#a16207' : '#64748b'}; background: ${vpActiveCategory === 'FAVORITOS' ? '#fef08a' : '#f1f5f9'}; padding: 0.5px 3px; border-radius: 999px;">${favParts.length}</span>
+            ${favSelCount > 0 ? `<span style="font-size: 0.58rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 0.5px 3px; border-radius: 999px;">${favSelCount}</span>` : ''}
+          </div>
+        </button>
+
         <!-- DIANTEIRA -->
         <button 
           type="button" 
@@ -7744,6 +7962,17 @@ function vpRenderParts(filterQuery = '') {
         </span>
       </div>
 
+      <!-- ESTADO VAZIO CASO NÃO HAJA PEÇAS FAVORITADAS -->
+      ${vpActiveCategory === 'FAVORITOS' && favParts.length === 0 ? `
+        <div style="width: 100%; padding: 36px 16px; text-align: center; color: #64748b; background: #ffffff; border-radius: 12px; border: 1.5px dashed #facc15; margin-top: 4px; box-sizing: border-box;">
+          <span style="font-size: 2.2rem; display: block; margin-bottom: 8px;">⭐</span>
+          <b style="font-size: 0.92rem; color: #1e293b;">Nenhuma peça favoritada ainda</b>
+          <p style="font-size: 0.80rem; margin-top: 6px; color: #64748b; line-height: 1.4;">
+            Toque na estrela (⭐) nas peças das outras abas para adicioná-las aos seus favoritos e encontrá-las facilmente aqui!
+          </p>
+        </div>
+      ` : ''}
+
       <!-- SEÇÃO SUSPENSA NO TOPO: PEÇAS SELECIONADAS (2 COLUNAS) -->
       ${selectedInActive.length > 0 ? `
         <div style="display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 6px; background: #fef2f2; border: 1.5px dashed #f87171; border-radius: 8px; box-sizing: border-box;">
@@ -7775,11 +8004,15 @@ function vpRenderPartCardHtml(item) {
   const hasObs = selected && selected.obs && selected.obs.trim().length > 0;
   const isObsOpen = vpOpenObsPartNames.has(item.name) || hasObs;
   const cardClass = isTroca ? 'selected-troca' : (isReparo ? 'selected-reparo' : '');
+  const isFav = vpIsPartFavorite(item.name);
 
   return `
     <div class="vp-part-card ${cardClass}" style="width: 100%; min-width: 0; box-sizing: border-box; padding: 6px 6px; border-radius: 8px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#cbd5e1')}; background: ${isTroca ? '#fffafa' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-      <!-- 1ª LINHA: [❌ Excluir] [Descrição da Peça] [✏️ Editar] -->
+      <!-- 1ª LINHA: [⭐ Favorito] [❌ Excluir] [Descrição da Peça] [✏️ Editar] -->
       <div class="vp-card-top" style="display: flex; align-items: center; justify-content: space-between; gap: 2px; width: 100%; min-width: 0;">
+        <button type="button" class="vp-btn-fav-part" title="${isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}" onclick="event.stopPropagation(); vpToggleFavoritePart('${vpEscapeHtml(item.name)}')" style="background: none; border: none; font-size: 0.95rem; cursor: pointer; padding: 2px; line-height: 1; flex-shrink: 0; transition: transform 0.15s ease; ${isFav ? 'filter: drop-shadow(0 0 2px rgba(234,179,8,0.7)); transform: scale(1.15);' : 'opacity: 0.30; filter: grayscale(100%);'}">
+          ⭐
+        </button>
         <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
         <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.78rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${vpEscapeHtml(item.name)}</span>
         <button type="button" class="vp-btn-edit-name" title="Editar nome e zona da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')">✏️</button>
