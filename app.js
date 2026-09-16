@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.14';
+let CURRENT_APP_VERSION = 'v2.14.1';
 
 function parseVersionNum(v) {
   if (!v) return 0;
