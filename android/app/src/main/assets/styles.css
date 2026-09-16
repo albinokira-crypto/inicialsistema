@@ -483,8 +483,8 @@ input, select, textarea {
   flex: 0 0 auto !important;
 }
 
-/* Insurer & Type Selection Buttons */
-.insurer-buttons-container, .type-buttons-container {
+/* Type Selection Buttons (Sim / Não / N/I) */
+.type-buttons-container {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -492,7 +492,7 @@ input, select, textarea {
   margin-bottom: 6px;
 }
 
-.insurer-btn, .type-btn {
+.type-btn {
   border: 1px solid #d7e2f0;
   border-radius: 12px;
   padding: 8px 14px;
@@ -504,16 +504,105 @@ input, select, textarea {
   white-space: nowrap;
 }
 
-.insurer-btn:hover, .type-btn:hover {
+.type-btn:hover {
   background: #eef4ff;
   border-color: #2563eb;
 }
 
-.insurer-btn.active, .type-btn.active {
+.type-btn.active {
   background: #2563eb;
   color: white;
   border-color: #2563eb;
   box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+}
+
+/* Insurer Selection Buttons - 4 em uma linha só no mesmo estilo dos atalhos */
+.insurer-buttons-container {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  gap: 4px !important;
+  box-sizing: border-box !important;
+  margin-top: 4px !important;
+  margin-bottom: 6px !important;
+}
+
+.insurer-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 7px !important;
+  padding: 3px 1px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  gap: 1.5px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+  user-select: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.insurer-btn:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  transform: translateY(-1px);
+}
+
+.insurer-btn .insurer-btn-icon-box {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 4px !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.70rem !important;
+  line-height: 1 !important;
+  transition: all 0.15s ease !important;
+  flex-shrink: 0 !important;
+}
+
+.insurer-btn .insurer-btn-label {
+  font-size: 0.58rem !important;
+  font-weight: 700 !important;
+  color: #475569 !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+  letter-spacing: -0.25px !important;
+  max-width: 100% !important;
+  text-align: center !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: block !important;
+}
+
+/* Estado Ativo do Botão de Seguradora */
+.insurer-btn.active {
+  background: #eff6ff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 1.5px 4px rgba(37, 99, 235, 0.16) !important;
+}
+
+.insurer-btn.active .insurer-btn-icon-box {
+  background: #2563eb !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.22) !important;
+}
+
+.insurer-btn.active .insurer-btn-label {
+  color: #1e40af !important;
+  font-weight: 800 !important;
 }
 
 .badge-inicial {
@@ -1196,10 +1285,10 @@ html, body {
 
   .insurer-buttons-container {
     display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     width: 100% !important;
     max-width: 100% !important;
-    gap: 6px !important;
+    gap: 4px !important;
     box-sizing: border-box !important;
   }
 
@@ -1207,13 +1296,8 @@ html, body {
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
-    padding: 8px 4px !important;
-    font-size: 0.8rem !important;
-    text-align: center !important;
+    padding: 3px 1px !important;
     box-sizing: border-box !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
   }
 
   .type-buttons-container {

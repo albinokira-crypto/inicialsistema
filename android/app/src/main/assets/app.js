@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.14.1';
+let CURRENT_APP_VERSION = 'v2.14.2';
 
 function parseVersionNum(v) {
   if (!v) return 0;
@@ -2676,7 +2676,25 @@ function populateProviderSelect() {
     btn.type = 'button';
     btn.className = 'insurer-btn';
     btn.dataset.id = insurer.id;
-    btn.textContent = insurer.name;
+
+    let icon = '🛡️';
+    const nameLower = (insurer.name || '').toLowerCase();
+    if (nameLower.includes('porto')) icon = '⚓';
+    else if (nameLower.includes('tokio') || nameLower.includes('marinha')) icon = '🗼';
+    else if (nameLower.includes('bradesco')) icon = '🏦';
+    else if (nameLower.includes('sulamerica')) icon = '🔷';
+    else if (nameLower.includes('allianz')) icon = '🌐';
+    else if (nameLower.includes('mapfre')) icon = '🔴';
+    else if (nameLower.includes('azul')) icon = '🔷';
+    else if (nameLower.includes('ben')) icon = '🛡️';
+    else if (nameLower.includes('hdi')) icon = '🔰';
+    else if (nameLower.includes('santander') || nameLower.includes('itau')) icon = '🏦';
+
+    btn.innerHTML = `
+      <div class="insurer-btn-icon-box">${icon}</div>
+      <span class="insurer-btn-label">${escapeHtml(insurer.name)}</span>
+    `;
+
     btn.addEventListener('click', () => {
       selectInsurer(insurer);
     });
