@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.14.2';
+let CURRENT_APP_VERSION = 'v2.16.0';
 
 function parseVersionNum(v) {
   if (!v) return 0;
@@ -2510,8 +2510,23 @@ function handleAction(action, id) {
     return;
   }
   if (action === 'delete') {
+    const item = items.find((entry) => String(entry.id) === String(id));
     if (window.confirm('Deseja excluir este registro de vistoria?')) {
-      items = items.filter((item) => item.id !== id);
+      if (item) {
+        const vehicleName = item.plate || item.vehicle || '';
+        if (vehicleName) {
+          deleteVehicleFolderAndMedia(vehicleName);
+        }
+        if (item.vehicle && item.vehicle !== vehicleName) {
+          deleteVehicleFolderAndMedia(item.vehicle);
+        }
+        const cleanP = vehicleName.replace(/[^a-zA-Z0-9]/g, '');
+        const plateMatch = cleanP.match(/[a-zA-Z]{3}[0-9][a-zA-Z0-9][0-9]{2}/);
+        if (plateMatch && plateMatch[0] && plateMatch[0] !== vehicleName && plateMatch[0] !== item.vehicle) {
+          deleteVehicleFolderAndMedia(plateMatch[0]);
+        }
+      }
+      items = items.filter((entry) => String(entry.id) !== String(id));
       saveItems();
       render();
     }
@@ -4338,8 +4353,23 @@ function handleSupervisaoAction(action, id) {
     return;
   }
   if (action === 'delete') {
+    const s = supervisoes.find((entry) => String(entry.id) === String(id));
     if (window.confirm('Deseja excluir este registro de supervisão?')) {
-      supervisoes = supervisoes.filter((s) => s.id !== id);
+      if (s) {
+        const vehicleName = s.vehicle || s.plate || '';
+        if (vehicleName) {
+          deleteVehicleFolderAndMedia(vehicleName);
+        }
+        if (s.plate && s.plate !== vehicleName) {
+          deleteVehicleFolderAndMedia(s.plate);
+        }
+        const cleanV = vehicleName.replace(/[^a-zA-Z0-9]/g, '');
+        const plateMatch = cleanV.match(/[a-zA-Z]{3}[0-9][a-zA-Z0-9][0-9]{2}/);
+        if (plateMatch && plateMatch[0] && plateMatch[0] !== vehicleName && plateMatch[0] !== s.plate) {
+          deleteVehicleFolderAndMedia(plateMatch[0]);
+        }
+      }
+      supervisoes = supervisoes.filter((entry) => String(entry.id) !== String(id));
       saveSupervisoes();
       renderSupervisaoReport();
       render();
@@ -5030,6 +5060,65 @@ if (closePhotoManagerButton) {
     if (photoGridContainer) photoGridContainer.innerHTML = '';
   });
 }
+
+async function deleteVehicleFolderAndMedia(vehicleName) {
+  if (!vehicleName || !vehicleName.trim()) return;
+  const cleanName = vehicleName.trim();
+
+  // 1. Exclusão física no Android via interface nativa
+  if (window.AndroidInterface && typeof window.AndroidInterface.deleteInspectionFolder === 'function') {
+    try {
+      window.AndroidInterface.deleteInspectionFolder(cleanName);
+    } catch (err) {
+      console.error('Erro ao excluir pasta no Android:', err);
+    }
+  }
+
+  // 2. Exclusão de fotos no IndexedDB local
+  try {
+    const localDb = await getDb();
+    if (localDb) {
+      await new Promise((resolve) => {
+        const tx = localDb.transaction('photos', 'readwrite');
+        const store = tx.objectStore('photos');
+        const req = store.openCursor();
+        req.onsuccess = function(e) {
+          const cursor = e.target.result;
+          if (cursor) {
+            const val = cursor.value;
+            if (val.visitId === cleanName || (val.id && val.id.startsWith(cleanName + '_'))) {
+              cursor.delete();
+            }
+            cursor.continue();
+          } else {
+            resolve();
+          }
+        };
+        req.onerror = function() {
+          resolve();
+        };
+      });
+    }
+  } catch (err) {
+    console.error('Erro ao excluir fotos do IndexedDB:', err);
+  }
+
+  // 3. Limpeza de chaves no localStorage e sessionStorage
+  try {
+    const key = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    localStorage.removeItem('has_photos_' + key);
+    sessionStorage.removeItem('has_photos_' + key);
+    if (typeof activePhotoVehicleName !== 'undefined' && activePhotoVehicleName === cleanName) {
+      activePhotoId = null;
+      activePhotoVehicleName = '';
+      localStorage.removeItem('active_photo_id');
+      localStorage.removeItem('active_photo_vehicle_name');
+    }
+  } catch (err) {
+    console.error('Erro ao limpar flags de fotos:', err);
+  }
+}
+window.deleteVehicleFolderAndMedia = deleteVehicleFolderAndMedia;
 
 function openInspectionFolderForId(id) {
   const item = items.find(entry => entry.id === id) || supervisoes.find(s => s.id === id);

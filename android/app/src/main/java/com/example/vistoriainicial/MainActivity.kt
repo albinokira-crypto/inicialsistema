@@ -433,7 +433,7 @@ class MainActivity : ComponentActivity() {
         })
 
         // Carregar sistema online (Vercel) com fallback automático para assets locais se offline
-        webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/index.html")
+        webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/index.html?v=2160")
 
         // Request Permissions
         checkPermissions()
@@ -1386,6 +1386,170 @@ class MainActivity : ComponentActivity() {
         }
         return false
     }
+
+    fun deleteVehicleMediaAndFolder(vehicleName: String): Boolean {
+        val cleanVehicleName = sanitizeFilename(vehicleName)
+        if (cleanVehicleName.isEmpty() || cleanVehicleName == "Vistoria_Sem_Nome" || cleanVehicleName.equals("Vistorias", ignoreCase = true)) {
+            return false
+        }
+
+        var deletedAny = false
+        val cleanAlnum = cleanVehicleName.lowercase().replace("[^a-z0-9]".toRegex(), "")
+        val plateMatch = Regex("[a-zA-Z]{3}[0-9][a-zA-Z0-9][0-9]{2}").find(cleanAlnum)
+        val plateClean = plateMatch?.value?.lowercase()
+
+        fun isMatch(targetName: String): Boolean {
+            val targetAlnum = targetName.lowercase().replace("[^a-z0-9]".toRegex(), "")
+            if (targetAlnum.isEmpty()) return false
+            if (targetAlnum == cleanAlnum || targetName.equals(cleanVehicleName, ignoreCase = true)) return true
+            if (!plateClean.isNullOrEmpty() && (targetAlnum == plateClean || targetAlnum.contains(plateClean))) return true
+            if (cleanAlnum.length >= 5 && targetAlnum.contains(cleanAlnum)) return true
+            if (targetAlnum.length >= 5 && cleanAlnum.contains(targetAlnum)) return true
+            return false
+        }
+
+        // 1. SAF Custom Folder (se o usuário selecionou uma pasta customizada)
+        try {
+            val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+            val savedUriStr = prefs.getString("selected_folder_uri", null)
+            if (!savedUriStr.isNullOrEmpty()) {
+                val rootUri = Uri.parse(savedUriStr)
+                val rootFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(this, rootUri)
+                if (rootFolder != null && rootFolder.exists()) {
+                    val direct = rootFolder.findFile(cleanVehicleName)
+                    if (direct != null && direct.isDirectory) {
+                        if (deleteDocumentFolderRecursively(direct)) {
+                            deletedAny = true
+                        }
+                    }
+                    rootFolder.listFiles().forEach { file ->
+                        if (file.isDirectory) {
+                            val name = file.name ?: ""
+                            if (isMatch(name)) {
+                                if (deleteDocumentFolderRecursively(file)) {
+                                    deletedAny = true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // 2. Armazenamento Padrão: Pictures/Vistorias/$cleanVehicleName
+        try {
+            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val vistoriasBaseDir = java.io.File(picturesDir, "Vistorias")
+            if (vistoriasBaseDir.exists()) {
+                val directDir = java.io.File(vistoriasBaseDir, cleanVehicleName)
+                if (directDir.exists()) {
+                    deleteFileFolderAndNotifyMedia(directDir)
+                    deletedAny = true
+                }
+                vistoriasBaseDir.listFiles { file -> file.isDirectory }?.forEach { dir ->
+                    if (isMatch(dir.name)) {
+                        deleteFileFolderAndNotifyMedia(dir)
+                        deletedAny = true
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // 3. Armazenamento Movies: Movies/Vistorias/$cleanVehicleName
+        try {
+            val moviesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+            val moviesBaseDir = java.io.File(moviesDir, "Vistorias")
+            if (moviesBaseDir.exists()) {
+                val directMoviesDir = java.io.File(moviesBaseDir, cleanVehicleName)
+                if (directMoviesDir.exists()) {
+                    deleteFileFolderAndNotifyMedia(directMoviesDir)
+                    deletedAny = true
+                }
+                moviesBaseDir.listFiles { file -> file.isDirectory }?.forEach { dir ->
+                    if (isMatch(dir.name)) {
+                        deleteFileFolderAndNotifyMedia(dir)
+                        deletedAny = true
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // 4. Limpeza de registros MediaStore
+        try {
+            val mediaUris = arrayOf(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            )
+            for (contentUri in mediaUris) {
+                val selection = "${MediaStore.MediaColumns.DATA} LIKE ? OR ${MediaStore.MediaColumns.RELATIVE_PATH} LIKE ?"
+                val selectionArgs = arrayOf("%Vistorias/$cleanVehicleName/%", "%Vistorias/$cleanVehicleName/%")
+                try {
+                    contentResolver.delete(contentUri, selection, selectionArgs)
+                } catch (e: Exception) {
+                    // Ignora em versões onde a deleção direta do MediaStore é restrita
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // 5. Limpa caches de compartilhamento temporário
+        cleanupAllLegacyShareTemp()
+
+        runOnUiThread {
+            if (deletedAny) {
+                Toast.makeText(this, "Pasta e fotos de '$cleanVehicleName' excluídas com sucesso!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Pasta '$cleanVehicleName' verificada.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        return deletedAny
+    }
+
+    private fun deleteDocumentFolderRecursively(folder: androidx.documentfile.provider.DocumentFile): Boolean {
+        return try {
+            if (folder.isDirectory) {
+                folder.listFiles().forEach { child ->
+                    if (child.isDirectory) {
+                        deleteDocumentFolderRecursively(child)
+                    } else {
+                        child.delete()
+                    }
+                }
+            }
+            folder.delete()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    private fun deleteFileFolderAndNotifyMedia(dir: java.io.File) {
+        try {
+            val deletedPaths = ArrayList<String>()
+            dir.walkBottomUp().forEach { file ->
+                deletedPaths.add(file.absolutePath)
+                file.delete()
+            }
+            if (deletedPaths.isNotEmpty()) {
+                android.media.MediaScannerConnection.scanFile(
+                    this,
+                    deletedPaths.toTypedArray(),
+                    null,
+                    null
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
 
 class AndroidInterface(private val activity: ComponentActivity) {
@@ -1397,7 +1561,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
         mainAct.runOnUiThread {
             mainAct.webView.clearCache(true)
             android.widget.Toast.makeText(mainAct, "Cache limpo! Recarregando sistema...", android.widget.Toast.LENGTH_SHORT).show()
-            mainAct.webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/dashboard.html?v=211&_t=" + System.currentTimeMillis())
+            mainAct.webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/dashboard.html?v=2160&_t=" + System.currentTimeMillis())
         }
     }
 
@@ -2556,6 +2720,17 @@ class AndroidInterface(private val activity: ComponentActivity) {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+    }
+
+    @JavascriptInterface
+    fun deleteInspectionFolder(vehicleName: String): Boolean {
+        val mainAct = activity as MainActivity
+        return try {
+            mainAct.deleteVehicleMediaAndFolder(vehicleName)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 }
