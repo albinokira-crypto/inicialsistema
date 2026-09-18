@@ -2204,3 +2204,19 @@ html, body {
 .vp-btn-fav-part:active {
   transform: scale(1.3) !important;
 }
+
+/* Complemento - Layout de 2 colunas para Trocas e Reparos */
+.complemento-columns-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 480px) {
+  .complemento-columns-row {
+    gap: 8px !important;
+  }
+}
+

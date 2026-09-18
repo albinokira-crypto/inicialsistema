@@ -1540,6 +1540,12 @@ function saveItem(event) {
   if (avaliacaoReset) avaliacaoReset.value = '';
   const avaliacaoInput = document.getElementById('avaliacaoItemInput');
   if (avaliacaoInput) avaliacaoInput.value = '';
+  const trocasReset = document.querySelector('textarea[name="trocas"]');
+  if (trocasReset) trocasReset.value = '';
+  const reparosReset = document.querySelector('textarea[name="reparos"]');
+  if (reparosReset) reparosReset.value = '';
+  const obsReset = document.querySelector('textarea[name="obs"]');
+  if (obsReset) obsReset.value = '';
   if (providerSelect) providerSelect.value = '';
   if (typeInput) typeInput.value = selectedType || 'Inicial';
   updateTypeButtonsHighlight();
@@ -2288,6 +2294,44 @@ function getSurveyText(id) {
     }
 
     return sections.join('\n\n');
+  } else if (item.type === 'Complemento') {
+    sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
+
+    let displayDate = formattedDate;
+    if (!displayDate || !displayDate.trim()) {
+      const now = new Date();
+      const d = String(now.getDate()).padStart(2, '0');
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      displayDate = `${d}/${m}`;
+    }
+    sections.push(`Vistoria Realizada em : ${displayDate}`);
+    sections.push(`Complementos:`);
+
+    const trocasVal = (details.trocas || item.trocas || '').trim();
+    const reparosVal = (details.reparos || item.reparos || '').trim();
+
+    let partsLines = [];
+    if (trocasVal) {
+      partsLines.push(`Trocas:\n${trocasVal}`);
+    } else {
+      partsLines.push(`Trocas:`);
+    }
+
+    if (reparosVal) {
+      partsLines.push(`Reparos:\n${reparosVal}`);
+    } else {
+      partsLines.push(`Reparos:`);
+    }
+    sections.push(partsLines.join('\n\n'));
+
+    const obsVal = (details.obs || details.conteudoLivre || '').trim();
+    if (obsVal) {
+      sections.push(`Obs.: ${obsVal}`);
+    } else {
+      sections.push(`Obs.:`);
+    }
+
+    return sections.join('\n\n');
   } else {
     // Other survey types
     sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
@@ -2324,9 +2368,6 @@ function getSurveyText(id) {
       if (details.aguaFiltro) checklist.push(`Vestígios de água no filtro: ${yesNo(details.aguaFiltro)}`);
       if (details.motorTravado) checklist.push(`Motor travado: ${yesNo(details.motorTravado)}`);
       if (details.alturaAgua) checklist.push(`Altura da água: ${details.alturaAgua}`);
-    }
-    if (item.type === 'Complemento' && details.conteudoLivre) {
-      checklist.push(`Conteúdo: ${details.conteudoLivre}`);
     }
     
     sections.push(checklist.join('\n'));
@@ -2545,6 +2586,21 @@ function handleAction(action, id) {
       const recInput = dynamicFieldsContainer.querySelector('[name="reclamacao"]');
       if (recInput && !recInput.value) {
         recInput.value = item.details.reclamacao || item.details.obs || item.details.conteudoLivre || '';
+      }
+    }
+
+    if (selectedType === 'Complemento') {
+      const obsInput = dynamicFieldsContainer.querySelector('[name="obs"]');
+      if (obsInput && !obsInput.value && item.details.conteudoLivre) {
+        obsInput.value = item.details.conteudoLivre;
+      }
+      const trocasInput = dynamicFieldsContainer.querySelector('[name="trocas"]');
+      if (trocasInput && !trocasInput.value && item.trocas) {
+        trocasInput.value = item.trocas;
+      }
+      const reparosInput = dynamicFieldsContainer.querySelector('[name="reparos"]');
+      if (reparosInput && !reparosInput.value && item.reparos) {
+        reparosInput.value = item.reparos;
       }
     }
   }
@@ -3211,12 +3267,27 @@ function renderDynamicSurveyFields() {
     `;
     fieldsHtml = commonChecklistHtml + vehicleExtraChecklistHtml + obsHtml + avariasHtml;
   } else if (selectedType === 'Complemento') {
-    fieldsHtml = `
-      <label style="grid-column: 1 / -1;">
-        Conteúdo do Relatório
-        <textarea name="conteudoLivre" rows="5" required placeholder="Digite o conteúdo livre para o relatório..."></textarea>
+    const complementoHtml = `
+      <div class="complemento-columns-row" style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; box-sizing: border-box;">
+        <div style="display: flex; flex-direction: column; width: 100%;">
+          <label style="margin-bottom: 6px; font-weight: 700; color: #1e293b; font-size: 0.9rem; display: flex; align-items: center; gap: 4px;">
+            <span>🔁 Trocas</span>
+          </label>
+          <textarea name="trocas" rows="6" placeholder="Digite as trocas (uma por linha)..." style="width: 100%; box-sizing: border-box; resize: vertical; border-radius: 12px; padding: 10px;"></textarea>
+        </div>
+        <div style="display: flex; flex-direction: column; width: 100%;">
+          <label style="margin-bottom: 6px; font-weight: 700; color: #1e293b; font-size: 0.9rem; display: flex; align-items: center; gap: 4px;">
+            <span>🔧 Reparos</span>
+          </label>
+          <textarea name="reparos" rows="6" placeholder="Digite os reparos (um por linha)..." style="width: 100%; box-sizing: border-box; resize: vertical; border-radius: 12px; padding: 10px;"></textarea>
+        </div>
+      </div>
+      <label style="grid-column: 1 / -1; width: 100%;">
+        <span class="status-label" style="margin-bottom: 6px; font-weight: 700; color: #1e293b;">Obs.:</span>
+        <textarea name="obs" rows="4" placeholder="Campo livre para digitar com quebra de linha..." style="width: 100%; box-sizing: border-box; resize: vertical; border-radius: 12px; padding: 10px;"></textarea>
       </label>
-    ` + extraFieldsHtml;
+    `;
+    fieldsHtml = complementoHtml;
   } else if (selectedType === 'Pós entrega') {
     const reclamacaoHtml = `
       <label style="grid-column: 1 / -1;">
