@@ -632,34 +632,37 @@
             </button>
           </div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+          <!-- LINHA 1: TÍTULO DO VEÍCULO (EM LINHA EXCLUSIVA NO TOPO COM O BOTÃO FECHAR) -->
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%;">
             <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
-              <span id="vpVehicleHeaderIcon" style="font-size: 1.1rem;">🚗</span>
+              <span id="vpVehicleHeaderIcon" style="font-size: 1.25rem;">🚗</span>
               <div style="min-width: 0; flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                <h3 id="vpVehicleTitle" style="margin: 0; font-size: 0.86rem; font-weight: 800; color: #0f172a; line-height: 1.2; word-break: break-word;">Partes do Veículo</h3>
-                <span id="vpVehicleBadge" style="font-size: 0.65rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 1px 5px; border-radius: 4px; display: inline-block;">Automóvel / SUV</span>
+                <h3 id="vpVehicleTitle" style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #0f172a; line-height: 1.2; word-break: break-word;">Partes do Veículo</h3>
+                <span id="vpVehicleBadge" style="font-size: 0.68rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 4px; display: inline-block;">Automóvel / SUV</span>
               </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0; flex-wrap: wrap;">
-              <button type="button" id="vpCloudSyncBtn" onclick="vpSyncCatalogWithCloud(true)" title="Sincronizar catálogo com a nuvem online" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; font-size: 0.70rem; font-weight: 700; padding: 4px 6px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
-                <span id="vpCloudSyncIcon">☁️</span>
-                <span id="vpCloudSyncText">Nuvem</span>
-              </button>
-              <button type="button" id="vpExportCatalogBtn" onclick="vpExportCatalogJson()" title="Salvar cópia de segurança do catálogo de peças" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; font-size: 0.70rem; font-weight: 700; padding: 4px 6px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
-                <span>💾</span>
-                <span>Backup</span>
-              </button>
-              <button type="button" id="vpImportCatalogBtn" onclick="vpImportCatalogJson()" title="Restaurar peças do arquivo de backup" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; font-size: 0.70rem; font-weight: 700; padding: 4px 6px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
-                <span>📥</span>
-                <span>Restaurar</span>
-              </button>
-              <button type="button" onclick="vpOpenAddCustomModal()" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-size: 0.72rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; cursor: pointer;">
-                + Nova Peça
-              </button>
-              <button type="button" onclick="closeVehiclePartsModal()" title="Salvar e fechar partes" style="background: #f1f5f9; border: none; font-size: 0.95rem; color: #64748b; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 4px;">
-                ✕
-              </button>
-            </div>
+            <button type="button" onclick="closeVehiclePartsModal()" title="Salvar e fechar partes" style="background: #f1f5f9; border: none; font-size: 1rem; color: #64748b; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              ✕
+            </button>
+          </div>
+
+          <!-- LINHA 2: BARRA DE AÇÕES (NUVEM, BACKUP, RESTAURAR, NOVA PEÇA) -->
+          <div style="display: flex; align-items: center; gap: 5px; width: 100%; flex-wrap: wrap;">
+            <button type="button" id="vpCloudSyncBtn" onclick="vpSyncCatalogWithCloud(true)" title="Sincronizar catálogo com a nuvem online" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; font-size: 0.72rem; font-weight: 700; padding: 5px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+              <span id="vpCloudSyncIcon">☁️</span>
+              <span id="vpCloudSyncText">Nuvem</span>
+            </button>
+            <button type="button" id="vpExportCatalogBtn" onclick="vpExportCatalogJson()" title="Salvar cópia de segurança do catálogo de peças" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; font-size: 0.72rem; font-weight: 700; padding: 5px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+              <span>💾</span>
+              <span>Backup</span>
+            </button>
+            <button type="button" id="vpImportCatalogBtn" onclick="vpImportCatalogJson()" title="Restaurar peças do arquivo de backup" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; font-size: 0.72rem; font-weight: 700; padding: 5px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+              <span>📥</span>
+              <span>Restaurar</span>
+            </button>
+            <button type="button" onclick="vpOpenAddCustomModal()" style="margin-left: auto; background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1d4ed8; font-size: 0.75rem; font-weight: 800; padding: 5px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+              <span>➕</span> Nova Peça
+            </button>
           </div>
 
           <!-- BUSCA RÁPIDA -->
@@ -735,16 +738,13 @@
       </div>
     </div>
 
-    <!-- MODAL PARA EDITAR NOME E ZONA DE PEÇA (LÁPIS ✏️) -->
+    <!-- MODAL PARA EDITAR NOME DE PEÇA (LÁPIS ✏️) -->
     <div id="vpEditPartModal" class="photo-modal-overlay" style="display: none; z-index: 10005;">
       <div class="photo-modal" style="max-width: 400px; background: white; padding: 18px; border-radius: 16px;">
         <h3 style="margin-top: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a;">✏️ Editar Peça do Catálogo</h3>
         <form onsubmit="vpSaveEditPartName(event)">
           <input type="hidden" id="vpEditOriginalName" />
-          <div style="margin: 10px 0;">
-            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Área / Zona da Peça:</label>
-            <select id="vpEditZoneSelect" required style="width: 100%; box-sizing: border-box; padding: 9px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600; background: #ffffff;"></select>
-          </div>
+          <input type="hidden" id="vpEditZoneSelect" value="geral" />
           <div style="margin: 10px 0;">
             <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Nome da Peça:</label>
             <input type="text" id="vpEditNameInput" required style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.90rem; font-weight: 600;" />
@@ -770,10 +770,7 @@
           <button type="button" onclick="vpCloseAddCustomModal()" style="background: none; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer;">✕</button>
         </div>
         <form onsubmit="vpSaveCustomPart(event)">
-          <div style="margin-bottom: 10px;">
-            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Zona do Veículo:</label>
-            <select id="vpCustomZoneSelect" required style="width: 100%; box-sizing: border-box; padding: 9px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600; background: #ffffff;"></select>
-          </div>
+          <input type="hidden" id="vpCustomZoneSelect" value="geral" />
           <div style="margin-bottom: 10px;">
             <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Nome da Peça:</label>
             <input type="text" id="vpCustomNameInput" required placeholder="Ex: Defletor inferior do para-choque" style="width: 100%; box-sizing: border-box; padding: 9px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600;" />

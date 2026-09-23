@@ -7256,6 +7256,12 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
         });
       }
 
+      // Limpeza de segurança: remove de vpDeletedPartsList qualquer peça que esteja presente nas customizadas
+      if (vpDeletedPartsList && vpDeletedPartsList.length > 0) {
+        const activeNames = new Set(vpCustomPartsList.map(p => (p.name || '').toLowerCase()));
+        vpDeletedPartsList = vpDeletedPartsList.filter(d => d && !activeNames.has(d.toLowerCase()));
+      }
+
       // Se temos peças locais que ainda não estavam na nuvem, faz push consolidado
       const localHasExtra = vpCustomPartsList.some(localP => {
         return !cloudData.customParts || !cloudData.customParts.some(cP => cP.name.toLowerCase() === localP.name.toLowerCase());
@@ -7301,6 +7307,15 @@ function vpIsPartDeleted(rawName, effectiveName) {
   const eName = effectiveName || vpGetEffectivePartName(rawName);
   const rLower = (rawName || '').toLowerCase();
   const eLower = (eName || '').toLowerCase();
+
+  // Peças ativas na lista de customizadas do usuário NUNCA são consideradas excluídas!
+  if (vpCustomPartsList && vpCustomPartsList.some(p => {
+    const pLower = (p.name || '').toLowerCase();
+    return pLower === rLower || pLower === eLower;
+  })) {
+    return false;
+  }
+
   return vpDeletedPartsList.some(d => {
     const dLower = (d || '').toLowerCase();
     return dLower === rLower || dLower === eLower;
@@ -7449,10 +7464,10 @@ window.vpDetectVehicleTypeFromText = vpDetectVehicleTypeFromText;
 
 let currentVistoriaIdForParts = null;
 let vpOpenObsPartNames = new Set();
-let vpActiveCategory = 'DIANTEIRA'; // 'FAVORITOS' | 'DIANTEIRA' | 'TRASEIRA' | 'LATERAIS' | 'DEMAIS' | 'TODAS'
+let vpActiveCategory = 'PECAS'; // 'PECAS' | 'FAVORITOS'
 
 window.vpSelectCategory = function(categoryKey) {
-  vpActiveCategory = categoryKey;
+  vpActiveCategory = (categoryKey === 'FAVORITOS') ? 'FAVORITOS' : 'PECAS';
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
 };
 
@@ -7504,7 +7519,7 @@ window.openVehiclePartsForVistoriaId = function(id) {
 
   currentVistoriaIdForParts = id;
   vpViewAllZonesMode = true;
-  vpActiveCategory = 'DIANTEIRA';
+  vpActiveCategory = 'PECAS';
   vpOpenObsPartNames.clear();
   vpLoadState();
   if (typeof window.vpSyncCatalogWithCloud === 'function') {
@@ -7572,7 +7587,7 @@ window.openVehiclePartsModalForId = window.openVehiclePartsForVistoriaId;
 window.openVehiclePartsModal = function() {
   currentVistoriaIdForParts = null;
   vpViewAllZonesMode = true;
-  vpActiveCategory = 'DIANTEIRA';
+  vpActiveCategory = 'PECAS';
   vpOpenObsPartNames.clear();
   vpLoadState();
   if (typeof window.vpSyncCatalogWithCloud === 'function') {
@@ -7810,28 +7825,12 @@ window.vpApplyAndClose = function() {
 };
 
 function vpUpdateTriggerButton() {
-  const currentZone = vpActiveZones.find(z => z.id === vpActiveZoneId) || vpActiveZones[0];
   const triggerIcon = document.getElementById('vpTriggerIcon');
   const triggerTitle = document.getElementById('vpTriggerTitle');
   const triggerBadge = document.getElementById('vpTriggerCountBadge');
 
-  const categoryTitles = {
-    'DIANTEIRA': 'Dianteira (LD, LE e Centrais)',
-    'TRASEIRA': 'Traseira (LD, LE e Centrais)',
-    'LATERAIS': 'Laterais (Todos os Lados)',
-    'DEMAIS': 'Demais Peças (Teto, Mecânica, Interior)',
-    'TODAS': 'Todas as Peças do Catálogo'
-  };
-  const categoryIcons = {
-    'DIANTEIRA': '🚗',
-    'TRASEIRA': '🚘',
-    'LATERAIS': '↔️',
-    'DEMAIS': '⚙️',
-    'TODAS': '📋'
-  };
-
-  if (triggerIcon) triggerIcon.textContent = categoryIcons[vpActiveCategory] || '🚗';
-  if (triggerTitle) triggerTitle.textContent = categoryTitles[vpActiveCategory] || 'Partes do Veículo';
+  if (triggerIcon) triggerIcon.textContent = (vpActiveCategory === 'FAVORITOS') ? '⭐' : '🚗';
+  if (triggerTitle) triggerTitle.textContent = (vpActiveCategory === 'FAVORITOS') ? 'Favoritas' : 'Peças do Veículo';
   if (triggerBadge) {
     triggerBadge.style.display = vpSelectedPartsMap.size > 0 ? 'inline-block' : 'none';
     triggerBadge.textContent = vpSelectedPartsMap.size;
@@ -8002,15 +8001,9 @@ function vpIncrementPartUsage(partName) {
     localStorage.setItem('vp_parts_usage_stats', JSON.stringify(stats));
   } catch(e) {}
 }
-
 function vpRenderParts(filterQuery = '') {
   const listEl = document.getElementById('vpPartsScrollContainer');
   if (!listEl) return;
-
-  const matchesVehicleType = (p) => {
-    // Peças customizadas adicionadas pelo usuário NUNCA devem sumir independente do tipo detectado
-    return true;
-  };
 
   const sortPartsByUsage = (partList) => {
     return partList.sort((a, b) => {
@@ -8020,39 +8013,74 @@ function vpRenderParts(filterQuery = '') {
 
       const scoreA = vpGetPartUsageScore(a.name, a.rawName);
       const scoreB = vpGetPartUsageScore(b.name, b.rawName);
-      if (scoreB !== scoreA) return scoreB - scoreA; // 2º: Peças mais usadas/populares sempre no topo
+      if (scoreB !== scoreA) return scoreB - scoreA; // 2º: Peças mais usadas/populares no topo
 
       return a.name.localeCompare(b.name, 'pt-BR'); // 3º: Ordem alfabética para desempate
     });
   };
 
-  // 1. BUSCA POR TEXTO (MOSTRA RESULTADOS EM LARGURA TOTAL)
-  if (filterQuery.trim()) {
-    const q = filterQuery.trim().toLowerCase();
-    let matching = [];
-    vpActiveZones.forEach(z => {
-      z.parts.forEach(rawP => {
-        const effective = vpGetEffectivePartName(rawP);
-        if (!vpIsPartDeleted(rawP, effective)) {
-          if (effective.toLowerCase().includes(q) || rawP.toLowerCase().includes(q)) {
-            const actualZoneId = vpGetPartEffectiveZoneId(rawP, z.id);
-            const zObj = vpActiveZones.find(zone => zone.id === actualZoneId) || z;
-            matching.push({ rawName: rawP, name: effective, zoneId: actualZoneId, zoneName: zObj.name, icon: zObj.icon });
-          }
-        }
-      });
+  const sortPartsAlphabetically = (partList) => {
+    return partList.sort((a, b) => {
+      const isSelA = vpSelectedPartsMap.has(a.name) ? 1 : 0;
+      const isSelB = vpSelectedPartsMap.has(b.name) ? 1 : 0;
+      if (isSelB !== isSelA) return isSelB - isSelA; // Selecionadas na sessão primeiro
+
+      return a.name.localeCompare(b.name, 'pt-BR'); // Ordem estritamente alfabética
     });
-    vpCustomPartsList.forEach(p => {
-      if (matchesVehicleType(p)) {
-        const effective = vpGetEffectivePartName(p.name);
-        if (!vpIsPartDeleted(p.name, effective)) {
-          if (effective.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)) {
-            const actualZoneId = vpGetPartEffectiveZoneId(p.name, p.zoneId);
-            const zObj = vpActiveZones.find(zone => zone.id === actualZoneId);
-            matching.push({ rawName: p.name, name: effective, zoneId: actualZoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: zObj ? zObj.icon : '✨' });
+  };
+
+  // Coleta unificada de TODAS as peças do veículo (base + customizadas + renomeadas)
+  let allParts = [];
+  const seenNames = new Set();
+
+  // 1. Peças base do tipo de veículo atual
+  if (Array.isArray(vpActiveZones)) {
+    vpActiveZones.forEach(z => {
+      if (Array.isArray(z.parts)) {
+        z.parts.forEach(rawP => {
+          const effective = vpGetEffectivePartName(rawP);
+          const effLower = (effective || '').toLowerCase();
+          if (effective && !vpIsPartDeleted(rawP, effective) && !seenNames.has(effLower)) {
+            seenNames.add(effLower);
+            allParts.push({
+              rawName: rawP,
+              name: effective,
+              zoneId: z.id || 'geral',
+              zoneName: 'Peças do veículo',
+              icon: z.icon || '🚗'
+            });
           }
+        });
+      }
+    });
+  }
+
+  // 2. Peças customizadas adicionadas pelo usuário (NUNCA desaparecem e não sofrem filtro de zona)
+  if (Array.isArray(vpCustomPartsList)) {
+    vpCustomPartsList.forEach(p => {
+      if (p && p.name) {
+        const effective = vpGetEffectivePartName(p.name);
+        const effLower = (effective || '').toLowerCase();
+        if (effective && !vpIsPartDeleted(p.name, effective) && !seenNames.has(effLower)) {
+          seenNames.add(effLower);
+          allParts.push({
+            rawName: p.name,
+            name: effective,
+            zoneId: p.zoneId || 'geral',
+            zoneName: 'Peças do veículo',
+            icon: '✨'
+          });
         }
       }
+    });
+  }
+
+  // 3. BUSCA RÁPIDA POR TEXTO (QUANDO O USUÁRIO DIGITA NO CAMPO DE BUSCA)
+  if (filterQuery && filterQuery.trim()) {
+    const q = filterQuery.trim().toLowerCase();
+    const matching = allParts.filter(p => {
+      return (p.name && p.name.toLowerCase().includes(q)) || 
+             (p.rawName && p.rawName.toLowerCase().includes(q));
     });
 
     if (matching.length === 0) {
@@ -8069,10 +8097,10 @@ function vpRenderParts(filterQuery = '') {
     sortPartsByUsage(matching);
     listEl.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
-        <div style="font-size: 0.74rem; font-weight: 700; color: #475569; padding: 2px 4px;">
+        <div style="font-size: 0.76rem; font-weight: 700; color: #475569; padding: 2px 4px;">
           Encontradas ${matching.length} peças para "${vpEscapeHtml(filterQuery)}":
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
           ${matching.map(item => vpRenderPartCardHtml(item)).join('')}
         </div>
       </div>
@@ -8080,221 +8108,91 @@ function vpRenderParts(filterQuery = '') {
     return;
   }
 
-  // 2. VISUALIZAÇÃO PADRÃO DIVIDIDA EM 5 CATEGORIAS: DIANTEIRA, TRASEIRA, LATERAIS, DEMAIS E TODAS
-  let allParts = [];
-  const seenNames = new Set();
-
-  vpActiveZones.forEach(z => {
-    z.parts.forEach(rawP => {
-      const effective = vpGetEffectivePartName(rawP);
-      if (!vpIsPartDeleted(rawP, effective) && !seenNames.has(effective)) {
-        seenNames.add(effective);
-        const actualZoneId = vpGetPartEffectiveZoneId(rawP, z.id);
-        const zObj = vpActiveZones.find(zone => zone.id === actualZoneId) || z;
-        allParts.push({ rawName: rawP, name: effective, zoneId: actualZoneId, zoneName: zObj.name, icon: zObj.icon });
-      }
-    });
-  });
-
-  vpCustomPartsList.forEach(p => {
-    if (matchesVehicleType(p)) {
-      const effective = vpGetEffectivePartName(p.name);
-      if (!vpIsPartDeleted(p.name, effective) && !seenNames.has(effective)) {
-        seenNames.add(effective);
-        const actualZoneId = vpGetPartEffectiveZoneId(p.name, p.zoneId);
-        const zObj = vpActiveZones.find(zone => zone.id === actualZoneId);
-        allParts.push({ rawName: p.name, name: effective, zoneId: actualZoneId, zoneName: zObj ? zObj.name : 'Personalizada', icon: zObj ? zObj.icon : '✨' });
-      }
-    }
-  });
-
+  // 4. DUAS ZONAS ÚNICAS: "Peças do veículo" E "Favoritas"
   const favParts = allParts.filter(p => vpIsPartFavorite(p.name));
-  const diantParts = allParts.filter(p => vpClassifyPartCategory(p) === 'DIANTEIRA');
-  const trasParts = allParts.filter(p => vpClassifyPartCategory(p) === 'TRASEIRA');
-  const latParts = allParts.filter(p => vpClassifyPartCategory(p) === 'LATERAIS');
-  const demaisParts = allParts.filter(p => vpClassifyPartCategory(p) === 'DEMAIS');
   const todasParts = [...allParts];
 
-  sortPartsByUsage(favParts);
-  sortPartsByUsage(diantParts);
-  sortPartsByUsage(trasParts);
-  sortPartsByUsage(latParts);
-  sortPartsByUsage(demaisParts);
+  // Ordenação solicitada: "mais usadas apareçam primeiro em Peças do veículo, nos favoritos ordem alfabética"
   sortPartsByUsage(todasParts);
+  sortPartsAlphabetically(favParts);
 
   const favSelCount = favParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
-  const diantSelCount = diantParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
-  const trasSelCount = trasParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
-  const latSelCount = latParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
-  const demaisSelCount = demaisParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
   const todasSelCount = todasParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
 
-  let activeList = diantParts;
-  let activeTitle = 'Dianteira (LD, LE e Centrais)';
-  let activeIcon = '🚗';
-  let activeColor = '#2563eb';
-  let activeBg = '#eff6ff';
+  const isFavMode = (vpActiveCategory === 'FAVORITOS');
+  const activeList = isFavMode ? favParts : todasParts;
+  const activeTitle = isFavMode ? 'Favoritas' : 'Peças do veículo';
+  const activeIcon = isFavMode ? '⭐' : '🚗';
+  const activeColor = isFavMode ? '#ca8a04' : '#2563eb';
+  const activeBg = isFavMode ? '#fefce8' : '#eff6ff';
 
-  if (vpActiveCategory === 'FAVORITOS') {
-    activeList = favParts;
-    activeTitle = 'Peças Favoritas (Mais Usadas)';
-    activeIcon = '⭐';
-    activeColor = '#ca8a04';
-    activeBg = '#fefce8';
-  } else if (vpActiveCategory === 'TRASEIRA') {
-    activeList = trasParts;
-    activeTitle = 'Traseira (LD, LE e Centrais)';
-    activeIcon = '🚘';
-    activeColor = '#ea580c';
-    activeBg = '#fff7ed';
-  } else if (vpActiveCategory === 'LATERAIS') {
-    activeList = latParts;
-    activeTitle = 'Laterais (Todos os Lados)';
-    activeIcon = '↔️';
-    activeColor = '#16a34a';
-    activeBg = '#f0fdf4';
-  } else if (vpActiveCategory === 'DEMAIS') {
-    activeList = demaisParts;
-    activeTitle = 'Demais Peças (Teto, Mecânica, Interior)';
-    activeIcon = '⚙️';
-    activeColor = '#9333ea';
-    activeBg = '#fdf4ff';
-  } else if (vpActiveCategory === 'TODAS') {
-    activeList = todasParts;
-    activeTitle = 'Todas as Peças do Catálogo';
-    activeIcon = '📋';
-    activeColor = '#0f766e';
-    activeBg = '#f0fdfa';
-  }
-
-  sortPartsByUsage(activeList);
   const selectedInActive = activeList.filter(p => vpSelectedPartsMap.has(p.name));
   const unselectedInActive = activeList.filter(p => !vpSelectedPartsMap.has(p.name));
 
   listEl.innerHTML = `
     <div class="vp-category-section-wrapper" style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
-      <!-- AS 6 ABAS DE CATEGORIAS: FAVORITOS, DIANTEIRA, TRASEIRA, LATERAIS, DEMAIS E TODAS -->
-      <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; width: 100%; box-sizing: border-box;">
-        <!-- FAVORITOS -->
+      <!-- APENAS 2 ZONAS: "Peças do veículo" e "Favoritas" -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; box-sizing: border-box;">
+        <!-- ZONA 1: PEÇAS DO VEÍCULO (MAIS USADAS NO TOPO) -->
+        <button 
+          type="button" 
+          onclick="vpSelectCategory('PECAS')"
+          title="Todas as peças do veículo (as mais usadas primeiro)"
+          style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 6px 10px; border-radius: 10px; border: 2px solid ${!isFavMode ? '#2563eb' : '#cbd5e1'}; background: ${!isFavMode ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${!isFavMode ? '0 2px 6px rgba(37,99,235,0.18)' : 'none'};"
+        >
+          <span style="font-size: 1.05rem; line-height: 1;">🚗</span>
+          <span style="font-size: 0.82rem; font-weight: 800; color: ${!isFavMode ? '#1e3a8a' : '#475569'}; line-height: 1.1;">Peças do veículo</span>
+          <div style="display: flex; align-items: center; gap: 3px; margin-left: 2px;">
+            <span style="font-size: 0.68rem; font-weight: 800; color: ${!isFavMode ? '#2563eb' : '#64748b'}; background: ${!isFavMode ? '#dbeafe' : '#f1f5f9'}; padding: 1px 6px; border-radius: 999px;">${todasParts.length}</span>
+            ${todasSelCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 6px; border-radius: 999px;">${todasSelCount}</span>` : ''}
+          </div>
+        </button>
+
+        <!-- ZONA 2: FAVORITAS (ORDEM ALFABÉTICA) -->
         <button 
           type="button" 
           onclick="vpSelectCategory('FAVORITOS')"
-          title="Peças Favoritas (Mais Usadas)"
-          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 1px; border-radius: 8px; border: 2px solid ${vpActiveCategory === 'FAVORITOS' ? '#eab308' : '#cbd5e1'}; background: ${vpActiveCategory === 'FAVORITOS' ? '#fefce8' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveCategory === 'FAVORITOS' ? '0 2px 6px rgba(234,179,8,0.22)' : 'none'};"
+          title="Peças Favoritas (em ordem alfabética)"
+          style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 6px 10px; border-radius: 10px; border: 2px solid ${isFavMode ? '#eab308' : '#cbd5e1'}; background: ${isFavMode ? '#fefce8' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${isFavMode ? '0 2px 6px rgba(234,179,8,0.22)' : 'none'};"
         >
-          <span style="font-size: 0.85rem; line-height: 1;">⭐</span>
-          <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveCategory === 'FAVORITOS' ? '#854d0e' : '#475569'}; line-height: 1.1;">Fav.</span>
-          <div style="display: flex; align-items: center; gap: 2px;">
-            <span style="font-size: 0.60rem; font-weight: 800; color: ${vpActiveCategory === 'FAVORITOS' ? '#a16207' : '#64748b'}; background: ${vpActiveCategory === 'FAVORITOS' ? '#fef08a' : '#f1f5f9'}; padding: 0.5px 3px; border-radius: 999px;">${favParts.length}</span>
-            ${favSelCount > 0 ? `<span style="font-size: 0.58rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 0.5px 3px; border-radius: 999px;">${favSelCount}</span>` : ''}
-          </div>
-        </button>
-
-        <!-- DIANTEIRA -->
-        <button 
-          type="button" 
-          onclick="vpSelectCategory('DIANTEIRA')"
-          title="Dianteira (inclusive LD e LE)"
-          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 1px; border-radius: 8px; border: 2px solid ${vpActiveCategory === 'DIANTEIRA' ? '#2563eb' : '#cbd5e1'}; background: ${vpActiveCategory === 'DIANTEIRA' ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveCategory === 'DIANTEIRA' ? '0 2px 6px rgba(37,99,235,0.18)' : 'none'};"
-        >
-          <span style="font-size: 0.85rem; line-height: 1;">🚗</span>
-          <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveCategory === 'DIANTEIRA' ? '#1e3a8a' : '#475569'}; line-height: 1.1;">Diant.</span>
-          <div style="display: flex; align-items: center; gap: 2px;">
-            <span style="font-size: 0.60rem; font-weight: 800; color: ${vpActiveCategory === 'DIANTEIRA' ? '#2563eb' : '#64748b'}; background: ${vpActiveCategory === 'DIANTEIRA' ? '#dbeafe' : '#f1f5f9'}; padding: 0.5px 3px; border-radius: 999px;">${diantParts.length}</span>
-            ${diantSelCount > 0 ? `<span style="font-size: 0.58rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 0.5px 3px; border-radius: 999px;">${diantSelCount}</span>` : ''}
-          </div>
-        </button>
-
-        <!-- TRASEIRA -->
-        <button 
-          type="button" 
-          onclick="vpSelectCategory('TRASEIRA')"
-          title="Traseira (inclusive LD e LE)"
-          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 1px; border-radius: 8px; border: 2px solid ${vpActiveCategory === 'TRASEIRA' ? '#ea580c' : '#cbd5e1'}; background: ${vpActiveCategory === 'TRASEIRA' ? '#fff7ed' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveCategory === 'TRASEIRA' ? '0 2px 6px rgba(234,88,12,0.18)' : 'none'};"
-        >
-          <span style="font-size: 0.85rem; line-height: 1;">🚘</span>
-          <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveCategory === 'TRASEIRA' ? '#9a3412' : '#475569'}; line-height: 1.1;">Tras.</span>
-          <div style="display: flex; align-items: center; gap: 2px;">
-            <span style="font-size: 0.60rem; font-weight: 800; color: ${vpActiveCategory === 'TRASEIRA' ? '#ea580c' : '#64748b'}; background: ${vpActiveCategory === 'TRASEIRA' ? '#ffedd5' : '#f1f5f9'}; padding: 0.5px 3px; border-radius: 999px;">${trasParts.length}</span>
-            ${trasSelCount > 0 ? `<span style="font-size: 0.58rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 0.5px 3px; border-radius: 999px;">${trasSelCount}</span>` : ''}
-          </div>
-        </button>
-
-        <!-- LATERAIS -->
-        <button 
-          type="button" 
-          onclick="vpSelectCategory('LATERAIS')"
-          title="Laterais (independente do lado)"
-          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 1px; border-radius: 8px; border: 2px solid ${vpActiveCategory === 'LATERAIS' ? '#16a34a' : '#cbd5e1'}; background: ${vpActiveCategory === 'LATERAIS' ? '#f0fdf4' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveCategory === 'LATERAIS' ? '0 2px 6px rgba(22,163,74,0.18)' : 'none'};"
-        >
-          <span style="font-size: 0.85rem; line-height: 1;">↔️</span>
-          <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveCategory === 'LATERAIS' ? '#166534' : '#475569'}; line-height: 1.1;">Laterais</span>
-          <div style="display: flex; align-items: center; gap: 2px;">
-            <span style="font-size: 0.60rem; font-weight: 800; color: ${vpActiveCategory === 'LATERAIS' ? '#16a34a' : '#64748b'}; background: ${vpActiveCategory === 'LATERAIS' ? '#dcfce7' : '#f1f5f9'}; padding: 0.5px 3px; border-radius: 999px;">${latParts.length}</span>
-            ${latSelCount > 0 ? `<span style="font-size: 0.58rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 0.5px 3px; border-radius: 999px;">${latSelCount}</span>` : ''}
-          </div>
-        </button>
-
-        <!-- DEMAIS PEÇAS -->
-        <button 
-          type="button" 
-          onclick="vpSelectCategory('DEMAIS')"
-          title="Demais peças (não dianteira, traseira ou laterais)"
-          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 1px; border-radius: 8px; border: 2px solid ${vpActiveCategory === 'DEMAIS' ? '#9333ea' : '#cbd5e1'}; background: ${vpActiveCategory === 'DEMAIS' ? '#fdf4ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveCategory === 'DEMAIS' ? '0 2px 6px rgba(147,51,234,0.18)' : 'none'};"
-        >
-          <span style="font-size: 0.85rem; line-height: 1;">⚙️</span>
-          <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveCategory === 'DEMAIS' ? '#6b21a8' : '#475569'}; line-height: 1.1;">Demais</span>
-          <div style="display: flex; align-items: center; gap: 2px;">
-            <span style="font-size: 0.60rem; font-weight: 800; color: ${vpActiveCategory === 'DEMAIS' ? '#9333ea' : '#64748b'}; background: ${vpActiveCategory === 'DEMAIS' ? '#fae8ff' : '#f1f5f9'}; padding: 0.5px 3px; border-radius: 999px;">${demaisParts.length}</span>
-            ${demaisSelCount > 0 ? `<span style="font-size: 0.58rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 0.5px 3px; border-radius: 999px;">${demaisSelCount}</span>` : ''}
-          </div>
-        </button>
-
-        <!-- TODAS AS PEÇAS -->
-        <button 
-          type="button" 
-          onclick="vpSelectCategory('TODAS')"
-          title="Todas as peças"
-          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 1px; border-radius: 8px; border: 2px solid ${vpActiveCategory === 'TODAS' ? '#0f766e' : '#cbd5e1'}; background: ${vpActiveCategory === 'TODAS' ? '#f0fdfa' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${vpActiveCategory === 'TODAS' ? '0 2px 6px rgba(15,118,110,0.18)' : 'none'};"
-        >
-          <span style="font-size: 0.85rem; line-height: 1;">📋</span>
-          <span style="font-size: 0.68rem; font-weight: 800; color: ${vpActiveCategory === 'TODAS' ? '#115e59' : '#475569'}; line-height: 1.1;">Todas</span>
-          <div style="display: flex; align-items: center; gap: 2px;">
-            <span style="font-size: 0.60rem; font-weight: 800; color: ${vpActiveCategory === 'TODAS' ? '#0f766e' : '#64748b'}; background: ${vpActiveCategory === 'TODAS' ? '#ccfbf1' : '#f1f5f9'}; padding: 0.5px 3px; border-radius: 999px;">${todasParts.length}</span>
-            ${todasSelCount > 0 ? `<span style="font-size: 0.58rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 0.5px 3px; border-radius: 999px;">${todasSelCount}</span>` : ''}
+          <span style="font-size: 1.05rem; line-height: 1;">⭐</span>
+          <span style="font-size: 0.82rem; font-weight: 800; color: ${isFavMode ? '#854d0e' : '#475569'}; line-height: 1.1;">Favoritas</span>
+          <div style="display: flex; align-items: center; gap: 3px; margin-left: 2px;">
+            <span style="font-size: 0.68rem; font-weight: 800; color: ${isFavMode ? '#a16207' : '#64748b'}; background: ${isFavMode ? '#fef08a' : '#f1f5f9'}; padding: 1px 6px; border-radius: 999px;">${favParts.length}</span>
+            ${favSelCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 6px; border-radius: 999px;">${favSelCount}</span>` : ''}
           </div>
         </button>
       </div>
 
-      <!-- CABEÇALHO DA CATEGORIA ATIVA -->
+      <!-- CABEÇALHO DA ZONA ATIVA -->
       <div style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; background: ${activeBg}; border-radius: 8px; border-left: 4px solid ${activeColor};">
         <div style="display: flex; align-items: center; gap: 5px;">
           <span style="font-size: 0.95rem;">${activeIcon}</span>
-          <strong style="font-size: 0.80rem; color: #0f172a;">${activeTitle}</strong>
+          <strong style="font-size: 0.80rem; color: #0f172a;">${activeTitle} ${isFavMode ? '(Ordem Alfabética A-Z)' : '(Mais Usadas no Topo)'}</strong>
         </div>
         <span style="font-size: 0.68rem; font-weight: 800; color: ${activeColor}; background: #ffffff; padding: 2px 6px; border-radius: 999px; border: 1px solid #cbd5e1;">
           ${activeList.length} peças
         </span>
       </div>
 
-      <!-- ESTADO VAZIO CASO NÃO HAJA PEÇAS FAVORITADAS -->
-      ${vpActiveCategory === 'FAVORITOS' && favParts.length === 0 ? `
+      <!-- ESTADO VAZIO SE NÃO HOUVER FAVORITAS -->
+      ${isFavMode && favParts.length === 0 ? `
         <div style="width: 100%; padding: 36px 16px; text-align: center; color: #64748b; background: #ffffff; border-radius: 12px; border: 1.5px dashed #facc15; margin-top: 4px; box-sizing: border-box;">
           <span style="font-size: 2.2rem; display: block; margin-bottom: 8px;">⭐</span>
           <b style="font-size: 0.92rem; color: #1e293b;">Nenhuma peça favoritada ainda</b>
           <p style="font-size: 0.80rem; margin-top: 6px; color: #64748b; line-height: 1.4;">
-            Toque na estrela (⭐) nas peças das outras abas para adicioná-las aos seus favoritos e encontrá-las facilmente aqui!
+            Na zona "Peças do veículo", toque na estrela (⭐) de qualquer peça para adicioná-la aos seus favoritos!
           </p>
         </div>
       ` : ''}
 
-      <!-- SEÇÃO SUSPENSA NO TOPO: PEÇAS SELECIONADAS (2 COLUNAS) -->
+      <!-- SEÇÃO SUSPENSA NO TOPO: PEÇAS SELECIONADAS NA VISTORIA ATUAL (2 COLUNAS) -->
       ${selectedInActive.length > 0 ? `
         <div style="display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 6px; background: #fef2f2; border: 1.5px dashed #f87171; border-radius: 8px; box-sizing: border-box;">
           <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px;">
             <div style="display: flex; align-items: center; gap: 4px;">
               <span style="font-size: 0.90rem;">📌</span>
-              <strong style="font-size: 0.76rem; color: #991b1b;">Selecionadas (${selectedInActive.length})</strong>
+              <strong style="font-size: 0.76rem; color: #991b1b;">Selecionadas nesta vistoria (${selectedInActive.length})</strong>
             </div>
             <span style="font-size: 0.62rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 1px 5px; border-radius: 999px;">Fixadas</span>
           </div>
@@ -8304,7 +8202,7 @@ function vpRenderParts(filterQuery = '') {
         </div>
       ` : ''}
 
-      <!-- RESTANTE DO CATÁLOGO DE PEÇAS (2 COLUNAS) -->
+      <!-- RESTANTE DAS PEÇAS (2 COLUNAS) -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
         ${unselectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
       </div>
@@ -8691,51 +8589,55 @@ window.vpSaveEditPartName = function(e) {
   e.preventDefault();
   const origInput = document.getElementById('vpEditOriginalName');
   const nameInput = document.getElementById('vpEditNameInput');
-  const zoneSelect = document.getElementById('vpEditZoneSelect');
 
   const rawName = origInput ? origInput.value.trim() : '';
   const newName = nameInput ? nameInput.value.trim() : '';
-  const targetZoneId = zoneSelect ? zoneSelect.value : '';
 
   if (!rawName || !newName) return;
 
   const oldEffectiveName = vpGetEffectivePartName(rawName);
+
+  // 1. Remove qualquer bloqueio de vpDeletedPartsList
+  vpDeletedPartsList = vpDeletedPartsList.filter(d => {
+    const dLower = (d || '').toLowerCase();
+    return dLower !== rawName.toLowerCase() &&
+           dLower !== oldEffectiveName.toLowerCase() &&
+           dLower !== newName.toLowerCase();
+  });
+
+  // 2. Mapeamento de renomeação
   vpCustomPartRenamesMap[rawName] = newName;
   if (oldEffectiveName !== newName) {
     vpCustomPartRenamesMap[oldEffectiveName] = newName;
   }
 
-  // Atualiza override de zona
-  if (targetZoneId) {
-    vpPartZoneOverridesMap[rawName] = targetZoneId;
-    vpPartZoneOverridesMap[newName] = targetZoneId;
-    vpPartZoneOverridesMap[oldEffectiveName] = targetZoneId;
-
-    // Se estiver em vpCustomPartsList, atualiza a zona diretamente
-    const customItem = vpCustomPartsList.find(p => p.name.toLowerCase() === rawName.toLowerCase() || p.name.toLowerCase() === oldEffectiveName.toLowerCase());
-    if (customItem) {
-      customItem.name = newName;
-      customItem.zoneId = targetZoneId;
-    }
+  // 3. Atualiza diretamente em vpCustomPartsList
+  const customItem = vpCustomPartsList.find(p => 
+    p.name.toLowerCase() === rawName.toLowerCase() || 
+    p.name.toLowerCase() === oldEffectiveName.toLowerCase()
+  );
+  if (customItem) {
+    customItem.name = newName;
+    customItem.vehicleType = 'all';
+  } else {
+    // Se era uma peça base do sistema que foi editada, registra como customizada para garantir persistência total
+    vpCustomPartsList.push({ name: newName, zoneId: 'geral', vehicleType: 'all' });
   }
 
+  // 4. Atualiza seleção na vistoria atual se estiver marcada
   if (vpSelectedPartsMap.has(oldEffectiveName)) {
     const prevItem = vpSelectedPartsMap.get(oldEffectiveName);
     vpSelectedPartsMap.delete(oldEffectiveName);
     prevItem.name = newName;
-    if (targetZoneId) {
-      prevItem.zoneId = targetZoneId;
-      const targetZoneObj = vpActiveZones.find(z => z.id === targetZoneId);
-      if (targetZoneObj) prevItem.zoneName = targetZoneObj.name;
-    }
     vpSelectedPartsMap.set(newName, prevItem);
-  } else if (targetZoneId && vpSelectedPartsMap.has(newName)) {
-    const prevItem = vpSelectedPartsMap.get(newName);
-    prevItem.zoneId = targetZoneId;
-    const targetZoneObj = vpActiveZones.find(z => z.id === targetZoneId);
-    if (targetZoneObj) prevItem.zoneName = targetZoneObj.name;
+  } else if (vpSelectedPartsMap.has(rawName)) {
+    const prevItem = vpSelectedPartsMap.get(rawName);
+    vpSelectedPartsMap.delete(rawName);
+    prevItem.name = newName;
+    vpSelectedPartsMap.set(newName, prevItem);
   }
 
+  // 5. Salva estado e sincroniza
   vpSaveState(true);
   window.vpCloseEditPartModal();
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
@@ -8743,12 +8645,6 @@ window.vpSaveEditPartName = function(e) {
 };
 
 window.vpOpenAddCustomModal = function() {
-  const select = document.getElementById('vpCustomZoneSelect');
-  if (select) {
-    select.innerHTML = vpActiveZones.map(z => `
-      <option value="${z.id}" ${z.id === vpActiveZoneId ? 'selected' : ''}>${z.icon} ${z.name}</option>
-    `).join('');
-  }
   const nameInput = document.getElementById('vpCustomNameInput');
   const obsInput = document.getElementById('vpCustomObsInput');
   if (nameInput) nameInput.value = '';
@@ -8765,49 +8661,50 @@ window.vpCloseAddCustomModal = function() {
 
 window.vpSaveCustomPart = function(e) {
   e.preventDefault();
-  const zoneSelect = document.getElementById('vpCustomZoneSelect');
   const nameInput = document.getElementById('vpCustomNameInput');
   const obsInput = document.getElementById('vpCustomObsInput');
   const actionRadio = document.querySelector('input[name="vpCustomAction"]:checked');
 
-  const zoneId = zoneSelect ? zoneSelect.value : vpActiveZoneId;
   const name = nameInput ? nameInput.value.trim() : '';
   const obs = obsInput ? obsInput.value.trim() : '';
   const action = actionRadio ? actionRadio.value : 'troca'; // 'troca' | 'reparo' | 'catalogo'
 
   if (!name) return;
 
-  const zObj = vpActiveZones.find(z => z.id === zoneId);
-  const zoneName = zObj ? zObj.name : 'Personalizada';
+  // 1. Remove de vpDeletedPartsList caso tenha sido excluída anteriormente
+  vpDeletedPartsList = vpDeletedPartsList.filter(d => (d || '').toLowerCase() !== name.toLowerCase());
 
-  // Se havia sido excluída anteriormente, remove da lista de excluídas
-  vpDeletedPartsList = vpDeletedPartsList.filter(d => d.toLowerCase() !== name.toLowerCase());
-
-  // Salva permanentemente no catálogo customizado com o tipo de veículo atual
-  const existingIdx = vpCustomPartsList.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+  // 2. Salva permanentemente no catálogo customizado
+  const existingIdx = vpCustomPartsList.findIndex(p => (p.name || '').toLowerCase() === name.toLowerCase());
   if (existingIdx >= 0) {
-    vpCustomPartsList[existingIdx].zoneId = zoneId;
+    vpCustomPartsList[existingIdx].name = name;
+    vpCustomPartsList[existingIdx].zoneId = 'geral';
     vpCustomPartsList[existingIdx].vehicleType = 'all';
   } else {
-    vpCustomPartsList.push({ name, zoneId, vehicleType: 'all' });
+    vpCustomPartsList.push({ name, zoneId: 'geral', vehicleType: 'all' });
   }
 
-  // Se a ação for troca ou reparo, adiciona também à seleção da vistoria atual
+  // 3. Se a ação for troca ou reparo, adiciona também à seleção da vistoria atual
   if (action === 'troca' || action === 'reparo') {
     vpSelectedPartsMap.set(name, {
       name: name,
       rawName: name,
-      zoneId: zoneId,
-      zoneName: zoneName,
+      zoneId: 'geral',
+      zoneName: 'Peças do veículo',
       action: action,
       obs: obs
     });
   }
 
+  // 4. Salva estado persistente (localStorage + Android Native SQLite + Push to Cloud)
   vpSaveState(true);
   window.vpCloseAddCustomModal();
-  vpActiveZoneId = zoneId;
-  vpViewAllZonesMode = false;
+
+  // Garante que a zona ativa seja "Peças do veículo" para a nova peça estar imediatamente visível
+  if (vpActiveCategory !== 'FAVORITOS') {
+    vpActiveCategory = 'PECAS';
+  }
+
   vpUpdateTriggerButton();
   vpRenderParts();
   vpUpdateDockAndSheet();

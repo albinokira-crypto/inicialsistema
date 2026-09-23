@@ -89,9 +89,9 @@ module.exports = async (req, res) => {
           cachedCatalogData.customParts = Array.from(map.values());
         }
         if (Array.isArray(data.deletedParts)) {
-          const dSet = new Set(cachedCatalogData.deletedParts || []);
-          data.deletedParts.forEach(d => { if (d) dSet.add(d); });
-          cachedCatalogData.deletedParts = Array.from(dSet);
+          // Apenas mantém exclusões enviadas pelo cliente que NÃO estão no catálogo de peças ativas
+          const activeCustomNames = new Set(cachedCatalogData.customParts.map(p => (p.name || '').toLowerCase()));
+          cachedCatalogData.deletedParts = data.deletedParts.filter(d => d && !activeCustomNames.has(d.toLowerCase()));
         }
         if (data.renames && typeof data.renames === 'object') {
           cachedCatalogData.renames = Object.assign({}, cachedCatalogData.renames, data.renames);
@@ -102,6 +102,13 @@ module.exports = async (req, res) => {
         if (data.usageStats && typeof data.usageStats === 'object') {
           cachedCatalogData.usageStats = Object.assign({}, cachedCatalogData.usageStats, data.usageStats);
         }
+
+        // Garante sanitização final: nenhuma peça ativa pode estar em deletedParts
+        if (cachedCatalogData.deletedParts && cachedCatalogData.deletedParts.length > 0) {
+          const activeMap = new Set(cachedCatalogData.customParts.map(p => (p.name || '').toLowerCase()));
+          cachedCatalogData.deletedParts = cachedCatalogData.deletedParts.filter(d => d && !activeMap.has(d.toLowerCase()));
+        }
+
         cachedCatalogData.updatedAt = Date.now();
 
         // Tenta salvar em disco para preservar entre reloads locais
