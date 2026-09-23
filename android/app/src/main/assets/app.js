@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.16.0';
+let CURRENT_APP_VERSION = 'v2.17.0';
 
 function parseVersionNum(v) {
   if (!v) return 0;
@@ -6318,20 +6318,38 @@ const VP_BASE_ZONES_CAR = [
       'Capô do motor',
       'Para-choque Diant.',
       'Grade Diant.',
+      'Grade inferior do para-choque',
       'Alma do para-choque Diant.',
       'Farol Diant. LD',
       'Farol Diant. LE',
       'Farol de milha LD',
       'Farol de milha LE',
+      'Farol auxiliar / DRL LD',
+      'Farol auxiliar / DRL LE',
       'Para-lama Diant. LD',
       'Para-lama Diant. LE',
+      'Para-barro Diant. LD',
+      'Para-barro Diant. LE',
       'Painel frontal / mini-frente',
+      'Suporte do radiador',
+      'Defletor do radiador',
       'Radiador de água',
       'Condensador do ar-condicionado',
       'Eletroventilador / ventoinha',
       'Guia do para-choque Diant. LD',
       'Guia do para-choque Diant. LE',
-      'Emblema frontal da montadora'
+      'Emblema frontal da montadora',
+      'Trava / fecho do capô',
+      'Vareta / amortecedor do capô',
+      'Manta acústica do capô',
+      'Protetor de cárter / peito de aço',
+      'Reservatório de água do limpador',
+      'Reservatório de expansão (radiador)',
+      'Buzina Diant.',
+      'Braço do limpador Diant. LD',
+      'Braço do limpador Diant. LE',
+      'Palheta do limpador Diant. LD',
+      'Palheta do limpador Diant. LE'
     ]
   },
   {
@@ -6341,6 +6359,7 @@ const VP_BASE_ZONES_CAR = [
     parts: [
       'Tampa do porta-malas / Tras.',
       'Para-choque Tras.',
+      'Saia / spoiler do para-choque Tras.',
       'Alma do para-choque Tras.',
       'Lanterna Tras. LD',
       'Lanterna Tras. LE',
@@ -6352,7 +6371,18 @@ const VP_BASE_ZONES_CAR = [
       'Guia do para-choque Tras. LE',
       'Refletor Tras. LD',
       'Refletor Tras. LE',
-      'Emblema Tras. da montadora'
+      'Emblema Tras. da montadora',
+      'Sensor de estacionamento Tras.',
+      'Câmera de ré',
+      'Luz de placa Tras. LD',
+      'Luz de placa Tras. LE',
+      'Fechadura da tampa do porta-malas',
+      'Amortecedor da tampa Tras. LD',
+      'Amortecedor da tampa Tras. LE',
+      'Borracha de vedação do porta-malas',
+      'Forro da tampa do porta-malas',
+      'Aerofólio / brake-light Tras.',
+      'Palheta / braço do limpador Tras.'
     ]
   },
   {
@@ -6365,6 +6395,7 @@ const VP_BASE_ZONES_CAR = [
       'Retrovisor LD completo',
       'Capa do retrovisor LD',
       'Espelho do retrovisor LD',
+      'Pisca do retrovisor LD',
       'Caixa de ar / soleira LD',
       'Coluna A Diant. LD',
       'Coluna B central LD',
@@ -6373,7 +6404,16 @@ const VP_BASE_ZONES_CAR = [
       'Friso da porta Diant. LD',
       'Friso da porta Tras. LD',
       'Maçaneta Diant. LD',
-      'Maçaneta Tras. LD'
+      'Maçaneta Tras. LD',
+      'Fechadura da porta Diant. LD',
+      'Fechadura da porta Tras. LD',
+      'Limitador da porta Diant. LD',
+      'Limitador da porta Tras. LD',
+      'Borracha da porta Diant. LD',
+      'Borracha da porta Tras. LD',
+      'Pestana de vidro LD',
+      'Moldura do para-lama LD',
+      'Tampa do bocal de combustível'
     ]
   },
   {
@@ -6386,6 +6426,7 @@ const VP_BASE_ZONES_CAR = [
       'Retrovisor LE completo',
       'Capa do retrovisor LE',
       'Espelho do retrovisor LE',
+      'Pisca do retrovisor LE',
       'Caixa de ar / soleira LE',
       'Coluna A Diant. LE',
       'Coluna B central LE',
@@ -6394,7 +6435,15 @@ const VP_BASE_ZONES_CAR = [
       'Friso da porta Diant. LE',
       'Friso da porta Tras. LE',
       'Maçaneta Diant. LE',
-      'Maçaneta Tras. LE'
+      'Maçaneta Tras. LE',
+      'Fechadura da porta Diant. LE',
+      'Fechadura da porta Tras. LE',
+      'Limitador da porta Diant. LE',
+      'Limitador da porta Tras. LE',
+      'Borracha da porta Diant. LE',
+      'Borracha da porta Tras. LE',
+      'Pestana de vidro LE',
+      'Moldura do para-lama LE'
     ]
   },
   {
@@ -6410,11 +6459,20 @@ const VP_BASE_ZONES_CAR = [
       'Ponta de longarina Diant. LE',
       'Longarina Tras. LD',
       'Longarina Tras. LE',
+      'Ponta de longarina Tras. LD',
+      'Ponta de longarina Tras. LE',
       'Caixa de roda Diant. LD',
       'Caixa de roda Diant. LE',
       'Caixa de roda Tras. LD',
       'Caixa de roda Tras. LE',
-      'Painel corta-fogo'
+      'Painel corta-fogo',
+      'Teto solar completo',
+      'Vidro do teto solar',
+      'Rack de teto / barras longitudinais LD',
+      'Rack de teto / barras longitudinais LE',
+      'Friso do teto LD',
+      'Friso do teto LE',
+      'Antena do teto'
     ]
   },
   {
@@ -6426,16 +6484,44 @@ const VP_BASE_ZONES_CAR = [
       'Amortecedor Diant. LE',
       'Amortecedor Tras. LD',
       'Amortecedor Tras. LE',
+      'Coxim do amortecedor Diant. LD',
+      'Coxim do amortecedor Diant. LE',
+      'Mola helicoidal Diant. LD',
+      'Mola helicoidal Diant. LE',
+      'Mola helicoidal Tras. LD',
+      'Mola helicoidal Tras. LE',
       'Bandeja de suspensão Diant. LD',
       'Bandeja de suspensão Diant. LE',
+      'Pivô de suspensão Diant. LD',
+      'Pivô de suspensão Diant. LE',
+      'Bieleta da barra estabilizadora LD',
+      'Bieleta da barra estabilizadora LE',
+      'Barra estabilizadora Diant.',
       'Quadro / agregado da suspensão',
       'Eixo Tras. completo',
       'Caixa de direção hidráulica/elétrica',
+      'Terminal de direção LD',
+      'Terminal de direção LE',
+      'Barra axial de direção LD',
+      'Barra axial de direção LE',
       'Manga de eixo Diant. LD',
       'Manga de eixo Diant. LE',
       'Semi-eixo Diant. LD',
       'Semi-eixo Diant. LE',
       'Cárter de óleo do motor',
+      'Coxim do motor LD',
+      'Coxim do motor LE',
+      'Coxim do câmbio',
+      'Cubo de roda com rolamento Diant. LD',
+      'Cubo de roda com rolamento Diant. LE',
+      'Disco de freio Diant. LD',
+      'Disco de freio Diant. LE',
+      'Pastilha de freio Diant.',
+      'Pinça de freio Diant. LD',
+      'Pinça de freio Diant. LE',
+      'Tambor / disco de freio Tras. LD',
+      'Tambor / disco de freio Tras. LE',
+      'Escapamento completo / silencioso',
       'Roda Diant. LD',
       'Roda Diant. LE',
       'Roda Tras. LD',
@@ -6443,7 +6529,8 @@ const VP_BASE_ZONES_CAR = [
       'Pneu Diant. LD',
       'Pneu Diant. LE',
       'Pneu Tras. LD',
-      'Pneu Tras. LE'
+      'Pneu Tras. LE',
+      'Pneu de estepe / sobressalente'
     ]
   },
   {
@@ -6457,13 +6544,29 @@ const VP_BASE_ZONES_CAR = [
       'Vidro porta Diant. LE',
       'Vidro porta Tras. LD',
       'Vidro porta Tras. LE',
+      'Vidro lateral vigia Tras. LD',
+      'Vidro lateral vigia Tras. LE',
       'Bolsa do Airbag motorista (volante)',
       'Bolsa do Airbag passageiro (painel)',
       'Cinto de segurança Diant. LD',
       'Cinto de segurança Diant. LE',
+      'Cinto de segurança Tras. LD',
+      'Cinto de segurança Tras. LE',
+      'Cinto de segurança Tras. Central',
       'Painel de instrumentos / tabelier',
       'Forro de porta Diant. LD',
-      'Forro de porta Diant. LE'
+      'Forro de porta Diant. LE',
+      'Forro de porta Tras. LD',
+      'Forro de porta Tras. LE',
+      'Forro do teto',
+      'Quebra-sol LD',
+      'Quebra-sol LE',
+      'Retrovisor interno',
+      'Central multimídia / rádio',
+      'Console central com apoio de braço',
+      'Banco dianteiro do motorista',
+      'Banco dianteiro do passageiro',
+      'Banco traseiro completo'
     ]
   }
 ];
@@ -6567,20 +6670,30 @@ const VP_BASE_ZONES_PICAPE = [
       'Capô do motor',
       'Para-choque Diant.',
       'Grade Diant.',
+      'Grade inferior do para-choque',
       'Alma do para-choque Diant.',
       'Farol Diant. LD',
       'Farol Diant. LE',
       'Farol de milha LD',
       'Farol de milha LE',
+      'Farol auxiliar / DRL LD',
+      'Farol auxiliar / DRL LE',
       'Para-lama Diant. LD',
       'Para-lama Diant. LE',
+      'Para-barro Diant. LD',
+      'Para-barro Diant. LE',
       'Painel frontal / mini-frente',
+      'Suporte do radiador',
+      'Defletor do radiador',
       'Radiador de água',
       'Condensador do ar-condicionado',
       'Eletroventilador / ventoinha',
       'Guia do para-choque Diant. LD',
       'Guia do para-choque Diant. LE',
-      'Emblema frontal da montadora'
+      'Emblema frontal da montadora',
+      'Trava do capô',
+      'Protetor de cárter / peito de aço',
+      'Buzina Diant.'
     ]
   },
   {
@@ -6600,7 +6713,15 @@ const VP_BASE_ZONES_PICAPE = [
       'Painel Tras. da cabine',
       'Assoalho da caçamba',
       'Emblema Tras. da montadora',
-      'Estribo Tras. de acesso'
+      'Estribo Tras. de acesso',
+      'Sensor de estacionamento Tras.',
+      'Câmera de ré',
+      'Luz de placa Tras. LD',
+      'Luz de placa Tras. LE',
+      'Fechadura da tampa da caçamba',
+      'Limitador da tampa da caçamba LD',
+      'Limitador da tampa da caçamba LE',
+      'Engate de reboque Tras.'
     ]
   },
   {
@@ -6622,7 +6743,11 @@ const VP_BASE_ZONES_PICAPE = [
       'Moldura / alargador de para-lama LD',
       'Friso da porta Diant. LD',
       'Maçaneta Diant. LD',
-      'Maçaneta Tras. LD'
+      'Maçaneta Tras. LD',
+      'Fechadura da porta Diant. LD',
+      'Fechadura da porta Tras. LD',
+      'Borracha da porta Diant. LD',
+      'Borracha da porta Tras. LD'
     ]
   },
   {
@@ -6644,7 +6769,11 @@ const VP_BASE_ZONES_PICAPE = [
       'Moldura / alargador de para-lama LE',
       'Friso da porta Diant. LE',
       'Maçaneta Diant. LE',
-      'Maçaneta Tras. LE'
+      'Maçaneta Tras. LE',
+      'Fechadura da porta Diant. LE',
+      'Fechadura da porta Tras. LE',
+      'Borracha da porta Diant. LE',
+      'Borracha da porta Tras. LE'
     ]
   },
   {
@@ -6676,16 +6805,25 @@ const VP_BASE_ZONES_PICAPE = [
       'Amortecedor Diant. LE',
       'Amortecedor Tras. LD',
       'Amortecedor Tras. LE',
+      'Coxim do amortecedor Diant. LD',
+      'Coxim do amortecedor Diant. LE',
       'Feixe de molas Tras. LD',
       'Feixe de molas Tras. LE',
       'Bandeja superior Diant. LD',
       'Bandeja superior Diant. LE',
       'Bandeja inferior Diant. LD',
       'Bandeja inferior Diant. LE',
+      'Bieleta da barra estabilizadora LD',
+      'Bieleta da barra estabilizadora LE',
+      'Terminal de direção LD',
+      'Terminal de direção LE',
       'Diferencial Tras. / cardan',
       'Caixa de direção hidráulica/elétrica',
       'Manga de eixo Diant. LD',
       'Manga de eixo Diant. LE',
+      'Disco de freio Diant. LD',
+      'Disco de freio Diant. LE',
+      'Pastilha de freio Diant.',
       'Roda Diant. LD',
       'Roda Diant. LE',
       'Roda Tras. LD',
@@ -6710,7 +6848,11 @@ const VP_BASE_ZONES_PICAPE = [
       'Vidro porta Tras. LE',
       'Bolsa do Airbag motorista (volante)',
       'Bolsa do Airbag passageiro (painel)',
-      'Painel de instrumentos / tabelier'
+      'Cinto de segurança Diant. LD',
+      'Cinto de segurança Diant. LE',
+      'Painel de instrumentos / tabelier',
+      'Forro de porta Diant. LD',
+      'Forro de porta Diant. LE'
     ]
   }
 ];
@@ -7067,29 +7209,23 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
     if (cloudData) {
       let hasChanges = false;
 
-      // 1. Merge de peças customizadas da nuvem
-      if (Array.isArray(cloudData.customParts)) {
+      // 1. Merge de peças customizadas da nuvem (se houver na nuvem)
+      if (Array.isArray(cloudData.customParts) && cloudData.customParts.length > 0) {
         cloudData.customParts.forEach(cloudPart => {
           if (!cloudPart || !cloudPart.name) return;
           const existsLocally = vpCustomPartsList.some(p => p.name.toLowerCase() === cloudPart.name.toLowerCase());
           if (!existsLocally) {
-            vpCustomPartsList.push(cloudPart);
+            vpCustomPartsList.push({
+              name: cloudPart.name,
+              zoneId: cloudPart.zoneId || 'dianteira',
+              vehicleType: cloudPart.vehicleType || 'all'
+            });
             hasChanges = true;
           }
         });
       }
 
-      // 2. Merge de peças deletadas
-      if (Array.isArray(cloudData.deletedParts)) {
-        cloudData.deletedParts.forEach(delName => {
-          if (delName && !vpDeletedPartsList.some(d => d.toLowerCase() === delName.toLowerCase())) {
-            vpDeletedPartsList.push(delName);
-            hasChanges = true;
-          }
-        });
-      }
-
-      // 3. Merge de renomeações
+      // 2. Merge de renomeações
       if (cloudData.renames && typeof cloudData.renames === 'object') {
         Object.keys(cloudData.renames).forEach(orig => {
           if (!vpCustomPartRenamesMap[orig]) {
@@ -7099,7 +7235,7 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
         });
       }
 
-      // 4. Merge de alterações de zona
+      // 3. Merge de alterações de zona
       if (cloudData.zoneOverrides && typeof cloudData.zoneOverrides === 'object') {
         Object.keys(cloudData.zoneOverrides).forEach(key => {
           if (!vpPartZoneOverridesMap[key]) {
@@ -7109,7 +7245,7 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
         });
       }
 
-      // 5. Merge de estatísticas de uso
+      // 4. Merge de estatísticas de uso
       if (cloudData.usageStats && typeof cloudData.usageStats === 'object') {
         Object.keys(cloudData.usageStats).forEach(k => {
           const cloudVal = cloudData.usageStats[k] || 0;
@@ -7139,7 +7275,7 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
       }
 
       if (showFeedback) {
-        alert('☁️ Catálogo online sincronizado com sucesso!');
+        alert('☁️ Catálogo online sincronizado com sucesso! Suas peças cadastradas estão salvas e seguras.');
       }
     } else {
       vpUpdateCloudIndicator('idle', 'Nuvem');
@@ -7324,41 +7460,41 @@ function vpClassifyPartCategory(item) {
   const zoneId = (item.zoneId || '').toLowerCase();
   const nameUpper = (item.name || item.rawName || '').toUpperCase();
 
-  // 1. DIANTEIRA EXPLÍCITA (peças frontais que possuem LD/LE continuam na Dianteira)
-  const isDiantExplicit = /\b(CAPO|CAPÔ|GRADE DIANT|GRADE FRONTAL|ALMA DO PARA-CHOQUE DIANT|ALMA DO PARACHOQUE DIANT|FAROL|FAROIS|FARÓIS|FAROL DE MILHA|PARA-LAMA DIANT|PARALAMA DIANT|PAINEL FRONTAL|MINI-FRENTE|MINI FRENTE|RADIADOR|CONDENSADOR|ELETROVENTILADOR|VENTOINHA|GUIA DO PARA-CHOQUE DIANT|GUIA DO PARACHOQUE DIANT|EMBLEMA FRONTAL|QUEBRA-SOL|TAPA-SOL|DEFLETOR DE AR|GUIDAO|GUIDÃO|GARFO DIANT|BENGALA|MESA SUPERIOR|MESA INFERIOR|PISCA DIANT|PARA-BRISA|PARABRISA)\b/i.test(nameUpper);
+  // 1. ZONA EXPLÍCITA (Garante que se a peça foi salva/designada para a zona, ela fique na aba certa)
+  if (zoneId === 'dianteira' || zoneId === 'dianteira_moto' || zoneId === 'cabine_dianteira') {
+    return 'DIANTEIRA';
+  }
+  if (zoneId === 'traseira' || zoneId === 'traseira_moto' || zoneId === 'traseira_cacamba' || zoneId === 'traseira_implemento') {
+    return 'TRASEIRA';
+  }
+  if (zoneId === 'lateral_dir' || zoneId === 'lateral_esq' || zoneId === 'portas_cabine') {
+    return 'LATERAIS';
+  }
 
+  // 2. DIANTEIRA EXPLÍCITA POR PALAVRA-CHAVE
+  const isDiantExplicit = /\b(CAPO|CAPÔ|GRADE|FRONTAL|FAROL|FAROIS|FARÓIS|MILHA|DRL|PARA-LAMA DIANT|PARALAMA DIANT|PARA-BARRO DIANT|PARABARRO DIANT|PAINEL FRONTAL|MINI-FRENTE|MINI FRENTE|RADIADOR|CONDENSADOR|ELETROVENTILADOR|VENTOINHA|QUEBRA-SOL|TAPA-SOL|DEFLETOR|GUIDAO|GUIDÃO|GARFO DIANT|BENGALA|MESA SUPERIOR|MESA INFERIOR|PISCA DIANT|PARA-BRISA|PARABRISA|BUZINA)\b/i.test(nameUpper);
   if (isDiantExplicit) {
     return 'DIANTEIRA';
   }
 
-  // 2. TRASEIRA EXPLÍCITA (peças traseiras que possuem LD/LE continuam na Traseira)
-  const isTrasExplicit = /\b(PORTA-MALAS|PORTA MALAS|TAMPA TRAS|TAMPA DA CACAMBA|TAMPA DA CAÇAMBA|PARA-CHOQUE TRAS|PARACHOQUE TRAS|ALMA DO PARA-CHOQUE TRAS|ALMA DO PARACHOQUE TRAS|LANTERNA TRAS|LANTERNAS TRAS|LANTERNA TAMPA|REFLETOR TRAS|PAINEL TRAS|ASSOALHO DO PORTA-MALAS|ASSOALHO DA CACAMBA|ASSOALHO DA CAÇAMBA|GUIA DO PARA-CHOQUE TRAS|GUIA DO PARACHOQUE TRAS|EMBLEMA TRAS|PROTETOR DE CACAMBA|PROTETOR DE CAÇAMBA|SANTO ANTONIO|SANTO ANTÔNIO|CAPOTA MARITIMA|CAPOTA MARÍTIMA|ESTRIBO TRAS|RABETA TRAS|ESCAPAMENTO|PONTEIRA|PROTETOR DO ESCAPAMENTO|BALANCA TRAS|BALANÇA TRAS|ALCA TRAS|ALÇA TRAS|FAIXAS REFLETIVAS|PORTAS TRAS DO BAU|PORTAS TRAS DO BAÚ|ENGATE DE REBOQUE|VIGIA|VIDRO TRAS)\b/i.test(nameUpper);
-
+  // 3. TRASEIRA EXPLÍCITA POR PALAVRA-CHAVE
+  const isTrasExplicit = /\b(PORTA-MALAS|PORTA MALAS|TAMPA TRAS|CAÇAMBA|CACAMBA|PARA-CHOQUE TRAS|PARACHOQUE TRAS|ALMA DO PARA-CHOQUE TRAS|ALMA DO PARACHOQUE TRAS|LANTERNA TRAS|LANTERNAS TRAS|LANTERNA TAMPA|REFLETOR TRAS|PAINEL TRAS|ASSOALHO DO PORTA-MALAS|ASSOALHO DA CACAMBA|ASSOALHO DA CAÇAMBA|PROTETOR DE CACAMBA|PROTETOR DE CAÇAMBA|SANTO ANTONIO|SANTO ANTÔNIO|CAPOTA MARITIMA|CAPOTA MARÍTIMA|ESTRIBO TRAS|RABETA|ESCAPAMENTO|PONTEIRA|PROTETOR DO ESCAPAMENTO|BALANCA|BALANÇA|ALCA TRAS|ALÇA TRAS|FAIXAS REFLETIVAS|PORTAS TRAS DO BAU|PORTAS TRAS DO BAÚ|ENGATE DE REBOQUE|VIGIA|VIDRO TRAS|SENSOR DE ESTACIONAMENTO|CÂMERA DE RÉ|CAMERA DE RE|AEROFÓLIO|BRAKE-LIGHT)\b/i.test(nameUpper);
   if (isTrasExplicit) {
     return 'TRASEIRA';
   }
 
-  // 3. LATERAIS: Portas, retrovisores, vidros de portas, caixas de ar/soleiras, colunas A/B/C, laterais traseiras, frisos, maçanetas, estribos laterais, spoilers/saias laterais, forros de portas, carenagens laterais
-  const isLateralZone = zoneId === 'lateral_dir' || zoneId === 'lateral_esq' || zoneId === 'portas_cabine';
-  const isLateralKeyword = /\b(PORTA|PORTAS|RETROVISOR|RETROVISORES|ESPELHO DO RETROVISOR|CAPA DO RETROVISOR|BRACO DO RETROVISOR|BRAÇO DO RETROVISOR|CAIXA DE AR|SOLEIRA|COLUNA A|COLUNA B|COLUNA C|LATERAL TRAS|LATERAL EXTERNA|FRISO DA PORTA|FRISO DE PORTA|MACANETA|MAÇANETA|ESTRIBO LATERAL|ESTRIBO DE ACESSO|MOLDURA \/ ALARGADOR|ALARGADOR DE PARA-LAMA|SPOILER \/ SAIA LATERAL|SAIA LATERAL|VIDRO DA PORTA|VIDRO PORTA|FORRO DE PORTA|CARENAGEM LATERAL|TAMPA LATERAL)\b/i.test(nameUpper);
-
-  if (isLateralKeyword || isLateralZone) {
+  // 4. LATERAIS
+  const isLateralKeyword = /\b(PORTA|PORTAS|RETROVISOR|RETROVISORES|ESPELHO|CAPA DO RETROVISOR|CAIXA DE AR|SOLEIRA|COLUNA A|COLUNA B|COLUNA C|LATERAL TRAS|LATERAL EXTERNA|FRISO DA PORTA|FRISO DE PORTA|MACANETA|MAÇANETA|FECHADURA|LIMITADOR|BORRACHA DA PORTA|PESTANA|ESTRIBO LATERAL|ESTRIBO DE ACESSO|MOLDURA \/ ALARGADOR|ALARGADOR DE PARA-LAMA|SPOILER|SAIA LATERAL|VIDRO DA PORTA|VIDRO PORTA|FORRO DE PORTA|CARENAGEM LATERAL|TAMPA LATERAL)\b/i.test(nameUpper);
+  if (isLateralKeyword) {
     return 'LATERAIS';
   }
 
-  // 4. DIANTEIRA GERAL
-  const isDianteiraZone = zoneId === 'dianteira' || zoneId === 'dianteira_moto' || zoneId === 'cabine_dianteira';
-  if (isDianteiraZone || /\b(DIANT|FRONTAL|DIANTEIR[OA])\b/i.test(nameUpper)) {
-    return 'DIANTEIRA';
-  }
+  // 5. CHECAGENS FINAIS
+  if (/\b(DIANT|FRONTAL|DIANTEIR[OA])\b/i.test(nameUpper)) return 'DIANTEIRA';
+  if (/\b(TRAS|TRASEIR[OA]|TRASEIRA)\b/i.test(nameUpper)) return 'TRASEIRA';
+  if (/\b(LD|LE|LATERAL|LADO)\b/i.test(nameUpper) && !/\b(FAROL|LANTERNA|PARA-LAMA|AMORTECEDOR|MOLA|DISCO|PINÇA)\b/i.test(nameUpper)) return 'LATERAIS';
 
-  // 5. TRASEIRA GERAL
-  const isTraseiraZone = zoneId === 'traseira' || zoneId === 'traseira_moto' || zoneId === 'traseira_cacamba' || zoneId === 'traseira_implemento';
-  if (isTraseiraZone || /\b(TRAS|TRASEIR[OA]|TRASEIRA)\b/i.test(nameUpper)) {
-    return 'TRASEIRA';
-  }
-
-  // 6. DEMAIS PEÇAS (Teto, Estrutura, Mecânica, Suspensão, Interior, Rodas, Pneus, Freios, etc.)
+  // 6. DEMAIS PEÇAS (Teto, Estrutura, Mecânica, Suspensão, Interior, Rodas, etc.)
   return 'DEMAIS';
 }
 
@@ -7872,7 +8008,8 @@ function vpRenderParts(filterQuery = '') {
   if (!listEl) return;
 
   const matchesVehicleType = (p) => {
-    return !p.vehicleType || p.vehicleType === 'all' || p.vehicleType === vpDetectedVehicleType;
+    // Peças customizadas adicionadas pelo usuário NUNCA devem sumir independente do tipo detectado
+    return true;
   };
 
   const sortPartsByUsage = (partList) => {
@@ -8192,7 +8329,10 @@ function vpRenderPartCardHtml(item) {
           ⭐
         </button>
         <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
-        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.78rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${vpEscapeHtml(item.name)}</span>
+        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.78rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          ${vpEscapeHtml(item.name)}
+          ${(vpCustomPartsList && vpCustomPartsList.some(cp => cp.name && cp.name.toLowerCase() === (item.name || '').toLowerCase())) ? '<span style="font-size: 0.60rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 4px; border-radius: 4px; margin-left: 3px; display: inline-block;">✨ Nova</span>' : ''}
+        </span>
         <button type="button" class="vp-btn-edit-name" title="Editar nome e zona da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')">✏️</button>
       </div>
 
@@ -8647,9 +8787,9 @@ window.vpSaveCustomPart = function(e) {
   const existingIdx = vpCustomPartsList.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
   if (existingIdx >= 0) {
     vpCustomPartsList[existingIdx].zoneId = zoneId;
-    vpCustomPartsList[existingIdx].vehicleType = vpDetectedVehicleType;
+    vpCustomPartsList[existingIdx].vehicleType = 'all';
   } else {
-    vpCustomPartsList.push({ name, zoneId, vehicleType: vpDetectedVehicleType });
+    vpCustomPartsList.push({ name, zoneId, vehicleType: 'all' });
   }
 
   // Se a ação for troca ou reparo, adiciona também à seleção da vistoria atual
@@ -8748,3 +8888,69 @@ document.addEventListener('visibilitychange', () => {
 });
 setInterval(refreshSupervisoesIfDayChanged, 60000);
 
+
+
+// BACKUP & RESTAURAÇÃO COMPLETA DO CATÁLOGO DE PEÇAS
+window.vpExportCatalogJson = function() {
+  try {
+    const data = {
+      app: 'Gestão de Vistorias',
+      exportDate: new Date().toISOString(),
+      customParts: vpCustomPartsList,
+      renames: vpCustomPartRenamesMap,
+      zoneOverrides: vpPartZoneOverridesMap,
+      deletedParts: vpDeletedPartsList,
+      usageStats: vpUsageStats
+    };
+    const jsonStr = JSON.stringify(data, null, 2);
+    const filename = 'backup_catalogo_pecas_' + new Date().toISOString().slice(0, 10) + '.json';
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToastNotification('Backup do catálogo de peças exportado com sucesso!', 3000);
+  } catch (err) {
+    alert('Erro ao exportar catálogo: ' + err.message);
+  }
+};
+
+window.vpImportCatalogJson = function() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        const parsed = JSON.parse(evt.target.result);
+        let importedCount = 0;
+        if (Array.isArray(parsed.customParts)) {
+          parsed.customParts.forEach(p => {
+            if (p && p.name && !vpCustomPartsList.some(cp => cp.name.toLowerCase() === p.name.toLowerCase())) {
+              vpCustomPartsList.push({ name: p.name, zoneId: p.zoneId || 'dianteira', vehicleType: 'all' });
+              importedCount++;
+            }
+          });
+        }
+        if (parsed.renames && typeof parsed.renames === 'object') {
+          Object.assign(vpCustomPartRenamesMap, parsed.renames);
+        }
+        if (parsed.zoneOverrides && typeof parsed.zoneOverrides === 'object') {
+          Object.assign(vpPartZoneOverridesMap, parsed.zoneOverrides);
+        }
+        vpSaveState(true);
+        vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+        alert('Sucesso! ' + importedCount + ' peças importadas e salvas com segurança no catálogo!');
+      } catch (err) {
+        alert('Erro ao importar arquivo de catálogo: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+};

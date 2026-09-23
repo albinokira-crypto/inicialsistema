@@ -640,15 +640,23 @@
                 <span id="vpVehicleBadge" style="font-size: 0.65rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 1px 5px; border-radius: 4px; display: inline-block;">Automóvel / SUV</span>
               </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0; flex-wrap: wrap;">
               <button type="button" id="vpCloudSyncBtn" onclick="vpSyncCatalogWithCloud(true)" title="Sincronizar catálogo com a nuvem online" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; font-size: 0.70rem; font-weight: 700; padding: 4px 6px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
                 <span id="vpCloudSyncIcon">☁️</span>
                 <span id="vpCloudSyncText">Nuvem</span>
               </button>
+              <button type="button" id="vpExportCatalogBtn" onclick="vpExportCatalogJson()" title="Salvar cópia de segurança do catálogo de peças" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; font-size: 0.70rem; font-weight: 700; padding: 4px 6px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+                <span>💾</span>
+                <span>Backup</span>
+              </button>
+              <button type="button" id="vpImportCatalogBtn" onclick="vpImportCatalogJson()" title="Restaurar peças do arquivo de backup" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; font-size: 0.70rem; font-weight: 700; padding: 4px 6px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+                <span>📥</span>
+                <span>Restaurar</span>
+              </button>
               <button type="button" onclick="vpOpenAddCustomModal()" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-size: 0.72rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; cursor: pointer;">
                 + Nova Peça
               </button>
-              <button type="button" onclick="closeVehiclePartsModal()" title="Salvar e fechar partes" style="background: #f1f5f9; border: none; font-size: 0.95rem; color: #64748b; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 6px;">
+              <button type="button" onclick="closeVehiclePartsModal()" title="Salvar e fechar partes" style="background: #f1f5f9; border: none; font-size: 0.95rem; color: #64748b; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 4px;">
                 ✕
               </button>
             </div>
