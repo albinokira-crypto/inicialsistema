@@ -1,13 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 
+function cleanPartDashes(name) {
+  if (!name || typeof name !== 'string') return '';
+  return name.replace(/\s*-\s*/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 // Arquivo de persistência secundária em disco (para servidor local ou containers que suportam escrita)
 const BACKUP_FILE = path.join('/tmp', 'gestao_catalog_cache.json');
 
 // Catálogo base de peças mais comuns cadastradas para vistorias (garante que nunca venha vazio se houver reinício da nuvem)
 const DEFAULT_PRELOADED_PARTS = [
-  { name: 'Para-barro Diant. LD', zoneId: 'dianteira', vehicleType: 'all' },
-  { name: 'Para-barro Diant. LE', zoneId: 'dianteira', vehicleType: 'all' },
+  { name: 'Para barro Diant. LD', zoneId: 'dianteira', vehicleType: 'all' },
+  { name: 'Para barro Diant. LE', zoneId: 'dianteira', vehicleType: 'all' },
   { name: 'Protetor de cárter / peito de aço', zoneId: 'dianteira', vehicleType: 'all' },
   { name: 'Suporte do radiador', zoneId: 'dianteira', vehicleType: 'all' },
   { name: 'Defletor do radiador', zoneId: 'dianteira', vehicleType: 'all' },
@@ -17,7 +22,7 @@ const DEFAULT_PRELOADED_PARTS = [
   { name: 'Câmera de ré', zoneId: 'traseira', vehicleType: 'all' },
   { name: 'Luz de placa Tras. LD', zoneId: 'traseira', vehicleType: 'all' },
   { name: 'Luz de placa Tras. LE', zoneId: 'traseira', vehicleType: 'all' },
-  { name: 'Fechadura da tampa do porta-malas', zoneId: 'traseira', vehicleType: 'all' },
+  { name: 'Fechadura da tampa do porta malas', zoneId: 'traseira', vehicleType: 'all' },
   { name: 'Amortecedor da tampa Tras. LD', zoneId: 'traseira', vehicleType: 'all' },
   { name: 'Amortecedor da tampa Tras. LE', zoneId: 'traseira', vehicleType: 'all' },
   { name: 'Fechadura da porta Diant. LD', zoneId: 'lateral_dir', vehicleType: 'all' },
@@ -66,6 +71,9 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'GET') {
+    if (Array.isArray(cachedCatalogData.customParts)) {
+      cachedCatalogData.customParts.forEach(p => { if (p && p.name) p.name = cleanPartDashes(p.name); });
+    }
     return res.status(200).json({
       success: true,
       data: cachedCatalogData
@@ -85,7 +93,7 @@ module.exports = async (req, res) => {
           // Merge seguro: nunca zera se já tivermos dados salvos
           const map = new Map();
           cachedCatalogData.customParts.forEach(p => { if (p && p.name) map.set(p.name.toLowerCase(), p); });
-          data.customParts.forEach(p => { if (p && p.name) map.set(p.name.toLowerCase(), p); });
+          data.customParts.forEach(p => { if (p && p.name) { p.name = cleanPartDashes(p.name); map.set(p.name.toLowerCase(), p); } });
           cachedCatalogData.customParts = Array.from(map.values());
         }
         if (Array.isArray(data.deletedParts)) {

@@ -3531,7 +3531,8 @@ function handleQuickAddOficinaSubmit(e) {
   if (e) e.preventDefault();
   const nameInput = document.getElementById('quickAddOficinaNameInput');
   const respInput = document.getElementById('quickAddOficinaResponsavelInput');
-  const name = nameInput ? nameInput.value.trim() : '';
+  const rawEnteredName = nameInput ? nameInput.value.trim() : '';
+  const name = vpCleanPartDashes(rawEnteredName);
   const resp = respInput ? respInput.value.trim() : '';
 
   if (!name) return;
@@ -6316,28 +6317,28 @@ const VP_BASE_ZONES_CAR = [
     icon: '🚗',
     parts: [
       'Capô do motor',
-      'Para-choque Diant.',
+      'Para choque Diant.',
       'Grade Diant.',
-      'Grade inferior do para-choque',
-      'Alma do para-choque Diant.',
+      'Grade inferior do para choque',
+      'Alma do para choque Diant.',
       'Farol Diant. LD',
       'Farol Diant. LE',
       'Farol de milha LD',
       'Farol de milha LE',
       'Farol auxiliar / DRL LD',
       'Farol auxiliar / DRL LE',
-      'Para-lama Diant. LD',
-      'Para-lama Diant. LE',
-      'Para-barro Diant. LD',
-      'Para-barro Diant. LE',
-      'Painel frontal / mini-frente',
+      'Para lama Diant. LD',
+      'Para lama Diant. LE',
+      'Para barro Diant. LD',
+      'Para barro Diant. LE',
+      'Painel frontal / mini frente',
       'Suporte do radiador',
       'Defletor do radiador',
       'Radiador de água',
-      'Condensador do ar-condicionado',
+      'Condensador do ar condicionado',
       'Eletroventilador / ventoinha',
-      'Guia do para-choque Diant. LD',
-      'Guia do para-choque Diant. LE',
+      'Guia do para choque Diant. LD',
+      'Guia do para choque Diant. LE',
       'Emblema frontal da montadora',
       'Trava / fecho do capô',
       'Vareta / amortecedor do capô',
@@ -6357,18 +6358,18 @@ const VP_BASE_ZONES_CAR = [
     name: 'Tras.',
     icon: '🚘',
     parts: [
-      'Tampa do porta-malas / Tras.',
-      'Para-choque Tras.',
-      'Saia / spoiler do para-choque Tras.',
-      'Alma do para-choque Tras.',
+      'Tampa do porta malas / Tras.',
+      'Para choque Tras.',
+      'Saia / spoiler do para choque Tras.',
+      'Alma do para choque Tras.',
       'Lanterna Tras. LD',
       'Lanterna Tras. LE',
       'Lanterna tampa Tras. LD',
       'Lanterna tampa Tras. LE',
       'Painel Tras.',
-      'Assoalho do porta-malas',
-      'Guia do para-choque Tras. LD',
-      'Guia do para-choque Tras. LE',
+      'Assoalho do porta malas',
+      'Guia do para choque Tras. LD',
+      'Guia do para choque Tras. LE',
       'Refletor Tras. LD',
       'Refletor Tras. LE',
       'Emblema Tras. da montadora',
@@ -6376,12 +6377,12 @@ const VP_BASE_ZONES_CAR = [
       'Câmera de ré',
       'Luz de placa Tras. LD',
       'Luz de placa Tras. LE',
-      'Fechadura da tampa do porta-malas',
+      'Fechadura da tampa do porta malas',
       'Amortecedor da tampa Tras. LD',
       'Amortecedor da tampa Tras. LE',
-      'Borracha de vedação do porta-malas',
-      'Forro da tampa do porta-malas',
-      'Aerofólio / brake-light Tras.',
+      'Borracha de vedação do porta malas',
+      'Forro da tampa do porta malas',
+      'Aerofólio / brake light Tras.',
       'Palheta / braço do limpador Tras.'
     ]
   },
@@ -6412,7 +6413,7 @@ const VP_BASE_ZONES_CAR = [
       'Borracha da porta Diant. LD',
       'Borracha da porta Tras. LD',
       'Pestana de vidro LD',
-      'Moldura do para-lama LD',
+      'Moldura do para lama LD',
       'Tampa do bocal de combustível'
     ]
   },
@@ -6443,7 +6444,7 @@ const VP_BASE_ZONES_CAR = [
       'Borracha da porta Diant. LE',
       'Borracha da porta Tras. LE',
       'Pestana de vidro LE',
-      'Moldura do para-lama LE'
+      'Moldura do para lama LE'
     ]
   },
   {
@@ -6465,7 +6466,7 @@ const VP_BASE_ZONES_CAR = [
       'Caixa de roda Diant. LE',
       'Caixa de roda Tras. LD',
       'Caixa de roda Tras. LE',
-      'Painel corta-fogo',
+      'Painel corta fogo',
       'Teto solar completo',
       'Vidro do teto solar',
       'Rack de teto / barras longitudinais LD',
@@ -6506,8 +6507,8 @@ const VP_BASE_ZONES_CAR = [
       'Barra axial de direção LE',
       'Manga de eixo Diant. LD',
       'Manga de eixo Diant. LE',
-      'Semi-eixo Diant. LD',
-      'Semi-eixo Diant. LE',
+      'Semi eixo Diant. LD',
+      'Semi eixo Diant. LE',
       'Cárter de óleo do motor',
       'Coxim do motor LD',
       'Coxim do motor LE',
@@ -6538,7 +6539,7 @@ const VP_BASE_ZONES_CAR = [
     name: 'Vidros & Interior',
     icon: '🪟',
     parts: [
-      'Vidro para-brisa Diant.',
+      'Vidro para brisa Diant.',
       'Vidro Tras. / vigia',
       'Vidro porta Diant. LD',
       'Vidro porta Diant. LE',
@@ -6559,8 +6560,8 @@ const VP_BASE_ZONES_CAR = [
       'Forro de porta Tras. LD',
       'Forro de porta Tras. LE',
       'Forro do teto',
-      'Quebra-sol LD',
-      'Quebra-sol LE',
+      'Quebra sol LD',
+      'Quebra sol LE',
       'Retrovisor interno',
       'Central multimídia / rádio',
       'Console central com apoio de braço',
@@ -6585,7 +6586,7 @@ const VP_BASE_ZONES_MOTO = [
       'Retrovisor LD',
       'Retrovisor LE',
       'Painel de instrumentos digital/analógico',
-      'Para-lama Diant.',
+      'Para lama Diant.',
       'Garfo Diant. / bengala LD',
       'Garfo Diant. / bengala LE',
       'Mesa superior e inferior da direção',
@@ -6620,7 +6621,7 @@ const VP_BASE_ZONES_MOTO = [
       'Rabeta Tras. LE',
       'Rabeta Tras. Central',
       'Lanterna Tras.',
-      'Suporte de placa / para-lama Tras.',
+      'Suporte de placa / para lama Tras.',
       'Pisca Tras. LD',
       'Pisca Tras. LE',
       'Escapamento / ponteira',
@@ -6668,28 +6669,28 @@ const VP_BASE_ZONES_PICAPE = [
     icon: '🚗',
     parts: [
       'Capô do motor',
-      'Para-choque Diant.',
+      'Para choque Diant.',
       'Grade Diant.',
-      'Grade inferior do para-choque',
-      'Alma do para-choque Diant.',
+      'Grade inferior do para choque',
+      'Alma do para choque Diant.',
       'Farol Diant. LD',
       'Farol Diant. LE',
       'Farol de milha LD',
       'Farol de milha LE',
       'Farol auxiliar / DRL LD',
       'Farol auxiliar / DRL LE',
-      'Para-lama Diant. LD',
-      'Para-lama Diant. LE',
-      'Para-barro Diant. LD',
-      'Para-barro Diant. LE',
-      'Painel frontal / mini-frente',
+      'Para lama Diant. LD',
+      'Para lama Diant. LE',
+      'Para barro Diant. LD',
+      'Para barro Diant. LE',
+      'Painel frontal / mini frente',
       'Suporte do radiador',
       'Defletor do radiador',
       'Radiador de água',
-      'Condensador do ar-condicionado',
+      'Condensador do ar condicionado',
       'Eletroventilador / ventoinha',
-      'Guia do para-choque Diant. LD',
-      'Guia do para-choque Diant. LE',
+      'Guia do para choque Diant. LD',
+      'Guia do para choque Diant. LE',
       'Emblema frontal da montadora',
       'Trava do capô',
       'Protetor de cárter / peito de aço',
@@ -6703,8 +6704,8 @@ const VP_BASE_ZONES_PICAPE = [
     parts: [
       'Tampa da caçamba Tras.',
       'Maçaneta da tampa Tras.',
-      'Para-choque Tras.',
-      'Alma do para-choque Tras.',
+      'Para choque Tras.',
+      'Alma do para choque Tras.',
       'Lanterna Tras. LD',
       'Lanterna Tras. LE',
       'Protetor de caçamba plástico',
@@ -6740,7 +6741,7 @@ const VP_BASE_ZONES_PICAPE = [
       'Coluna B central LD',
       'Coluna C Tras. LD',
       'Lateral externa da caçamba LD',
-      'Moldura / alargador de para-lama LD',
+      'Moldura / alargador de para lama LD',
       'Friso da porta Diant. LD',
       'Maçaneta Diant. LD',
       'Maçaneta Tras. LD',
@@ -6766,7 +6767,7 @@ const VP_BASE_ZONES_PICAPE = [
       'Coluna B central LE',
       'Coluna C Tras. LE',
       'Lateral externa da caçamba LE',
-      'Moldura / alargador de para-lama LE',
+      'Moldura / alargador de para lama LE',
       'Friso da porta Diant. LE',
       'Maçaneta Diant. LE',
       'Maçaneta Tras. LE',
@@ -6840,7 +6841,7 @@ const VP_BASE_ZONES_PICAPE = [
     name: 'Vidros & Interior',
     icon: '🪟',
     parts: [
-      'Vidro para-brisa Diant.',
+      'Vidro para brisa Diant.',
       'Vidro Tras. da cabine / vigia',
       'Vidro porta Diant. LD',
       'Vidro porta Diant. LE',
@@ -6866,18 +6867,18 @@ const VP_BASE_ZONES_CAMINHAO = [
       'Capô frontal / tampa basculante',
       'Grade frontal superior',
       'Grade frontal inferior',
-      'Para-choque Diant. central',
-      'Ponteira do para-choque Diant. LD',
-      'Ponteira do para-choque Diant. LE',
-      'Alma / travessa do para-choque',
+      'Para choque Diant. central',
+      'Ponteira do para choque Diant. LD',
+      'Ponteira do para choque Diant. LE',
+      'Alma / travessa do para choque',
       'Farol Diant. principal LD',
       'Farol Diant. principal LE',
       'Farol de milha / auxiliar LD',
       'Farol de milha / auxiliar LE',
       'Lanterna de seta Diant. LD',
       'Lanterna de seta Diant. LE',
-      'Para-brisa Diant.',
-      'Quebra-sol externo (tapa-sol teto)',
+      'Para brisa Diant.',
+      'Quebra sol externo (tapa sol teto)',
       'Lanterna três marias / luz de teto',
       'Defletor de ar do teto (aerofólio)',
       'Defletor de ar lateral da cabine LD',
@@ -6900,10 +6901,10 @@ const VP_BASE_ZONES_CAMINHAO = [
       'Braço do retrovisor LE',
       'Degraus / estribo de acesso LD',
       'Degraus / estribo de acesso LE',
-      'Para-lama Diant. da cabine LD',
-      'Para-lama Diant. da cabine LE',
-      'Extensão do para-lama LD',
-      'Extensão do para-lama LE',
+      'Para lama Diant. da cabine LD',
+      'Para lama Diant. da cabine LE',
+      'Extensão do para lama LD',
+      'Extensão do para lama LE',
       'Vidro da porta LD',
       'Vidro da porta LE',
       'Maçaneta da porta LD',
@@ -6963,15 +6964,15 @@ const VP_BASE_ZONES_CAMINHAO = [
     name: 'Tras. & Implemento',
     icon: '📦',
     parts: [
-      'Para-choque Tras. homologado',
+      'Para choque Tras. homologado',
       'Faixas refletivas de segurança',
       'Lanterna Tras. LD completa',
       'Lanterna Tras. LE completa',
       'Suporte da placa Tras. com luz',
-      'Para-barro de borracha Tras. LD',
-      'Para-barro de borracha Tras. LE',
-      'Para-lama Tras. envolvente LD',
-      'Para-lama Tras. envolvente LE',
+      'Para barro de borracha Tras. LD',
+      'Para barro de borracha Tras. LE',
+      'Para lama Tras. envolvente LD',
+      'Para lama Tras. envolvente LE',
       'Mesa da quinta roda',
       'Quinta roda / engate cavalo mecânico',
       'Assoalho da caçamba / baú / carroceria',
@@ -7020,6 +7021,11 @@ const VP_CLOUD_ENDPOINTS = [
   '/api/catalog',
   'https://gestao-vistoria-inicial.vercel.app/api/catalog'
 ];
+function vpCleanPartDashes(name) {
+  if (!name || typeof name !== 'string') return '';
+  return name.replace(/\s*-\s*/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 let vpSelectedPartsMap = new Map(); // key = displayName -> { name, rawName, zoneId, zoneName, action: 'troca'|'reparo', obs: '' }
 let vpCustomPartsList = [];
 let vpCustomPartRenamesMap = {};
@@ -7065,15 +7071,34 @@ function vpUpdateCloudIndicator(status, text) {
 function vpLoadState() {
   try {
     const savedCustom = getSafeStorage('mobile_parts_custom', null);
-    if (savedCustom && Array.isArray(savedCustom)) vpCustomPartsList = savedCustom;
+    if (savedCustom && Array.isArray(savedCustom)) {
+      vpCustomPartsList = savedCustom.map(p => {
+        if (!p || !p.name) return p;
+        return Object.assign({}, p, { name: vpCleanPartDashes(p.name) });
+      });
+    }
     const savedRenames = getSafeStorage('mobile_parts_renames', null);
-    if (savedRenames && typeof savedRenames === 'object') vpCustomPartRenamesMap = savedRenames;
+    if (savedRenames && typeof savedRenames === 'object') {
+      const cleanRenames = {};
+      Object.entries(savedRenames).forEach(([k, v]) => {
+        cleanRenames[vpCleanPartDashes(k)] = vpCleanPartDashes(v);
+      });
+      vpCustomPartRenamesMap = cleanRenames;
+    }
     const savedZoneOverrides = getSafeStorage('mobile_parts_zone_overrides', null);
     if (savedZoneOverrides && typeof savedZoneOverrides === 'object') vpPartZoneOverridesMap = savedZoneOverrides;
     const savedDeleted = getSafeStorage('mobile_parts_deleted', null);
-    if (savedDeleted && Array.isArray(savedDeleted)) vpDeletedPartsList = savedDeleted;
+    if (savedDeleted && Array.isArray(savedDeleted)) {
+      vpDeletedPartsList = savedDeleted.map(d => vpCleanPartDashes(d));
+    }
     const savedStats = getSafeStorage('mobile_parts_usage_stats', null);
-    if (savedStats && typeof savedStats === 'object') vpUsageStats = savedStats;
+    if (savedStats && typeof savedStats === 'object') {
+      const cleanStats = {};
+      Object.entries(savedStats).forEach(([k, v]) => {
+        cleanStats[vpCleanPartDashes(k)] = v;
+      });
+      vpUsageStats = cleanStats;
+    }
   } catch(e) {}
 }
 
@@ -7544,7 +7569,7 @@ window.openVehiclePartsForVistoriaId = function(id) {
     if (!text || typeof text !== 'string') return;
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     lines.forEach(line => {
-      let name = line;
+      let name = vpCleanPartDashes(line);
       let obs = '';
       const match = line.match(/^(.*?)\s*\((.*?)\)$/);
       if (match) {
@@ -7625,7 +7650,7 @@ window.openVehiclePartsModal = function() {
       const trimmed = line.trim();
       if (!trimmed) return;
       const match = trimmed.match(/^(.*?)\s*\((.*?)\)$/);
-      const name = match ? match[1].trim() : trimmed;
+      const name = vpCleanPartDashes(match ? match[1].trim() : trimmed);
       const obs = match ? match[2].trim() : '';
       vpSelectedPartsMap.set(name, {
         name: name,
@@ -7643,7 +7668,7 @@ window.openVehiclePartsModal = function() {
         const trimmed = line.trim();
         if (!trimmed) return;
         const match = trimmed.match(/^(.*?)\s*\((.*?)\)$/);
-        const name = match ? match[1].trim() : trimmed;
+        const name = vpCleanPartDashes(match ? match[1].trim() : trimmed);
         const obs = match ? match[2].trim() : '';
         vpSelectedPartsMap.set(name, {
           name: name,
@@ -7662,7 +7687,7 @@ window.openVehiclePartsModal = function() {
         const trimmed = line.trim();
         if (!trimmed) return;
         const match = trimmed.match(/^(.*?)\s*\((.*?)\)$/);
-        const name = match ? match[1].trim() : trimmed;
+        const name = vpCleanPartDashes(match ? match[1].trim() : trimmed);
         const obs = match ? match[2].trim() : '';
         vpSelectedPartsMap.set(name, {
           name: name,
@@ -7922,11 +7947,11 @@ window.vpToggleViewAllZones = function() {
 };
 
 const VP_DEFAULT_POPULAR_KEYWORDS = [
-  'farol', 'para-choque', 'parachoque', 'para-lama', 'paralama', 'capô', 'capo',
+  'farol', 'para choque', 'parachoque', 'para-choque', 'para lama', 'paralama', 'para-lama', 'capô', 'capo',
   'porta dianteira', 'porta traseira', 'porta', 'retrovisor', 'lanterna', 'para-brisa',
-  'parabrisa', 'grade', 'tampa traseira', 'tampa do porta', 'painel frontal', 'alma do para',
+  'para brisa', 'parabrisa', 'para-brisa', 'grade', 'tampa traseira', 'tampa do porta', 'painel frontal', 'alma do para',
   'radiador', 'amortecedor', 'balança', 'bandeja', 'bieleta', 'terminal', 'caixa de roda',
-  'para-barro', 'parabarro', 'espelho', 'vidro'
+  'para barro', 'parabarro', 'para-barro', 'espelho', 'vidro'
 ];
 
 function vpGetFavoriteParts() {
@@ -7934,7 +7959,8 @@ function vpGetFavoriteParts() {
     const raw = localStorage.getItem('vp_favorite_parts');
     if (!raw) return new Set();
     const arr = JSON.parse(raw);
-    return new Set(Array.isArray(arr) ? arr : []);
+    const cleanedArr = (Array.isArray(arr) ? arr : []).map(p => vpCleanPartDashes(p));
+    return new Set(cleanedArr);
   } catch(e) {
     return new Set();
   }
@@ -8077,10 +8103,31 @@ function vpRenderParts(filterQuery = '') {
 
   // 3. BUSCA RÁPIDA POR TEXTO (QUANDO O USUÁRIO DIGITA NO CAMPO DE BUSCA)
   if (filterQuery && filterQuery.trim()) {
-    const q = filterQuery.trim().toLowerCase();
+    const rawQ = filterQuery.trim();
+    const normalizeSearch = (s) => (s || '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[-_\/]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const qNormalized = normalizeSearch(rawQ);
+    const qTokens = qNormalized.split(' ').filter(Boolean);
+    const qCompact = qNormalized.replace(/\s+/g, '');
+
     const matching = allParts.filter(p => {
-      return (p.name && p.name.toLowerCase().includes(q)) || 
-             (p.rawName && p.rawName.toLowerCase().includes(q));
+      const nameNorm = normalizeSearch(p.name);
+      const rawNorm = normalizeSearch(p.rawName);
+      const nameCompact = nameNorm.replace(/\s+/g, '');
+      const rawCompact = rawNorm.replace(/\s+/g, '');
+
+      // Correspondência compacta (ex: 'parachoque' encontra 'para choque' e vice-versa)
+      if (qCompact && (nameCompact.includes(qCompact) || rawCompact.includes(qCompact))) return true;
+
+      // Correspondência por tokens (todas as palavras digitadas no termo de busca devem existir no nome da peça)
+      if (qTokens.length > 0 && qTokens.every(tok => nameNorm.includes(tok) || rawNorm.includes(tok))) return true;
+
+      return false;
     });
 
     if (matching.length === 0) {
@@ -8591,7 +8638,8 @@ window.vpSaveEditPartName = function(e) {
   const nameInput = document.getElementById('vpEditNameInput');
 
   const rawName = origInput ? origInput.value.trim() : '';
-  const newName = nameInput ? nameInput.value.trim() : '';
+  const rawEntered = nameInput ? nameInput.value.trim() : '';
+  const newName = vpCleanPartDashes(rawEntered);
 
   if (!rawName || !newName) return;
 
