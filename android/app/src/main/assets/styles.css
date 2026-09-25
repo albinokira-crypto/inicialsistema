@@ -2275,6 +2275,87 @@ html, body {
   box-shadow: 0 1px 3px rgba(37, 99, 235, 0.15) !important;
 }
 
+/* Estilização Base de Peças do Veículo (Tema Original / Padrão) */
+.vp-part-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.vp-part-card.selected-troca {
+  background: #fef2f2 !important;
+  border-color: #dc2626 !important;
+}
+.vp-part-card.selected-reparo {
+  background: #eff6ff !important;
+  border-color: #0284c7 !important;
+}
+.vp-part-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.vp-zone-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #475569;
+}
+.vp-zone-btn.active.vp-zone-pecas {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+.vp-zone-btn.active.vp-zone-fav {
+  background: #fefce8;
+  border-color: #eab308;
+  color: #854d0e;
+}
+.vp-zone-counter {
+  background: #f1f5f9;
+  color: #475569;
+}
+.vp-active-zone-header {
+  background: #f8fafc;
+  border-left: 3px solid #0284c7;
+}
+.vp-active-zone-title {
+  color: #1e293b;
+}
+.vp-active-zone-count {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.vp-pinned-section {
+  background: #fef2f2;
+  border: 1.5px dashed #f87171;
+}
+.vp-pinned-title {
+  color: #991b1b;
+}
+.vp-pinned-badge {
+  background: #dc2626;
+  color: #ffffff;
+}
+
 /* ==========================================================================
    SISTEMA MULTI-TEMAS E SELETOR DE MODELOS VISUAIS (5 MODELOS)
    ========================================================================== */
@@ -2347,11 +2428,17 @@ html, body {
 
 /* ==========================================================================
    RESET E TRATAMENTO GLOBAL PARA QUALQUER TEMA ESCURO/FUTURISTA
+/* ==========================================================================
+   SISTEMA DE TEMAS VISUAIS FUTURÍSTICOS (MODAL SELETOR DE TEMAS)
+   5 OPÇÕES: Original, Cyber-HUD, Tactile 3D, Cyber-Glass, Fusion 3D
    ========================================================================== */
 html[data-theme]:not([data-theme="original"]) body {
   min-height: 100vh;
 }
 
+/* --------------------------------------------------------------------------
+   REGRAS GERAIS DE ALTO CONTRASTE E NEUTRALIZAÇÃO PARA TEMAS ESCUROS
+   -------------------------------------------------------------------------- */
 /* Neutralização de textos escuros inline para visual legível */
 html[data-theme]:not([data-theme="original"]) [style*="color: #0f172a"],
 html[data-theme]:not([data-theme="original"]) [style*="color: #1e3a8a"],
@@ -2368,7 +2455,35 @@ html[data-theme]:not([data-theme="original"]) [style*="color: #64748b"] {
   color: #94a3b8 !important;
 }
 
-/* Containers com background inline branco herdam o fundo do card pai */
+/* Labels e Títulos de Formulário com Alto Contraste */
+html[data-theme]:not([data-theme="original"]) label,
+html[data-theme]:not([data-theme="original"]) form label,
+html[data-theme]:not([data-theme="original"]) .status-label,
+html[data-theme]:not([data-theme="original"]) .form-label,
+html[data-theme]:not([data-theme="original"]) label span,
+html[data-theme]:not([data-theme="original"]) .field-note,
+html[data-theme]:not([data-theme="original"]) .eyebrow {
+  color: #f1f5f9 !important;
+  font-weight: 700 !important;
+}
+
+/* Inputs, Selects e Textareas nos temas escuros */
+html[data-theme]:not([data-theme="original"]) input,
+html[data-theme]:not([data-theme="original"]) select,
+html[data-theme]:not([data-theme="original"]) textarea {
+  color: #ffffff !important;
+}
+html[data-theme]:not([data-theme="original"]) input::placeholder,
+html[data-theme]:not([data-theme="original"]) textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Inversão da seta do custom-select para visual escuro */
+html[data-theme]:not([data-theme="original"]) .custom-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+}
+
+/* Cartões com background inline branco herdam transparência ou cor escura */
 html[data-theme]:not([data-theme="original"]) div[style*="background: white"]:not(button):not(input):not(.action-btn),
 html[data-theme]:not([data-theme="original"]) div[style*="background: #ffffff"]:not(button):not(input):not(.action-btn),
 html[data-theme]:not([data-theme="original"]) div[style*="background: #f8fafc"]:not(button):not(input):not(.action-btn),
@@ -2380,6 +2495,38 @@ html[data-theme]:not([data-theme="original"]) [style*="border: 1px solid #bfdbfe
 html[data-theme]:not([data-theme="original"]) [style*="border: 1px solid #d7e2f0"],
 html[data-theme]:not([data-theme="original"]) [style*="border: 1.5px solid #cbd5e1"] {
   border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Badges e Títulos do Veículo */
+html[data-theme]:not([data-theme="original"]) .form-title-wrapper {
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.14) !important;
+}
+html[data-theme]:not([data-theme="original"]) .form-title-status-indicator {
+  color: #f8fafc !important;
+}
+html[data-theme]:not([data-theme="original"]) .form-title-day-badge {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+html[data-theme]:not([data-theme="original"]) .plate-badge,
+html[data-theme]:not([data-theme="original"]) .compact-plate-badge {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+}
+html[data-theme]:not([data-theme="original"]) .plate-badge-text {
+  color: #ffffff !important;
+}
+html[data-theme]:not([data-theme="original"]) .item-details .item-provider {
+  color: #f8fafc !important;
+}
+html[data-theme]:not([data-theme="original"]) .item-details .item-meta {
+  color: #cbd5e1 !important;
+}
+html[data-theme]:not([data-theme="original"]) .item-details .item-value {
+  color: #38bdf8 !important;
 }
 
 /* Modal Seletor de Temas nos Temas Escuros */
@@ -2402,11 +2549,11 @@ html[data-theme]:not([data-theme="original"]) .theme-choice-card p {
   color: #94a3b8 !important;
 }
 
-/* Tabelas e Itens Gerais */
+/* Tabelas e Relatórios */
 html[data-theme]:not([data-theme="original"]) table,
 html[data-theme]:not([data-theme="original"]) th,
 html[data-theme]:not([data-theme="original"]) td {
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 html[data-theme]:not([data-theme="original"]) .report-table th {
   background: rgba(15, 23, 42, 0.85) !important;
@@ -2414,6 +2561,261 @@ html[data-theme]:not([data-theme="original"]) .report-table th {
 }
 html[data-theme]:not([data-theme="original"]) .report-table td {
   color: #f1f5f9 !important;
+}
+
+/* --------------------------------------------------------------------------
+   ESTILIZAÇÃO GERAL DO MÓDULO DE PARTES DO VEÍCULO (#vehiclePartsModal)
+   Garante 100% de contraste, cards escuros e nomes de peças visíveis
+   -------------------------------------------------------------------------- */
+html[data-theme]:not([data-theme="original"]) .vp-modal-shell {
+  background: #0b111e !important;
+  color: #f8fafc !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-modal-header {
+  background: #111827 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-header-title {
+  color: #ffffff !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-header-badge {
+  background: rgba(37, 99, 235, 0.25) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(96, 165, 250, 0.3) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-btn-close-modal {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-type-tabs-container {
+  background: #1a2233 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-type-tab-btn {
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  font-weight: 700 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-type-tab-btn.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.5) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-transfer-btn {
+  background: #1e293b !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #e2e8f0 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-transfer-btn.active {
+  background: rgba(37, 99, 235, 0.3) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-custom-category-label {
+  background: #1e293b !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #e2e8f0 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-custom-category-label.active,
+html[data-theme]:not([data-theme="original"]) .vp-custom-category-label:has(input:checked) {
+  background: rgba(37, 99, 235, 0.3) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-action-btn {
+  background: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #e2e8f0 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-btn-cloud {
+  background: rgba(22, 163, 74, 0.2) !important;
+  border-color: #22c55e !important;
+  color: #4ade80 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-btn-new-part {
+  background: #2563eb !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-search-input {
+  background: #0d1524 !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+}
+
+/* Zonas de Categoria (Peças do veículo / Favoritas) */
+html[data-theme]:not([data-theme="original"]) .vp-zone-btn {
+  background: #151d2a !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.14) !important;
+  color: #e2e8f0 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-zone-btn .vp-zone-btn-title {
+  color: #f1f5f9 !important;
+  font-weight: 800 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-zone-btn .vp-zone-counter {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-zone-btn.active.vp-zone-pecas {
+  border-color: #3b82f6 !important;
+  background: rgba(37, 99, 235, 0.22) !important;
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.3) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-zone-btn.active.vp-zone-fav {
+  border-color: #eab308 !important;
+  background: rgba(234, 179, 8, 0.22) !important;
+  box-shadow: 0 0 12px rgba(234, 179, 8, 0.3) !important;
+}
+
+/* Cabeçalho da Zona Ativa */
+html[data-theme]:not([data-theme="original"]) .vp-active-zone-header {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border-left: 4px solid #38bdf8 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-active-zone-title {
+  color: #f8fafc !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-active-zone-count {
+  background: #0f172a !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Seção Fixada no Topo (Selecionadas nesta Vistoria) */
+html[data-theme]:not([data-theme="original"]) .vp-pinned-section {
+  background: rgba(220, 38, 38, 0.14) !important;
+  border: 1.5px dashed #ef4444 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-pinned-title {
+  color: #fca5a5 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-pinned-badge {
+  background: #7f1d1d !important;
+  color: #ffffff !important;
+}
+
+/* Card Individual de Peça: Fundo escuro com alto contraste */
+html[data-theme]:not([data-theme="original"]) .vp-part-card {
+  background: #141c2b !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 8px !important;
+  padding: 6px 6px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-part-card.selected-troca {
+  background: rgba(220, 38, 38, 0.22) !important;
+  border: 2px solid #ef4444 !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.35) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-part-card.selected-reparo {
+  background: rgba(2, 132, 199, 0.22) !important;
+  border: 2px solid #38bdf8 !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-part-title {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 0.82rem !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-badge-nova {
+  background: rgba(34, 197, 94, 0.25) !important;
+  color: #4ade80 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-btn-delete-part {
+  color: #f87171 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-btn-edit-name {
+  color: #94a3b8 !important;
+}
+
+/* Botões de Ação na Peça (Trocar / Reparar / Obs) */
+html[data-theme]:not([data-theme="original"]) .vp-btn-action {
+  background: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #e2e8f0 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-btn-action.btn-trocar {
+  color: #fca5a5 !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-btn-action.btn-trocar.active {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.5) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-btn-action.btn-reparar {
+  color: #7dd3fc !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-btn-action.btn-reparar.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.5) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-btn-action.btn-obs {
+  color: #94a3b8 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-btn-action.btn-obs.active,
+html[data-theme]:not([data-theme="original"]) .vp-btn-action.btn-obs.has-obs {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.4) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-inline-obs-box {
+  background: #0f172a !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Dock Flutuante Inferior de Peças */
+html[data-theme]:not([data-theme="original"]) .vp-dock-bar {
+  background: #111827 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.5) !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-dock-trocas {
+  background: rgba(220, 38, 38, 0.22) !important;
+  border: 1px solid #ef4444 !important;
+  color: #fca5a5 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-dock-reparos {
+  background: rgba(2, 132, 199, 0.22) !important;
+  border: 1px solid #38bdf8 !important;
+  color: #7dd3fc !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-dock-camera-btn {
+  background: #1e293b !important;
+  border: 1px solid #38bdf8 !important;
+  color: #38bdf8 !important;
+}
+html[data-theme]:not([data-theme="original"]) .vp-dock-concluir-btn {
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* Modais Secundários (Revisão, Editar Peça, Cadastrar Nova Peça, Report Preview) */
+html[data-theme]:not([data-theme="original"]) #vpReviewSheetModal > div,
+html[data-theme]:not([data-theme="original"]) #vpEditPartModal .photo-modal,
+html[data-theme]:not([data-theme="original"]) #vpAddCustomModal .photo-modal,
+html[data-theme]:not([data-theme="original"]) #stageManagerModal .photo-modal,
+html[data-theme]:not([data-theme="original"]) #reportPreviewModal .photo-modal {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+}
+html[data-theme]:not([data-theme="original"]) #reportPreviewContent {
+  background: #0b111e !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.16) !important;
+  color: #f8fafc !important;
 }
 
 
@@ -2466,7 +2868,15 @@ html[data-theme="cyber-hud"] .eyebrow {
   letter-spacing: 1px !important;
 }
 
-/* BOTÕES GERAIS NO CYBER-HUD: Ângulo Tech, Fonte Monospace, Bordas Neon */
+html[data-theme="cyber-hud"] label,
+html[data-theme="cyber-hud"] .status-label,
+html[data-theme="cyber-hud"] .form-label {
+  color: #00f0ff !important;
+  font-family: monospace, ui-monospace, sans-serif !important;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.4) !important;
+}
+
+/* BOTÕES GERAIS NO CYBER-HUD */
 html[data-theme="cyber-hud"] button,
 html[data-theme="cyber-hud"] .btn,
 html[data-theme="cyber-hud"] .primary-btn,
@@ -2476,6 +2886,7 @@ html[data-theme="cyber-hud"] .action-btn,
 html[data-theme="cyber-hud"] .menu-btn,
 html[data-theme="cyber-hud"] .tab-btn,
 html[data-theme="cyber-hud"] .type-btn,
+html[data-theme="cyber-hud"] .insurer-btn,
 html[data-theme="cyber-hud"] .theme-trigger-btn {
   font-family: monospace, ui-monospace, sans-serif !important;
   font-weight: 800 !important;
@@ -2486,11 +2897,12 @@ html[data-theme="cyber-hud"] .theme-trigger-btn {
   transition: all 0.1s ease !important;
 }
 
-/* Botões Primários e Salvamento Cyber-HUD */
+/* Botões Primários Cyber-HUD */
 html[data-theme="cyber-hud"] .primary-btn,
 html[data-theme="cyber-hud"] #saveVisitButton,
 html[data-theme="cyber-hud"] #saveSupervisaoButton,
-html[data-theme="cyber-hud"] #submitPasteBackupLoginBtn,
+html[data-theme="cyber-hud"] #sharePdfButton,
+html[data-theme="cyber-hud"] #shareSupervisaoTextButton,
 html[data-theme="cyber-hud"] button[type="submit"] {
   background: linear-gradient(180deg, rgba(0, 240, 255, 0.4) 0%, rgba(0, 100, 200, 0.8) 100%) !important;
   color: #00f0ff !important;
@@ -2506,12 +2918,13 @@ html[data-theme="cyber-hud"] button[type="submit"]:active {
   box-shadow: 0 0 8px rgba(0, 240, 255, 0.2), 0 1px 0 #004466 !important;
 }
 
-/* Botões Secundários / Navegação Cyber-HUD */
+/* Botões Secundários Cyber-HUD */
 html[data-theme="cyber-hud"] .ghost-btn,
 html[data-theme="cyber-hud"] #systemSettingsBtn,
 html[data-theme="cyber-hud"] #backToMenuButton,
 html[data-theme="cyber-hud"] .theme-trigger-btn,
 html[data-theme="cyber-hud"] .cancel-btn,
+html[data-theme="cyber-hud"] #copySupervisaoTextButton,
 html[data-theme="cyber-hud"] #closePhotoManagerButton {
   background: #090e17 !important;
   border: 1.5px solid #00f0ff !important;
@@ -2527,20 +2940,84 @@ html[data-theme="cyber-hud"] .theme-trigger-btn:active {
   box-shadow: 0 0 4px rgba(0, 240, 255, 0.15), 0 1px 0 #00334d !important;
 }
 
-/* BOTÕES DE AÇÃO (.action-btn) EM TODO O SISTEMA */
+/* Abas de Tipo de Vistoria (#vistoriaTypeTabs .tab-btn) Cyber-HUD */
+html[data-theme="cyber-hud"] #vistoriaTypeTabs .tab-btn {
+  background: #080d16 !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.5) !important;
+  box-shadow: 0 2px 0 #002b40 !important;
+}
+html[data-theme="cyber-hud"] #vistoriaTypeTabs .tab-btn .tab-btn-icon-box {
+  background: #050811 !important;
+  border: 1px solid rgba(0, 240, 255, 0.3) !important;
+}
+html[data-theme="cyber-hud"] #vistoriaTypeTabs .tab-btn .tab-btn-label {
+  color: #00f0ff !important;
+  font-weight: 800 !important;
+}
+html[data-theme="cyber-hud"] #vistoriaTypeTabs .tab-btn.active {
+  background: #00f0ff !important;
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.7), 0 2px 0 #007799 !important;
+}
+html[data-theme="cyber-hud"] #vistoriaTypeTabs .tab-btn.active .tab-btn-icon-box {
+  background: #050811 !important;
+  color: #00f0ff !important;
+}
+html[data-theme="cyber-hud"] #vistoriaTypeTabs .tab-btn.active .tab-btn-label {
+  color: #050811 !important;
+  font-weight: 900 !important;
+}
+
+/* Botões de Seguradoras (.insurer-btn) Cyber-HUD */
+html[data-theme="cyber-hud"] .insurer-btn {
+  background: #080d16 !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.5) !important;
+  box-shadow: 0 2px 0 #002b40 !important;
+}
+html[data-theme="cyber-hud"] .insurer-btn .insurer-btn-icon-box {
+  background: #050811 !important;
+  border: 1px solid rgba(0, 240, 255, 0.3) !important;
+}
+html[data-theme="cyber-hud"] .insurer-btn .insurer-btn-label {
+  color: #00f0ff !important;
+  font-weight: 800 !important;
+}
+html[data-theme="cyber-hud"] .insurer-btn.active {
+  background: #00f0ff !important;
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.7), 0 2px 0 #007799 !important;
+}
+html[data-theme="cyber-hud"] .insurer-btn.active .insurer-btn-icon-box {
+  background: #050811 !important;
+  color: #00f0ff !important;
+}
+html[data-theme="cyber-hud"] .insurer-btn.active .insurer-btn-label {
+  color: #050811 !important;
+  font-weight: 900 !important;
+}
+
+/* Botões Booleanos (Sim / Não / N/I) Cyber-HUD */
+html[data-theme="cyber-hud"] .type-btn {
+  background: #080d16 !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.5) !important;
+  color: #00f0ff !important;
+  box-shadow: 0 2px 0 #002b40 !important;
+}
+html[data-theme="cyber-hud"] .type-btn.active {
+  background: #00f0ff !important;
+  color: #050811 !important;
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.6), 0 2px 0 #007799 !important;
+  font-weight: 900 !important;
+}
+
+/* Botões de Ação nas Listas Cyber-HUD */
 html[data-theme="cyber-hud"] .action-btn {
   background: #080e18 !important;
   border: 1.5px solid rgba(0, 240, 255, 0.6) !important;
   color: #00f0ff !important;
   box-shadow: 0 0 8px rgba(0, 240, 255, 0.2), 0 3px 0 #002b40 !important;
-  transform: translateY(0) !important;
 }
-html[data-theme="cyber-hud"] .action-btn:active {
-  transform: translateY(2px) !important;
-  box-shadow: 0 0 4px rgba(0, 240, 255, 0.1), 0 1px 0 #002b40 !important;
-}
-
-/* Botões de Ação WhatsApp Cyber-HUD */
 html[data-theme="cyber-hud"] .action-btn[data-action*="share-whatsapp"],
 html[data-theme="cyber-hud"] .action-btn[data-super-action*="share-whatsapp"],
 html[data-theme="cyber-hud"] #whatsappReportPreviewBtn {
@@ -2549,8 +3026,6 @@ html[data-theme="cyber-hud"] #whatsappReportPreviewBtn {
   border: 2px solid #00ff88 !important;
   box-shadow: 0 0 14px rgba(0, 255, 136, 0.35), 0 3px 0 #004422 !important;
 }
-
-/* Botões de Ação Peças / Fotos Cyber-HUD */
 html[data-theme="cyber-hud"] .action-btn[data-action="parts"],
 html[data-theme="cyber-hud"] .action-btn[data-super-action="parts"],
 html[data-theme="cyber-hud"] #partsReportPreviewBtn,
@@ -2560,8 +3035,6 @@ html[data-theme="cyber-hud"] .btn-open-parts-selector {
   border: 2px solid #00f0ff !important;
   box-shadow: 0 0 14px rgba(0, 240, 255, 0.35), 0 3px 0 #003366 !important;
 }
-
-/* Botões de Excluir / Limpar Cyber-HUD */
 html[data-theme="cyber-hud"] .action-btn[data-action="delete"],
 html[data-theme="cyber-hud"] .action-btn[data-super-action="delete"],
 html[data-theme="cyber-hud"] #homeClearWeekButton {
@@ -2570,36 +3043,12 @@ html[data-theme="cyber-hud"] #homeClearWeekButton {
   border: 2px solid #ff3366 !important;
   box-shadow: 0 0 14px rgba(255, 51, 102, 0.35), 0 3px 0 #4a0d1b !important;
 }
-
-/* Menu Inicial Cyber-HUD */
 html[data-theme="cyber-hud"] .menu-btn {
   background: #0c1422 !important;
   border: 2px solid #00f0ff !important;
   color: #00f0ff !important;
   box-shadow: 0 0 14px rgba(0, 240, 255, 0.25), 0 4px 0 #00334d !important;
 }
-html[data-theme="cyber-hud"] .menu-btn:active {
-  transform: translateY(3px) !important;
-  box-shadow: 0 0 6px rgba(0, 240, 255, 0.15), 0 1px 0 #00334d !important;
-}
-
-/* Abas e Filtros Cyber-HUD */
-html[data-theme="cyber-hud"] .tab-btn,
-html[data-theme="cyber-hud"] .type-btn {
-  background: #090e17 !important;
-  border: 1.5px solid rgba(0, 240, 255, 0.5) !important;
-  color: #00f0ff !important;
-  box-shadow: 0 2px 0 #002b40 !important;
-}
-html[data-theme="cyber-hud"] .tab-btn.active,
-html[data-theme="cyber-hud"] .type-btn.active {
-  background: #00f0ff !important;
-  color: #050811 !important;
-  border-color: #00f0ff !important;
-  box-shadow: 0 0 14px rgba(0, 240, 255, 0.6), 0 2px 0 #007799 !important;
-}
-
-/* Inputs Cyber-HUD */
 html[data-theme="cyber-hud"] input,
 html[data-theme="cyber-hud"] select,
 html[data-theme="cyber-hud"] textarea {
@@ -2622,7 +3071,7 @@ html[data-theme="tactile-3d"] body {
   color: #f1f5f9 !important;
 }
 
-/* Cartões em Titânio Escuro Fosco 3D */
+/* Cartões Tactile 3D */
 html[data-theme="tactile-3d"] .hero,
 html[data-theme="tactile-3d"] .card,
 html[data-theme="tactile-3d"] .menu-card,
@@ -2646,7 +3095,7 @@ html[data-theme="tactile-3d"] .oficina-combobox-dropdown {
   color: #f1f5f9 !important;
 }
 
-/* BOTÕES 3D TÁTEIS FÍSICOS (EXTRUSÃO DE 5PX E AFUNDAMENTO AO TOQUE) */
+/* Botões 3D Táteis Físicos */
 html[data-theme="tactile-3d"] button,
 html[data-theme="tactile-3d"] .btn,
 html[data-theme="tactile-3d"] .primary-btn,
@@ -2656,6 +3105,7 @@ html[data-theme="tactile-3d"] .action-btn,
 html[data-theme="tactile-3d"] .menu-btn,
 html[data-theme="tactile-3d"] .tab-btn,
 html[data-theme="tactile-3d"] .type-btn,
+html[data-theme="tactile-3d"] .insurer-btn,
 html[data-theme="tactile-3d"] .theme-trigger-btn {
   font-weight: 800 !important;
   cursor: pointer !important;
@@ -2663,18 +3113,18 @@ html[data-theme="tactile-3d"] .theme-trigger-btn {
   user-select: none !important;
 }
 
-/* Botões Primários e Salvamento Tactile 3D */
+/* Primários Tactile 3D */
 html[data-theme="tactile-3d"] .primary-btn,
 html[data-theme="tactile-3d"] #saveVisitButton,
 html[data-theme="tactile-3d"] #saveSupervisaoButton,
-html[data-theme="tactile-3d"] #submitPasteBackupLoginBtn,
+html[data-theme="tactile-3d"] #sharePdfButton,
+html[data-theme="tactile-3d"] #shareSupervisaoTextButton,
 html[data-theme="tactile-3d"] button[type="submit"] {
   background: linear-gradient(180deg, #10b981 0%, #059669 100%) !important;
   color: #ffffff !important;
   font-size: 0.95rem !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
   border-radius: 12px !important;
-  padding: 13px 22px !important;
   box-shadow: 
     inset 0 2px 0 rgba(255, 255, 255, 0.45),
     0 5px 0 #064e3b,
@@ -2692,18 +3142,18 @@ html[data-theme="tactile-3d"] button[type="submit"]:active {
     0 2px 6px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* Botões Secundários / Navegação Tactile 3D */
+/* Secundários Tactile 3D */
 html[data-theme="tactile-3d"] .ghost-btn,
 html[data-theme="tactile-3d"] #systemSettingsBtn,
 html[data-theme="tactile-3d"] #backToMenuButton,
 html[data-theme="tactile-3d"] .theme-trigger-btn,
 html[data-theme="tactile-3d"] .cancel-btn,
+html[data-theme="tactile-3d"] #copySupervisaoTextButton,
 html[data-theme="tactile-3d"] #closePhotoManagerButton {
   background: linear-gradient(180deg, #242f3f 0%, #19222e 100%) !important;
   color: #38bdf8 !important;
   border: 1.5px solid #334358 !important;
   border-radius: 12px !important;
-  padding: 11px 16px !important;
   box-shadow: 
     inset 0 1.5px 0 rgba(255, 255, 255, 0.18),
     0 4px 0 #0a0f16,
@@ -2713,8 +3163,7 @@ html[data-theme="tactile-3d"] #closePhotoManagerButton {
 html[data-theme="tactile-3d"] .ghost-btn:active,
 html[data-theme="tactile-3d"] #systemSettingsBtn:active,
 html[data-theme="tactile-3d"] #backToMenuButton:active,
-html[data-theme="tactile-3d"] .theme-trigger-btn:active,
-html[data-theme="tactile-3d"] .cancel-btn:active {
+html[data-theme="tactile-3d"] .theme-trigger-btn:active {
   transform: translateY(3px) !important;
   box-shadow: 
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
@@ -2722,40 +3171,103 @@ html[data-theme="tactile-3d"] .cancel-btn:active {
     0 2px 6px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* BOTÕES DE AÇÃO (.action-btn) TÁTEIS 3D EM TODAS AS LISTAS E TABELAS */
+/* Abas de Tipo de Vistoria (#vistoriaTypeTabs .tab-btn) Tactile 3D */
+html[data-theme="tactile-3d"] #vistoriaTypeTabs .tab-btn {
+  background: linear-gradient(180deg, #242f3f 0%, #19222e 100%) !important;
+  border: 1px solid #334358 !important;
+  border-radius: 9px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 3px 0 #0a0f16 !important;
+}
+html[data-theme="tactile-3d"] #vistoriaTypeTabs .tab-btn .tab-btn-icon-box {
+  background: #151c27 !important;
+  border-color: #2b394c !important;
+}
+html[data-theme="tactile-3d"] #vistoriaTypeTabs .tab-btn .tab-btn-label {
+  color: #e2e8f0 !important;
+  font-weight: 800 !important;
+}
+html[data-theme="tactile-3d"] #vistoriaTypeTabs .tab-btn.active {
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  border-color: #60a5fa !important;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45), 0 3px 0 #172554, 0 6px 14px rgba(37, 99, 235, 0.4) !important;
+}
+html[data-theme="tactile-3d"] #vistoriaTypeTabs .tab-btn.active .tab-btn-icon-box {
+  background: #172554 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+html[data-theme="tactile-3d"] #vistoriaTypeTabs .tab-btn.active .tab-btn-label {
+  color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+/* Botões de Seguradoras (.insurer-btn) Tactile 3D */
+html[data-theme="tactile-3d"] .insurer-btn {
+  background: linear-gradient(180deg, #242f3f 0%, #19222e 100%) !important;
+  border: 1px solid #334358 !important;
+  border-radius: 9px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 3px 0 #0a0f16 !important;
+}
+html[data-theme="tactile-3d"] .insurer-btn .insurer-btn-icon-box {
+  background: #151c27 !important;
+  border-color: #2b394c !important;
+}
+html[data-theme="tactile-3d"] .insurer-btn .insurer-btn-label {
+  color: #e2e8f0 !important;
+  font-weight: 800 !important;
+}
+html[data-theme="tactile-3d"] .insurer-btn.active {
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  border-color: #60a5fa !important;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45), 0 3px 0 #172554, 0 6px 14px rgba(37, 99, 235, 0.4) !important;
+}
+html[data-theme="tactile-3d"] .insurer-btn.active .insurer-btn-icon-box {
+  background: #172554 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+html[data-theme="tactile-3d"] .insurer-btn.active .insurer-btn-label {
+  color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+/* Botões Booleanos (Sim / Não / N/I) Tactile 3D */
+html[data-theme="tactile-3d"] .type-btn {
+  background: linear-gradient(180deg, #242f3f 0%, #19222e 100%) !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #334358 !important;
+  border-radius: 999px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 3px 0 #0a0f16 !important;
+}
+html[data-theme="tactile-3d"] .type-btn.active {
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border-color: #60a5fa !important;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.5), 0 3px 0 #172554, 0 6px 14px rgba(37, 99, 235, 0.4) !important;
+  font-weight: 900 !important;
+}
+
+/* Botões de Ação Tactile 3D */
 html[data-theme="tactile-3d"] .action-btn {
   background: linear-gradient(180deg, #263244 0%, #1a2330 100%) !important;
   color: #e2e8f0 !important;
   border: 1px solid #38485e !important;
   border-radius: 10px !important;
-  box-shadow: 
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.2),
-    0 4px 0 #0a0f16,
-    0 6px 12px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.2), 0 4px 0 #0a0f16, 0 6px 12px rgba(0, 0, 0, 0.4) !important;
   transform: translateY(0) !important;
 }
 html[data-theme="tactile-3d"] .action-btn:active {
   transform: translateY(3px) !important;
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 1px 0 #0a0f16,
-    0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 0 #0a0f16, 0 2px 4px rgba(0, 0, 0, 0.3) !important;
 }
-
-/* Botões WhatsApp 3D Tactile */
 html[data-theme="tactile-3d"] .action-btn[data-action*="share-whatsapp"],
 html[data-theme="tactile-3d"] .action-btn[data-super-action*="share-whatsapp"],
 html[data-theme="tactile-3d"] #whatsappReportPreviewBtn {
   background: linear-gradient(180deg, #10b981 0%, #059669 100%) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.4),
-    0 4px 0 #064e3b,
-    0 8px 16px rgba(16, 185, 129, 0.35) !important;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.4), 0 4px 0 #064e3b, 0 8px 16px rgba(16, 185, 129, 0.35) !important;
 }
-
-/* Botões Peças / Fotos 3D Tactile */
 html[data-theme="tactile-3d"] .action-btn[data-action="parts"],
 html[data-theme="tactile-3d"] .action-btn[data-super-action="parts"],
 html[data-theme="tactile-3d"] #partsReportPreviewBtn,
@@ -2763,86 +3275,20 @@ html[data-theme="tactile-3d"] .btn-open-parts-selector {
   background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.4),
-    0 4px 0 #172554,
-    0 8px 16px rgba(37, 99, 235, 0.35) !important;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.4), 0 4px 0 #172554, 0 8px 16px rgba(37, 99, 235, 0.35) !important;
 }
-
-/* Botões Excluir / Limpar Semana 3D Tactile */
 html[data-theme="tactile-3d"] .action-btn[data-action="delete"],
 html[data-theme="tactile-3d"] .action-btn[data-super-action="delete"],
 html[data-theme="tactile-3d"] #homeClearWeekButton {
   background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.35),
-    0 4px 0 #7f1d1d,
-    0 8px 16px rgba(239, 68, 68, 0.35) !important;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.35), 0 4px 0 #7f1d1d, 0 8px 16px rgba(239, 68, 68, 0.35) !important;
 }
-
-/* Botões do Menu Inicial 3D Extrudados */
 html[data-theme="tactile-3d"] .menu-btn {
   border-radius: 16px !important;
-  box-shadow: 
-    inset 0 2px 0 rgba(255, 255, 255, 0.3),
-    0 5px 0 #090d14,
-    0 12px 24px rgba(0, 0, 0, 0.5) !important;
-  transform: translateY(0) !important;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.3), 0 5px 0 #090d14, 0 12px 24px rgba(0, 0, 0, 0.5) !important;
 }
-html[data-theme="tactile-3d"] .menu-btn:active {
-  transform: translateY(4px) !important;
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 1px 0 #090d14,
-    0 3px 8px rgba(0, 0, 0, 0.4) !important;
-}
-html[data-theme="tactile-3d"] .menu-btn[data-day="Vistorias"] {
-  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%) !important;
-  color: #fff !important;
-  box-shadow: inset 0 2px 0 rgba(255,255,255,0.4), 0 5px 0 #172554, 0 12px 24px rgba(0,0,0,0.5) !important;
-}
-html[data-theme="tactile-3d"] .special-btn-supervisao {
-  background: linear-gradient(180deg, #10b981 0%, #059669 100%) !important;
-  color: #fff !important;
-  box-shadow: inset 0 2px 0 rgba(255,255,255,0.4), 0 5px 0 #064e3b, 0 12px 24px rgba(0,0,0,0.5) !important;
-}
-html[data-theme="tactile-3d"] .special-btn-seguradora[data-day="Seguradoras"] {
-  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%) !important;
-  color: #fff !important;
-  box-shadow: inset 0 2px 0 rgba(255,255,255,0.4), 0 5px 0 #78350f, 0 12px 24px rgba(0,0,0,0.5) !important;
-}
-html[data-theme="tactile-3d"] .special-btn-seguradora[data-day="Oficinas"] {
-  background: linear-gradient(180deg, #a855f7 0%, #7e22ce 100%) !important;
-  color: #fff !important;
-  box-shadow: inset 0 2px 0 rgba(255,255,255,0.4), 0 5px 0 #581c87, 0 12px 24px rgba(0,0,0,0.5) !important;
-}
-html[data-theme="tactile-3d"] .special-btn-total {
-  background: linear-gradient(180deg, #334155 0%, #1e293b 100%) !important;
-  color: #38bdf8 !important;
-  border: 1.5px solid #38bdf8 !important;
-  box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 5px 0 #020617, 0 12px 24px rgba(0,0,0,0.5) !important;
-}
-
-/* Abas e Filtros 3D Tactile */
-html[data-theme="tactile-3d"] .tab-btn,
-html[data-theme="tactile-3d"] .type-btn {
-  background: #1a2331 !important;
-  color: #94a3b8 !important;
-  border: 1.5px solid #2e3e54 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 3px 0 #0b1017 !important;
-}
-html[data-theme="tactile-3d"] .tab-btn.active,
-html[data-theme="tactile-3d"] .type-btn.active {
-  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%) !important;
-  color: #fff !important;
-  border-color: #60a5fa !important;
-  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.5), 0 3px 0 #172554, 0 6px 14px rgba(37,99,235,0.4) !important;
-}
-
-/* Inputs 3D Tactile */
 html[data-theme="tactile-3d"] input,
 html[data-theme="tactile-3d"] select,
 html[data-theme="tactile-3d"] textarea {
@@ -2850,7 +3296,7 @@ html[data-theme="tactile-3d"] textarea {
   border: 1.5px solid #283548 !important;
   border-radius: 12px !important;
   color: #f8fafc !important;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.4) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4) !important;
 }
 
 
@@ -2865,7 +3311,7 @@ html[data-theme="cyber-glass"] body {
   color: #f8fafc !important;
 }
 
-/* Cartões em Vidro Translúcido */
+/* Cartões em Vidro Translúcido Cyber-Glass */
 html[data-theme="cyber-glass"] .hero,
 html[data-theme="cyber-glass"] .card,
 html[data-theme="cyber-glass"] .menu-card,
@@ -2882,7 +3328,7 @@ html[data-theme="cyber-glass"] .item-card,
 html[data-theme="cyber-glass"] .compact-item-card,
 html[data-theme="cyber-glass"] .summary-item,
 html[data-theme="cyber-glass"] .oficina-combobox-dropdown {
-  background: rgba(15, 23, 42, 0.7) !important;
+  background: rgba(15, 23, 42, 0.72) !important;
   backdrop-filter: blur(20px) saturate(190%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(190%) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
@@ -2901,6 +3347,7 @@ html[data-theme="cyber-glass"] .action-btn,
 html[data-theme="cyber-glass"] .menu-btn,
 html[data-theme="cyber-glass"] .tab-btn,
 html[data-theme="cyber-glass"] .type-btn,
+html[data-theme="cyber-glass"] .insurer-btn,
 html[data-theme="cyber-glass"] .theme-trigger-btn {
   font-weight: 800 !important;
   cursor: pointer !important;
@@ -2908,11 +3355,12 @@ html[data-theme="cyber-glass"] .theme-trigger-btn {
   border-radius: 999px !important;
 }
 
-/* Botões Primários e Salvamento Cyber-Glass */
+/* Primários Cyber-Glass */
 html[data-theme="cyber-glass"] .primary-btn,
 html[data-theme="cyber-glass"] #saveVisitButton,
 html[data-theme="cyber-glass"] #saveSupervisaoButton,
-html[data-theme="cyber-hud"] #submitPasteBackupLoginBtn,
+html[data-theme="cyber-glass"] #sharePdfButton,
+html[data-theme="cyber-glass"] #shareSupervisaoTextButton,
 html[data-theme="cyber-glass"] button[type="submit"] {
   background: linear-gradient(180deg, #38bdf8 0%, #2563eb 50%, #1d4ed8 100%) !important;
   color: #ffffff !important;
@@ -2936,12 +3384,13 @@ html[data-theme="cyber-glass"] button[type="submit"]:active {
     0 4px 10px rgba(37, 99, 235, 0.35) !important;
 }
 
-/* Botões Secundários Cyber-Glass */
+/* Secundários Cyber-Glass */
 html[data-theme="cyber-glass"] .ghost-btn,
 html[data-theme="cyber-glass"] #systemSettingsBtn,
 html[data-theme="cyber-glass"] #backToMenuButton,
 html[data-theme="cyber-glass"] .theme-trigger-btn,
 html[data-theme="cyber-glass"] .cancel-btn,
+html[data-theme="cyber-glass"] #copySupervisaoTextButton,
 html[data-theme="cyber-glass"] #closePhotoManagerButton {
   background: linear-gradient(180deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
   color: #38bdf8 !important;
@@ -2953,51 +3402,99 @@ html[data-theme="cyber-glass"] #closePhotoManagerButton {
     0 6px 16px rgba(0, 0, 0, 0.5) !important;
   transform: translateY(0) !important;
 }
-html[data-theme="cyber-glass"] .ghost-btn:active,
-html[data-theme="cyber-glass"] #systemSettingsBtn:active,
-html[data-theme="cyber-glass"] #backToMenuButton:active,
-html[data-theme="cyber-glass"] .theme-trigger-btn:active {
-  transform: translateY(2px) !important;
-  box-shadow: 
-    inset 0 1px 1px rgba(255, 255, 255, 0.15),
-    0 1px 0 #070d19,
-    0 2px 6px rgba(0, 0, 0, 0.4) !important;
+
+/* Abas de Tipo de Vistoria (#vistoriaTypeTabs .tab-btn) Cyber-Glass */
+html[data-theme="cyber-glass"] #vistoriaTypeTabs .tab-btn {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 10px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 3px 0 #070d19 !important;
+}
+html[data-theme="cyber-glass"] #vistoriaTypeTabs .tab-btn .tab-btn-icon-box {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+html[data-theme="cyber-glass"] #vistoriaTypeTabs .tab-btn .tab-btn-label {
+  color: #f1f5f9 !important;
+  font-weight: 800 !important;
+}
+html[data-theme="cyber-glass"] #vistoriaTypeTabs .tab-btn.active {
+  background: linear-gradient(180deg, #38bdf8 0%, #2563eb 50%, #1d4ed8 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.7), 0 3px 0 #172554, 0 6px 16px rgba(37, 99, 235, 0.5) !important;
+}
+html[data-theme="cyber-glass"] #vistoriaTypeTabs .tab-btn.active .tab-btn-icon-box {
+  background: rgba(23, 37, 84, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+html[data-theme="cyber-glass"] #vistoriaTypeTabs .tab-btn.active .tab-btn-label {
+  color: #ffffff !important;
+  font-weight: 900 !important;
 }
 
-/* BOTÕES DE AÇÃO (.action-btn) CYBER-GLASS EM TODAS AS TELAS */
+/* Botões de Seguradoras (.insurer-btn) Cyber-Glass */
+html[data-theme="cyber-glass"] .insurer-btn {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 10px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 3px 0 #070d19 !important;
+}
+html[data-theme="cyber-glass"] .insurer-btn .insurer-btn-icon-box {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+html[data-theme="cyber-glass"] .insurer-btn .insurer-btn-label {
+  color: #f1f5f9 !important;
+  font-weight: 800 !important;
+}
+html[data-theme="cyber-glass"] .insurer-btn.active {
+  background: linear-gradient(180deg, #38bdf8 0%, #2563eb 50%, #1d4ed8 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.7), 0 3px 0 #172554, 0 6px 16px rgba(37, 99, 235, 0.5) !important;
+}
+html[data-theme="cyber-glass"] .insurer-btn.active .insurer-btn-icon-box {
+  background: rgba(23, 37, 84, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+html[data-theme="cyber-glass"] .insurer-btn.active .insurer-btn-label {
+  color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+/* Botões Booleanos (Sim / Não / N/I) Cyber-Glass */
+html[data-theme="cyber-glass"] .type-btn {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 999px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 3px 0 #070d19 !important;
+}
+html[data-theme="cyber-glass"] .type-btn.active {
+  background: linear-gradient(180deg, #38bdf8 0%, #2563eb 50%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.7), 0 3px 0 #172554, 0 6px 16px rgba(37, 99, 235, 0.5) !important;
+  font-weight: 900 !important;
+}
+
+/* Botões de Ação Cyber-Glass */
 html[data-theme="cyber-glass"] .action-btn {
   background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
   color: #e0f2fe !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 999px !important;
-  box-shadow: 
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.25),
-    0 3px 0 #070d19,
-    0 6px 14px rgba(0, 0, 0, 0.45) !important;
-  transform: translateY(0) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.25), 0 3px 0 #070d19, 0 6px 14px rgba(0, 0, 0, 0.45) !important;
 }
-html[data-theme="cyber-glass"] .action-btn:active {
-  transform: translateY(2px) !important;
-  box-shadow: 
-    inset 0 1px 1px rgba(255, 255, 255, 0.15),
-    0 1px 0 #070d19,
-    0 2px 6px rgba(0, 0, 0, 0.35) !important;
-}
-
-/* Botões WhatsApp Cyber-Glass */
 html[data-theme="cyber-glass"] .action-btn[data-action*="share-whatsapp"],
 html[data-theme="cyber-glass"] .action-btn[data-super-action*="share-whatsapp"],
 html[data-theme="cyber-glass"] #whatsappReportPreviewBtn {
   background: linear-gradient(180deg, #34d399 0%, #059669 60%, #047857 100%) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.7),
-    0 4px 0 #064e3b,
-    0 8px 20px rgba(16, 185, 129, 0.45) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.7), 0 4px 0 #064e3b, 0 8px 20px rgba(16, 185, 129, 0.45) !important;
 }
-
-/* Botões Peças Cyber-Glass */
 html[data-theme="cyber-glass"] .action-btn[data-action="parts"],
 html[data-theme="cyber-glass"] .action-btn[data-super-action="parts"],
 html[data-theme="cyber-glass"] #partsReportPreviewBtn,
@@ -3005,66 +3502,21 @@ html[data-theme="cyber-glass"] .btn-open-parts-selector {
   background: linear-gradient(180deg, #38bdf8 0%, #2563eb 60%, #1d4ed8 100%) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.7),
-    0 4px 0 #172554,
-    0 8px 20px rgba(37, 99, 235, 0.45) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.7), 0 4px 0 #172554, 0 8px 20px rgba(37, 99, 235, 0.45) !important;
 }
-
-/* Botões Excluir Cyber-Glass */
 html[data-theme="cyber-glass"] .action-btn[data-action="delete"],
 html[data-theme="cyber-glass"] .action-btn[data-super-action="delete"],
 html[data-theme="cyber-glass"] #homeClearWeekButton {
   background: linear-gradient(180deg, #f87171 0%, #dc2626 60%, #991b1b 100%) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.45) !important;
-  box-shadow: 
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.6),
-    0 4px 0 #7f1d1d,
-    0 8px 20px rgba(239, 68, 68, 0.45) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.6), 0 4px 0 #7f1d1d, 0 8px 20px rgba(239, 68, 68, 0.45) !important;
 }
-
-/* Menu Inicial Cyber-Glass */
 html[data-theme="cyber-glass"] .menu-btn {
   border-radius: 20px !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  padding: 16px 10px !important;
-  box-shadow: 
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.5),
-    0 4px 0 #0a0f1d,
-    0 10px 22px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.5), 0 4px 0 #0a0f1d, 0 10px 22px rgba(0, 0, 0, 0.5) !important;
 }
-html[data-theme="cyber-glass"] .menu-btn:active {
-  transform: translateY(3px) !important;
-}
-html[data-theme="cyber-glass"] .menu-btn[data-day="Vistorias"] {
-  background: linear-gradient(180deg, #38bdf8 0%, #2563eb 60%, #1d4ed8 100%) !important;
-  color: #ffffff !important;
-  box-shadow: inset 0 1.5px 1px rgba(255,255,255,0.7), 0 4px 0 #172554, 0 10px 22px rgba(37,99,235,0.5) !important;
-}
-html[data-theme="cyber-glass"] .special-btn-supervisao {
-  background: linear-gradient(180deg, #34d399 0%, #059669 60%, #047857 100%) !important;
-  color: #ffffff !important;
-  box-shadow: inset 0 1.5px 1px rgba(255,255,255,0.7), 0 4px 0 #064e3b, 0 10px 22px rgba(16,185,129,0.45) !important;
-}
-html[data-theme="cyber-glass"] .special-btn-seguradora[data-day="Seguradoras"] {
-  background: linear-gradient(180deg, #fbbf24 0%, #d97706 60%, #b45309 100%) !important;
-  color: #ffffff !important;
-  box-shadow: inset 0 1.5px 1px rgba(255,255,255,0.7), 0 4px 0 #78350f, 0 10px 22px rgba(245,158,11,0.45) !important;
-}
-html[data-theme="cyber-glass"] .special-btn-seguradora[data-day="Oficinas"] {
-  background: linear-gradient(180deg, #c084fc 0%, #9333ea 60%, #7e22ce 100%) !important;
-  color: #ffffff !important;
-  box-shadow: inset 0 1.5px 1px rgba(255,255,255,0.7), 0 4px 0 #581c87, 0 10px 22px rgba(168,85,247,0.45) !important;
-}
-html[data-theme="cyber-glass"] .special-btn-total {
-  background: linear-gradient(180deg, #334155 0%, #1e293b 60%, #0f172a 100%) !important;
-  color: #38bdf8 !important;
-  border-color: rgba(56, 189, 248, 0.4) !important;
-  box-shadow: inset 0 1.5px 1px rgba(255,255,255,0.25), 0 4px 0 #020617, 0 10px 20px rgba(0,0,0,0.5) !important;
-}
-
-/* Inputs Cyber-Glass */
 html[data-theme="cyber-glass"] input,
 html[data-theme="cyber-glass"] select,
 html[data-theme="cyber-glass"] textarea {
@@ -3112,7 +3564,7 @@ html[data-theme="fusion-3d"] .oficina-combobox-dropdown {
   color: #f8fafc !important;
 }
 
-/* BOTÕES FUSION 3D: EXTRUSÃO FÍSICA + FILETE SUPERIOR DE VIDRO BRILHANTE */
+/* BOTÕES FUSION 3D */
 html[data-theme="fusion-3d"] button,
 html[data-theme="fusion-3d"] .btn,
 html[data-theme="fusion-3d"] .primary-btn,
@@ -3122,6 +3574,7 @@ html[data-theme="fusion-3d"] .action-btn,
 html[data-theme="fusion-3d"] .menu-btn,
 html[data-theme="fusion-3d"] .tab-btn,
 html[data-theme="fusion-3d"] .type-btn,
+html[data-theme="fusion-3d"] .insurer-btn,
 html[data-theme="fusion-3d"] .theme-trigger-btn {
   font-weight: 900 !important;
   cursor: pointer !important;
@@ -3129,18 +3582,18 @@ html[data-theme="fusion-3d"] .theme-trigger-btn {
   user-select: none !important;
 }
 
-/* Botões Primários e Salvamento Fusion 3D */
+/* Primários Fusion 3D */
 html[data-theme="fusion-3d"] .primary-btn,
 html[data-theme="fusion-3d"] #saveVisitButton,
 html[data-theme="fusion-3d"] #saveSupervisaoButton,
-html[data-theme="fusion-3d"] #submitPasteBackupLoginBtn,
+html[data-theme="fusion-3d"] #sharePdfButton,
+html[data-theme="fusion-3d"] #shareSupervisaoTextButton,
 html[data-theme="fusion-3d"] button[type="submit"] {
   background: linear-gradient(180deg, #0284c7 0%, #1e40af 100%) !important;
   color: #ffffff !important;
   font-size: 0.95rem !important;
   border: 1px solid rgba(255, 255, 255, 0.4) !important;
   border-radius: 14px !important;
-  padding: 13px 22px !important;
   box-shadow: 
     inset 0 2px 1px rgba(255, 255, 255, 0.6),
     0 5px 0 #0f172a,
@@ -3158,69 +3611,117 @@ html[data-theme="fusion-3d"] button[type="submit"]:active {
     0 4px 10px rgba(30, 64, 175, 0.3) !important;
 }
 
-/* Botões Secundários Fusion 3D */
+/* Secundários Fusion 3D */
 html[data-theme="fusion-3d"] .ghost-btn,
 html[data-theme="fusion-3d"] #systemSettingsBtn,
 html[data-theme="fusion-3d"] #backToMenuButton,
 html[data-theme="fusion-3d"] .theme-trigger-btn,
 html[data-theme="fusion-3d"] .cancel-btn,
+html[data-theme="fusion-3d"] #copySupervisaoTextButton,
 html[data-theme="fusion-3d"] #closePhotoManagerButton {
   background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
   color: #38bdf8 !important;
   border: 1.5px solid rgba(56, 189, 248, 0.4) !important;
   border-radius: 12px !important;
-  padding: 11px 16px !important;
   box-shadow: 
     inset 0 1.5px 1px rgba(255, 255, 255, 0.2),
     0 4px 0 #020617,
     0 8px 16px rgba(0, 0, 0, 0.5) !important;
   transform: translateY(0) !important;
 }
-html[data-theme="fusion-3d"] .ghost-btn:active,
-html[data-theme="fusion-3d"] #systemSettingsBtn:active,
-html[data-theme="fusion-3d"] #backToMenuButton:active,
-html[data-theme="fusion-3d"] .theme-trigger-btn:active {
-  transform: translateY(3px) !important;
-  box-shadow: 
-    inset 0 1px 1px rgba(255, 255, 255, 0.1),
-    0 1px 0 #020617,
-    0 2px 6px rgba(0, 0, 0, 0.3) !important;
+
+/* Abas de Tipo de Vistoria (#vistoriaTypeTabs .tab-btn) Fusion 3D */
+html[data-theme="fusion-3d"] #vistoriaTypeTabs .tab-btn {
+  background: linear-gradient(180deg, #1e293b 0%, #111827 100%) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.35) !important;
+  border-radius: 9px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 3px 0 #030712 !important;
+}
+html[data-theme="fusion-3d"] #vistoriaTypeTabs .tab-btn .tab-btn-icon-box {
+  background: #0b111e !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+}
+html[data-theme="fusion-3d"] #vistoriaTypeTabs .tab-btn .tab-btn-label {
+  color: #38bdf8 !important;
+  font-weight: 800 !important;
+}
+html[data-theme="fusion-3d"] #vistoriaTypeTabs .tab-btn.active {
+  background: linear-gradient(180deg, #0284c7 0%, #1e40af 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.5), 0 3px 0 #0f172a, 0 6px 14px rgba(30, 64, 175, 0.5) !important;
+}
+html[data-theme="fusion-3d"] #vistoriaTypeTabs .tab-btn.active .tab-btn-icon-box {
+  background: #0f172a !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+html[data-theme="fusion-3d"] #vistoriaTypeTabs .tab-btn.active .tab-btn-label {
+  color: #ffffff !important;
+  font-weight: 900 !important;
 }
 
-/* BOTÕES DE AÇÃO (.action-btn) FUSION 3D */
+/* Botões de Seguradoras (.insurer-btn) Fusion 3D */
+html[data-theme="fusion-3d"] .insurer-btn {
+  background: linear-gradient(180deg, #1e293b 0%, #111827 100%) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.35) !important;
+  border-radius: 9px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 3px 0 #030712 !important;
+}
+html[data-theme="fusion-3d"] .insurer-btn .insurer-btn-icon-box {
+  background: #0b111e !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+}
+html[data-theme="fusion-3d"] .insurer-btn .insurer-btn-label {
+  color: #38bdf8 !important;
+  font-weight: 800 !important;
+}
+html[data-theme="fusion-3d"] .insurer-btn.active {
+  background: linear-gradient(180deg, #0284c7 0%, #1e40af 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.5), 0 3px 0 #0f172a, 0 6px 14px rgba(30, 64, 175, 0.5) !important;
+}
+html[data-theme="fusion-3d"] .insurer-btn.active .insurer-btn-icon-box {
+  background: #0f172a !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+html[data-theme="fusion-3d"] .insurer-btn.active .insurer-btn-label {
+  color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+/* Botões Booleanos (Sim / Não / N/I) Fusion 3D */
+html[data-theme="fusion-3d"] .type-btn {
+  background: linear-gradient(180deg, #1e293b 0%, #111827 100%) !important;
+  color: #38bdf8 !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.35) !important;
+  border-radius: 999px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 3px 0 #030712 !important;
+}
+html[data-theme="fusion-3d"] .type-btn.active {
+  background: linear-gradient(180deg, #0284c7 0%, #1e40af 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.5), 0 3px 0 #0f172a, 0 6px 14px rgba(30, 64, 175, 0.5) !important;
+  font-weight: 900 !important;
+}
+
+/* Botões de Ação Fusion 3D */
 html[data-theme="fusion-3d"] .action-btn {
   background: linear-gradient(180deg, #1e293b 0%, #111827 100%) !important;
   color: #38bdf8 !important;
   border: 1.5px solid rgba(56, 189, 248, 0.35) !important;
   border-radius: 12px !important;
-  box-shadow: 
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.2),
-    0 4px 0 #030712,
-    0 6px 14px rgba(0, 0, 0, 0.5) !important;
-  transform: translateY(0) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.2), 0 4px 0 #030712, 0 6px 14px rgba(0, 0, 0, 0.5) !important;
 }
-html[data-theme="fusion-3d"] .action-btn:active {
-  transform: translateY(3px) !important;
-  box-shadow: 
-    inset 0 1px 1px rgba(255, 255, 255, 0.1),
-    0 1px 0 #030712,
-    0 2px 4px rgba(0, 0, 0, 0.3) !important;
-}
-
-/* Botões WhatsApp Fusion 3D */
 html[data-theme="fusion-3d"] .action-btn[data-action*="share-whatsapp"],
 html[data-theme="fusion-3d"] .action-btn[data-super-action*="share-whatsapp"],
 html[data-theme="fusion-3d"] #whatsappReportPreviewBtn {
   background: linear-gradient(180deg, #10b981 0%, #047857 100%) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.5),
-    0 4px 0 #064e3b,
-    0 8px 18px rgba(16, 185, 129, 0.4) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.5), 0 4px 0 #064e3b, 0 8px 18px rgba(16, 185, 129, 0.4) !important;
 }
-
-/* Botões Peças Fusion 3D */
 html[data-theme="fusion-3d"] .action-btn[data-action="parts"],
 html[data-theme="fusion-3d"] .action-btn[data-super-action="parts"],
 html[data-theme="fusion-3d"] #partsReportPreviewBtn,
@@ -3228,45 +3729,21 @@ html[data-theme="fusion-3d"] .btn-open-parts-selector {
   background: linear-gradient(180deg, #0284c7 0%, #1e40af 100%) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.5),
-    0 4px 0 #0f172a,
-    0 8px 18px rgba(30, 64, 175, 0.4) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.5), 0 4px 0 #0f172a, 0 8px 18px rgba(30, 64, 175, 0.4) !important;
 }
-
-/* Botões Excluir Fusion 3D */
 html[data-theme="fusion-3d"] .action-btn[data-action="delete"],
 html[data-theme="fusion-3d"] .action-btn[data-super-action="delete"],
 html[data-theme="fusion-3d"] #homeClearWeekButton {
   background: linear-gradient(180deg, #ef4444 0%, #991b1b 100%) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.5),
-    0 4px 0 #450a0a,
-    0 8px 18px rgba(239, 68, 68, 0.4) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.5), 0 4px 0 #450a0a, 0 8px 18px rgba(239, 68, 68, 0.4) !important;
 }
-
-/* Menu Inicial Fusion 3D */
 html[data-theme="fusion-3d"] .menu-btn {
   border-radius: 16px !important;
   font-weight: 900 !important;
-  padding: 16px 10px !important;
-  box-shadow: 
-    inset 0 2px 1px rgba(255, 255, 255, 0.3),
-    0 5px 0 #090d14,
-    0 12px 24px rgba(0, 0, 0, 0.55) !important;
-  transform: translateY(0) !important;
+  box-shadow: inset 0 2px 1px rgba(255, 255, 255, 0.3), 0 5px 0 #090d14, 0 12px 24px rgba(0, 0, 0, 0.55) !important;
 }
-html[data-theme="fusion-3d"] .menu-btn:active {
-  transform: translateY(4px) !important;
-  box-shadow: 
-    inset 0 1px 1px rgba(255, 255, 255, 0.2),
-    0 1px 0 #090d14,
-    0 3px 8px rgba(0, 0, 0, 0.4) !important;
-}
-
-/* Inputs Fusion 3D */
 html[data-theme="fusion-3d"] input,
 html[data-theme="fusion-3d"] select,
 html[data-theme="fusion-3d"] textarea {
@@ -3276,6 +3753,7 @@ html[data-theme="fusion-3d"] textarea {
   color: #f8fafc !important;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5) !important;
 }
+
 
 
 

@@ -8335,14 +8335,14 @@ function vpRenderParts(filterQuery = '') {
         <!-- ZONA 1: PEÇAS DO VEÍCULO (MAIS USADAS NO TOPO) -->
         <button 
           type="button" 
+          class="vp-zone-btn vp-zone-pecas ${!isFavMode ? 'active' : ''}"
           onclick="vpSelectCategory('PECAS')"
           title="Todas as ${currentVTypeInfo.title.toLowerCase()} (as mais usadas primeiro)"
-          style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 6px 10px; border-radius: 10px; border: 2px solid ${!isFavMode ? '#2563eb' : '#cbd5e1'}; background: ${!isFavMode ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${!isFavMode ? '0 2px 6px rgba(37,99,235,0.18)' : 'none'};"
         >
           <span style="font-size: 1.05rem; line-height: 1;">${currentVTypeInfo.icon}</span>
-          <span style="font-size: 0.82rem; font-weight: 800; color: ${!isFavMode ? '#1e3a8a' : '#475569'}; line-height: 1.1;">${currentVTypeInfo.title}</span>
+          <span class="vp-zone-btn-title" style="font-size: 0.82rem; font-weight: 800; line-height: 1.1;">${currentVTypeInfo.title}</span>
           <div style="display: flex; align-items: center; gap: 3px; margin-left: 2px;">
-            <span style="font-size: 0.68rem; font-weight: 800; color: ${!isFavMode ? '#2563eb' : '#64748b'}; background: ${!isFavMode ? '#dbeafe' : '#f1f5f9'}; padding: 1px 6px; border-radius: 999px;">${todasParts.length}</span>
+            <span class="vp-zone-counter" style="font-size: 0.68rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;">${todasParts.length}</span>
             ${todasSelCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 6px; border-radius: 999px;">${todasSelCount}</span>` : ''}
           </div>
         </button>
@@ -8350,36 +8350,36 @@ function vpRenderParts(filterQuery = '') {
         <!-- ZONA 2: FAVORITAS (ORDEM ALFABÉTICA) -->
         <button 
           type="button" 
+          class="vp-zone-btn vp-zone-fav ${isFavMode ? 'active' : ''}"
           onclick="vpSelectCategory('FAVORITOS')"
           title="Peças Favoritas (em ordem alfabética)"
-          style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 6px 10px; border-radius: 10px; border: 2px solid ${isFavMode ? '#eab308' : '#cbd5e1'}; background: ${isFavMode ? '#fefce8' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${isFavMode ? '0 2px 6px rgba(234,179,8,0.22)' : 'none'};"
         >
           <span style="font-size: 1.05rem; line-height: 1;">⭐</span>
-          <span style="font-size: 0.82rem; font-weight: 800; color: ${isFavMode ? '#854d0e' : '#475569'}; line-height: 1.1;">Favoritas</span>
+          <span class="vp-zone-btn-title" style="font-size: 0.82rem; font-weight: 800; line-height: 1.1;">Favoritas</span>
           <div style="display: flex; align-items: center; gap: 3px; margin-left: 2px;">
-            <span style="font-size: 0.68rem; font-weight: 800; color: ${isFavMode ? '#a16207' : '#64748b'}; background: ${isFavMode ? '#fef08a' : '#f1f5f9'}; padding: 1px 6px; border-radius: 999px;">${favParts.length}</span>
+            <span class="vp-zone-counter" style="font-size: 0.68rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;">${favParts.length}</span>
             ${favSelCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 6px; border-radius: 999px;">${favSelCount}</span>` : ''}
           </div>
         </button>
       </div>
 
       <!-- CABEÇALHO DA ZONA ATIVA -->
-      <div style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; background: ${activeBg}; border-radius: 8px; border-left: 4px solid ${activeColor};">
+      <div class="vp-active-zone-header" style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-radius: 8px;">
         <div style="display: flex; align-items: center; gap: 5px;">
           <span style="font-size: 0.95rem;">${activeIcon}</span>
-          <strong style="font-size: 0.80rem; color: #0f172a;">${activeTitle} ${isFavMode ? '(Ordem Alfabética A-Z)' : '(Mais Usadas no Topo)'}</strong>
+          <strong class="vp-active-zone-title" style="font-size: 0.80rem;">${activeTitle} ${isFavMode ? '(Ordem Alfabética A-Z)' : '(Mais Usadas no Topo)'}</strong>
         </div>
-        <span style="font-size: 0.68rem; font-weight: 800; color: ${activeColor}; background: #ffffff; padding: 2px 6px; border-radius: 999px; border: 1px solid #cbd5e1;">
+        <span class="vp-active-zone-count" style="font-size: 0.68rem; font-weight: 800; padding: 2px 6px; border-radius: 999px;">
           ${activeList.length} peças
         </span>
       </div>
 
       <!-- ESTADO VAZIO SE NÃO HOUVER FAVORITAS -->
       ${isFavMode && favParts.length === 0 ? `
-        <div style="width: 100%; padding: 36px 16px; text-align: center; color: #64748b; background: #ffffff; border-radius: 12px; border: 1.5px dashed #facc15; margin-top: 4px; box-sizing: border-box;">
+        <div class="vp-empty-fav-box" style="width: 100%; padding: 36px 16px; text-align: center; border-radius: 12px; border: 1.5px dashed #facc15; margin-top: 4px; box-sizing: border-box;">
           <span style="font-size: 2.2rem; display: block; margin-bottom: 8px;">⭐</span>
-          <b style="font-size: 0.92rem; color: #1e293b;">Nenhuma peça favoritada ainda</b>
-          <p style="font-size: 0.80rem; margin-top: 6px; color: #64748b; line-height: 1.4;">
+          <b style="font-size: 0.92rem;">Nenhuma peça favoritada ainda</b>
+          <p style="font-size: 0.80rem; margin-top: 6px; line-height: 1.4;">
             Na zona "Peças do veículo", toque na estrela (⭐) de qualquer peça para adicioná-la aos seus favoritos!
           </p>
         </div>
@@ -8387,13 +8387,13 @@ function vpRenderParts(filterQuery = '') {
 
       <!-- SEÇÃO SUSPENSA NO TOPO: PEÇAS SELECIONADAS NA VISTORIA ATUAL (2 COLUNAS) -->
       ${selectedInActive.length > 0 ? `
-        <div style="display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 6px; background: #fef2f2; border: 1.5px dashed #f87171; border-radius: 8px; box-sizing: border-box;">
+        <div class="vp-pinned-section" style="display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 6px; border-radius: 8px; box-sizing: border-box;">
           <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px;">
             <div style="display: flex; align-items: center; gap: 4px;">
               <span style="font-size: 0.90rem;">📌</span>
-              <strong style="font-size: 0.76rem; color: #991b1b;">Selecionadas nesta vistoria (${selectedInActive.length})</strong>
+              <strong class="vp-pinned-title" style="font-size: 0.76rem;">Selecionadas nesta vistoria (${selectedInActive.length})</strong>
             </div>
-            <span style="font-size: 0.62rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 1px 5px; border-radius: 999px;">Fixadas</span>
+            <span class="vp-pinned-badge" style="font-size: 0.62rem; font-weight: 800; padding: 1px 5px; border-radius: 999px;">Fixadas</span>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
             ${selectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
@@ -8419,16 +8419,16 @@ function vpRenderPartCardHtml(item) {
   const isFav = vpIsPartFavorite(item.name);
 
   return `
-    <div class="vp-part-card ${cardClass}" style="width: 100%; min-width: 0; box-sizing: border-box; padding: 6px 6px; border-radius: 8px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#cbd5e1')}; background: ${isTroca ? '#fffafa' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+    <div class="vp-part-card ${cardClass}" data-part-name="${vpEscapeHtml(item.name)}">
       <!-- 1ª LINHA: [⭐ Favorito] [❌ Excluir] [Descrição da Peça] [✏️ Editar] -->
       <div class="vp-card-top" style="display: flex; align-items: center; justify-content: space-between; gap: 2px; width: 100%; min-width: 0;">
         <button type="button" class="vp-btn-fav-part" title="${isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}" onclick="event.stopPropagation(); vpToggleFavoritePart('${vpEscapeHtml(item.name)}')" style="background: none; border: none; font-size: 0.95rem; cursor: pointer; padding: 2px; line-height: 1; flex-shrink: 0; transition: transform 0.15s ease; ${isFav ? 'filter: drop-shadow(0 0 2px rgba(234,179,8,0.7)); transform: scale(1.15);' : 'opacity: 0.30; filter: grayscale(100%);'}">
           ⭐
         </button>
         <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
-        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.78rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}">
           ${vpEscapeHtml(item.name)}
-          ${(vpCustomPartsList && vpCustomPartsList.some(cp => cp.name && cp.name.toLowerCase() === (item.name || '').toLowerCase())) ? '<span style="font-size: 0.60rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 4px; border-radius: 4px; margin-left: 3px; display: inline-block;">✨ Nova</span>' : ''}
+          ${(vpCustomPartsList && vpCustomPartsList.some(cp => cp.name && cp.name.toLowerCase() === (item.name || '').toLowerCase())) ? '<span class="vp-badge-nova" style="font-size: 0.60rem; font-weight: 800; padding: 1px 4px; border-radius: 4px; margin-left: 3px; display: inline-block;">✨ Nova</span>' : ''}
         </span>
         <button type="button" class="vp-btn-edit-name" title="Editar nome e zona da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')">✏️</button>
       </div>
@@ -8456,7 +8456,7 @@ function vpRenderPartCardHtml(item) {
         <button 
           type="button" 
           class="vp-btn-action btn-obs ${hasObs ? 'has-obs active' : ''}" 
-          style="flex: 0 0 20%; width: 20%; padding: 5px 1px; font-size: 0.72rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'}; border-color: ${hasObs ? '#93c5fd' : '#cbd5e1'};"
+          style="flex: 0 0 20%; width: 20%; padding: 5px 1px; font-size: 0.72rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap;"
           title="${hasObs ? 'Obs: ' + vpEscapeHtml(selected.obs) : 'Adicionar Observação'}"
           onclick="vpToggleObsBox('${vpEscapeHtml(item.name)}')"
         >

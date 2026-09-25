@@ -1,7 +1,8 @@
 {
-  "version": "2.22.0",
-  "versionCode": 2220,
-  "updatedAt": "2026-09-25T19:05:00Z",
-  "buildDate": "2026-09-25T19:05:00.000Z",
-  "changelog": "Seletor de 5 modelos visuais (Original + 4 Futuristas) com botões táteis 3D e personalização em todo o sistema"
+  "version": "2.23.0",
+  "versionCode": 2230,
+  "updatedAt": "2026-09-25T19:40:00Z",
+  "buildDate": "2026-09-25T19:40:00.000Z",
+  "changelog": "Correção completa de contraste nas peças do veículo, botões de seguradora, abas de vistoria, cards de veículo e relatórios em todos os temas visuais"
 }
+
