@@ -9102,3 +9102,106 @@ window.vpImportCatalogJson = function() {
   };
   input.click();
 };
+
+// ==========================================================================
+// GERENCIADOR DE TEMAS E MODELOS VISUAIS (5 MODELOS)
+// ==========================================================================
+const APP_THEMES = [
+  { id: 'original', name: 'Original (Padrão)', icon: '🌟', badge: 'Claro Original', desc: 'Visual clássico original limpo, com fundo claro e botões azuis.' },
+  { id: 'cyber-hud', name: 'Modelo 1: Cyber-HUD Sci-Fi', icon: '⚡', badge: 'Neon HUD', desc: 'Visual telemetria e diagnóstico com bordas e botões em neon ciano.' },
+  { id: 'tactile-3d', name: 'Modelo 2: Tactile 3D Matte & Neon', icon: '🟢', badge: '3D Físico Real', desc: 'Botões em relevo 3D físico real que afundam fisicamente ao toque.' },
+  { id: 'cyber-glass', name: 'Modelo 3: Cyber-Glassmorphism 3D', icon: '💎', badge: 'Vidro Espacial', desc: 'Vidro fumê translúcido e botões em cápsula 3D com brilho cristalino.' },
+  { id: 'fusion-3d', name: 'Modelo 4: Fusão 3D Futurista', icon: '🚀', badge: 'Cockpit 3D', desc: 'O melhor dos dois mundos: botões 3D táteis extrudados + acabamento em vidro escuro.' }
+];
+
+function getAppTheme() {
+  try {
+    return localStorage.getItem('gestao_app_theme') || 'original';
+  } catch(e) {
+    return 'original';
+  }
+}
+window.getAppTheme = getAppTheme;
+
+function setAppTheme(themeId, notify = true) {
+  const validThemes = ['original', 'cyber-hud', 'tactile-3d', 'cyber-glass', 'fusion-3d'];
+  const theme = validThemes.includes(themeId) ? themeId : 'original';
+  
+  try {
+    localStorage.setItem('gestao_app_theme', theme);
+  } catch(e) {}
+  
+  document.documentElement.setAttribute('data-theme', theme);
+  if (document.body) {
+    document.body.setAttribute('data-theme', theme);
+  }
+
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+  if (metaThemeColor) {
+    metaThemeColor.setAttribute('content', theme === 'original' ? '#2563eb' : '#070a12');
+  }
+
+  updateThemeSelectorModalUI();
+
+  if (notify && typeof showToastNotification === 'function') {
+    const selected = APP_THEMES.find(t => t.id === theme);
+    showToastNotification(`Visual ativado: ${selected ? selected.name : theme}`, 2500);
+  }
+}
+window.setAppTheme = setAppTheme;
+
+function updateThemeSelectorModalUI() {
+  const currentTheme = getAppTheme();
+  APP_THEMES.forEach(t => {
+    const item = document.getElementById(`themeCard_${t.id}`);
+    const check = document.getElementById(`themeCheck_${t.id}`);
+    if (item) {
+      item.classList.toggle('active-theme', t.id === currentTheme);
+    }
+    if (check) {
+      check.style.display = (t.id === currentTheme) ? 'inline-flex' : 'none';
+    }
+  });
+
+  const activeObj = APP_THEMES.find(t => t.id === currentTheme);
+  const activeLabel = activeObj ? activeObj.name : 'Tema';
+  const headerBtn = document.getElementById('themeSelectorBtn');
+  if (headerBtn) {
+    headerBtn.innerHTML = `🎨 ${activeObj ? activeObj.icon : '🎨'} ${activeLabel.split(':')[0]}`;
+  }
+  const innerBtn = document.getElementById('innerThemeSelectorBtn');
+  if (innerBtn) {
+    innerBtn.innerHTML = `🎨 ${activeObj ? activeObj.icon : '🎨'} ${activeLabel.split(':')[0]}`;
+  }
+}
+window.updateThemeSelectorModalUI = updateThemeSelectorModalUI;
+
+function openThemeSelectorModal() {
+  const modal = document.getElementById('themeSelectorModal');
+  if (!modal) return;
+  updateThemeSelectorModalUI();
+  modal.style.display = 'flex';
+}
+window.openThemeSelectorModal = openThemeSelectorModal;
+
+function closeThemeSelectorModal() {
+  const modal = document.getElementById('themeSelectorModal');
+  if (modal) modal.style.display = 'none';
+}
+window.closeThemeSelectorModal = closeThemeSelectorModal;
+
+// Inicialização imediata do tema ao carregar
+(function initAppTheme() {
+  const currentTheme = getAppTheme();
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  if (document.body) {
+    document.body.setAttribute('data-theme', currentTheme);
+  }
+  window.addEventListener('DOMContentLoaded', () => {
+    if (document.body) {
+      document.body.setAttribute('data-theme', currentTheme);
+    }
+    updateThemeSelectorModalUI();
+  });
+})();
+

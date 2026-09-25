@@ -11,13 +11,15 @@
           if (window.AndroidInterface || window.location.protocol === 'file:') {
             localStorage.setItem('authenticated', 'true');
           }
+          const savedTheme = localStorage.getItem('gestao_app_theme') || 'original';
+          document.documentElement.setAttribute('data-theme', savedTheme);
         } catch(e) {}
       })();
     </script>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <link rel="stylesheet" href="styles.css?v=2210" />
+    <link rel="stylesheet" href="styles.css?v=2220" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
