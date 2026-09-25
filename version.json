@@ -1,7 +1,7 @@
 {
-  "version": "2.19.0",
-  "versionCode": 2190,
-  "updatedAt": "2026-09-24T22:30:00Z",
-  "buildDate": "2026-09-24T22:30:00.000Z",
-  "changelog": "Reconhecimento inteligente de tipo de veiculo por titulo, filtro estrito por categoria e 5 seguradoras alinhadas"
+  "version": "2.20.0",
+  "versionCode": 2200,
+  "updatedAt": "2026-09-25T18:00:00Z",
+  "buildDate": "2026-09-25T18:00:00.000Z",
+  "changelog": "Isolamento estrito de fotos do WhatsApp no laudo e transferência flexível de peças entre Carros, Motos, Picapes e Caminhões"
 }

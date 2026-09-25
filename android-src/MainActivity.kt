@@ -536,6 +536,7 @@ class MainActivity : ComponentActivity() {
                     if (file.isFile && file.length() > 0) {
                         val name = file.name
                         if (importedPhotoNames.contains(name)) continue
+                        if (isExcludedMedia(name, file.absolutePath)) continue
                         
                         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
                         val customFolderName = prefs.getString("selected_folder_name", null) ?: prefs.getString("photo_folder_name_friendly", null) ?: ""
@@ -662,12 +663,23 @@ class MainActivity : ComponentActivity() {
                     val name = c.getString(nameColumn) ?: "midia_${System.currentTimeMillis()}.${if (isVideo) "mp4" else "jpg"}"
                     val absolutePath = c.getString(dataColumn)
                     
+                    // Filtro estrito: NUNCA importar mídias de WhatsApp, Telegram, redes sociais ou downloads
+                    if (isExcludedMedia(name, absolutePath)) {
+                        continue
+                    }
+
                     // Exclude files already inside Vistorias folder or custom selected folder
                     val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
                     val customFolderName = prefs.getString("selected_folder_name", null) ?: prefs.getString("photo_folder_name_friendly", null) ?: ""
                     if (absolutePath != null) {
                         val lowerPath = absolutePath.lowercase()
                         if (lowerPath.contains("/vistorias/") || (customFolderName.isNotEmpty() && lowerPath.contains("/${customFolderName.lowercase()}/"))) {
+                            continue
+                        }
+                        // Verifica se o arquivo é proveniente de diretório de câmera
+                        val isCameraOrigin = lowerPath.contains("/dcim/") || lowerPath.contains("/camera") ||
+                                             lowerPath.contains("/100andro") || lowerPath.contains("/opencamera")
+                        if (!isCameraOrigin) {
                             continue
                         }
                     }
@@ -1140,6 +1152,47 @@ class MainActivity : ComponentActivity() {
         return if (sanitized.isEmpty()) "Vistoria_Sem_Nome" else sanitized
     }
 
+    fun isExcludedMedia(name: String?, absolutePath: String?): Boolean {
+        val lowerName = name?.lowercase() ?: ""
+        val lowerPath = absolutePath?.lowercase() ?: ""
+
+        // 1. Bloqueia pastas conhecidas do WhatsApp, Telegram, redes sociais ou downloads
+        val blockedPathKeywords = listOf(
+            "whatsapp", "com.whatsapp", "com.whatsapp.w4b",
+            "telegram", "org.telegram",
+            "facebook", "instagram", "snapchat", "tiktok", "twitter",
+            "screenshots", "capturas de tela", "captura de tela",
+            "download", "downloads"
+        )
+        for (kw in blockedPathKeywords) {
+            if (lowerPath.contains(kw)) {
+                return true
+            }
+        }
+
+        // 2. Bloqueia padrões típicos de nomes de arquivos do WhatsApp e mensagens
+        if (lowerName.contains("whatsapp") || lowerName.contains("telegram")) {
+            return true
+        }
+
+        // Imagens do WhatsApp: IMG-20260925-WA0001.jpg, IMG_20260925_WA0001.jpg, etc.
+        val waImageRegex = Regex("""(?i)^(img|vid)[-_]\d{4,8}[-_]wa\d+""")
+        if (waImageRegex.containsMatchIn(lowerName)) {
+            return true
+        }
+
+        val waGenericRegex = Regex("""(?i)[-_]wa\d{3,6}""")
+        if (waGenericRegex.containsMatchIn(lowerName)) {
+            return true
+        }
+
+        if (lowerName.startsWith("ptt-") || lowerName.startsWith("stk-")) {
+            return true
+        }
+
+        return false
+    }
+
     fun findVehicleMediaFiles(cleanVehicleName: String, isSupervision: Boolean): List<java.io.File> {
         val filesToShare = ArrayList<java.io.File>()
         val addedNames = HashSet<String>()
@@ -1147,6 +1200,13 @@ class MainActivity : ComponentActivity() {
         fun checkAndAddFile(file: java.io.File) {
             if (file.exists() && file.isFile && file.length() > 0) {
                 val name = file.name.lowercase()
+                // Bloqueia e remove mídias do WhatsApp que possam ter sido importadas anteriormente
+                if (isExcludedMedia(name, file.absolutePath)) {
+                    try {
+                        file.delete()
+                    } catch (e: Exception) {}
+                    return
+                }
                 if (name.endsWith(".jpg") || name.endsWith(".jpeg") ||
                     name.endsWith(".png") || name.endsWith(".mp4") ||
                     name.endsWith(".mov") || name.endsWith(".3gp") ||
@@ -1216,6 +1276,12 @@ class MainActivity : ComponentActivity() {
                                 if (file.isFile) {
                                     val name = file.name ?: ""
                                     val lowerName = name.lowercase()
+                                    if (isExcludedMedia(lowerName, null)) {
+                                        try {
+                                            file.delete()
+                                        } catch (e: Exception) {}
+                                        continue
+                                    }
                                     if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") ||
                                         lowerName.endsWith(".png") || lowerName.endsWith(".mp4") ||
                                         lowerName.endsWith(".mov") || lowerName.endsWith(".3gp") ||
@@ -1301,6 +1367,10 @@ class MainActivity : ComponentActivity() {
     fun savePhotoDirectly(vehicleName: String, filename: String, sourceStream: java.io.InputStream): Boolean {
         val cleanVehicleName = sanitizeFilename(vehicleName)
         val cleanFilename = sanitizeFilename(filename)
+        if (isExcludedMedia(cleanFilename, null)) {
+            android.util.Log.w("Vistoria", "Blocked saving WhatsApp or excluded third-party media: $cleanFilename")
+            return false
+        }
         val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
         val savedUriStr = prefs.getString("selected_folder_uri", null)
 

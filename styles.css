@@ -2220,3 +2220,58 @@ html, body {
   }
 }
 
+/* Botões de Transferência de Categoria de Peça (Carro <-> Moto <-> Picape <-> Caminhão) */
+.vp-transfer-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.vp-transfer-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.vp-transfer-btn.active {
+  background: #eff6ff !important;
+  border-color: #2563eb !important;
+  color: #1d4ed8 !important;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.2) !important;
+}
+
+.vp-custom-category-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 7px 4px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+  background: #ffffff;
+  color: #334155;
+}
+
+.vp-custom-category-label:has(input:checked),
+.vp-custom-category-label.active {
+  background: #eff6ff !important;
+  border-color: #2563eb !important;
+  color: #1d4ed8 !important;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.15) !important;
+}
+

@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.19.0';
+let CURRENT_APP_VERSION = 'v2.20.0';
 
 function parseVersionNum(v) {
   if (!v) return 0;
@@ -5490,6 +5490,15 @@ async function shareVistoriaWhatsApp(id, shareMode) {
 
   copyTextToClipboard(reportText);
 
+  const isWhatsAppMedia = (filename) => {
+    if (!filename) return false;
+    const l = filename.toLowerCase();
+    return l.includes('whatsapp') || l.includes('telegram') ||
+           /[-_]wa\d+/i.test(l) ||
+           /^(img|vid)[-_]\d{4,8}[-_]wa\d+/i.test(l) ||
+           l.startsWith('ptt-') || l.startsWith('stk-');
+  };
+
   if (window.AndroidInterface) {
     // Sincroniza fotos apenas se não for compartilhamento exclusivo de texto
     if (shareMode !== 'text') {
@@ -5497,6 +5506,7 @@ async function shareVistoriaWhatsApp(id, shareMode) {
         const storedPhotos = await getStoredPhotosForVehicle(vehicleName);
         if (storedPhotos && storedPhotos.length > 0) {
           for (const p of storedPhotos) {
+            if (isWhatsAppMedia(p.name)) continue;
             if (p.rawBlob) {
               const base64 = await blobToBase64(p.rawBlob);
               if (base64) {
@@ -5546,6 +5556,7 @@ async function shareVistoriaWhatsApp(id, shareMode) {
     let filesToShare = [];
     if (storedPhotos && storedPhotos.length > 0) {
       for (const p of storedPhotos) {
+        if (isWhatsAppMedia(p.name)) continue;
         if (p.rawBlob) {
           let mimeType = p.rawBlob.type;
           if (!mimeType || mimeType === 'application/octet-stream') {
@@ -7038,6 +7049,7 @@ let vpSelectedPartsMap = new Map(); // key = displayName -> { name, rawName, zon
 let vpCustomPartsList = [];
 let vpCustomPartRenamesMap = {};
 let vpPartZoneOverridesMap = {}; // key = rawName/effectiveName -> zoneId
+let vpPartVehicleTypeMap = {}; // key = rawName/effectiveName -> 'carro'|'moto'|'picape'|'caminhao'|'all'
 let vpDeletedPartsList = [];
 let vpUsageStats = {}; // key: partName.toLowerCase() -> count
 let vpIsSyncingCloud = false;
@@ -7095,6 +7107,8 @@ function vpLoadState() {
     }
     const savedZoneOverrides = getSafeStorage('mobile_parts_zone_overrides', null);
     if (savedZoneOverrides && typeof savedZoneOverrides === 'object') vpPartZoneOverridesMap = savedZoneOverrides;
+    const savedVehicleTypeMap = getSafeStorage('mobile_parts_vehicle_type_map', null);
+    if (savedVehicleTypeMap && typeof savedVehicleTypeMap === 'object') vpPartVehicleTypeMap = savedVehicleTypeMap;
     const savedDeleted = getSafeStorage('mobile_parts_deleted', null);
     if (savedDeleted && Array.isArray(savedDeleted)) {
       vpDeletedPartsList = savedDeleted.map(d => vpCleanPartDashes(d));
@@ -7115,6 +7129,7 @@ function vpSaveState(syncToCloud = false) {
     setSafeStorage('mobile_parts_custom', vpCustomPartsList);
     setSafeStorage('mobile_parts_renames', vpCustomPartRenamesMap);
     setSafeStorage('mobile_parts_zone_overrides', vpPartZoneOverridesMap);
+    setSafeStorage('mobile_parts_vehicle_type_map', vpPartVehicleTypeMap);
     setSafeStorage('mobile_parts_deleted', vpDeletedPartsList);
     setSafeStorage('mobile_parts_usage_stats', vpUsageStats);
   } catch(e) {}
@@ -7176,6 +7191,7 @@ async function vpPushCatalogToCloud() {
         deletedParts: vpDeletedPartsList,
         renames: vpCustomPartRenamesMap,
         zoneOverrides: vpPartZoneOverridesMap,
+        vehicleTypeMap: vpPartVehicleTypeMap,
         usageStats: vpUsageStats,
         updatedAt: Date.now()
       }
@@ -7278,7 +7294,17 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
         });
       }
 
-      // 4. Merge de estatísticas de uso
+      // 4. Merge de alterações de tipo/seção de veículo (transferência de categoria)
+      if (cloudData.vehicleTypeMap && typeof cloudData.vehicleTypeMap === 'object') {
+        Object.keys(cloudData.vehicleTypeMap).forEach(key => {
+          if (!vpPartVehicleTypeMap[key]) {
+            vpPartVehicleTypeMap[key] = cloudData.vehicleTypeMap[key];
+            hasChanges = true;
+          }
+        });
+      }
+
+      // 5. Merge de estatísticas de uso
       if (cloudData.usageStats && typeof cloudData.usageStats === 'object') {
         Object.keys(cloudData.usageStats).forEach(k => {
           const cloudVal = cloudData.usageStats[k] || 0;
@@ -7505,11 +7531,68 @@ function vpDetectVehicleTypeFromText(rawText) {
 }
 window.vpDetectVehicleTypeFromText = vpDetectVehicleTypeFromText;
 
+function vpGetPartVehicleType(rawName) {
+  if (!rawName) return null;
+  const clean = vpCleanPartDashes(rawName);
+  const eff = vpGetEffectivePartName(rawName);
+  if (vpPartVehicleTypeMap[clean]) return vpPartVehicleTypeMap[clean];
+  if (vpPartVehicleTypeMap[rawName]) return vpPartVehicleTypeMap[rawName];
+  if (vpPartVehicleTypeMap[eff]) return vpPartVehicleTypeMap[eff];
+  // Checa se está em vpCustomPartsList com vehicleType específico
+  if (Array.isArray(vpCustomPartsList)) {
+    const custom = vpCustomPartsList.find(p => 
+      p && p.name && (p.name.toLowerCase() === rawName.toLowerCase() || p.name.toLowerCase() === eff.toLowerCase() || p.name.toLowerCase() === clean.toLowerCase())
+    );
+    if (custom && custom.vehicleType && custom.vehicleType !== 'all') {
+      return custom.vehicleType;
+    }
+  }
+  return null;
+}
+window.vpGetPartVehicleType = vpGetPartVehicleType;
+
+window.vpTransferPartVehicleType = function(rawName, targetType) {
+  if (!rawName || !targetType) return;
+  const clean = vpCleanPartDashes(rawName);
+  const eff = vpGetEffectivePartName(rawName);
+  vpPartVehicleTypeMap[rawName] = targetType;
+  vpPartVehicleTypeMap[clean] = targetType;
+  vpPartVehicleTypeMap[eff] = targetType;
+
+  if (Array.isArray(vpCustomPartsList)) {
+    const customItem = vpCustomPartsList.find(p => 
+      p && p.name && (
+        p.name.toLowerCase() === rawName.toLowerCase() || 
+        p.name.toLowerCase() === eff.toLowerCase() ||
+        p.name.toLowerCase() === clean.toLowerCase()
+      )
+    );
+    if (customItem) {
+      customItem.vehicleType = targetType;
+    } else {
+      vpCustomPartsList.push({ name: eff, zoneId: 'geral', vehicleType: targetType });
+    }
+  }
+
+  vpSaveState(true);
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+};
+
 // Filtro rigoroso por categoria de veículo para garantir que a busca e listagem mostrem apenas peças compatíveis
 function vpPartMatchesVehicleType(partObjOrName, currentVehicleType) {
   const raw = typeof partObjOrName === 'string' ? partObjOrName : (partObjOrName?.name || partObjOrName?.rawName || '');
-  const name = (raw || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const vType = currentVehicleType || vpDetectedVehicleType || 'carro';
+
+  // Prioridade 1: Atribuição manual/explícita feita pelo usuário
+  const explicitType = vpGetPartVehicleType(raw) || (typeof partObjOrName === 'object' && partObjOrName?.vehicleType);
+  if (explicitType && explicitType !== 'all') {
+    return explicitType === vType;
+  }
+  if (explicitType === 'all') {
+    return true;
+  }
+
+  const name = (raw || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   if (vType === 'moto') {
     // Moto NUNCA tem portas, capô de carro, porta-malas, para-choques de carro, caçamba, airbag de volante, ar condicionado, etc.
@@ -8631,6 +8714,15 @@ window.vpClearSearch = function() {
   vpRenderParts('');
 };
 
+window.vpSelectEditCategory = function(targetType) {
+  const select = document.getElementById('vpEditTargetCategorySelect');
+  if (select) select.value = targetType;
+  ['carro', 'moto', 'picape', 'caminhao'].forEach(t => {
+    const btn = document.getElementById(`vpTransferBtn_${t}`);
+    if (btn) btn.classList.toggle('active', t === targetType);
+  });
+};
+
 window.vpOpenEditPartModal = function(rawName, currentDisplayName, currentZoneId) {
   const modal = document.getElementById('vpEditPartModal');
   const origInput = document.getElementById('vpEditOriginalName');
@@ -8647,6 +8739,11 @@ window.vpOpenEditPartModal = function(rawName, currentDisplayName, currentZoneId
 
   if (origInput) origInput.value = rawName;
   if (nameInput) nameInput.value = currentDisplayName;
+
+  // Detecta a categoria/seção atual da peça e seleciona o botão correspondente no modal
+  let partCat = vpGetPartVehicleType(rawName) || vpGetPartVehicleType(currentDisplayName) || vpDetectedVehicleType || 'carro';
+  window.vpSelectEditCategory(partCat);
+
   if (modal) modal.style.display = 'flex';
   if (nameInput) setTimeout(() => nameInput.focus(), 100);
 };
@@ -8705,9 +8802,11 @@ window.vpSaveEditPartName = function(e) {
   e.preventDefault();
   const origInput = document.getElementById('vpEditOriginalName');
   const nameInput = document.getElementById('vpEditNameInput');
+  const catSelect = document.getElementById('vpEditTargetCategorySelect');
 
   const rawName = origInput ? origInput.value.trim() : '';
   const rawEntered = nameInput ? nameInput.value.trim() : '';
+  const targetCat = catSelect ? catSelect.value : (vpDetectedVehicleType || 'carro');
   const newName = vpCleanPartDashes(rawEntered);
 
   if (!rawName || !newName) return;
@@ -8728,20 +8827,26 @@ window.vpSaveEditPartName = function(e) {
     vpCustomPartRenamesMap[oldEffectiveName] = newName;
   }
 
-  // 3. Atualiza diretamente em vpCustomPartsList
+  // 3. Atribui a seção/categoria de veículo para a peça (Transferência entre Carros, Motos, Picapes, Caminhões)
+  vpPartVehicleTypeMap[rawName] = targetCat;
+  vpPartVehicleTypeMap[oldEffectiveName] = targetCat;
+  vpPartVehicleTypeMap[newName] = targetCat;
+
+  // 4. Atualiza diretamente em vpCustomPartsList
   const customItem = vpCustomPartsList.find(p => 
     p.name.toLowerCase() === rawName.toLowerCase() || 
-    p.name.toLowerCase() === oldEffectiveName.toLowerCase()
+    p.name.toLowerCase() === oldEffectiveName.toLowerCase() ||
+    p.name.toLowerCase() === newName.toLowerCase()
   );
   if (customItem) {
     customItem.name = newName;
-    customItem.vehicleType = 'all';
+    customItem.vehicleType = targetCat;
   } else {
     // Se era uma peça base do sistema que foi editada, registra como customizada para garantir persistência total
-    vpCustomPartsList.push({ name: newName, zoneId: 'geral', vehicleType: 'all' });
+    vpCustomPartsList.push({ name: newName, zoneId: 'geral', vehicleType: targetCat });
   }
 
-  // 4. Atualiza seleção na vistoria atual se estiver marcada
+  // 5. Atualiza seleção na vistoria atual se estiver marcada
   if (vpSelectedPartsMap.has(oldEffectiveName)) {
     const prevItem = vpSelectedPartsMap.get(oldEffectiveName);
     vpSelectedPartsMap.delete(oldEffectiveName);
@@ -8754,11 +8859,19 @@ window.vpSaveEditPartName = function(e) {
     vpSelectedPartsMap.set(newName, prevItem);
   }
 
-  // 5. Salva estado e sincroniza
+  // 6. Salva estado e sincroniza
   vpSaveState(true);
   window.vpCloseEditPartModal();
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
   vpUpdateDockAndSheet();
+};
+
+window.vpUpdateCustomCatRadioUI = function() {
+  const checked = document.querySelector('input[name="vpCustomCategory"]:checked')?.value || 'carro';
+  ['carro', 'moto', 'picape', 'caminhao'].forEach(t => {
+    const label = document.getElementById(`vpCustomCatLabel_${t}`);
+    if (label) label.classList.toggle('active', t === checked);
+  });
 };
 
 window.vpOpenAddCustomModal = function() {
@@ -8766,6 +8879,13 @@ window.vpOpenAddCustomModal = function() {
   const obsInput = document.getElementById('vpCustomObsInput');
   if (nameInput) nameInput.value = '';
   if (obsInput) obsInput.value = '';
+
+  // Seleciona a categoria ativa do veículo como padrão
+  const currentType = vpDetectedVehicleType || 'carro';
+  const radio = document.getElementById(`vpCustomCat_${currentType}`);
+  if (radio) radio.checked = true;
+  window.vpUpdateCustomCatRadioUI();
+
   const modal = document.getElementById('vpAddCustomModal');
   if (modal) modal.style.display = 'flex';
   if (nameInput) setTimeout(() => nameInput.focus(), 100);
@@ -8781,27 +8901,32 @@ window.vpSaveCustomPart = function(e) {
   const nameInput = document.getElementById('vpCustomNameInput');
   const obsInput = document.getElementById('vpCustomObsInput');
   const actionRadio = document.querySelector('input[name="vpCustomAction"]:checked');
+  const catRadio = document.querySelector('input[name="vpCustomCategory"]:checked');
 
   const name = nameInput ? nameInput.value.trim() : '';
   const obs = obsInput ? obsInput.value.trim() : '';
   const action = actionRadio ? actionRadio.value : 'troca'; // 'troca' | 'reparo' | 'catalogo'
+  const vehicleCategory = catRadio ? catRadio.value : (vpDetectedVehicleType || 'carro');
 
   if (!name) return;
 
   // 1. Remove de vpDeletedPartsList caso tenha sido excluída anteriormente
   vpDeletedPartsList = vpDeletedPartsList.filter(d => (d || '').toLowerCase() !== name.toLowerCase());
 
-  // 2. Salva permanentemente no catálogo customizado
+  // 2. Registra o mapeamento de categoria de veículo
+  vpPartVehicleTypeMap[name] = vehicleCategory;
+
+  // 3. Salva permanentemente no catálogo customizado
   const existingIdx = vpCustomPartsList.findIndex(p => (p.name || '').toLowerCase() === name.toLowerCase());
   if (existingIdx >= 0) {
     vpCustomPartsList[existingIdx].name = name;
     vpCustomPartsList[existingIdx].zoneId = 'geral';
-    vpCustomPartsList[existingIdx].vehicleType = 'all';
+    vpCustomPartsList[existingIdx].vehicleType = vehicleCategory;
   } else {
-    vpCustomPartsList.push({ name, zoneId: 'geral', vehicleType: 'all' });
+    vpCustomPartsList.push({ name, zoneId: 'geral', vehicleType: vehicleCategory });
   }
 
-  // 3. Se a ação for troca ou reparo, adiciona também à seleção da vistoria atual
+  // 4. Se a ação for troca ou reparo, adiciona também à seleção da vistoria atual
   if (action === 'troca' || action === 'reparo') {
     vpSelectedPartsMap.set(name, {
       name: name,
@@ -8813,7 +8938,7 @@ window.vpSaveCustomPart = function(e) {
     });
   }
 
-  // 4. Salva estado persistente (localStorage + Android Native SQLite + Push to Cloud)
+  // 5. Salva estado persistente (localStorage + Android Native SQLite + Push to Cloud)
   vpSaveState(true);
   window.vpCloseAddCustomModal();
 
@@ -8918,6 +9043,7 @@ window.vpExportCatalogJson = function() {
       customParts: vpCustomPartsList,
       renames: vpCustomPartRenamesMap,
       zoneOverrides: vpPartZoneOverridesMap,
+      vehicleTypeMap: vpPartVehicleTypeMap,
       deletedParts: vpDeletedPartsList,
       usageStats: vpUsageStats
     };
@@ -8951,7 +9077,7 @@ window.vpImportCatalogJson = function() {
         if (Array.isArray(parsed.customParts)) {
           parsed.customParts.forEach(p => {
             if (p && p.name && !vpCustomPartsList.some(cp => cp.name.toLowerCase() === p.name.toLowerCase())) {
-              vpCustomPartsList.push({ name: p.name, zoneId: p.zoneId || 'dianteira', vehicleType: 'all' });
+              vpCustomPartsList.push({ name: p.name, zoneId: p.zoneId || 'dianteira', vehicleType: p.vehicleType || 'all' });
               importedCount++;
             }
           });
@@ -8961,6 +9087,9 @@ window.vpImportCatalogJson = function() {
         }
         if (parsed.zoneOverrides && typeof parsed.zoneOverrides === 'object') {
           Object.assign(vpPartZoneOverridesMap, parsed.zoneOverrides);
+        }
+        if (parsed.vehicleTypeMap && typeof parsed.vehicleTypeMap === 'object') {
+          Object.assign(vpPartVehicleTypeMap, parsed.vehicleTypeMap);
         }
         vpSaveState(true);
         vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
