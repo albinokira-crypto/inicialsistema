@@ -516,13 +516,13 @@ input, select, textarea {
   box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
 }
 
-/* Insurer Selection Buttons - 4 em uma linha só no mesmo estilo dos atalhos */
+/* Insurer Selection Buttons - 5 em uma linha só no mesmo estilo dos atalhos */
 .insurer-buttons-container {
   display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   width: 100% !important;
   max-width: 100% !important;
-  gap: 4px !important;
+  gap: 2.5px !important;
   box-sizing: border-box !important;
   margin-top: 4px !important;
   margin-bottom: 6px !important;
@@ -1285,10 +1285,10 @@ html, body {
 
   .insurer-buttons-container {
     display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     width: 100% !important;
     max-width: 100% !important;
-    gap: 4px !important;
+    gap: 2.5px !important;
     box-sizing: border-box !important;
   }
 

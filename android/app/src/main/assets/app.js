@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.17.0';
+let CURRENT_APP_VERSION = 'v2.19.0';
 
 function parseVersionNum(v) {
   if (!v) return 0;
@@ -414,9 +414,16 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <button class="action-btn" type="button" data-action="delete" data-id="${entry.id}">Excluir</button>
           </div>
           <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
-            <button class="action-btn" type="button" data-action="parts" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
-              🚗 Partes do Veículo
-            </button>
+            ${(() => {
+              const itemVType = entry.vehicleType || (entry.type === 'Moto' ? 'moto' : vpDetectVehicleTypeFromText(entry.plate || entry.vehicle || ''));
+              const vBtnIcon = itemVType === 'moto' ? '🏍️' : (itemVType === 'caminhao' ? '🚛' : (itemVType === 'picape' ? '🛻' : '🚗'));
+              const vBtnLabel = itemVType === 'moto' ? 'Partes da Moto' : (itemVType === 'caminhao' ? 'Partes do Caminhão' : (itemVType === 'picape' ? 'Partes da Picape' : 'Partes do Veículo'));
+              return `
+                <button class="action-btn" type="button" data-action="parts" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                  ${vBtnIcon} ${vBtnLabel}
+                </button>
+              `;
+            })()}
             <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${entry.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: ${entry.sent ? '#059669' : '#16a34a'}; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: ${entry.sent ? '0 2px 4px rgba(5,150,105,0.35)' : '0 2px 4px rgba(22,163,74,0.2)'};">
               ${entry.sent ? '✅ Enviado' : '📲 Enviar Vistoria'}
             </button>
@@ -2747,6 +2754,7 @@ function populateProviderSelect() {
     btn.type = 'button';
     btn.className = 'insurer-btn';
     btn.dataset.id = insurer.id;
+    btn.title = `${insurer.name} - R$ ${insurer.price.toFixed(2).replace('.', ',')}`;
 
     let icon = '🛡️';
     const nameLower = (insurer.name || '').toLowerCase();
@@ -7388,6 +7396,15 @@ window.vpSetVehicleType = function(type, forceRender = true, keepAllZonesMode = 
     if (typeBadge) typeBadge.textContent = '🚗 Automóvel / SUV';
   }
 
+  // Se estiver visualizando/editando uma vistoria existente, salva a alteração manual do tipo
+  if (currentVistoriaIdForParts) {
+    const activeItem = items.find(entry => entry.id === currentVistoriaIdForParts);
+    if (activeItem) {
+      activeItem.vehicleType = vpDetectedVehicleType;
+      saveItems();
+    }
+  }
+
   if (!keepAllZonesMode) {
     vpViewAllZonesMode = false;
   }
@@ -7407,40 +7424,41 @@ function vpDetectVehicleTypeFromText(rawText) {
   const platePattern = /\b[A-Z]{3}[-\s]?[0-9][A-Z0-9][0-9]{2}\b|\b[A-Z]{3}[-\s]?[0-9]{4}\b/g;
   let textWithoutPlates = rawUpper.replace(platePattern, ' ');
 
-  const fullText = (' ' + textWithoutPlates.replace(/[^A-Z0-9\.\-\/]/g, ' ') + ' ').replace(/\s+/g, ' ');
+  // Substitui qualquer caractere que não seja letra ou número por espaço (trata slashes como HONDA/CG, VOLVO/FH, etc.)
+  const fullText = (' ' + textWithoutPlates.replace(/[^A-Z0-9]/g, ' ') + ' ').replace(/\s+/g, ' ');
 
   const hasWord = (term) => {
     const clean = (' ' + term.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') + ' ')
-      .replace(/[^A-Z0-9\.\-\/]/g, ' ')
+      .replace(/[^A-Z0-9]/g, ' ')
       .replace(/\s+/g, ' ');
     return fullText.includes(clean);
   };
 
   // 1. PICAPES E UTILITÁRIOS (Verificação prioritária)
   const picapeStrictTokens = [
-    'HILUX', 'S10', 'S-10', 'MONTANA', 'SILVERADO', 'D20', 'D-20', 'D10', 'C10', 'C20', 'COLORADO',
-    'RANGER', 'MAVERICK', 'F-150', 'F150', 'F-250', 'F250', 'COURIER',
+    'HILUX', 'S10', 'S 10', 'MONTANA', 'SILVERADO', 'D20', 'D 20', 'D10', 'C10', 'C20', 'COLORADO',
+    'RANGER', 'MAVERICK', 'F 150', 'F150', 'F 250', 'F250', 'COURIER',
     'STRADA', 'TORO', 'TITANO', 'FIORINO',
     'SAVEIRO', 'AMAROK', 'FRONTIER', 'L200', 'TRITON',
     'RAMPAGE', 'RAM 1500', 'RAM 2500', 'RAM 3500', 'OROCH', 'DUSTER OROCH',
     'LANDTREK', 'HOGGAR', 'JAC HUNTER', 'BYD SHARK', 'GWM POER',
-    'CABINE DUPLA', 'CABINE SIMPLES', 'CABINE ESTENDIDA', 'CD 4X4', 'CS 4X4', 'PICKUP', 'PICK-UP', 'PICAPE'
+    'CABINE DUPLA', 'CABINE SIMPLES', 'CABINE ESTENDIDA', 'CD 4X4', 'CS 4X4', 'PICKUP', 'PICK UP', 'PICAPE'
   ];
   if (picapeStrictTokens.some(t => hasWord(t))) return 'picape';
 
   // 2. CAMINHÕES E PESADOS
   const caminhaoStrictTokens = [
-    'CAMINHAO', 'CAMINHÃO', 'CAVALO MECANICO', 'CAVALO MECÂNICO', 'CAVALO-MECANICO',
-    'BITREM', 'RODOTREM', 'CARRETA', 'SEMI-REBOQUE', 'SEMIRREBOQUE', 'BASCULANTE',
-    'BITRUCK', 'TRUCK', 'CHASSI', 'CACAMBA', 'CAÇAMBA', 'GRANELEIRO', 'SIDER',
+    'CAMINHAO', 'CAVALO MECANICO',
+    'BITREM', 'RODOTREM', 'CARRETA', 'SEMI REBOQUE', 'SEMIRREBOQUE', 'BASCULANTE',
+    'BITRUCK', 'TRUCK', 'CHASSI', 'CACAMBA', 'GRANELEIRO', 'SIDER',
     'SCANIA', 'R440', 'R450', 'R480', 'R500', 'R540', 'P310', 'P360', 'P250', 'P270', 'P280', 'G440', '113H', '124G',
-    'VOLVO FH', 'VOLVO FM', 'VOLVO FMX', 'VOLVO VM', 'FH 460', 'FH 500', 'FH 540', 'FH 420', 'FH 440', 'FH 520', 'FM 370', 'FM 380', 'VM 260', 'VM 270', 'VM 330',
+    'VOLVO FH', 'VOLVO FM', 'VOLVO FMX', 'VOLVO VM', 'FH 460', 'FH 500', 'FH 540', 'FH 420', 'FH 440', 'FH 520', 'FM 370', 'FM 380', 'VM 260', 'VM 270', 'VM 330', 'VOLVO',
     'ACTROS', 'ATEGO', 'ACCELO', 'AXOR', 'ATRON', 'AROCS', 'MB 1620', 'MB 1938', 'MB 1113', 'MB 710', '1620', '1938', '1113', '710', '2544', '2546', '2646', '2651', '2548', '2426', '2428', '1719', '815', '1016',
-    'CONSTELLATION', 'DELIVERY', 'METEOR', 'WORKER', '24.250', '24.280', '25.440', '26.460', '19.320', '19.360', '17.190', '15.180', '13.180', '11.180', '9.170', '6.160',
-    'STRALIS', 'HI-WAY', 'HI-ROAD', 'TECTOR', 'S-WAY', 'VERTIS', 'EUROCARGO', 'DAILY 70C', 'DAILY 35S',
-    'DAF XF', 'DAF CF', 'DAF LF', 'XF105', 'XF 105', 'XF 480', 'XF 530', 'CF 85',
-    'FORD CARGO', 'CARGO 815', 'CARGO 2428', 'CARGO 2422', 'CARGO 2429', 'CARGO 1722', 'CARGO 1719', 'CARGO 1932', 'F-4000', 'F4000',
-    'MAN TGX', 'TGX 28.440'
+    'CONSTELLATION', 'DELIVERY', 'METEOR', 'WORKER', '24 250', '24 280', '25 440', '26 460', '19 320', '19 360', '17 190', '15 180', '13 180', '11 180', '9 170', '6 160',
+    'STRALIS', 'HI WAY', 'HI ROAD', 'TECTOR', 'S WAY', 'VERTIS', 'EUROCARGO', 'DAILY 70C', 'DAILY 35S', 'IVECO',
+    'DAF XF', 'DAF CF', 'DAF LF', 'XF105', 'XF 105', 'XF 480', 'XF 530', 'CF 85', 'DAF',
+    'FORD CARGO', 'CARGO 815', 'CARGO 2428', 'CARGO 2422', 'CARGO 2429', 'CARGO 1722', 'CARGO 1719', 'CARGO 1932', 'F 4000', 'F4000',
+    'MAN TGX', 'TGX 28 440'
   ];
   if (caminhaoStrictTokens.some(t => hasWord(t))) return 'caminhao';
 
@@ -7452,15 +7470,15 @@ function vpDetectVehicleTypeFromText(rawText) {
     'SAHARA', 'TORNADO', 'TWISTER', 'CB300', 'CB 300', 'CB 300F', 'CB300F',
     'CB500', 'CB 500', 'CB650', 'CB 650', 'CB1000', 'CB 1000', 'CBR', 'CBR600', 'CBR1000',
     'NC750', 'NC 750', 'NC700', 'TRANSALP', 'AFRICA TWIN', 'HORNET',
-    'PCX', 'ADV150', 'ADV 150', 'ADV350', 'ADV 350', 'LEAD 110', 'SH150', 'SH 150', 'SH300', 'SH 300', 'FORZA',
-    'CG160', 'CG 160', 'CG150', 'CG 150', 'CG125', 'CG 125', 'CG CARGO', 'FALCON', 'NX4', 'SHADOW',
+    'PCX', 'ADV150', 'ADV 150', 'ADV350', 'ADV 350', 'LEAD 110', 'SH150', 'SH 150', 'SH300', 'SH 300', 'FORZA', 'ELITE 125', 'ELITE',
+    'CG160', 'CG 160', 'CG150', 'CG 150', 'CG125', 'CG 125', 'CG CARGO', 'CG', 'FALCON', 'NX4', 'SHADOW',
     'FAZER', 'FZ15', 'FZ 15', 'FZ25', 'FZ 25', 'FZ6', 'FAZER 250', 'FAZER 150',
     'FACTOR', 'FACTOR 150', 'FACTOR 125', 'LANDER', 'XTZ', 'XTZ 250', 'XTZ 150', 'CROSSER',
-    'TENERE', 'TENERE 250', 'TENERE 700', 'T7', 'MT-03', 'MT-07', 'MT-09', 'MT-10', 'MT03', 'MT07', 'MT09', 'MT10',
-    'YZF-R3', 'YZF R3', 'YZF R15', 'YZF R1', 'NMAX', 'XMAX', 'FLUO', 'NEO 125', 'CRYPTON', 'YBR', 'VIRAGO', 'DRAGSTAR', 'MIDNIGHT STAR', 'RD 135', 'RD 350', 'DT 200',
-    'BURGMAN', 'INTRUDER', 'YES 125', 'GSR 750', 'GSR 150', 'GSX-S', 'GSX-R', 'GSX', 'HAYABUSA', 'BANDIT', 'V-STROM', 'VSTROM', 'BOULEVARD', 'INAZUMA', 'GLADIUS',
-    'NINJA', 'NINJA 300', 'NINJA 400', 'NINJA 650', 'NINJA 1000', 'ZX-6R', 'ZX-10R', 'ZX6R', 'ZX10R', 'Z400', 'Z 400', 'Z650', 'Z 650', 'Z900', 'Z 900', 'Z1000',
-    'VERSYS', 'VERSYS 300', 'VERSYS 650', 'VERSYS 1000', 'VULCAN', 'KLX',
+    'TENERE', 'TENERE 250', 'TENERE 700', 'T7', 'MT 03', 'MT 07', 'MT 09', 'MT 10', 'MT03', 'MT07', 'MT09', 'MT10',
+    'YZF R3', 'YZF R15', 'YZF R1', 'NMAX', 'XMAX', 'FLUO', 'NEO 125', 'NEO', 'CRYPTON', 'YBR', 'VIRAGO', 'DRAGSTAR', 'MIDNIGHT STAR', 'RD 135', 'RD 350', 'DT 200',
+    'BURGMAN', 'INTRUDER', 'YES 125', 'GSR 750', 'GSR 150', 'GSX S', 'GSX R', 'GSX', 'HAYABUSA', 'BANDIT', 'V STROM', 'VSTROM', 'BOULEVARD', 'INAZUMA', 'GLADIUS',
+    'NINJA', 'NINJA 300', 'NINJA 400', 'NINJA 650', 'NINJA 1000', 'ZX 6R', 'ZX 10R', 'ZX6R', 'ZX10R', 'Z400', 'Z 400', 'Z650', 'Z 650', 'Z900', 'Z 900', 'Z1000',
+    'VERSYS', 'VERSYS 300', 'VERSYS 650', 'VERSYS 1000', 'VULCAN', 'KLX', 'KAWASAKI', 'YAMAHA',
     'GS 1250', 'GS 1200', 'GS 1300', 'GS 850', 'GS 750', 'GS 310', 'G 310', 'G310GS', 'G310R', 'F850GS', 'F800GS', 'F750GS', 'F900R', 'F900XR', 'S1000RR', 'S1000R', 'R1250GS', 'R1200GS', 'R1300GS', 'R 1250 GS', 'R 1200 GS', 'R 1300 GS', 'R NINET',
     'TIGER', 'TIGER 900', 'TIGER 1200', 'TIGER 800', 'TIGER 660', 'BONNEVILLE', 'STREET TRIPLE', 'SPEED TRIPLE', 'TRIDENT', 'ROCKET 3',
     'HUNTER 350', 'METEOR 350', 'CLASSIC 350', 'HIMALAYAN', 'SCRAM 411', 'INTERCEPTOR 650', 'CONTINENTAL GT', 'SUPER METEOR', 'SHOTGUN 650',
@@ -7474,7 +7492,7 @@ function vpDetectVehicleTypeFromText(rawText) {
   ];
 
   const motoExclusiveBrands = [
-    'TRIUMPH', 'DUCATI', 'ROYAL ENFIELD', 'HARLEY-DAVIDSON', 'HARLEY DAVIDSON', 'HARLEY',
+    'TRIUMPH', 'DUCATI', 'ROYAL ENFIELD', 'HARLEY DAVIDSON', 'HARLEY',
     'BAJAJ', 'HAOJUE', 'DAFRA', 'SHINERAY', 'KASINSKI', 'SUNDOWN', 'TRAXX', 'VESPA', 'PIAGGIO',
     'MV AGUSTA', 'APRILIA', 'BENELLI', 'KTM', 'SUPER SOCO'
   ];
@@ -7486,6 +7504,45 @@ function vpDetectVehicleTypeFromText(rawText) {
   return 'carro';
 }
 window.vpDetectVehicleTypeFromText = vpDetectVehicleTypeFromText;
+
+// Filtro rigoroso por categoria de veículo para garantir que a busca e listagem mostrem apenas peças compatíveis
+function vpPartMatchesVehicleType(partObjOrName, currentVehicleType) {
+  const raw = typeof partObjOrName === 'string' ? partObjOrName : (partObjOrName?.name || partObjOrName?.rawName || '');
+  const name = (raw || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const vType = currentVehicleType || vpDetectedVehicleType || 'carro';
+
+  if (vType === 'moto') {
+    // Moto NUNCA tem portas, capô de carro, porta-malas, para-choques de carro, caçamba, airbag de volante, ar condicionado, etc.
+    const isCarOnly = /\b(PORTA DIANT|PORTA TRAS|PORTAS|CAPO DO MOTOR|CAPO|PORTA MALAS|PORTA-MALAS|PARA CHOQUE|PARACHOQUE|ALMA DO PARA|ALMA DO PARA-CHOQUE|GRADE DIANT|GRADE INFERIOR|CACAMBA|CAÇAMBA|PROTETOR DE CACAMBA|SANTO ANTONIO|CAPOTA MARITIMA|QUINTA RODA|TETO SOLAR|FORRO DO TETO|AIRBAG MOTORISTA|AIRBAG PASSAGEIRO|VIDRO PARA BRISA|VIDRO TRAS|VIDRO VIGIA|ESTRIBO LATERAL|CABINE)\b/i.test(name);
+    if (isCarOnly) return false;
+    return true;
+  }
+
+  if (vType === 'carro') {
+    // Carro não tem guidão, bengala, manete, rabeta, monoshock, quinta roda de caminhão, etc.
+    const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|RABETA|MONOSHOCK|CAVALETE CENTRAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA|PEDALEIRA DIANT|PEDALEIRA TRAS|TAMPA DO MOTOR LATERAL)\b/i.test(name);
+    const isTruckOnly = /\b(QUINTA RODA|CLIMATIZADOR DE TETO|PORTAS TRAS DO BAU|SUSPENSOR PNEUMATICO|CUICA DE FREIO)\b/i.test(name);
+    if (isMotoOnly || isTruckOnly) return false;
+    return true;
+  }
+
+  if (vType === 'caminhao') {
+    // Caminhão não tem peças exclusivas de moto
+    const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|RABETA|MONOSHOCK|CAVALETE CENTRAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA)\b/i.test(name);
+    if (isMotoOnly) return false;
+    return true;
+  }
+
+  if (vType === 'picape') {
+    const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|RABETA|MONOSHOCK|CAVALETE CENTRAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA)\b/i.test(name);
+    const isTruckOnly = /\b(QUINTA RODA|PORTAS TRAS DO BAU|SUSPENSOR PNEUMATICO)\b/i.test(name);
+    if (isMotoOnly || isTruckOnly) return false;
+    return true;
+  }
+
+  return true;
+}
+window.vpPartMatchesVehicleType = vpPartMatchesVehicleType;
 
 let currentVistoriaIdForParts = null;
 let vpOpenObsPartNames = new Set();
@@ -7555,7 +7612,7 @@ window.openVehiclePartsForVistoriaId = function(id) {
   vpCurrentVehicleModelName = vehicleTitle;
 
   const titleDisplay = document.getElementById('vpVehicleTitle');
-  const detectedType = item.type === 'Moto' ? 'moto' : vpDetectVehicleTypeFromText(vehicleTitle);
+  const detectedType = item.vehicleType || (item.type === 'Moto' ? 'moto' : vpDetectVehicleTypeFromText(vehicleTitle));
   window.vpSetVehicleType(detectedType, false, true);
   vpViewAllZonesMode = true;
 
@@ -8059,7 +8116,7 @@ function vpRenderParts(filterQuery = '') {
   let allParts = [];
   const seenNames = new Set();
 
-  // 1. Peças base do tipo de veículo atual
+  // 1. Peças base do tipo de veículo atual (estritamente filtradas para a categoria)
   if (Array.isArray(vpActiveZones)) {
     vpActiveZones.forEach(z => {
       if (Array.isArray(z.parts)) {
@@ -8067,35 +8124,39 @@ function vpRenderParts(filterQuery = '') {
           const effective = vpGetEffectivePartName(rawP);
           const effLower = (effective || '').toLowerCase();
           if (effective && !vpIsPartDeleted(rawP, effective) && !seenNames.has(effLower)) {
-            seenNames.add(effLower);
-            allParts.push({
-              rawName: rawP,
-              name: effective,
-              zoneId: z.id || 'geral',
-              zoneName: 'Peças do veículo',
-              icon: z.icon || '🚗'
-            });
+            if (vpPartMatchesVehicleType(effective, vpDetectedVehicleType)) {
+              seenNames.add(effLower);
+              allParts.push({
+                rawName: rawP,
+                name: effective,
+                zoneId: z.id || 'geral',
+                zoneName: 'Peças do veículo',
+                icon: z.icon || '🚗'
+              });
+            }
           }
         });
       }
     });
   }
 
-  // 2. Peças customizadas adicionadas pelo usuário (NUNCA desaparecem e não sofrem filtro de zona)
+  // 2. Peças customizadas adicionadas pelo usuário (filtradas para pertencer à categoria do veículo)
   if (Array.isArray(vpCustomPartsList)) {
     vpCustomPartsList.forEach(p => {
       if (p && p.name) {
         const effective = vpGetEffectivePartName(p.name);
         const effLower = (effective || '').toLowerCase();
         if (effective && !vpIsPartDeleted(p.name, effective) && !seenNames.has(effLower)) {
-          seenNames.add(effLower);
-          allParts.push({
-            rawName: p.name,
-            name: effective,
-            zoneId: p.zoneId || 'geral',
-            zoneName: 'Peças do veículo',
-            icon: '✨'
-          });
+          if (vpPartMatchesVehicleType(effective, vpDetectedVehicleType)) {
+            seenNames.add(effLower);
+            allParts.push({
+              rawName: p.name,
+              name: effective,
+              zoneId: p.zoneId || 'geral',
+              zoneName: 'Peças do veículo',
+              icon: '✨'
+            });
+          }
         }
       }
     });
@@ -8134,7 +8195,7 @@ function vpRenderParts(filterQuery = '') {
       listEl.innerHTML = `
         <div style="width: 100%; padding: 30px 16px; text-align: center; color: #64748b;">
           <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">🔍</span>
-          <b>Nenhuma peça encontrada para "${vpEscapeHtml(filterQuery)}"</b>
+          <b>Nenhuma peça encontrada para "${vpEscapeHtml(filterQuery)}" nesta categoria</b>
           <p style="font-size: 0.80rem; margin-top: 4px;">Toque no botão "+ Nova Peça" acima para cadastrá-la no catálogo.</p>
         </div>
       `;
@@ -8166,10 +8227,18 @@ function vpRenderParts(filterQuery = '') {
   const favSelCount = favParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
   const todasSelCount = todasParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
 
+  const vTypeLabels = {
+    moto: { title: 'Peças da moto', icon: '🏍️' },
+    caminhao: { title: 'Peças do caminhão', icon: '🚛' },
+    picape: { title: 'Peças da picape', icon: '🛻' },
+    carro: { title: 'Peças do veículo', icon: '🚗' }
+  };
+  const currentVTypeInfo = vTypeLabels[vpDetectedVehicleType] || vTypeLabels.carro;
+
   const isFavMode = (vpActiveCategory === 'FAVORITOS');
   const activeList = isFavMode ? favParts : todasParts;
-  const activeTitle = isFavMode ? 'Favoritas' : 'Peças do veículo';
-  const activeIcon = isFavMode ? '⭐' : '🚗';
+  const activeTitle = isFavMode ? 'Favoritas' : currentVTypeInfo.title;
+  const activeIcon = isFavMode ? '⭐' : currentVTypeInfo.icon;
   const activeColor = isFavMode ? '#ca8a04' : '#2563eb';
   const activeBg = isFavMode ? '#fefce8' : '#eff6ff';
 
@@ -8184,11 +8253,11 @@ function vpRenderParts(filterQuery = '') {
         <button 
           type="button" 
           onclick="vpSelectCategory('PECAS')"
-          title="Todas as peças do veículo (as mais usadas primeiro)"
+          title="Todas as ${currentVTypeInfo.title.toLowerCase()} (as mais usadas primeiro)"
           style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 6px 10px; border-radius: 10px; border: 2px solid ${!isFavMode ? '#2563eb' : '#cbd5e1'}; background: ${!isFavMode ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${!isFavMode ? '0 2px 6px rgba(37,99,235,0.18)' : 'none'};"
         >
-          <span style="font-size: 1.05rem; line-height: 1;">🚗</span>
-          <span style="font-size: 0.82rem; font-weight: 800; color: ${!isFavMode ? '#1e3a8a' : '#475569'}; line-height: 1.1;">Peças do veículo</span>
+          <span style="font-size: 1.05rem; line-height: 1;">${currentVTypeInfo.icon}</span>
+          <span style="font-size: 0.82rem; font-weight: 800; color: ${!isFavMode ? '#1e3a8a' : '#475569'}; line-height: 1.1;">${currentVTypeInfo.title}</span>
           <div style="display: flex; align-items: center; gap: 3px; margin-left: 2px;">
             <span style="font-size: 0.68rem; font-weight: 800; color: ${!isFavMode ? '#2563eb' : '#64748b'}; background: ${!isFavMode ? '#dbeafe' : '#f1f5f9'}; padding: 1px 6px; border-radius: 999px;">${todasParts.length}</span>
             ${todasSelCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 6px; border-radius: 999px;">${todasSelCount}</span>` : ''}
@@ -8775,7 +8844,12 @@ if (typeof plateInput !== 'undefined' && plateInput) {
     if (!text) return;
     const type = vpDetectVehicleTypeFromText(text);
 
-    // 1. Atualiza rótulo do botão de partes
+    // Sincroniza o tipo de veículo ativo para o seletor de partes e catálogo
+    if (typeof window.vpSetVehicleType === 'function') {
+      window.vpSetVehicleType(type, false, true);
+    }
+
+    // 1. Atualiza rótulo do botão de partes se existir
     const btnSpan = document.querySelector('.btn-open-parts-selector span');
     if (btnSpan) {
       if (type === 'moto') {
