@@ -23,3 +23,5 @@ node_modules/
 !android/app/src/main/assets/sw.js
 !login.js
 !api/catalog.js
+backup_pre_modelo3/
+

@@ -1,8 +1,8 @@
 :root {
-  color-scheme: light;
+  color-scheme: dark;
   font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
-  background: #f4f7fb;
-  color: #102542;
+  background: #070a12;
+  color: #f8fafc;
 }
 
 html, body {
@@ -20,8 +20,9 @@ html, body {
 }
 body {
   margin: 0;
-  background: linear-gradient(135deg, #eef4ff 0%, #f8fbff 100%);
+  background: radial-gradient(circle at 50% 0%, #172554 0%, #0b0f19 50%, #050811 100%) fixed !important;
   min-height: 100vh;
+  color: #f8fafc;
 }
 
 .app {
@@ -2273,5 +2274,607 @@ html, body {
   border-color: #2563eb !important;
   color: #1d4ed8 !important;
   box-shadow: 0 1px 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* ==========================================================================
+   CYBER-GLASSMORPHISM 3D THEME (MODELO 3)
+   Aparência futurista com vidro translúcido, reflexos e botões táteis em 3D
+   ========================================================================== */
+
+/* 1. CARTÕES E SUPERFÍCIES EM VIDRO TRANSLÚCIDO (GLASSMORPHISM) */
+.hero, 
+.card, 
+.menu-card, 
+.login-card, 
+.view-header-card, 
+#welcomeScreen, 
+#homeSummaryCard, 
+#recordsCard, 
+#supervisaoRecordsCard, 
+.tabs-card, 
+#vistoriaTypeTabsCard, 
+.oficina-list-card {
+  background: rgba(15, 23, 42, 0.72) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  color: #f8fafc !important;
+}
+
+/* 2. TIPOGRAFIA FUTURISTA E BRILHO SUTIL */
+h1, h2, h3, h4 {
+  color: #f8fafc !important;
+  letter-spacing: -0.2px;
+  text-shadow: 0 0 18px rgba(56, 189, 248, 0.25);
+}
+
+p, span, label, td, th {
+  color: #cbd5e1;
+}
+
+.eyebrow {
+  color: #38bdf8 !important;
+  letter-spacing: 0.22em !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+}
+
+#currentPageTitle, .page-title {
+  background: rgba(14, 165, 233, 0.15) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 3. BOTÕES PRINCIPAIS 3D (CÁPSULA COM EXTRUSÃO FÍSICA E REFLEXO SUPERIOR) */
+.primary-btn, 
+#saveVisitButton, 
+#saveSupervisaoButton, 
+#submitPasteBackupLoginBtn {
+  background: linear-gradient(180deg, #38bdf8 0%, #2563eb 52%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.4px !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.5) !important;
+  border-radius: 14px !important;
+  padding: 12px 20px !important;
+  box-shadow: 
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.75),
+    inset 0 -1.5px 1px rgba(0, 0, 0, 0.25),
+    0 4px 0 #172554,
+    0 8px 20px rgba(37, 99, 235, 0.5) !important;
+  transform: translateY(0) !important;
+  transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+  user-select: none !important;
+}
+
+.primary-btn:hover, 
+#saveVisitButton:hover, 
+#saveSupervisaoButton:hover {
+  filter: brightness(1.08) !important;
+  box-shadow: 
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.85),
+    0 4px 0 #172554,
+    0 10px 24px rgba(56, 189, 248, 0.55) !important;
+}
+
+/* Clique físico: o botão afunda 3px e a sombra diminui */
+.primary-btn:active, 
+#saveVisitButton:active, 
+#saveSupervisaoButton:active, 
+#submitPasteBackupLoginBtn:active {
+  transform: translateY(3px) !important;
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    0 1px 0 #172554,
+    0 4px 10px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* 4. BOTÕES SECUNDÁRIOS / GHOST EM VIDRO 3D */
+.ghost-btn, 
+#formPhotosButton, 
+#systemSettingsBtn, 
+#backToMenuButton, 
+#importBackupButton, 
+#importPasteBackupLoginBtn {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+  color: #38bdf8 !important;
+  font-weight: 700 !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  border-radius: 12px !important;
+  box-shadow: 
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.2),
+    0 3px 0 #070d19,
+    0 6px 14px rgba(0, 0, 0, 0.5) !important;
+  transform: translateY(0) !important;
+  transition: all 0.12s ease !important;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
+.ghost-btn:hover, 
+#formPhotosButton:hover, 
+#systemSettingsBtn:hover, 
+#backToMenuButton:hover {
+  border-color: #38bdf8 !important;
+  color: #7dd3fc !important;
+  box-shadow: 
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.3),
+    0 3px 0 #070d19,
+    0 8px 18px rgba(56, 189, 248, 0.35) !important;
+}
+
+.ghost-btn:active, 
+#formPhotosButton:active, 
+#systemSettingsBtn:active, 
+#backToMenuButton:active {
+  transform: translateY(2px) !important;
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    0 1px 0 #070d19,
+    0 2px 6px rgba(0, 0, 0, 0.4) !important;
+}
+
+#homeClearWeekButton {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.3) 100%) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 3px 0 #450a0a, 0 6px 14px rgba(0,0,0,0.5) !important;
+}
+
+#homeLogoutButton {
+  background: linear-gradient(180deg, rgba(51, 65, 85, 0.7) 0%, rgba(30, 41, 59, 0.9) 100%) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 3px 0 #070d19, 0 6px 14px rgba(0,0,0,0.5) !important;
+}
+
+/* 5. BOTÕES DO MENU PRINCIPAL 3D (CADA SEÇÃO COM SUA IDENTIDADE LUMINOSA) */
+.menu-btn {
+  border-radius: 16px !important;
+  font-weight: 800 !important;
+  padding: 16px 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  transition: all 0.14s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  user-select: none !important;
+}
+
+.menu-btn[data-day="Vistorias"] {
+  background: linear-gradient(180deg, #38bdf8 0%, #2563eb 55%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.8),
+    0 4px 0 #172554,
+    0 10px 22px rgba(37, 99, 235, 0.5) !important;
+}
+.menu-btn[data-day="Vistorias"]:active {
+  transform: translateY(3px) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 1px 0 #172554, 0 4px 10px rgba(37, 99, 235, 0.4) !important;
+}
+
+.special-btn-supervisao {
+  background: linear-gradient(180deg, #34d399 0%, #059669 55%, #047857 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.8),
+    0 4px 0 #064e3b,
+    0 10px 22px rgba(16, 185, 129, 0.45) !important;
+}
+.special-btn-supervisao:active {
+  transform: translateY(3px) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 1px 0 #064e3b, 0 4px 10px rgba(16, 185, 129, 0.35) !important;
+}
+
+.special-btn-seguradora[data-day="Seguradoras"] {
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 55%, #b45309 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.8),
+    0 4px 0 #78350f,
+    0 10px 22px rgba(245, 158, 11, 0.45) !important;
+}
+.special-btn-seguradora[data-day="Seguradoras"]:active {
+  transform: translateY(3px) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 1px 0 #78350f, 0 4px 10px rgba(245, 158, 11, 0.35) !important;
+}
+
+.special-btn-seguradora[data-day="Oficinas"] {
+  background: linear-gradient(180deg, #c084fc 0%, #9333ea 55%, #7e22ce 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.8),
+    0 4px 0 #581c87,
+    0 10px 22px rgba(168, 85, 247, 0.45) !important;
+}
+.special-btn-seguradora[data-day="Oficinas"]:active {
+  transform: translateY(3px) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 1px 0 #581c87, 0 4px 10px rgba(168, 85, 247, 0.35) !important;
+}
+
+.special-btn-total {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 55%, #0f172a 100%) !important;
+  color: #38bdf8 !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  box-shadow: 
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.3),
+    0 4px 0 #020617,
+    0 10px 20px rgba(0, 0, 0, 0.5) !important;
+}
+.special-btn-total:active {
+  transform: translateY(3px) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 1px 0 #020617, 0 4px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 6. ABAS E SELETORES 3D (TABS) */
+.tab-btn {
+  background: rgba(30, 41, 59, 0.75) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 2px 0 rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.12s ease !important;
+}
+
+.tab-btn:hover:not(.active) {
+  background: rgba(51, 65, 85, 0.85) !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+}
+
+.tab-btn.active {
+  background: linear-gradient(180deg, #38bdf8 0%, #2563eb 60%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.7),
+    0 3px 0 #172554,
+    0 6px 16px rgba(37, 99, 235, 0.5) !important;
+  transform: translateY(0) !important;
+}
+
+.tab-btn:active {
+  transform: translateY(2px) !important;
+}
+
+.vistoria-type-tabs .tab-btn {
+  border-radius: 14px !important;
+  padding: 8px 6px !important;
+}
+
+.vistoria-type-tabs .tab-btn .tab-btn-icon-box {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 8px !important;
+}
+
+.vistoria-type-tabs .tab-btn.active .tab-btn-icon-box {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 7. BOTÃO DE PARTES DO VEÍCULO (COCKPIT 3D) */
+.btn-open-parts-selector {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.45) !important;
+  color: #38bdf8 !important;
+  border-radius: 14px !important;
+  padding: 13px 16px !important;
+  box-shadow: 
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.25),
+    0 4px 0 #020617,
+    0 8px 20px rgba(6, 182, 212, 0.3) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.3px !important;
+  transition: all 0.12s ease !important;
+  cursor: pointer !important;
+}
+
+.btn-open-parts-selector:hover {
+  border-color: #38bdf8 !important;
+  box-shadow: 
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.35),
+    0 4px 0 #020617,
+    0 10px 24px rgba(56, 189, 248, 0.45) !important;
+}
+
+.btn-open-parts-selector:active {
+  transform: translateY(3px) !important;
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    0 1px 0 #020617,
+    0 3px 8px rgba(6, 182, 212, 0.2) !important;
+}
+
+/* 8. CAMPOS DE FORMULÁRIO (INPUTS, SELECTS E TEXTAREAS EM VIDRO FUMÊ) */
+input, select, textarea {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 12px !important;
+  color: #f8fafc !important;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.15s ease !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25), inset 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+  outline: none !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #64748b !important;
+}
+
+.display-field {
+  background: rgba(15, 23, 42, 0.65) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+  color: #38bdf8 !important;
+  font-weight: 800 !important;
+}
+
+/* 9. CARDS DE ITENS DE VISTORIA (LISTA E HISTÓRICO) */
+.item-card, .compact-item-card {
+  background: rgba(15, 23, 42, 0.78) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+  color: #f1f5f9 !important;
+  transition: all 0.15s ease !important;
+}
+
+.item-card:hover, .compact-item-card:hover {
+  border-color: rgba(56, 189, 248, 0.45) !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 16px rgba(56, 189, 248, 0.2) !important;
+}
+
+/* 10. PLACAS ESTILO REALISTA 3D */
+.plate-badge, .compact-plate-badge {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%) !important;
+  border: 1.5px solid #38bdf8 !important;
+  color: #f8fafc !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.5) !important;
+}
+
+.plate-badge-code {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.plate-badge-text, .compact-plate-badge .plate-badge-text {
+  color: #f8fafc !important;
+}
+
+/* 11. MÓDULO DE PEÇAS VEICULARES (CARDS E BOTÕES 3D) */
+.vp-part-card {
+  background: rgba(30, 41, 59, 0.75) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+}
+
+.vp-part-title {
+  color: #f8fafc !important;
+}
+
+.vp-btn-action {
+  border-radius: 8px !important;
+  font-weight: 800 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: rgba(15, 23, 42, 0.85) !important;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5) !important;
+  transition: all 0.12s ease !important;
+}
+
+.vp-btn-action:active {
+  transform: translateY(2px) !important;
+  box-shadow: none !important;
+}
+
+.vp-btn-action.btn-trocar {
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.45) !important;
+}
+
+.vp-btn-action.btn-trocar.active {
+  background: linear-gradient(180deg, #f87171 0%, #dc2626 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 3px 0 #7f1d1d, 0 6px 14px rgba(220,38,38,0.45) !important;
+}
+
+.vp-btn-action.btn-reparar {
+  color: #38bdf8 !important;
+  border-color: rgba(56, 189, 248, 0.45) !important;
+}
+
+.vp-btn-action.btn-reparar.active {
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 3px 0 #0369a1, 0 6px 14px rgba(2,132,199,0.45) !important;
+}
+
+.vp-transfer-btn {
+  background: rgba(30, 41, 59, 0.88) !important;
+  color: #cbd5e1 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45) !important;
+}
+
+.vp-transfer-btn:active {
+  transform: translateY(2px) !important;
+  box-shadow: none !important;
+}
+
+.vp-transfer-btn.active {
+  background: linear-gradient(180deg, #38bdf8 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 3px 0 #1e3a8a, 0 6px 14px rgba(37,99,235,0.45) !important;
+}
+
+.vp-zone-card {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc !important;
+}
+
+.vp-zone-card strong {
+  color: #f8fafc !important;
+}
+
+.vp-zone-card.active {
+  background: rgba(14, 165, 233, 0.18) !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.25) !important;
+}
+
+.vp-zone-group-header {
+  background: rgba(14, 165, 233, 0.2) !important;
+  color: #38bdf8 !important;
+  border-left: 4px solid #38bdf8 !important;
+}
+
+/* 12. MODAIS EM VIDRO ESCURO COM ELEVAÇÃO 3D */
+.photo-modal-overlay {
+  background: rgba(5, 8, 17, 0.82) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+.photo-modal {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 24px !important;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.75),
+    0 0 32px rgba(56, 189, 248, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+  color: #f8fafc !important;
+}
+
+.photo-modal h3 {
+  color: #38bdf8 !important;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.35) !important;
+}
+
+/* 13. RESUMO DA SEMANA E ITENS DE MÉTRICAS */
+.summary-item, #homeSummaryGrid .summary-item {
+  background: rgba(30, 41, 59, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.summary-item strong {
+  color: #f8fafc !important;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.25) !important;
+}
+
+.summary-item span {
+  color: #94a3b8 !important;
+}
+
+/* 14. BARRA DE ROLAGEM MODERNA CYBER-GLASS */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.35);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.65);
+}
+
+/* 15. DROPDOWN DE OFICINAS E COMBOBOXES */
+.oficina-combobox-dropdown {
+  background: rgba(15, 23, 42, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(56, 189, 248, 0.15) !important;
+  backdrop-filter: blur(16px) !important;
+  color: #f8fafc !important;
+}
+
+.oficina-combobox-item {
+  color: #f1f5f9 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 10px 14px !important;
+  transition: all 0.12s ease !important;
+}
+
+.oficina-combobox-item:hover, 
+.oficina-combobox-item.active {
+  background: rgba(14, 165, 233, 0.22) !important;
+  color: #38bdf8 !important;
+}
+
+/* 16. COMPATIBILIDADE COM CORES INLINE LEGADAS */
+[style*="background: #ffffff"], 
+[style*="background: white"], 
+[style*="background: #f8fafc"], 
+[style*="background: #f8fbff"] {
+  background: rgba(15, 23, 42, 0.75) !important;
+  color: #f8fafc !important;
+}
+
+[style*="color: #0f172a"], 
+[style*="color: #1e3a8a"], 
+[style*="color: #102542"], 
+[style*="color: #27435f"], 
+[style*="color: #334155"], 
+[style*="color: #374151"] {
+  color: #f1f5f9 !important;
+}
+
+[style*="color: #475569"], 
+[style*="color: #4b5d76"], 
+[style*="color: #64748b"] {
+  color: #94a3b8 !important;
+}
+
+[style*="background: #eff6ff"], 
+[style*="background: #eef4ff"], 
+[style*="background: #f0f9ff"] {
+  background: rgba(14, 165, 233, 0.15) !important;
+}
+
+[style*="border: 1px solid #bfdbfe"], 
+[style*="border: 1px solid #d7e2f0"], 
+[style*="border: 1.5px solid #cbd5e1"] {
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* 17. TOAST NOTIFICATIONS EM VIDRO NEON */
+.toast-notification {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid #38bdf8 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(56, 189, 248, 0.3) !important;
+  border-radius: 14px !important;
 }
 
