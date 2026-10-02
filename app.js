@@ -8768,7 +8768,7 @@ function vpRenderTabsNavBar() {
         >
           <span>${tab.icon || '📁'}</span>
           <span>${vpEscapeHtml(tab.name)}</span>
-          <span style="font-size: 0.65rem; padding: 1px 5px; border-radius: 999px; background: ${isActive ? '#ffffff' : '#f1f5f9'}; color: ${isActive ? '#db2777' : '#64748b'}; font-weight: 800; margin-left: 2px;">
+          <span style="font-size: 0.65rem; padding: 1px 5px; border-radius: 999px; background: ${isActive ? '#ffffff' : '#f1f5f9'}; color: ${isActive ? '#0284c7' : '#64748b'}; font-weight: 800; margin-left: 2px;">
             ${partsCount}
           </span>
         </button>
@@ -8782,7 +8782,7 @@ function vpRenderTabsNavBar() {
       class="vp-custom-nav-tab" 
       onclick="vpOpenCreateCustomTabModal()" 
       title="Criar nova aba personalizada"
-      style="border-style: dashed; border-color: #f472b6; color: #db2777; background: #fff5f8;"
+      style="border-style: dashed; border-color: #3b82f6; color: #2563eb; background: #eff6ff;"
     >
       <span>➕</span>
       <span>Criar aba</span>
@@ -8809,8 +8809,13 @@ window.vpOpenCreateCustomTabModal = function(editTabId = null) {
   const editIdInput = document.getElementById('vpCustomTabEditId');
   const nameInput = document.getElementById('vpCustomTabNameInput');
   const searchInput = document.getElementById('vpCustomTabPartSearch');
+  const suggestionsEl = document.getElementById('vpCustomTabSearchSuggestions');
 
   if (searchInput) searchInput.value = '';
+  if (suggestionsEl) {
+    suggestionsEl.style.display = 'none';
+    suggestionsEl.innerHTML = '';
+  }
   vpTempSelectedPartsInModal.clear();
 
   if (editTabId) {
@@ -8832,7 +8837,7 @@ window.vpOpenCreateCustomTabModal = function(editTabId = null) {
     vpSelectTabIcon('📁');
   }
 
-  vpPopulateCustomTabPartsPicker('');
+  vpRenderCustomTabChips();
   modal.style.display = 'flex';
   if (nameInput) setTimeout(() => nameInput.focus(), 80);
 };
@@ -8841,6 +8846,11 @@ window.vpOpenEditCustomTabModal = window.vpOpenCreateCustomTabModal;
 window.vpCloseCreateCustomTabModal = function() {
   const modal = document.getElementById('vpCreateCustomTabModal');
   if (modal) modal.style.display = 'none';
+  const suggestionsEl = document.getElementById('vpCustomTabSearchSuggestions');
+  if (suggestionsEl) {
+    suggestionsEl.style.display = 'none';
+    suggestionsEl.innerHTML = '';
+  }
   vpTempSelectedPartsInModal.clear();
 };
 
@@ -8860,101 +8870,155 @@ window.vpSelectTabIcon = function(icon) {
   }
 };
 
-window.vpFilterCustomTabPartsSelection = function(query) {
-  vpPopulateCustomTabPartsPicker(query || '');
-};
+window.vpOnSearchCustomTabPartInput = function(query) {
+  const suggestionsEl = document.getElementById('vpCustomTabSearchSuggestions');
+  if (!suggestionsEl) return;
 
-window.vpPopulateCustomTabPartsPicker = function(filterQuery = '') {
-  const container = document.getElementById('vpCustomTabPartsPickList');
-  if (!container) return;
+  const q = (query || '').trim();
+  if (!q) {
+    suggestionsEl.style.display = 'none';
+    suggestionsEl.innerHTML = '';
+    return;
+  }
 
   if (!vpAllVehicleParts || vpAllVehicleParts.length === 0) {
     vpLoadAndSortVehicleParts();
   }
 
   const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-  const qNorm = norm(filterQuery);
+  const qNorm = norm(q);
 
-  let partsToDisplay = (vpAllVehicleParts || []);
-  if (qNorm) {
-    partsToDisplay = partsToDisplay.filter(p => {
-      const n = norm(p.name);
-      const r = norm(p.rawName);
-      return n.includes(qNorm) || r.includes(qNorm);
-    });
-  }
+  const matches = (vpAllVehicleParts || []).filter(p => {
+    const eff = vpGetEffectivePartName(p.name);
+    if (vpTempSelectedPartsInModal.has(eff)) return false;
+    const n = norm(p.name);
+    const r = norm(p.rawName);
+    return n.includes(qNorm) || r.includes(qNorm);
+  });
 
-  if (partsToDisplay.length === 0) {
-    container.innerHTML = `
-      <div style="padding: 15px; text-align: center; color: #64748b; font-size: 0.78rem;">
-        Nenhuma peça encontrada no catálogo para o termo digitado.
+  if (matches.length === 0) {
+    suggestionsEl.innerHTML = `
+      <div style="padding: 10px; font-size: 0.78rem; color: #64748b; text-align: center;">
+        Pressione "Add" para incluir "${vpEscapeHtml(q)}" nesta aba
       </div>
     `;
-    vpUpdateCustomTabSelectedCount();
+    suggestionsEl.style.display = 'block';
+    return;
+  }
+
+  const topMatches = matches.slice(0, 10);
+  let html = '';
+  topMatches.forEach(p => {
+    html += `
+      <div 
+        onclick="vpSelectSuggestionPart('${vpEscapeHtml(p.name)}')" 
+        style="padding: 8px 12px; font-size: 0.82rem; font-weight: 700; color: #1e293b; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;"
+        onmouseover="this.style.background='#eff6ff'" 
+        onmouseout="this.style.background='#ffffff'"
+      >
+        <span>${vpEscapeHtml(p.name)}</span>
+        <span style="font-size: 0.72rem; color: #2563eb; font-weight: 800;">+ Adicionar</span>
+      </div>
+    `;
+  });
+
+  suggestionsEl.innerHTML = html;
+  suggestionsEl.style.display = 'block';
+};
+
+window.vpOnSearchCustomTabPartKeydown = function(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    vpAddPartFromSearchInput();
+  }
+};
+
+window.vpSelectSuggestionPart = function(partName) {
+  if (!partName) return;
+  const eff = vpGetEffectivePartName(partName);
+  if (eff) {
+    vpTempSelectedPartsInModal.add(eff);
+    vpRenderCustomTabChips();
+  }
+  const searchInput = document.getElementById('vpCustomTabPartSearch');
+  if (searchInput) {
+    searchInput.value = '';
+    searchInput.focus();
+  }
+  const suggestionsEl = document.getElementById('vpCustomTabSearchSuggestions');
+  if (suggestionsEl) {
+    suggestionsEl.style.display = 'none';
+    suggestionsEl.innerHTML = '';
+  }
+};
+
+window.vpAddPartFromSearchInput = function() {
+  const searchInput = document.getElementById('vpCustomTabPartSearch');
+  const rawVal = searchInput ? searchInput.value.trim() : '';
+  if (!rawVal) return;
+
+  const eff = vpGetEffectivePartName(rawVal);
+  if (eff) {
+    vpTempSelectedPartsInModal.add(eff);
+    vpRenderCustomTabChips();
+  }
+
+  if (searchInput) {
+    searchInput.value = '';
+    searchInput.focus();
+  }
+  const suggestionsEl = document.getElementById('vpCustomTabSearchSuggestions');
+  if (suggestionsEl) {
+    suggestionsEl.style.display = 'none';
+    suggestionsEl.innerHTML = '';
+  }
+};
+
+window.vpRemoveChipPart = function(partName) {
+  vpTempSelectedPartsInModal.delete(partName);
+  vpRenderCustomTabChips();
+};
+
+function vpRenderCustomTabChips() {
+  const container = document.getElementById('vpCustomTabChipsContainer');
+  const badge = document.getElementById('vpCustomTabSelectedCount');
+  const count = vpTempSelectedPartsInModal.size;
+
+  if (badge) {
+    badge.textContent = `${count} na aba`;
+  }
+
+  if (!container) return;
+
+  if (count === 0) {
+    container.innerHTML = `
+      <span id="vpCustomTabEmptyNotice" style="font-size: 0.75rem; color: #94a3b8; font-style: italic; width: 100%; text-align: center; padding: 12px 0;">
+        Nenhuma peça adicionada. Pesquise acima e clique em "Add".
+      </span>
+    `;
     return;
   }
 
   let html = '';
-  partsToDisplay.forEach(p => {
-    const isChecked = vpTempSelectedPartsInModal.has(p.name);
+  vpTempSelectedPartsInModal.forEach(name => {
     html += `
-      <label class="vp-custom-tab-picker-item ${isChecked ? 'is-selected' : ''}" style="cursor: pointer; user-select: none;">
-        <input 
-          type="checkbox" 
-          value="${vpEscapeHtml(p.name)}" 
-          ${isChecked ? 'checked' : ''} 
-          onchange="vpHandleTabPickerCheckbox(this)" 
-          style="margin: 0; width: 16px; height: 16px; accent-color: #db2777; cursor: pointer;" 
-        />
-        <span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-          ${vpEscapeHtml(p.name)}
-        </span>
-      </label>
+      <div class="vp-custom-tab-chip" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 0.76rem; font-weight: 700; color: #1e40af;">
+        <span>${vpEscapeHtml(name)}</span>
+        <button 
+          type="button" 
+          onclick="vpRemoveChipPart('${vpEscapeHtml(name)}')" 
+          style="background: none; border: none; font-size: 0.85rem; color: #64748b; cursor: pointer; padding: 0 2px; line-height: 1; font-weight: 800;"
+          title="Remover"
+          onmouseover="this.style.color='#ef4444'" 
+          onmouseout="this.style.color='#64748b'"
+        >
+          ✕
+        </button>
+      </div>
     `;
   });
 
   container.innerHTML = html;
-  vpUpdateCustomTabSelectedCount();
-};
-
-window.vpHandleTabPickerCheckbox = function(cb) {
-  const partName = cb.value;
-  if (cb.checked) {
-    vpTempSelectedPartsInModal.add(partName);
-    cb.parentElement?.classList.add('is-selected');
-  } else {
-    vpTempSelectedPartsInModal.delete(partName);
-    cb.parentElement?.classList.remove('is-selected');
-  }
-  vpUpdateCustomTabSelectedCount();
-};
-
-window.vpToggleSelectAllTabParts = function(selectAll) {
-  const container = document.getElementById('vpCustomTabPartsPickList');
-  if (!container) return;
-
-  const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-  checkboxes.forEach(cb => {
-    cb.checked = Boolean(selectAll);
-    const partName = cb.value;
-    if (selectAll) {
-      vpTempSelectedPartsInModal.add(partName);
-      cb.parentElement?.classList.add('is-selected');
-    } else {
-      vpTempSelectedPartsInModal.delete(partName);
-      cb.parentElement?.classList.remove('is-selected');
-    }
-  });
-
-  vpUpdateCustomTabSelectedCount();
-};
-
-function vpUpdateCustomTabSelectedCount() {
-  const badge = document.getElementById('vpCustomTabSelectedCount');
-  if (badge) {
-    const count = vpTempSelectedPartsInModal.size;
-    badge.textContent = `${count} selecionada${count === 1 ? '' : 's'}`;
-  }
 }
 
 window.vpSaveCustomTab = function(event) {
@@ -9167,18 +9231,18 @@ function vpRenderParts(filterQuery = '') {
       listEl.innerHTML = `
         <div class="vp-category-section-wrapper" style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
           <!-- CABEÇALHO DA ABA PERSONALIZADA -->
-          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%); border-radius: 12px; border: 1.5px solid #fbcfe8; border-left: 5px solid #db2777; width: 100%; box-sizing: border-box; box-shadow: 0 2px 6px rgba(219,39,119,0.1);">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; border: 1.5px solid #bae6fd; border-left: 5px solid #0284c7; width: 100%; box-sizing: border-box; box-shadow: 0 2px 6px rgba(2,132,199,0.1);">
             <div style="display: flex; align-items: center; gap: 10px;">
               <span style="font-size: 1.5rem; line-height: 1;">${activeTab.icon || '📁'}</span>
               <div>
                 <div style="display: flex; align-items: center; gap: 6px;">
-                  <strong style="font-size: 0.95rem; color: #831843; font-weight: 800;">${vpEscapeHtml(activeTab.name)}</strong>
-                  <span style="font-size: 0.68rem; font-weight: 800; color: #db2777; background: #ffffff; padding: 2px 8px; border-radius: 999px; border: 1px solid #fbcfe8;">
+                  <strong style="font-size: 0.95rem; color: #0369a1; font-weight: 800;">${vpEscapeHtml(activeTab.name)}</strong>
+                  <span style="font-size: 0.68rem; font-weight: 800; color: #0284c7; background: #ffffff; padding: 2px 8px; border-radius: 999px; border: 1px solid #bae6fd;">
                     ${tabItems.length} peças
                   </span>
-                  ${tabSelectedCount > 0 ? `<span style="font-size: 0.68rem; font-weight: 800; color: #ffffff; background: #db2777; padding: 2px 8px; border-radius: 999px;">${tabSelectedCount} sel.</span>` : ''}
+                  ${tabSelectedCount > 0 ? `<span style="font-size: 0.68rem; font-weight: 800; color: #ffffff; background: #0284c7; padding: 2px 8px; border-radius: 999px;">${tabSelectedCount} sel.</span>` : ''}
                 </div>
-                <span style="font-size: 0.68rem; color: #9d174d; font-weight: 500;">Aba personalizada • Selecione individualmente ou adicione todas</span>
+                <span style="font-size: 0.68rem; color: #0369a1; font-weight: 500;">Aba personalizada • Selecione individualmente ou adicione todas</span>
               </div>
             </div>
 
@@ -9197,7 +9261,7 @@ function vpRenderParts(filterQuery = '') {
                 type="button" 
                 onclick="vpOpenEditCustomTabModal('${activeTab.id}')" 
                 title="Adicionar ou alterar peças desta aba" 
-                style="background: #ffffff; border: 1.5px solid #fbcfe8; color: #db2777; font-size: 0.72rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
+                style="background: #ffffff; border: 1.5px solid #bae6fd; color: #0284c7; font-size: 0.72rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
               >
                 <span>✏️</span> Editar Aba
               </button>
@@ -9217,9 +9281,9 @@ function vpRenderParts(filterQuery = '') {
             <div style="width: 100%; padding: 35px 16px; text-align: center; color: #64748b; background: #ffffff; border: 1.5px dashed #cbd5e1; border-radius: 12px;">
               <span style="font-size: 2rem; display: block; margin-bottom: 6px;">📋</span>
               <b>${isSearching ? `Nenhuma peça encontrada para "${vpEscapeHtml(filterQuery)}"` : 'Esta aba ainda não possui peças cadastradas'}</b>
-              <p style="font-size: 0.80rem; margin: 6px 0 12px 0;">Clique em "Editar Aba" para selecionar as peças do catálogo que fazem parte desta aba.</p>
-              <button type="button" onclick="vpOpenEditCustomTabModal('${activeTab.id}')" style="background: #db2777; color: white; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 0.80rem; cursor: pointer;">
-                ➕ Selecionar Peças para esta Aba
+              <p style="font-size: 0.80rem; margin: 6px 0 12px 0;">Clique em "Editar Aba" para pesquisar e adicionar peças a esta aba.</p>
+              <button type="button" onclick="vpOpenEditCustomTabModal('${activeTab.id}')" style="background: #0284c7; color: white; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 0.80rem; cursor: pointer;">
+                ➕ Adicionar Peças a esta Aba
               </button>
             </div>
           ` : `
@@ -9384,7 +9448,7 @@ function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
           ${(typeof vpNewlyAddedPartNames !== 'undefined' && vpNewlyAddedPartNames && (vpNewlyAddedPartNames.has((item.name || '').toLowerCase()) || vpNewlyAddedPartNames.has(vpCleanPartDashes(item.name || '').toLowerCase()))) ? '<span style="font-size: 0.58rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 3px; border-radius: 3px; margin-left: 2px;">✨ Nova</span>' : ''}
         </span>
         ${vpActiveCustomTabId ? `
-          <button type="button" class="vp-btn-delete-part" title="Remover desta aba personalizada" onclick="event.stopPropagation(); vpRemovePartFromCustomTab('${vpEscapeHtml(item.name)}', '${vpActiveCustomTabId}')" style="color: #db2777;">✖</button>
+          <button type="button" class="vp-btn-delete-part" title="Remover desta aba personalizada" onclick="event.stopPropagation(); vpRemovePartFromCustomTab('${vpEscapeHtml(item.name)}', '${vpActiveCustomTabId}')" style="color: #0284c7;">✖</button>
         ` : `
           <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="event.stopPropagation(); vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
         `}

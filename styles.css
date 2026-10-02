@@ -2344,10 +2344,10 @@ html, body {
   box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
 }
 .vp-custom-nav-tab.is-custom.active {
-  border-color: #db2777;
-  background: #db2777;
+  border-color: #0284c7;
+  background: #0284c7;
   color: #ffffff;
-  box-shadow: 0 2px 5px rgba(219, 39, 119, 0.3);
+  box-shadow: 0 2px 5px rgba(2, 132, 199, 0.25);
 }
 .vp-tab-icon-btn {
   width: 34px;
@@ -2363,32 +2363,23 @@ html, body {
   transition: all 0.15s ease;
 }
 .vp-tab-icon-btn.active {
-  border-color: #db2777;
-  background: #fdf2f8;
+  border-color: #2563eb;
+  background: #eff6ff;
   transform: scale(1.08);
-  box-shadow: 0 1px 4px rgba(219, 39, 119, 0.2);
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.2);
 }
-.vp-custom-tab-picker-item {
-  display: flex;
+.vp-custom-tab-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: 5px;
+  padding: 4px 8px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
   border-radius: 6px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  font-size: 0.80rem;
-  font-weight: 600;
-  color: #1e293b;
-  cursor: pointer;
-  transition: background 0.15s ease;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #1e40af;
 }
-.vp-custom-tab-picker-item:hover {
-  background: #f8fafc;
-}
-.vp-custom-tab-picker-item.is-selected {
-  background: #fdf2f8;
-  border-color: #fbcfe8;
-  color: #9d174d;
-}
+
 
 

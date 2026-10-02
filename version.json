@@ -1,7 +1,7 @@
 {
-  "version": "2.31.0",
-  "versionCode": 2310,
-  "updatedAt": "2026-10-02T16:50:00Z",
-  "buildDate": "2026-10-02T16:50:00.000Z",
-  "changelog": "Abas personalizadas de pecas (Criar aba personalizada) e botao Add Todas as pecas para insercao em massa na vistoria"
+  "version": "2.32.0",
+  "versionCode": 2320,
+  "updatedAt": "2026-10-02T17:18:00Z",
+  "buildDate": "2026-10-02T17:18:00.000Z",
+  "changelog": "Remocao do botao superior de criar aba, busca com Add no modal e paleta azul sem rosa"
 }
