@@ -7099,6 +7099,7 @@ let vpPartVehicleTypeMap = {}; // key = rawName/effectiveName -> 'carro'|'moto'|
 let vpDeletedPartsList = [];
 let vpUsageStats = {}; // key: partName.toLowerCase() -> count
 let vpIsSyncingCloud = false;
+let vpNewlyAddedPartNames = new Set(); // Nomes de peças adicionadas na sessão ativa da aba (limpo ao fechar)
 
 function vpUpdateCloudIndicator(status, text) {
   const iconEl = document.getElementById('vpCloudSyncIcon');
@@ -7768,6 +7769,9 @@ window.openVehiclePartsForVistoriaId = function(id) {
   vpViewAllZonesMode = true;
   vpActiveCategory = 'PECAS';
   vpOpenObsPartNames.clear();
+  if (typeof vpNewlyAddedPartNames !== 'undefined' && vpNewlyAddedPartNames) {
+    vpNewlyAddedPartNames.clear();
+  }
   vpLoadState();
   if (typeof window.vpSyncCatalogWithCloud === 'function') {
     window.vpSyncCatalogWithCloud(false);
@@ -7831,15 +7835,84 @@ window.openVehiclePartsForVistoriaId = function(id) {
 };
 window.openVehiclePartsModalForId = window.openVehiclePartsForVistoriaId;
 
-window.openVehiclePartsModal = function() {
+let vpIsSettingsMode = false;
+
+window.openVehiclePartsModalFromSettings = function() {
+  vpIsSettingsMode = true;
+
+  // Fecha modal de configurações
+  const settingsModal = document.getElementById('systemSettingsModal');
+  if (settingsModal) settingsModal.style.display = 'none';
+
   currentVistoriaIdForParts = null;
   vpViewAllZonesMode = true;
   vpActiveCategory = 'PECAS';
   vpOpenObsPartNames.clear();
+  if (typeof vpNewlyAddedPartNames !== 'undefined' && vpNewlyAddedPartNames) {
+    vpNewlyAddedPartNames.clear();
+  }
   vpLoadState();
   if (typeof window.vpSyncCatalogWithCloud === 'function') {
     window.vpSyncCatalogWithCloud(false);
   }
+
+  vpCurrentVehicleModelName = 'Catálogo Geral de Peças';
+
+  const titleDisplay = document.getElementById('vpVehicleTitle');
+  if (titleDisplay) {
+    titleDisplay.textContent = 'Editar Partes do Veículo';
+  }
+
+  const badgeDisplay = document.getElementById('vpVehicleBadge');
+  if (badgeDisplay) {
+    badgeDisplay.textContent = 'Modo Gerenciador Geral';
+    badgeDisplay.style.background = '#dcfce7';
+    badgeDisplay.style.color = '#166534';
+  }
+
+  // Categoria inicial: carro (ou a última selecionada)
+  const defaultType = vpDetectedVehicleType || 'carro';
+  window.vpSetVehicleType(defaultType, false, true);
+
+  vpSelectedPartsMap.clear();
+  vpSetupSearch();
+  vpUpdateTriggerButton();
+  vpRenderParts();
+  vpUpdateDockAndSheet();
+
+  // Oculta botão de fotos no rodapé durante o modo gerenciador
+  const dockCamBtn = document.getElementById('vpDockCameraButton');
+  if (dockCamBtn) dockCamBtn.style.display = 'none';
+
+  const finishBtns = document.querySelectorAll('button[onclick="vpApplyAndClose()"]');
+  finishBtns.forEach(btn => {
+    btn.textContent = '✓ Concluir Edição';
+  });
+
+  const modal = document.getElementById('vehiclePartsModal');
+  if (modal) modal.style.display = 'flex';
+};
+
+window.openVehiclePartsModal = function() {
+  vpIsSettingsMode = false;
+  currentVistoriaIdForParts = null;
+  vpViewAllZonesMode = true;
+  vpActiveCategory = 'PECAS';
+  vpOpenObsPartNames.clear();
+  if (typeof vpNewlyAddedPartNames !== 'undefined' && vpNewlyAddedPartNames) {
+    vpNewlyAddedPartNames.clear();
+  }
+  vpLoadState();
+  if (typeof window.vpSyncCatalogWithCloud === 'function') {
+    window.vpSyncCatalogWithCloud(false);
+  }
+
+  const dockCamBtn = document.getElementById('vpDockCameraButton');
+  if (dockCamBtn) dockCamBtn.style.display = 'inline-flex';
+  const finishBtns = document.querySelectorAll('button[onclick="vpApplyAndClose()"]');
+  finishBtns.forEach(btn => {
+    btn.textContent = '✓ Concluir';
+  });
 
   const plateInput = document.getElementById('plateInput');
   const vehicleTitle = plateInput ? plateInput.value.trim() : '';
@@ -8011,6 +8084,34 @@ window.vpSaveSelectedParts = function() {
 };
 
 window.closeVehiclePartsModal = function(skipSave = false) {
+  if (vpIsSettingsMode) {
+    vpSaveState(true);
+    vpIsSettingsMode = false;
+    const modal = document.getElementById('vehiclePartsModal');
+    if (modal) modal.style.display = 'none';
+    if (typeof window.vpCloseReviewSheet === 'function') {
+      window.vpCloseReviewSheet();
+    }
+    if (typeof vpNewlyAddedPartNames !== 'undefined' && vpNewlyAddedPartNames) {
+      vpNewlyAddedPartNames.clear();
+    }
+    const dockCamBtn = document.getElementById('vpDockCameraButton');
+    if (dockCamBtn) dockCamBtn.style.display = 'inline-flex';
+    const finishBtns = document.querySelectorAll('button[onclick="vpApplyAndClose()"]');
+    finishBtns.forEach(btn => {
+      btn.textContent = '✓ Concluir';
+    });
+    const badgeDisplay = document.getElementById('vpVehicleBadge');
+    if (badgeDisplay) {
+      badgeDisplay.style.background = '#eff6ff';
+      badgeDisplay.style.color = '#2563eb';
+    }
+    if (typeof showToastNotification === 'function') {
+      showToastNotification('Catálogo de peças salvo com sucesso!', 2500);
+    }
+    return;
+  }
+
   if (!skipSave && typeof vpSelectedPartsMap !== 'undefined' && vpSelectedPartsMap.size > 0) {
     window.vpSaveSelectedParts();
     if (typeof showToastNotification === 'function') {
@@ -8028,6 +8129,16 @@ window.closeVehiclePartsModal = function(skipSave = false) {
   if (typeof window.vpCloseReviewSheet === 'function') {
     window.vpCloseReviewSheet();
   }
+  // Limpa o status de "Nova" ao fechar a aba de peças
+  if (typeof vpNewlyAddedPartNames !== 'undefined' && vpNewlyAddedPartNames) {
+    vpNewlyAddedPartNames.clear();
+  }
+  const dockCamBtn = document.getElementById('vpDockCameraButton');
+  if (dockCamBtn) dockCamBtn.style.display = 'inline-flex';
+  const finishBtns = document.querySelectorAll('button[onclick="vpApplyAndClose()"]');
+  finishBtns.forEach(btn => {
+    btn.textContent = '✓ Concluir';
+  });
 };
 
 window.vpOpenPhotosFromDock = function() {
@@ -8062,6 +8173,15 @@ window.vpOpenPhotosFromDock = function() {
 };
 
 window.vpApplyAndClose = function() {
+  if (vpIsSettingsMode) {
+    vpSaveState(true);
+    showCenteredSuccessModal('Alterações no catálogo salvas com sucesso!', 2000, () => {
+      window.closeVehiclePartsModal(true);
+      window.vpCloseReviewSheet();
+    });
+    return;
+  }
+
   window.vpSaveSelectedParts();
 
   // Exibe a tela com a mensagem no centro da tela por 3 segundos e só depois volta para a tela de vistoria
@@ -8720,7 +8840,7 @@ function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
         </span>
         <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.80rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: grab;">
           ${vpEscapeHtml(item.name)}
-          ${(vpCustomPartsList && vpCustomPartsList.some(cp => cp.name && cp.name.toLowerCase() === (item.name || '').toLowerCase())) ? '<span style="font-size: 0.58rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 3px; border-radius: 3px; margin-left: 2px;">✨ Nova</span>' : ''}
+          ${(typeof vpNewlyAddedPartNames !== 'undefined' && vpNewlyAddedPartNames && (vpNewlyAddedPartNames.has((item.name || '').toLowerCase()) || vpNewlyAddedPartNames.has(vpCleanPartDashes(item.name || '').toLowerCase()))) ? '<span style="font-size: 0.58rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 3px; border-radius: 3px; margin-left: 2px;">✨ Nova</span>' : ''}
         </span>
         <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="event.stopPropagation(); vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
       </div>
@@ -9140,6 +9260,13 @@ window.vpDeletePart = function(rawName, displayName) {
     } catch(err) {}
   });
 
+  // Remove de vpNewlyAddedPartNames caso tenha sido adicionada nesta sessão
+  if (typeof vpNewlyAddedPartNames !== 'undefined' && vpNewlyAddedPartNames) {
+    keysToDelete.forEach(k => {
+      if (k) vpNewlyAddedPartNames.delete(k.toLowerCase());
+    });
+  }
+
   // Invalida cache e recarrega catálogo em memória
   vpAllVehicleParts = null;
   vpLoadAndSortVehicleParts();
@@ -9388,6 +9515,12 @@ window.vpSaveCustomPart = function(e) {
       action: action,
       obs: obs
     });
+  }
+
+  // 4. Marca para exibir o badge "✨ Nova" somente enquanto a aba de peças estiver aberta nesta sessão
+  if (typeof vpNewlyAddedPartNames !== 'undefined' && vpNewlyAddedPartNames) {
+    vpNewlyAddedPartNames.add(name.toLowerCase());
+    vpNewlyAddedPartNames.add(vpCleanPartDashes(name).toLowerCase());
   }
 
   // 5. Invalida cache e recarrega catálogo em memória

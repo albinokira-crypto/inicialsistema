@@ -441,6 +441,20 @@
     <div id="systemSettingsModal" class="photo-modal-overlay" style="display: none;">
       <div class="photo-modal" style="max-width: 450px;">
         <h3>Configurações do Sistema</h3>
+
+        <!-- GERENCIAMENTO DO CATÁLOGO DE PEÇAS SEM PRECISAR DE VISTORIA -->
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%); border: 1.5px solid #86efac; border-radius: 12px; padding: 14px; margin-top: 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.35rem;">🚗</span>
+            <div>
+              <div style="font-size: 0.88rem; font-weight: 800; color: #166534;">Catálogo de Peças</div>
+              <div style="font-size: 0.72rem; color: #4b5563;">Edite, renomeie, reordene ou cadastre novas peças</div>
+            </div>
+          </div>
+          <button id="btnEditVehiclePartsFromSettings" type="button" onclick="openVehiclePartsModalFromSettings()" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 14px; background: #16a34a; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 0.90rem; cursor: pointer; box-shadow: 0 2px 5px rgba(22,163,74,0.3); transition: all 0.2s;">
+            ✏️ Editar Partes do Veículo
+          </button>
+        </div>
         
         <!-- SELEÇÃO DE PASTA (INVISÍVEL) -->
         <div id="folderSettingsSection" style="display: none !important; flex-direction: column; gap: 12px; margin-top: 16px;">
