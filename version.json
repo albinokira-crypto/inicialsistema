@@ -1,7 +1,7 @@
 {
-  "version": "2.30.0",
-  "versionCode": 2300,
-  "updatedAt": "2026-10-02T16:25:00Z",
-  "buildDate": "2026-10-02T16:25:00.000Z",
-  "changelog": "Badge Nova temporário apenas na sessão aberta e botão Editar Partes do Veículo nas Configurações sem precisar de vistoria"
+  "version": "2.31.0",
+  "versionCode": 2310,
+  "updatedAt": "2026-10-02T16:50:00Z",
+  "buildDate": "2026-10-02T16:50:00.000Z",
+  "changelog": "Abas personalizadas de pecas (Criar aba personalizada) e botao Add Todas as pecas para insercao em massa na vistoria"
 }

@@ -7100,6 +7100,9 @@ let vpDeletedPartsList = [];
 let vpUsageStats = {}; // key: partName.toLowerCase() -> count
 let vpIsSyncingCloud = false;
 let vpNewlyAddedPartNames = new Set(); // Nomes de peças adicionadas na sessão ativa da aba (limpo ao fechar)
+let vpCustomTabs = []; // Array de { id, name, icon, parts: string[] }
+let vpActiveCustomTabId = null; // null = aba padrão "Peças do veículo", string = id da aba personalizada
+let vpTempSelectedPartsInModal = new Set();
 
 function vpUpdateCloudIndicator(status, text) {
   const iconEl = document.getElementById('vpCloudSyncIcon');
@@ -7168,6 +7171,10 @@ function vpLoadState() {
       });
       vpUsageStats = cleanStats;
     }
+    const savedTabs = getSafeStorage('mobile_custom_parts_tabs', null);
+    if (savedTabs && Array.isArray(savedTabs)) {
+      vpCustomTabs = savedTabs;
+    }
   } catch(e) {}
 }
 
@@ -7179,6 +7186,7 @@ function vpSaveState(syncToCloud = false) {
     setSafeStorage('mobile_parts_vehicle_type_map', vpPartVehicleTypeMap);
     setSafeStorage('mobile_parts_deleted', vpDeletedPartsList);
     setSafeStorage('mobile_parts_usage_stats', vpUsageStats);
+    setSafeStorage('mobile_custom_parts_tabs', vpCustomTabs);
   } catch(e) {}
 
   if (syncToCloud) {
@@ -7240,6 +7248,7 @@ async function vpPushCatalogToCloud() {
         zoneOverrides: vpPartZoneOverridesMap,
         vehicleTypeMap: vpPartVehicleTypeMap,
         usageStats: vpUsageStats,
+        customTabs: vpCustomTabs,
         updatedAt: Date.now()
       }
     };
@@ -7362,6 +7371,18 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
         });
       }
 
+      // 6. Merge de abas personalizadas
+      if (Array.isArray(cloudData.customTabs) && cloudData.customTabs.length > 0) {
+        cloudData.customTabs.forEach(cloudTab => {
+          if (!cloudTab || !cloudTab.id) return;
+          const localTab = vpCustomTabs.find(t => t.id === cloudTab.id);
+          if (!localTab) {
+            vpCustomTabs.push(cloudTab);
+            hasChanges = true;
+          }
+        });
+      }
+
       // Limpeza de segurança: remove de vpDeletedPartsList qualquer peça que esteja presente nas customizadas
       if (vpDeletedPartsList && vpDeletedPartsList.length > 0) {
         const activeNames = new Set(vpCustomPartsList.map(p => (p.name || '').toLowerCase()));
@@ -7383,6 +7404,7 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
       }
 
       if (hasChanges) {
+        if (typeof vpRenderTabsNavBar === 'function') vpRenderTabsNavBar();
         vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
       }
 
@@ -7507,6 +7529,10 @@ window.vpSetVehicleType = function(type, forceRender = true, keepAllZonesMode = 
 
   if (!keepAllZonesMode) {
     vpViewAllZonesMode = false;
+  }
+
+  if (typeof vpRenderTabsNavBar === 'function') {
+    vpRenderTabsNavBar();
   }
 
   if (forceRender) {
@@ -7827,6 +7853,7 @@ window.openVehiclePartsForVistoriaId = function(id) {
 
   vpSetupSearch();
   vpUpdateTriggerButton();
+  vpRenderTabsNavBar();
   vpRenderParts();
   vpUpdateDockAndSheet();
 
@@ -7877,6 +7904,7 @@ window.openVehiclePartsModalFromSettings = function() {
   vpSelectedPartsMap.clear();
   vpSetupSearch();
   vpUpdateTriggerButton();
+  vpRenderTabsNavBar();
   vpRenderParts();
   vpUpdateDockAndSheet();
 
@@ -7998,6 +8026,7 @@ window.openVehiclePartsModal = function() {
 
   vpSetupSearch();
   vpUpdateTriggerButton();
+  vpRenderTabsNavBar();
   vpRenderParts();
   vpUpdateDockAndSheet();
 
@@ -8700,12 +8729,524 @@ function vpFindCardEl(name) {
   return null;
 }
 
+// --- GERENCIAMENTO DE ABAS PERSONALIZADAS DE PEÇAS ---
+function vpRenderTabsNavBar() {
+  const container = document.getElementById('vpTabsNavBar');
+  if (!container) return;
+
+  const vTypeLabels = {
+    moto: { title: 'Peças da moto', icon: '🏍️' },
+    caminhao: { title: 'Peças do caminhão', icon: '🚛' },
+    picape: { title: 'Peças da picape', icon: '🛻' },
+    carro: { title: 'Peças do veículo', icon: '🚗' }
+  };
+  const mainTypeInfo = vTypeLabels[vpDetectedVehicleType] || vTypeLabels.carro;
+  const isMainActive = (vpActiveCustomTabId === null);
+
+  let html = `
+    <button 
+      type="button" 
+      class="vp-custom-nav-tab ${isMainActive ? 'active' : ''}" 
+      onclick="vpSelectCustomTab(null)"
+      title="Catálogo principal de peças"
+    >
+      <span>${mainTypeInfo.icon}</span>
+      <span>${mainTypeInfo.title}</span>
+    </button>
+  `;
+
+  if (Array.isArray(vpCustomTabs) && vpCustomTabs.length > 0) {
+    vpCustomTabs.forEach(tab => {
+      const isActive = (vpActiveCustomTabId === tab.id);
+      const partsCount = Array.isArray(tab.parts) ? tab.parts.length : 0;
+      html += `
+        <button 
+          type="button" 
+          class="vp-custom-nav-tab is-custom ${isActive ? 'active' : ''}" 
+          onclick="vpSelectCustomTab('${tab.id}')"
+          title="Aba: ${vpEscapeHtml(tab.name)} (${partsCount} peças)"
+        >
+          <span>${tab.icon || '📁'}</span>
+          <span>${vpEscapeHtml(tab.name)}</span>
+          <span style="font-size: 0.65rem; padding: 1px 5px; border-radius: 999px; background: ${isActive ? '#ffffff' : '#f1f5f9'}; color: ${isActive ? '#db2777' : '#64748b'}; font-weight: 800; margin-left: 2px;">
+            ${partsCount}
+          </span>
+        </button>
+      `;
+    });
+  }
+
+  html += `
+    <button 
+      type="button" 
+      class="vp-custom-nav-tab" 
+      onclick="vpOpenCreateCustomTabModal()" 
+      title="Criar nova aba personalizada"
+      style="border-style: dashed; border-color: #f472b6; color: #db2777; background: #fff5f8;"
+    >
+      <span>➕</span>
+      <span>Criar aba</span>
+    </button>
+  `;
+
+  container.innerHTML = html;
+}
+window.vpRenderTabsNavBar = vpRenderTabsNavBar;
+
+window.vpSelectCustomTab = function(tabId) {
+  vpActiveCustomTabId = tabId;
+  vpRenderTabsNavBar();
+  const searchInput = document.getElementById('vpSearchInput');
+  const query = searchInput ? searchInput.value : '';
+  vpRenderParts(query);
+};
+
+window.vpOpenCreateCustomTabModal = function(editTabId = null) {
+  const modal = document.getElementById('vpCreateCustomTabModal');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('vpCustomTabModalTitle');
+  const editIdInput = document.getElementById('vpCustomTabEditId');
+  const nameInput = document.getElementById('vpCustomTabNameInput');
+  const searchInput = document.getElementById('vpCustomTabPartSearch');
+
+  if (searchInput) searchInput.value = '';
+  vpTempSelectedPartsInModal.clear();
+
+  if (editTabId) {
+    const tab = vpCustomTabs.find(t => t.id === editTabId);
+    if (tab) {
+      if (titleEl) titleEl.innerHTML = `<span>✏️</span> Editar Aba: ${vpEscapeHtml(tab.name)}`;
+      if (editIdInput) editIdInput.value = tab.id;
+      if (nameInput) nameInput.value = tab.name;
+      vpSelectTabIcon(tab.icon || '📁');
+      (tab.parts || []).forEach(p => {
+        const eff = vpGetEffectivePartName(p);
+        if (eff) vpTempSelectedPartsInModal.add(eff);
+      });
+    }
+  } else {
+    if (titleEl) titleEl.innerHTML = `<span>📁</span> Criar Aba Personalizada`;
+    if (editIdInput) editIdInput.value = '';
+    if (nameInput) nameInput.value = '';
+    vpSelectTabIcon('📁');
+  }
+
+  vpPopulateCustomTabPartsPicker('');
+  modal.style.display = 'flex';
+  if (nameInput) setTimeout(() => nameInput.focus(), 80);
+};
+window.vpOpenEditCustomTabModal = window.vpOpenCreateCustomTabModal;
+
+window.vpCloseCreateCustomTabModal = function() {
+  const modal = document.getElementById('vpCreateCustomTabModal');
+  if (modal) modal.style.display = 'none';
+  vpTempSelectedPartsInModal.clear();
+};
+
+window.vpSelectTabIcon = function(icon) {
+  const iconInput = document.getElementById('vpCustomTabIconInput');
+  if (iconInput) iconInput.value = icon;
+  const container = document.getElementById('vpCustomTabIconsContainer');
+  if (container) {
+    const btns = container.querySelectorAll('.vp-tab-icon-btn');
+    btns.forEach(btn => {
+      if (btn.textContent.trim() === icon) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+};
+
+window.vpFilterCustomTabPartsSelection = function(query) {
+  vpPopulateCustomTabPartsPicker(query || '');
+};
+
+window.vpPopulateCustomTabPartsPicker = function(filterQuery = '') {
+  const container = document.getElementById('vpCustomTabPartsPickList');
+  if (!container) return;
+
+  if (!vpAllVehicleParts || vpAllVehicleParts.length === 0) {
+    vpLoadAndSortVehicleParts();
+  }
+
+  const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const qNorm = norm(filterQuery);
+
+  let partsToDisplay = (vpAllVehicleParts || []);
+  if (qNorm) {
+    partsToDisplay = partsToDisplay.filter(p => {
+      const n = norm(p.name);
+      const r = norm(p.rawName);
+      return n.includes(qNorm) || r.includes(qNorm);
+    });
+  }
+
+  if (partsToDisplay.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 15px; text-align: center; color: #64748b; font-size: 0.78rem;">
+        Nenhuma peça encontrada no catálogo para o termo digitado.
+      </div>
+    `;
+    vpUpdateCustomTabSelectedCount();
+    return;
+  }
+
+  let html = '';
+  partsToDisplay.forEach(p => {
+    const isChecked = vpTempSelectedPartsInModal.has(p.name);
+    html += `
+      <label class="vp-custom-tab-picker-item ${isChecked ? 'is-selected' : ''}" style="cursor: pointer; user-select: none;">
+        <input 
+          type="checkbox" 
+          value="${vpEscapeHtml(p.name)}" 
+          ${isChecked ? 'checked' : ''} 
+          onchange="vpHandleTabPickerCheckbox(this)" 
+          style="margin: 0; width: 16px; height: 16px; accent-color: #db2777; cursor: pointer;" 
+        />
+        <span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          ${vpEscapeHtml(p.name)}
+        </span>
+      </label>
+    `;
+  });
+
+  container.innerHTML = html;
+  vpUpdateCustomTabSelectedCount();
+};
+
+window.vpHandleTabPickerCheckbox = function(cb) {
+  const partName = cb.value;
+  if (cb.checked) {
+    vpTempSelectedPartsInModal.add(partName);
+    cb.parentElement?.classList.add('is-selected');
+  } else {
+    vpTempSelectedPartsInModal.delete(partName);
+    cb.parentElement?.classList.remove('is-selected');
+  }
+  vpUpdateCustomTabSelectedCount();
+};
+
+window.vpToggleSelectAllTabParts = function(selectAll) {
+  const container = document.getElementById('vpCustomTabPartsPickList');
+  if (!container) return;
+
+  const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+  checkboxes.forEach(cb => {
+    cb.checked = Boolean(selectAll);
+    const partName = cb.value;
+    if (selectAll) {
+      vpTempSelectedPartsInModal.add(partName);
+      cb.parentElement?.classList.add('is-selected');
+    } else {
+      vpTempSelectedPartsInModal.delete(partName);
+      cb.parentElement?.classList.remove('is-selected');
+    }
+  });
+
+  vpUpdateCustomTabSelectedCount();
+};
+
+function vpUpdateCustomTabSelectedCount() {
+  const badge = document.getElementById('vpCustomTabSelectedCount');
+  if (badge) {
+    const count = vpTempSelectedPartsInModal.size;
+    badge.textContent = `${count} selecionada${count === 1 ? '' : 's'}`;
+  }
+}
+
+window.vpSaveCustomTab = function(event) {
+  if (event) event.preventDefault();
+
+  const nameInput = document.getElementById('vpCustomTabNameInput');
+  const name = nameInput ? nameInput.value.trim() : '';
+  if (!name) {
+    alert('Por favor, informe o nome da aba personalizada.');
+    if (nameInput) nameInput.focus();
+    return;
+  }
+
+  const iconInput = document.getElementById('vpCustomTabIconInput');
+  const icon = (iconInput && iconInput.value) ? iconInput.value.trim() : '📁';
+  const editIdInput = document.getElementById('vpCustomTabEditId');
+  const editId = editIdInput ? editIdInput.value.trim() : '';
+
+  const parts = Array.from(vpTempSelectedPartsInModal);
+
+  if (editId) {
+    const existing = vpCustomTabs.find(t => t.id === editId);
+    if (existing) {
+      existing.name = name;
+      existing.icon = icon;
+      existing.parts = parts;
+    }
+    vpActiveCustomTabId = editId;
+  } else {
+    const newId = 'tab_' + Date.now();
+    vpCustomTabs.push({
+      id: newId,
+      name: name,
+      icon: icon,
+      parts: parts
+    });
+    vpActiveCustomTabId = newId;
+  }
+
+  vpSaveState(true);
+  vpCloseCreateCustomTabModal();
+  vpRenderTabsNavBar();
+  vpRenderParts();
+
+  if (typeof showToastNotification === 'function') {
+    showToastNotification(`Aba "${name}" salva com ${parts.length} peças!`, 3000);
+  }
+};
+
+window.vpDeleteCustomTab = function(tabId) {
+  const tab = vpCustomTabs.find(t => t.id === tabId);
+  const tabName = tab ? tab.name : 'esta aba';
+
+  if (!confirm(`Deseja realmente excluir a aba "${tabName}"?\n(As peças continuarão existindo no catálogo principal)`)) {
+    return;
+  }
+
+  vpCustomTabs = vpCustomTabs.filter(t => t.id !== tabId);
+  if (vpActiveCustomTabId === tabId) {
+    vpActiveCustomTabId = null;
+  }
+
+  vpSaveState(true);
+  vpRenderTabsNavBar();
+  vpRenderParts();
+
+  if (typeof showToastNotification === 'function') {
+    showToastNotification(`Aba "${tabName}" excluída.`, 2500);
+  }
+};
+
+window.vpRemovePartFromCustomTab = function(partName, tabId) {
+  const targetId = tabId || vpActiveCustomTabId;
+  const tab = vpCustomTabs.find(t => t.id === targetId);
+  if (!tab) return;
+
+  const effName = vpGetEffectivePartName(partName).toLowerCase();
+  tab.parts = (tab.parts || []).filter(p => {
+    const pEff = vpGetEffectivePartName(p).toLowerCase();
+    return pEff !== effName && p.toLowerCase() !== partName.toLowerCase();
+  });
+
+  vpSaveState(true);
+  vpRenderTabsNavBar();
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+
+  if (typeof showToastNotification === 'function') {
+    showToastNotification(`"${partName}" removida da aba "${tab.name}".`, 2000);
+  }
+};
+
+window.vpAddAllPartsFromCurrentTab = function() {
+  const tab = vpCustomTabs.find(t => t.id === vpActiveCustomTabId);
+  if (!tab || !Array.isArray(tab.parts) || tab.parts.length === 0) {
+    alert('Esta aba não possui peças para adicionar à vistoria.\nToque em "Editar Aba" para selecionar peças.');
+    return;
+  }
+
+  let addedCount = 0;
+  tab.parts.forEach(rawP => {
+    const effective = vpGetEffectivePartName(rawP);
+    if (effective) {
+      if (!vpSelectedPartsMap.has(effective)) {
+        vpSelectedPartsMap.set(effective, {
+          name: effective,
+          rawName: rawP,
+          zoneId: 'geral',
+          zoneName: tab.name,
+          action: 'troca',
+          obs: ''
+        });
+        addedCount++;
+      }
+    }
+  });
+
+  vpSaveState(true);
+  vpUpdateTriggerButton();
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  vpUpdateDockAndSheet();
+
+  if (typeof showToastNotification === 'function') {
+    showToastNotification(`⚡ Todas as ${tab.parts.length} peças da aba "${tab.name}" foram adicionadas à vistoria!`, 3500);
+  }
+};
+
 function vpRenderParts(filterQuery = '') {
   const listEl = document.getElementById('vpPartsScrollContainer');
   if (!listEl) return;
 
   if (!vpAllVehicleParts || vpAllVehicleParts.length === 0) {
     vpLoadAndSortVehicleParts();
+  }
+
+  // MODO ABA PERSONALIZADA
+  if (vpActiveCustomTabId) {
+    const activeTab = vpCustomTabs.find(t => t.id === vpActiveCustomTabId);
+    if (!activeTab) {
+      vpActiveCustomTabId = null;
+      vpRenderTabsNavBar();
+    } else {
+      const tabPartNames = Array.isArray(activeTab.parts) ? activeTab.parts : [];
+      const tabItems = [];
+
+      tabPartNames.forEach(rawName => {
+        const effective = vpGetEffectivePartName(rawName);
+        let found = (vpAllVehicleParts || []).find(p => (p.name || '').toLowerCase() === effective.toLowerCase() || (p.rawName || '').toLowerCase() === rawName.toLowerCase());
+        if (found) {
+          tabItems.push(found);
+        } else {
+          tabItems.push({
+            name: effective,
+            rawName: rawName,
+            zoneId: 'geral',
+            zoneName: activeTab.name,
+            vehicleType: 'all',
+            isCustom: true
+          });
+        }
+      });
+
+      let displayParts = tabItems;
+      let otherMatchingParts = [];
+      const isSearching = Boolean(filterQuery && filterQuery.trim());
+
+      if (isSearching) {
+        const rawQ = filterQuery.trim();
+        const normalizeSearch = (s) => (s || '')
+          .toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[-_\/]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        const qNormalized = normalizeSearch(rawQ);
+        const qTokens = qNormalized.split(' ').filter(Boolean);
+        const qCompact = qNormalized.replace(/\s+/g, '');
+
+        const matchesQuery = (p) => {
+          const nameNorm = normalizeSearch(p.name);
+          const rawNorm = normalizeSearch(p.rawName);
+          const nameCompact = nameNorm.replace(/\s+/g, '');
+          const rawCompact = rawNorm.replace(/\s+/g, '');
+          if (qCompact && (nameCompact.includes(qCompact) || rawCompact.includes(qCompact))) return true;
+          if (qTokens.length > 0 && qTokens.every(tok => nameNorm.includes(tok) || rawNorm.includes(tok))) return true;
+          return false;
+        };
+
+        displayParts = tabItems.filter(matchesQuery);
+
+        // Se o usuário estiver pesquisando, busca também no catálogo geral para que ele possa adicionar qualquer peça à vistoria
+        const tabPartNamesSet = new Set(tabItems.map(p => (p.name || '').toLowerCase()));
+        otherMatchingParts = (vpAllVehicleParts || []).filter(p => !tabPartNamesSet.has((p.name || '').toLowerCase()) && matchesQuery(p));
+      }
+
+      // Peças selecionadas no topo
+      const selectedParts = [];
+      const unselectedParts = [];
+      for (let i = 0; i < displayParts.length; i++) {
+        const p = displayParts[i];
+        if (vpSelectedPartsMap.has(p.name)) {
+          selectedParts.push(p);
+        } else {
+          unselectedParts.push(p);
+        }
+      }
+      const finalDisplayParts = selectedParts.concat(unselectedParts);
+      const tabSelectedCount = tabItems.filter(p => vpSelectedPartsMap.has(p.name)).length;
+
+      listEl.innerHTML = `
+        <div class="vp-category-section-wrapper" style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
+          <!-- CABEÇALHO DA ABA PERSONALIZADA -->
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%); border-radius: 12px; border: 1.5px solid #fbcfe8; border-left: 5px solid #db2777; width: 100%; box-sizing: border-box; box-shadow: 0 2px 6px rgba(219,39,119,0.1);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.5rem; line-height: 1;">${activeTab.icon || '📁'}</span>
+              <div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <strong style="font-size: 0.95rem; color: #831843; font-weight: 800;">${vpEscapeHtml(activeTab.name)}</strong>
+                  <span style="font-size: 0.68rem; font-weight: 800; color: #db2777; background: #ffffff; padding: 2px 8px; border-radius: 999px; border: 1px solid #fbcfe8;">
+                    ${tabItems.length} peças
+                  </span>
+                  ${tabSelectedCount > 0 ? `<span style="font-size: 0.68rem; font-weight: 800; color: #ffffff; background: #db2777; padding: 2px 8px; border-radius: 999px;">${tabSelectedCount} sel.</span>` : ''}
+                </div>
+                <span style="font-size: 0.68rem; color: #9d174d; font-weight: 500;">Aba personalizada • Selecione individualmente ou adicione todas</span>
+              </div>
+            </div>
+
+            <!-- BOTÕES DE AÇÃO DA ABA PERSONALIZADA -->
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <button 
+                type="button" 
+                onclick="vpAddAllPartsFromCurrentTab()" 
+                title="Adiciona todas as peças desta aba automaticamente na vistoria"
+                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; font-size: 0.76rem; font-weight: 800; padding: 7px 12px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 6px rgba(16,185,129,0.3); transition: transform 0.1s ease;"
+              >
+                <span>⚡</span> Add Todas as peças
+              </button>
+
+              <button 
+                type="button" 
+                onclick="vpOpenEditCustomTabModal('${activeTab.id}')" 
+                title="Adicionar ou alterar peças desta aba" 
+                style="background: #ffffff; border: 1.5px solid #fbcfe8; color: #db2777; font-size: 0.72rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
+              >
+                <span>✏️</span> Editar Aba
+              </button>
+
+              <button 
+                type="button" 
+                onclick="vpDeleteCustomTab('${activeTab.id}')" 
+                title="Excluir esta aba personalizada" 
+                style="background: #fff1f2; border: 1.5px solid #fecdd3; color: #e11d48; font-size: 0.72rem; font-weight: 700; padding: 6px 8px; border-radius: 8px; cursor: pointer;"
+              >
+                <span>🗑️</span>
+              </button>
+            </div>
+          </div>
+
+          ${finalDisplayParts.length === 0 && otherMatchingParts.length === 0 ? `
+            <div style="width: 100%; padding: 35px 16px; text-align: center; color: #64748b; background: #ffffff; border: 1.5px dashed #cbd5e1; border-radius: 12px;">
+              <span style="font-size: 2rem; display: block; margin-bottom: 6px;">📋</span>
+              <b>${isSearching ? `Nenhuma peça encontrada para "${vpEscapeHtml(filterQuery)}"` : 'Esta aba ainda não possui peças cadastradas'}</b>
+              <p style="font-size: 0.80rem; margin: 6px 0 12px 0;">Clique em "Editar Aba" para selecionar as peças do catálogo que fazem parte desta aba.</p>
+              <button type="button" onclick="vpOpenEditCustomTabModal('${activeTab.id}')" style="background: #db2777; color: white; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 0.80rem; cursor: pointer;">
+                ➕ Selecionar Peças para esta Aba
+              </button>
+            </div>
+          ` : `
+            <!-- GRID DE PEÇAS DA ABA PERSONALIZADA -->
+            <div class="vp-parts-grid" id="vpPartsGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
+              ${finalDisplayParts.map((item, idx) => {
+                return vpRenderPartCardHtml(item, idx, true);
+              }).join('')}
+            </div>
+          `}
+
+          <!-- OUTRAS PEÇAS ENCONTRADAS NA BUSCA DO CATÁLOGO GERAL -->
+          ${otherMatchingParts.length > 0 ? `
+            <div style="margin-top: 10px; padding: 6px 10px; background: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 0.74rem; font-weight: 800; color: #1e40af;">🔍 Outras peças encontradas no catálogo geral:</span>
+              <span style="font-size: 0.68rem; font-weight: 800; color: #2563eb; background: #ffffff; padding: 2px 7px; border-radius: 999px;">${otherMatchingParts.length}</span>
+            </div>
+            <div class="vp-parts-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
+              ${otherMatchingParts.map((item, idx) => {
+                return vpRenderPartCardHtml(item, idx, true);
+              }).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+      return;
+    }
   }
 
   let displayParts = vpAllVehicleParts;
@@ -8842,7 +9383,11 @@ function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
           ${vpEscapeHtml(item.name)}
           ${(typeof vpNewlyAddedPartNames !== 'undefined' && vpNewlyAddedPartNames && (vpNewlyAddedPartNames.has((item.name || '').toLowerCase()) || vpNewlyAddedPartNames.has(vpCleanPartDashes(item.name || '').toLowerCase()))) ? '<span style="font-size: 0.58rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 3px; border-radius: 3px; margin-left: 2px;">✨ Nova</span>' : ''}
         </span>
-        <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="event.stopPropagation(); vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
+        ${vpActiveCustomTabId ? `
+          <button type="button" class="vp-btn-delete-part" title="Remover desta aba personalizada" onclick="event.stopPropagation(); vpRemovePartFromCustomTab('${vpEscapeHtml(item.name)}', '${vpActiveCustomTabId}')" style="color: #db2777;">✖</button>
+        ` : `
+          <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="event.stopPropagation(); vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
+        `}
       </div>
 
       <!-- 2ª LINHA: [Trocar (34%)] [Reparar (34%)] [Obs. (18%)] [✏️ Editar (14%)] -->
@@ -9634,7 +10179,8 @@ window.vpExportCatalogJson = function() {
       zoneOverrides: vpPartZoneOverridesMap,
       vehicleTypeMap: vpPartVehicleTypeMap,
       deletedParts: vpDeletedPartsList,
-      usageStats: vpUsageStats
+      usageStats: vpUsageStats,
+      customTabs: vpCustomTabs
     };
     const jsonStr = JSON.stringify(data, null, 2);
     const filename = 'backup_catalogo_pecas_' + new Date().toISOString().slice(0, 10) + '.json';
@@ -9680,7 +10226,15 @@ window.vpImportCatalogJson = function() {
         if (parsed.vehicleTypeMap && typeof parsed.vehicleTypeMap === 'object') {
           Object.assign(vpPartVehicleTypeMap, parsed.vehicleTypeMap);
         }
+        if (Array.isArray(parsed.customTabs)) {
+          parsed.customTabs.forEach(t => {
+            if (t && t.id && !vpCustomTabs.some(ct => ct.id === t.id)) {
+              vpCustomTabs.push(t);
+            }
+          });
+        }
         vpSaveState(true);
+        if (typeof vpRenderTabsNavBar === 'function') vpRenderTabsNavBar();
         vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
         alert('Sucesso! ' + importedCount + ' peças importadas e salvas com segurança no catálogo!');
       } catch (err) {

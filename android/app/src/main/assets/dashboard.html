@@ -684,9 +684,17 @@
               <span>📥</span>
               <span>Restaurar</span>
             </button>
-            <button type="button" onclick="vpOpenAddCustomModal()" style="margin-left: auto; background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1d4ed8; font-size: 0.75rem; font-weight: 800; padding: 5px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+            <button type="button" id="vpCreateCustomTabBtn" onclick="vpOpenCreateCustomTabModal()" title="Criar aba personalizada de peças (ex: Peças para PT)" style="margin-left: auto; background: #fdf2f8; border: 1.5px solid #fbcfe8; color: #db2777; font-size: 0.74rem; font-weight: 800; padding: 5px 9px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+              <span>📁</span> Criar aba personalizada
+            </button>
+            <button type="button" onclick="vpOpenAddCustomModal()" style="background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1d4ed8; font-size: 0.75rem; font-weight: 800; padding: 5px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
               <span>➕</span> Nova Peça
             </button>
+          </div>
+
+          <!-- NAVEGAÇÃO DE ABAS: [Peças do Veículo] [Abas Personalizadas...] [Criar Aba] -->
+          <div class="vp-tabs-nav-bar" id="vpTabsNavBar" style="display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 2px 0; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-bottom: 1.5px solid #f1f5f9;">
+            <!-- Renderizado dinamicamente via JS -->
           </div>
 
           <!-- BUSCA RÁPIDA -->
@@ -927,6 +935,62 @@
           <div style="display: flex; justify-content: flex-end; gap: 8px;">
             <button type="button" onclick="vpCloseAddCustomModal()" style="padding: 8px 14px; background: #f1f5f9; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Cancelar</button>
             <button type="submit" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Salvar no Catálogo</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL DE CRIAR / EDITAR ABA PERSONALIZADA DE PEÇAS -->
+    <div id="vpCreateCustomTabModal" class="photo-modal-overlay" style="display: none; z-index: 10007;">
+      <div class="photo-modal" style="max-width: 440px; background: white; padding: 18px; border-radius: 16px; max-height: 90vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <h3 id="vpCustomTabModalTitle" style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+            <span>📁</span> Criar Aba Personalizada
+          </h3>
+          <button type="button" onclick="vpCloseCreateCustomTabModal()" style="background: none; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer;">✕</button>
+        </div>
+
+        <form onsubmit="vpSaveCustomTab(event)" style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1;">
+          <input type="hidden" id="vpCustomTabEditId" value="" />
+
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Nome da Aba:</label>
+            <input type="text" id="vpCustomTabNameInput" placeholder="Ex: Peças para PT, Kit Revisão..." required style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600;" />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Ícone da Aba:</label>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="vpCustomTabIconsContainer">
+              <button type="button" class="vp-tab-icon-btn active" onclick="vpSelectTabIcon('📁')">📁</button>
+              <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('📋')">📋</button>
+              <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('💥')">💥</button>
+              <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('⚠️')">⚠️</button>
+              <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('🚗')">🚗</button>
+              <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('🛠️')">🛠️</button>
+              <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('🏷️')">🏷️</button>
+              <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('⭐')">⭐</button>
+            </div>
+            <input type="hidden" id="vpCustomTabIconInput" value="📁" />
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="font-size: 0.78rem; font-weight: 700; color: #334155;">Selecionar Peças desta Aba:</label>
+              <span id="vpCustomTabSelectedCount" style="font-size: 0.72rem; font-weight: 800; color: #db2777; background: #fdf2f8; padding: 2px 6px; border-radius: 4px;">0 selecionadas</span>
+            </div>
+            <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+              <input type="text" id="vpCustomTabPartSearch" placeholder="Filtrar peças do catálogo..." oninput="vpFilterCustomTabPartsSelection(this.value)" style="flex: 1; box-sizing: border-box; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.78rem;" />
+              <button type="button" onclick="vpToggleSelectAllTabParts(true)" style="padding: 4px 8px; font-size: 0.68rem; font-weight: 700; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 5px; cursor: pointer; white-space: nowrap;">Marcar Todas</button>
+              <button type="button" onclick="vpToggleSelectAllTabParts(false)" style="padding: 4px 8px; font-size: 0.68rem; font-weight: 700; background: #f8fafc; border: 1px solid #cbd5e1; color: #64748b; border-radius: 5px; cursor: pointer; white-space: nowrap;">Desmarcar</button>
+            </div>
+            <div id="vpCustomTabPartsPickList" style="max-height: 200px; overflow-y: auto; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 4px; display: flex; flex-direction: column; gap: 3px; background: #f8fafc;">
+              <!-- Itens com checkbox inseridos dinamicamente -->
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+            <button type="button" onclick="vpCloseCreateCustomTabModal()" style="padding: 9px 14px; background: #f1f5f9; border: none; border-radius: 8px; font-weight: 700; font-size: 0.82rem; cursor: pointer;">Cancelar</button>
+            <button type="submit" style="padding: 9px 18px; background: #db2777; color: white; border: none; border-radius: 8px; font-weight: 800; font-size: 0.82rem; cursor: pointer; box-shadow: 0 2px 5px rgba(219,39,119,0.3);">Salvar Aba</button>
           </div>
         </form>
       </div>
