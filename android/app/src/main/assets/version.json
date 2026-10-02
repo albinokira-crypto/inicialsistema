@@ -1,7 +1,7 @@
 {
-  "version": "2.36.0",
-  "versionCode": 2360,
-  "updatedAt": "2026-10-02T17:44:00Z",
-  "buildDate": "2026-10-02T17:44:00.000Z",
-  "changelog": "Botoes para alternar tipo de veiculo (Carro, Moto, Picape, Caminhao) no modal de criacao de abas com busca de catalogo correspondente"
+  "version": "2.37.0",
+  "versionCode": 2370,
+  "updatedAt": "2026-10-02T17:54:00Z",
+  "buildDate": "2026-10-02T17:54:00.000Z",
+  "changelog": "Botao Add Todas as pecas adiciona todas as pecas da aba como troca automaticamente na vistoria"
 }

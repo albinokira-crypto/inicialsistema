@@ -9307,31 +9307,34 @@ window.vpAddAllPartsFromCurrentTab = function() {
     return;
   }
 
-  let addedCount = 0;
+  let count = 0;
   tab.parts.forEach(rawP => {
     const effective = vpGetEffectivePartName(rawP);
     if (effective) {
-      if (!vpSelectedPartsMap.has(effective)) {
-        vpSelectedPartsMap.set(effective, {
-          name: effective,
-          rawName: rawP,
-          zoneId: 'geral',
-          zoneName: tab.name,
-          action: 'troca',
-          obs: ''
-        });
-        addedCount++;
-      }
+      const existing = vpSelectedPartsMap.get(effective);
+      vpSelectedPartsMap.set(effective, {
+        name: effective,
+        rawName: rawP,
+        zoneId: existing?.zoneId || 'geral',
+        zoneName: existing?.zoneName || tab.name,
+        action: 'troca',
+        obs: existing?.obs || ''
+      });
+      count++;
     }
   });
 
+  // Salva automaticamente o estado e grava as trocas diretamente na vistoria
   vpSaveState(true);
+  if (typeof window.vpSaveSelectedParts === 'function') {
+    window.vpSaveSelectedParts();
+  }
   vpUpdateTriggerButton();
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
   vpUpdateDockAndSheet();
 
   if (typeof showToastNotification === 'function') {
-    showToastNotification(`⚡ Todas as ${tab.parts.length} peças da aba "${tab.name}" foram adicionadas à vistoria!`, 3500);
+    showToastNotification(`✓ Todas as ${count} peças da aba "${tab.name}" foram adicionadas como TROCA na vistoria!`, 3500);
   }
 };
 
