@@ -1,7 +1,7 @@
 {
-  "version": "2.35.0",
-  "versionCode": 2350,
-  "updatedAt": "2026-10-02T17:39:00Z",
-  "buildDate": "2026-10-02T17:39:00.000Z",
-  "changelog": "Botao + Criar Aba posicionado ao lado de + Nova Peca na barra de acoes"
+  "version": "2.36.0",
+  "versionCode": 2360,
+  "updatedAt": "2026-10-02T17:44:00Z",
+  "buildDate": "2026-10-02T17:44:00.000Z",
+  "changelog": "Botoes para alternar tipo de veiculo (Carro, Moto, Picape, Caminhao) no modal de criacao de abas com busca de catalogo correspondente"
 }

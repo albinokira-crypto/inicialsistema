@@ -8730,6 +8730,73 @@ function vpFindCardEl(name) {
 }
 
 // --- GERENCIAMENTO DE ABAS PERSONALIZADAS DE PEÇAS ---
+function vpGetPartsForVehicleType(targetType) {
+  const vType = targetType || 'carro';
+  let zones = VP_BASE_ZONES_CAR;
+  let defaultIcon = '🚗';
+  if (vType === 'moto') {
+    zones = VP_BASE_ZONES_MOTO;
+    defaultIcon = '🏍️';
+  } else if (vType === 'picape') {
+    zones = VP_BASE_ZONES_PICAPE;
+    defaultIcon = '🛻';
+  } else if (vType === 'caminhao') {
+    zones = VP_BASE_ZONES_CAMINHAO;
+    defaultIcon = '🚛';
+  }
+
+  const allParts = [];
+  const seenNames = new Set();
+
+  if (Array.isArray(zones)) {
+    zones.forEach(z => {
+      if (Array.isArray(z.parts)) {
+        z.parts.forEach(rawP => {
+          const effective = vpGetEffectivePartName(rawP);
+          const effLower = (effective || '').toLowerCase();
+          if (effective && !vpIsPartDeleted(rawP, effective) && !seenNames.has(effLower)) {
+            if (vpPartMatchesVehicleType(effective, vType)) {
+              seenNames.add(effLower);
+              allParts.push({
+                rawName: rawP,
+                name: effective,
+                zoneId: z.id || 'geral',
+                zoneName: z.name || 'Peças',
+                icon: z.icon || defaultIcon
+              });
+            }
+          }
+        });
+      }
+    });
+  }
+
+  if (Array.isArray(vpCustomPartsList)) {
+    vpCustomPartsList.forEach(p => {
+      if (p && p.name) {
+        const effective = vpGetEffectivePartName(p.name);
+        const effLower = (effective || '').toLowerCase();
+        if (effective && !vpIsPartDeleted(p.name, effective) && !seenNames.has(effLower)) {
+          if (vpPartMatchesVehicleType(effective, vType)) {
+            seenNames.add(effLower);
+            allParts.push({
+              rawName: p.name,
+              name: effective,
+              zoneId: p.zoneId || 'geral',
+              zoneName: 'Peças personalizadas',
+              icon: '✨'
+            });
+          }
+        }
+      }
+    });
+  }
+
+  allParts.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  return allParts;
+}
+window.vpGetPartsForVehicleType = vpGetPartsForVehicleType;
+
 function vpRenderTabsNavBar() {
   const container = document.getElementById('vpTabsNavBar');
   if (!container) return;
@@ -8756,7 +8823,13 @@ function vpRenderTabsNavBar() {
   `;
 
   if (Array.isArray(vpCustomTabs) && vpCustomTabs.length > 0) {
+    const currentVType = vpDetectedVehicleType || 'carro';
     vpCustomTabs.forEach(tab => {
+      // Filtra abas pelo tipo de veículo ativo (permite abas genéricas ou que combinem com o veículo)
+      if (tab.vehicleType && tab.vehicleType !== 'all' && tab.vehicleType !== currentVType) {
+        return;
+      }
+
       const isActive = (vpActiveCustomTabId === tab.id);
       const partsCount = Array.isArray(tab.parts) ? tab.parts.length : 0;
       html += `
@@ -8788,6 +8861,49 @@ window.vpSelectCustomTab = function(tabId) {
   vpRenderParts(query);
 };
 
+let vpModalCustomTabVehicleType = 'carro';
+
+window.vpSetCustomTabVehicleType = function(type) {
+  const vType = type || 'carro';
+  vpModalCustomTabVehicleType = vType;
+
+  const hiddenInput = document.getElementById('vpCustomTabVehicleTypeInput');
+  if (hiddenInput) hiddenInput.value = vType;
+
+  ['carro', 'moto', 'picape', 'caminhao'].forEach(t => {
+    const btn = document.getElementById(`vpCustomTabTypeBtn_${t}`);
+    if (btn) {
+      if (t === vType) {
+        btn.classList.add('active');
+        btn.style.background = '#2563eb';
+        btn.style.color = '#ffffff';
+        btn.style.boxShadow = '0 1px 4px rgba(37, 99, 235, 0.3)';
+      } else {
+        btn.classList.remove('active');
+        btn.style.background = 'transparent';
+        btn.style.color = '#64748b';
+        btn.style.boxShadow = 'none';
+      }
+    }
+  });
+
+  // Atualiza automaticamente o ícone sugerido da aba se for um ícone padrão
+  const iconInput = document.getElementById('vpCustomTabIconInput');
+  const currentIcon = iconInput ? iconInput.value : '';
+  const vehicleIcons = { carro: '🚗', moto: '🏍️', picape: '🛻', caminhao: '🚛' };
+  if (!currentIcon || currentIcon === '📁' || Object.values(vehicleIcons).includes(currentIcon)) {
+    if (vehicleIcons[vType]) {
+      vpSelectTabIcon(vehicleIcons[vType]);
+    }
+  }
+
+  // Atualiza instantaneamente a listagem de pesquisa com o catálogo do tipo de veículo selecionado
+  const searchInput = document.getElementById('vpCustomTabPartSearch');
+  if (searchInput && searchInput.value) {
+    vpOnSearchCustomTabPartInput(searchInput.value);
+  }
+};
+
 window.vpOpenCreateCustomTabModal = function(editTabId = null) {
   const modal = document.getElementById('vpCreateCustomTabModal');
   if (!modal) return;
@@ -8813,6 +8929,8 @@ window.vpOpenCreateCustomTabModal = function(editTabId = null) {
       if (titleEl) titleEl.innerHTML = `<span>✏️</span> Editar Aba: ${vpEscapeHtml(tab.name)}`;
       if (editIdInput) editIdInput.value = tab.id;
       if (nameInput) nameInput.value = tab.name;
+      const tType = tab.vehicleType || vpDetectedVehicleType || 'carro';
+      vpSetCustomTabVehicleType(tType);
       vpSelectTabIcon(tab.icon || '📁');
       (tab.parts || []).forEach(p => {
         const eff = vpGetEffectivePartName(p);
@@ -8823,7 +8941,10 @@ window.vpOpenCreateCustomTabModal = function(editTabId = null) {
     if (titleEl) titleEl.innerHTML = `<span>📁</span> Criar Aba Personalizada`;
     if (editIdInput) editIdInput.value = '';
     if (nameInput) nameInput.value = '';
-    vpSelectTabIcon('📁');
+    const initialType = vpDetectedVehicleType || 'carro';
+    vpSetCustomTabVehicleType(initialType);
+    const vehicleIcons = { carro: '🚗', moto: '🏍️', picape: '🛻', caminhao: '🚛' };
+    vpSelectTabIcon(vehicleIcons[initialType] || '📁');
   }
 
   vpRenderCustomTabChips();
@@ -8877,15 +8998,14 @@ window.vpOnSearchCustomTabPartInput = function(query) {
     return;
   }
 
-  if (!vpAllVehicleParts || vpAllVehicleParts.length === 0) {
-    vpLoadAndSortVehicleParts();
-  }
-
   const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
   const qNorm = norm(q);
 
-  // Busca em todo o catálogo de peças
-  const matches = (vpAllVehicleParts || []).filter(p => {
+  // Obtém o catálogo de peças correspondente ao tipo de veículo selecionado no modal
+  const activeCatalog = vpGetPartsForVehicleType(vpModalCustomTabVehicleType || vpDetectedVehicleType || 'carro');
+
+  // Busca em todo o catálogo correspondente
+  const matches = (activeCatalog || []).filter(p => {
     const n = norm(p.name);
     const r = norm(p.rawName);
     return n.includes(qNorm) || r.includes(qNorm);
@@ -8895,7 +9015,7 @@ window.vpOnSearchCustomTabPartInput = function(query) {
     suggestionsEl.innerHTML = `
       <div style="padding: 12px; font-size: 0.80rem; color: #64748b; text-align: center;">
         Nenhuma peça encontrada no catálogo para "${vpEscapeHtml(q)}".<br/>
-        <span style="font-size: 0.72rem; color: #2563eb;">Clique no botão "Add" para adicionar mesmo assim.</span>
+        <span style="font-size: 0.72rem; color: #2563eb;">Verifique o tipo de veículo selecionado acima ou tente outro termo.</span>
       </div>
     `;
     suggestionsEl.style.display = 'block';
@@ -9096,6 +9216,8 @@ window.vpSaveCustomTab = function(event) {
   const icon = (iconInput && iconInput.value) ? iconInput.value.trim() : '📁';
   const editIdInput = document.getElementById('vpCustomTabEditId');
   const editId = editIdInput ? editIdInput.value.trim() : '';
+  const vehicleTypeInput = document.getElementById('vpCustomTabVehicleTypeInput');
+  const vehicleType = vehicleTypeInput ? vehicleTypeInput.value.trim() : (vpModalCustomTabVehicleType || vpDetectedVehicleType || 'carro');
 
   const parts = Array.from(vpTempSelectedPartsInModal);
 
@@ -9105,6 +9227,7 @@ window.vpSaveCustomTab = function(event) {
       existing.name = name;
       existing.icon = icon;
       existing.parts = parts;
+      existing.vehicleType = vehicleType;
     }
     vpActiveCustomTabId = editId;
   } else {
@@ -9113,8 +9236,15 @@ window.vpSaveCustomTab = function(event) {
       id: newId,
       name: name,
       icon: icon,
-      parts: parts
+      parts: parts,
+      vehicleType: vehicleType
     });
+
+    // Se a aba foi criada para um tipo de veículo diferente do atualmente exibido,
+    // troca a tela para o tipo escolhido para a nova aba ficar visível imediatamente!
+    if (vehicleType && vehicleType !== vpDetectedVehicleType && typeof window.vpSetVehicleType === 'function') {
+      window.vpSetVehicleType(vehicleType, false, true);
+    }
     vpActiveCustomTabId = newId;
   }
 

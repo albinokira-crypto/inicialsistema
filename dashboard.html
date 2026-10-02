@@ -955,6 +955,26 @@
         <form onsubmit="vpSaveCustomTab(event)" style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1;">
           <input type="hidden" id="vpCustomTabEditId" value="" />
 
+          <!-- SELETOR DE TIPO DE VEÍCULO -->
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Tipo de Veículo:</label>
+            <div class="vp-type-tabs-container" id="vpCustomTabTypeContainer" style="display: flex; gap: 4px; background: #f1f5f9; padding: 3px; border-radius: 8px;">
+              <button type="button" class="vp-type-tab-btn active" id="vpCustomTabTypeBtn_carro" onclick="vpSetCustomTabVehicleType('carro')" style="flex: 1; padding: 6px 2px; font-size: 0.75rem; font-weight: 700; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                <span>🚗</span> Carro
+              </button>
+              <button type="button" class="vp-type-tab-btn" id="vpCustomTabTypeBtn_moto" onclick="vpSetCustomTabVehicleType('moto')" style="flex: 1; padding: 6px 2px; font-size: 0.75rem; font-weight: 700; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                <span>🏍️</span> Moto
+              </button>
+              <button type="button" class="vp-type-tab-btn" id="vpCustomTabTypeBtn_picape" onclick="vpSetCustomTabVehicleType('picape')" style="flex: 1; padding: 6px 2px; font-size: 0.75rem; font-weight: 700; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                <span>🛻</span> Picape
+              </button>
+              <button type="button" class="vp-type-tab-btn" id="vpCustomTabTypeBtn_caminhao" onclick="vpSetCustomTabVehicleType('caminhao')" style="flex: 1; padding: 6px 2px; font-size: 0.75rem; font-weight: 700; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                <span>🚛</span> Caminhão
+              </button>
+            </div>
+            <input type="hidden" id="vpCustomTabVehicleTypeInput" value="carro" />
+          </div>
+
           <div>
             <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Nome da Aba:</label>
             <input type="text" id="vpCustomTabNameInput" placeholder="Ex: Peças para PT, Kit Revisão..." required style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600;" />
@@ -968,6 +988,9 @@
               <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('💥')">💥</button>
               <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('⚠️')">⚠️</button>
               <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('🚗')">🚗</button>
+              <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('🏍️')">🏍️</button>
+              <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('🛻')">🛻</button>
+              <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('🚛')">🚛</button>
               <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('🛠️')">🛠️</button>
               <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('🏷️')">🏷️</button>
               <button type="button" class="vp-tab-icon-btn" onclick="vpSelectTabIcon('⭐')">⭐</button>
