@@ -8348,23 +8348,25 @@ function vpLoadAndSortVehicleParts() {
 // Suporte a Drag & Drop no Desktop
 let vpDraggedIndex = null;
 
-window.vpHandleDragStart = function(e, index) {
-  vpDraggedIndex = index;
+let vpDraggedPartName = null;
+
+window.vpHandleDragStart = function(e, partName) {
+  vpDraggedPartName = partName;
   e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', index.toString());
+  e.dataTransfer.setData('text/plain', partName);
   const card = e.currentTarget;
   if (card) card.classList.add('is-dragging');
 };
 
-window.vpHandleDragOver = function(e, index) {
+window.vpHandleDragOver = function(e, partName) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
 };
 
-window.vpHandleDragEnter = function(e, index) {
+window.vpHandleDragEnter = function(e, partName) {
   e.preventDefault();
   const card = e.currentTarget;
-  if (card && index !== vpDraggedIndex) {
+  if (card && partName !== vpDraggedPartName) {
     card.classList.add('drag-over');
   }
 };
@@ -8374,32 +8376,32 @@ window.vpHandleDragLeave = function(e) {
   if (card) card.classList.remove('drag-over');
 };
 
-window.vpHandleDrop = function(e, targetIndex) {
+window.vpHandleDrop = function(e, targetPartName) {
   e.preventDefault();
   e.stopPropagation();
   const card = e.currentTarget;
   if (card) card.classList.remove('drag-over');
-  if (vpDraggedIndex === null || vpDraggedIndex === targetIndex) return;
+  if (!vpDraggedPartName || vpDraggedPartName === targetPartName) return;
 
-  vpMovePartOrder(vpDraggedIndex, targetIndex);
-  vpDraggedIndex = null;
+  vpMovePartByName(vpDraggedPartName, targetPartName);
+  vpDraggedPartName = null;
 };
 
 window.vpHandleDragEnd = function(e) {
-  vpDraggedIndex = null;
+  vpDraggedPartName = null;
   document.querySelectorAll('.vp-part-card').forEach(c => {
     c.classList.remove('is-dragging', 'drag-over');
   });
 };
 
 // Suporte a Touch Drag no Celular / Mobile
-let vpTouchStartIndex = null;
-let vpTouchTargetIndex = null;
+let vpTouchDraggedPartName = null;
+let vpTouchTargetPartName = null;
 let vpTouchMoved = false;
 
-window.vpHandleTouchStart = function(e, index) {
-  vpTouchStartIndex = index;
-  vpTouchTargetIndex = index;
+window.vpHandleTouchStart = function(e, partName) {
+  vpTouchDraggedPartName = partName;
+  vpTouchTargetPartName = partName;
   vpTouchMoved = false;
   const card = e.currentTarget.closest('.vp-part-card');
   if (card) {
@@ -8408,7 +8410,7 @@ window.vpHandleTouchStart = function(e, index) {
 };
 
 window.vpHandleTouchMove = function(e) {
-  if (vpTouchStartIndex === null) return;
+  if (!vpTouchDraggedPartName) return;
   vpTouchMoved = true;
   const touch = e.touches[0];
   const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -8416,10 +8418,10 @@ window.vpHandleTouchMove = function(e) {
 
   document.querySelectorAll('.vp-part-card').forEach(c => c.classList.remove('drag-over'));
 
-  if (targetCard && targetCard.dataset.partIndex !== undefined) {
-    const idx = parseInt(targetCard.dataset.partIndex, 10);
-    if (!isNaN(idx) && idx !== vpTouchStartIndex) {
-      vpTouchTargetIndex = idx;
+  if (targetCard && targetCard.dataset.partName) {
+    const name = targetCard.dataset.partName;
+    if (name !== vpTouchDraggedPartName) {
+      vpTouchTargetPartName = name;
       targetCard.classList.add('drag-over');
     }
   }
@@ -8430,17 +8432,19 @@ window.vpHandleTouchEnd = function(e) {
     c.classList.remove('is-dragging', 'drag-over');
   });
 
-  if (vpTouchStartIndex !== null && vpTouchTargetIndex !== null && vpTouchMoved && vpTouchStartIndex !== vpTouchTargetIndex) {
-    vpMovePartOrder(vpTouchStartIndex, vpTouchTargetIndex);
+  if (vpTouchDraggedPartName && vpTouchTargetPartName && vpTouchMoved && vpTouchDraggedPartName !== vpTouchTargetPartName) {
+    vpMovePartByName(vpTouchDraggedPartName, vpTouchTargetPartName);
   }
-  vpTouchStartIndex = null;
-  vpTouchTargetIndex = null;
+  vpTouchDraggedPartName = null;
+  vpTouchTargetPartName = null;
   vpTouchMoved = false;
 };
 
-function vpMovePartOrder(fromIndex, toIndex) {
-  if (!Array.isArray(vpAllVehicleParts) || fromIndex < 0 || fromIndex >= vpAllVehicleParts.length ||
-      toIndex < 0 || toIndex >= vpAllVehicleParts.length) return;
+function vpMovePartByName(fromName, toName) {
+  if (!Array.isArray(vpAllVehicleParts)) return;
+  const fromIndex = vpAllVehicleParts.findIndex(p => p.name === fromName);
+  const toIndex = vpAllVehicleParts.findIndex(p => p.name === toName);
+  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
 
   const [moved] = vpAllVehicleParts.splice(fromIndex, 1);
   vpAllVehicleParts.splice(toIndex, 0, moved);
@@ -8508,6 +8512,19 @@ function vpRenderParts(filterQuery = '') {
     }
   }
 
+  // Peças selecionadas SEMPRE no topo, mantendo a ordem relativa entre elas
+  const selectedParts = [];
+  const unselectedParts = [];
+  for (let i = 0; i < displayParts.length; i++) {
+    const p = displayParts[i];
+    if (vpSelectedPartsMap.has(p.name)) {
+      selectedParts.push(p);
+    } else {
+      unselectedParts.push(p);
+    }
+  }
+  const finalDisplayParts = selectedParts.concat(unselectedParts);
+
   const vTypeLabels = {
     moto: { title: 'Peças da moto', icon: '🏍️' },
     caminhao: { title: 'Peças do caminhão', icon: '🚛' },
@@ -8515,22 +8532,22 @@ function vpRenderParts(filterQuery = '') {
     carro: { title: 'Peças do veículo', icon: '🚗' }
   };
   const currentVTypeInfo = vTypeLabels[vpDetectedVehicleType] || vTypeLabels.carro;
-  const todasSelCount = vpAllVehicleParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
+  const todasSelCount = vpSelectedPartsMap.size;
 
   listEl.innerHTML = `
     <div class="vp-category-section-wrapper" style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
-      <!-- CABEÇALHO UNIFICADO DE PEÇAS (SEM ABA DE FAVORITOS) -->
+      <!-- CABEÇALHO UNIFICADO DE PEÇAS -->
       <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; background: #eff6ff; border-radius: 10px; border-left: 4px solid #2563eb; width: 100%; box-sizing: border-box; box-shadow: 0 1px 3px rgba(37,99,235,0.08);">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 1.2rem; line-height: 1;">${currentVTypeInfo.icon}</span>
           <div>
             <strong style="font-size: 0.84rem; color: #1e3a8a; display: block; line-height: 1.15;">${currentVTypeInfo.title}</strong>
-            <span style="font-size: 0.67rem; color: #64748b; font-weight: 500;">(Mais usadas no topo • Arraste pelo número para reordenar)</span>
+            <span style="font-size: 0.67rem; color: #64748b; font-weight: 500;">(Selecionadas no topo • Arraste pelo número para reordenar)</span>
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 4px;">
           <span style="font-size: 0.70rem; font-weight: 800; color: #2563eb; background: #ffffff; padding: 2px 8px; border-radius: 999px; border: 1px solid #bfdbfe;">
-            ${displayParts.length} peças
+            ${finalDisplayParts.length} peças
           </span>
           ${todasSelCount > 0 ? `<span style="font-size: 0.68rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 2px 8px; border-radius: 999px;">${todasSelCount} sel.</span>` : ''}
         </div>
@@ -8538,10 +8555,8 @@ function vpRenderParts(filterQuery = '') {
 
       <!-- GRID DE PEÇAS REORDENÁVEIS (2 COLUNAS) -->
       <div class="vp-parts-grid" id="vpPartsGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
-        ${displayParts.map((item, idx) => {
-          const globalIdx = vpAllVehicleParts.findIndex(p => p.name === item.name);
-          const orderIndex = globalIdx !== -1 ? globalIdx : idx;
-          return vpRenderPartCardHtml(item, orderIndex, isSearching);
+        ${finalDisplayParts.map((item, idx) => {
+          return vpRenderPartCardHtml(item, idx, isSearching);
         }).join('')}
       </div>
     </div>
@@ -8563,40 +8578,39 @@ function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
       data-part-name="${vpEscapeHtml(item.name)}" 
       data-part-index="${index}"
       ${!isSearching ? `draggable="true"
-      ondragstart="vpHandleDragStart(event, ${index})"
-      ondragover="vpHandleDragOver(event, ${index})"
-      ondragenter="vpHandleDragEnter(event, ${index})"
+      ondragstart="vpHandleDragStart(event, '${vpEscapeHtml(item.name)}')"
+      ondragover="vpHandleDragOver(event, '${vpEscapeHtml(item.name)}')"
+      ondragenter="vpHandleDragEnter(event, '${vpEscapeHtml(item.name)}')"
       ondragleave="vpHandleDragLeave(event)"
-      ondrop="vpHandleDrop(event, ${index})"
+      ondrop="vpHandleDrop(event, '${vpEscapeHtml(item.name)}')"
       ondragend="vpHandleDragEnd(event)"` : ''}
-      style="width: 100%; min-width: 0; box-sizing: border-box; padding: 6px 6px; border-radius: 8px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#cbd5e1')}; background: ${isTroca ? '#fffafa' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);"
+      style="width: 100%; min-width: 0; box-sizing: border-box; padding: 5px 6px; border-radius: 8px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#cbd5e1')}; background: ${isTroca ? '#fffafa' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);"
     >
-      <!-- 1ª LINHA: [# Número / Arrastar] [❌ Excluir] [Descrição da Peça] [✏️ Editar] -->
-      <div class="vp-card-top" style="display: flex; align-items: center; justify-content: space-between; gap: 3px; width: 100%; min-width: 0;">
+      <!-- 1ª LINHA: [Número Puro] [Descrição da Peça (Máximo Espaço)] [✖ Excluir] -->
+      <div class="vp-card-top" style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
         <span 
           class="vp-part-num" 
           title="Arraste para reordenar"
-          ${!isSearching ? `ontouchstart="vpHandleTouchStart(event, ${index})"
+          ${!isSearching ? `ontouchstart="vpHandleTouchStart(event, '${vpEscapeHtml(item.name)}')"
           ontouchmove="vpHandleTouchMove(event)"
           ontouchend="vpHandleTouchEnd(event)"
           ontouchcancel="vpHandleTouchEnd(event)"` : ''}
         >
-          #${orderNum}
+          ${orderNum}
+        </span>
+        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.80rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: grab;">
+          ${vpEscapeHtml(item.name)}
+          ${(vpCustomPartsList && vpCustomPartsList.some(cp => cp.name && cp.name.toLowerCase() === (item.name || '').toLowerCase())) ? '<span style="font-size: 0.58rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 3px; border-radius: 3px; margin-left: 2px;">✨ Nova</span>' : ''}
         </span>
         <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="event.stopPropagation(); vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
-        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.78rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: grab;">
-          ${vpEscapeHtml(item.name)}
-          ${(vpCustomPartsList && vpCustomPartsList.some(cp => cp.name && cp.name.toLowerCase() === (item.name || '').toLowerCase())) ? '<span style="font-size: 0.60rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 4px; border-radius: 4px; margin-left: 2px; display: inline-block;">✨ Nova</span>' : ''}
-        </span>
-        <button type="button" class="vp-btn-edit-name" title="Editar nome e zona da peça" onclick="event.stopPropagation(); vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')">✏️</button>
       </div>
 
-      <!-- 2ª LINHA: [Trocar (40%)] [Reparar (40%)] [Obs. (20%)] -->
+      <!-- 2ª LINHA: [Trocar (34%)] [Reparar (34%)] [Obs. (18%)] [✏️ Editar (14%)] -->
       <div class="vp-card-actions" style="display: flex; gap: 2px; width: 100%;">
         <button 
           type="button" 
           class="vp-btn-action btn-trocar ${isTroca ? 'active' : ''}" 
-          style="flex: 0 0 40%; width: 40%; padding: 5px 1px; font-size: 0.74rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap;"
+          style="flex: 0 0 34%; width: 34%; padding: 4px 1px; font-size: 0.70rem; min-height: 25px; border-radius: 5px; font-weight: 800; white-space: nowrap;"
           onclick="vpToggleAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'troca', '${vpEscapeHtml(item.rawName)}')"
         >
           Trocar
@@ -8605,7 +8619,7 @@ function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
         <button 
           type="button" 
           class="vp-btn-action btn-reparar ${isReparo ? 'active' : ''}" 
-          style="flex: 0 0 40%; width: 40%; padding: 5px 1px; font-size: 0.74rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap;"
+          style="flex: 0 0 34%; width: 34%; padding: 4px 1px; font-size: 0.70rem; min-height: 25px; border-radius: 5px; font-weight: 800; white-space: nowrap;"
           onclick="vpToggleAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'reparo', '${vpEscapeHtml(item.rawName)}')"
         >
           Reparar
@@ -8614,11 +8628,21 @@ function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
         <button 
           type="button" 
           class="vp-btn-action btn-obs ${hasObs ? 'has-obs active' : ''}" 
-          style="flex: 0 0 20%; width: 20%; padding: 5px 1px; font-size: 0.72rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'}; border-color: ${hasObs ? '#93c5fd' : '#cbd5e1'};"
+          style="flex: 0 0 18%; width: 18%; padding: 4px 1px; font-size: 0.67rem; min-height: 25px; border-radius: 5px; font-weight: 800; white-space: nowrap; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'}; border-color: ${hasObs ? '#93c5fd' : '#cbd5e1'};"
           title="${hasObs ? 'Obs: ' + vpEscapeHtml(selected.obs) : 'Adicionar Observação'}"
           onclick="vpToggleObsBox('${vpEscapeHtml(item.name)}')"
         >
           Obs.
+        </button>
+
+        <button 
+          type="button" 
+          class="vp-btn-action btn-edit-part" 
+          style="flex: 0 0 14%; width: 14%; padding: 4px 0; font-size: 0.68rem; min-height: 25px; border-radius: 5px; font-weight: 800; white-space: nowrap;"
+          title="Editar nome e zona da peça" 
+          onclick="event.stopPropagation(); vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')"
+        >
+          ✏️
         </button>
       </div>
 
@@ -8660,15 +8684,13 @@ window.vpSetQuickObs = function(partName, quickText, zoneId, zoneName, rawName =
   window.vpChangeObs(partName, quickText, zoneId, zoneName, rawName);
 };
 
-// Seleção ultra-rápida (0ms de latência - atualização direta no DOM em tempo real)
+// Seleção instantânea com peças selecionadas indo para o topo sem recriar lag
 window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '') {
   const current = vpSelectedPartsMap.get(partName);
-  let newAction = null;
 
   if (current && current.action === action) {
     vpSelectedPartsMap.delete(partName);
   } else {
-    newAction = action;
     vpSelectedPartsMap.set(partName, {
       name: partName,
       rawName: rawName || partName,
@@ -8679,30 +8701,15 @@ window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '
     });
   }
 
-  // Atualização direta e instantânea no card do DOM (sem recriar elementos nem travar a tela)
-  const card = vpFindCardEl(partName);
-  if (card) {
-    const btnTrocar = card.querySelector('.btn-trocar');
-    const btnReparar = card.querySelector('.btn-reparar');
+  // Preserva posição do scroll para não causar salto visual brusco
+  const listEl = document.getElementById('vpPartsScrollContainer');
+  const savedScroll = listEl ? listEl.scrollTop : 0;
 
-    card.classList.remove('selected-troca', 'selected-reparo');
-    if (btnTrocar) btnTrocar.classList.remove('active');
-    if (btnReparar) btnReparar.classList.remove('active');
+  // Re-renderiza colocando as selecionadas no topo
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
 
-    if (newAction === 'troca') {
-      card.classList.add('selected-troca');
-      card.style.borderColor = '#dc2626';
-      card.style.background = '#fffafa';
-      if (btnTrocar) btnTrocar.classList.add('active');
-    } else if (newAction === 'reparo') {
-      card.classList.add('selected-reparo');
-      card.style.borderColor = '#0284c7';
-      card.style.background = '#f0f9ff';
-      if (btnReparar) btnReparar.classList.add('active');
-    } else {
-      card.style.borderColor = '#cbd5e1';
-      card.style.background = '#ffffff';
-    }
+  if (listEl) {
+    listEl.scrollTop = savedScroll;
   }
 
   vpUpdateTriggerButton();
@@ -8755,16 +8762,10 @@ window.vpChangeObs = function(partName, obsText, zoneId, zoneName, rawName = '')
 window.vpRemoveSelected = function(partName) {
   if (vpSelectedPartsMap.has(partName)) {
     vpSelectedPartsMap.delete(partName);
-    const card = vpFindCardEl(partName);
-    if (card) {
-      card.classList.remove('selected-troca', 'selected-reparo');
-      card.style.borderColor = '#cbd5e1';
-      card.style.background = '#ffffff';
-      const btnTrocar = card.querySelector('.btn-trocar');
-      const btnReparar = card.querySelector('.btn-reparar');
-      if (btnTrocar) btnTrocar.classList.remove('active');
-      if (btnReparar) btnReparar.classList.remove('active');
-    }
+    const listEl = document.getElementById('vpPartsScrollContainer');
+    const savedScroll = listEl ? listEl.scrollTop : 0;
+    vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+    if (listEl) listEl.scrollTop = savedScroll;
     vpUpdateTriggerButton();
     vpUpdateDockAndSheet();
   }
@@ -8774,15 +8775,7 @@ window.vpClearAllSelected = function() {
   if (vpSelectedPartsMap.size === 0) return;
   if (confirm('Deseja realmente desmarcar todas as peças selecionadas?')) {
     vpSelectedPartsMap.clear();
-    document.querySelectorAll('.vp-part-card').forEach(card => {
-      card.classList.remove('selected-troca', 'selected-reparo');
-      card.style.borderColor = '#cbd5e1';
-      card.style.background = '#ffffff';
-      const btnTrocar = card.querySelector('.btn-trocar');
-      const btnReparar = card.querySelector('.btn-reparar');
-      if (btnTrocar) btnTrocar.classList.remove('active');
-      if (btnReparar) btnReparar.classList.remove('active');
-    });
+    vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
     vpUpdateTriggerButton();
     vpUpdateDockAndSheet();
     window.vpCloseReviewSheet();

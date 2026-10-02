@@ -1,7 +1,7 @@
 {
-  "version": "2.25.0",
-  "versionCode": 2250,
-  "updatedAt": "2026-10-02T13:58:00Z",
-  "buildDate": "2026-10-02T13:58:00.000Z",
-  "changelog": "Reordenacao arrastavel de pecas com numeracao sequencial automatica, remocao da aba favoritos, selecao instantanea de acoes, observacao direta sem chips, isolamento total de midia do WhatsApp e filtro de supervisao por placa"
+  "version": "2.26.0",
+  "versionCode": 2260,
+  "updatedAt": "2026-10-02T14:30:00Z",
+  "buildDate": "2026-10-02T14:30:00.000Z",
+  "changelog": "Pecas selecionadas no topo da tela, numeros sequenciais puros sem hashtag, botao de editar posicionado apos obs, botoes de acao mais compactos e espaco maximo sem quebra de linha no nome das pecas"
 }
