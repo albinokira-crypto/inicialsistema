@@ -1,7 +1,7 @@
 {
-  "version": "2.34.0",
-  "versionCode": 2340,
-  "updatedAt": "2026-10-02T17:36:00Z",
-  "buildDate": "2026-10-02T17:36:00.000Z",
-  "changelog": "Remocao do botao +Add ao lado da pesquisa e manutencao do teclado virtual ativo ao adicionar pecas"
+  "version": "2.35.0",
+  "versionCode": 2350,
+  "updatedAt": "2026-10-02T17:39:00Z",
+  "buildDate": "2026-10-02T17:39:00.000Z",
+  "changelog": "Botao + Criar Aba posicionado ao lado de + Nova Peca na barra de acoes"
 }

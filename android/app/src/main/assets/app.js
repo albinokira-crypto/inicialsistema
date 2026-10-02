@@ -8776,19 +8776,6 @@ function vpRenderTabsNavBar() {
     });
   }
 
-  html += `
-    <button 
-      type="button" 
-      class="vp-custom-nav-tab" 
-      onclick="vpOpenCreateCustomTabModal()" 
-      title="Criar nova aba personalizada"
-      style="border-style: dashed; border-color: #3b82f6; color: #2563eb; background: #eff6ff;"
-    >
-      <span>➕</span>
-      <span>Criar aba</span>
-    </button>
-  `;
-
   container.innerHTML = html;
 }
 window.vpRenderTabsNavBar = vpRenderTabsNavBar;
