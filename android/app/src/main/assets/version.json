@@ -1,7 +1,7 @@
 {
-  "version": "2.33.0",
-  "versionCode": 2330,
-  "updatedAt": "2026-10-02T17:28:00Z",
-  "buildDate": "2026-10-02T17:28:00.000Z",
-  "changelog": "Pesquisa persistente no modal de abas: peças adicionadas sobem para a listagem e resultados continuam abertos para adição múltipla"
+  "version": "2.34.0",
+  "versionCode": 2340,
+  "updatedAt": "2026-10-02T17:36:00Z",
+  "buildDate": "2026-10-02T17:36:00.000Z",
+  "changelog": "Remocao do botao +Add ao lado da pesquisa e manutencao do teclado virtual ativo ao adicionar pecas"
 }

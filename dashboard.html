@@ -981,39 +981,32 @@
             </div>
           </div>
 
-          <!-- BARRA DE PESQUISA COM BOTÃO DE ADD -->
+          <!-- BARRA DE PESQUISA -->
           <div style="display: flex; flex-direction: column; gap: 6px;">
             <label style="font-size: 0.78rem; font-weight: 700; color: #334155;">Pesquisar peças no catálogo:</label>
-            <div style="display: flex; gap: 6px;">
-              <div style="position: relative; flex: 1;">
-                <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.80rem; color: #94a3b8; pointer-events: none;">🔍</span>
-                <input 
-                  type="text" 
-                  id="vpCustomTabPartSearch" 
-                  placeholder="Digite ex: Capô, Farol, Amortecedor..." 
-                  autocomplete="off"
-                  oninput="vpOnSearchCustomTabPartInput(this.value)"
-                  onkeydown="vpOnSearchCustomTabPartKeydown(event)"
-                  style="width: 100%; box-sizing: border-box; padding: 8px 30px 8px 28px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.84rem; font-weight: 600;" 
-                />
-                <button 
-                  id="vpCustomTabClearSearchBtn" 
-                  type="button" 
-                  onclick="vpClearCustomTabSearch()" 
-                  style="display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 0.85rem; color: #94a3b8; cursor: pointer;"
-                >✕</button>
-              </div>
+            <div style="position: relative; width: 100%;">
+              <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.80rem; color: #94a3b8; pointer-events: none;">🔍</span>
+              <input 
+                type="text" 
+                id="vpCustomTabPartSearch" 
+                placeholder="Digite ex: Capô, Farol, Amortecedor..." 
+                autocomplete="off"
+                oninput="vpOnSearchCustomTabPartInput(this.value)"
+                onkeydown="vpOnSearchCustomTabPartKeydown(event)"
+                style="width: 100%; box-sizing: border-box; padding: 8px 32px 8px 28px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.84rem; font-weight: 600;" 
+              />
               <button 
+                id="vpCustomTabClearSearchBtn" 
                 type="button" 
-                onclick="vpAddPartFromSearchInput()" 
-                style="padding: 8px 14px; font-size: 0.78rem; font-weight: 800; background: #2563eb; border: none; color: #ffffff; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; box-shadow: 0 1px 3px rgba(37,99,235,0.25);"
-              >
-                <span>➕</span> Add
-              </button>
+                onmousedown="event.preventDefault();"
+                onclick="vpClearCustomTabSearch()" 
+                style="display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 0.85rem; color: #94a3b8; cursor: pointer; padding: 4px;"
+                title="Limpar busca"
+              >✕</button>
             </div>
 
             <!-- RESULTADOS DA PESQUISA DO CATÁLOGO (PERMANECEM VISÍVEIS) -->
-            <div id="vpCustomTabSearchSuggestions" style="display: none; max-height: 150px; overflow-y: auto; background: #ffffff; border: 1.5px solid #bfdbfe; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+            <div id="vpCustomTabSearchSuggestions" onmousedown="event.preventDefault();" onpointerdown="event.preventDefault();" style="display: none; max-height: 155px; overflow-y: auto; background: #ffffff; border: 1.5px solid #bfdbfe; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
               <!-- Itens de sugestão inseridos dinamicamente -->
             </div>
           </div>

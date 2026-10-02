@@ -8925,13 +8925,19 @@ window.vpOnSearchCustomTabPartInput = function(query) {
 
     if (isAdded) {
       html += `
-        <div style="padding: 7px 12px; font-size: 0.82rem; font-weight: 700; color: #166534; background: #f0fdf4; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+        <div 
+          onmousedown="event.preventDefault();" 
+          onpointerdown="event.preventDefault();"
+          style="padding: 7px 12px; font-size: 0.82rem; font-weight: 700; color: #166534; background: #f0fdf4; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;"
+        >
           <span style="display: flex; align-items: center; gap: 6px;">
             <span style="color: #16a34a; font-size: 0.9rem;">✓</span>
             <span>${vpEscapeHtml(p.name)}</span>
           </span>
           <button 
             type="button" 
+            onmousedown="event.preventDefault();" 
+            onpointerdown="event.preventDefault();"
             onclick="event.stopPropagation(); vpRemoveChipPart('${vpEscapeHtml(eff)}')" 
             style="font-size: 0.70rem; color: #16a34a; font-weight: 800; background: #dcfce7; padding: 2px 8px; border-radius: 4px; border: 1px solid #86efac; cursor: pointer;"
             title="Clique para remover da aba"
@@ -8943,6 +8949,8 @@ window.vpOnSearchCustomTabPartInput = function(query) {
     } else {
       html += `
         <div 
+          onmousedown="event.preventDefault();" 
+          onpointerdown="event.preventDefault();"
           onclick="vpSelectSuggestionPart('${vpEscapeHtml(p.name)}')" 
           style="padding: 7px 12px; font-size: 0.82rem; font-weight: 700; color: #1e293b; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; transition: background 0.15s ease;"
           onmouseover="this.style.background='#eff6ff'" 
@@ -8951,6 +8959,8 @@ window.vpOnSearchCustomTabPartInput = function(query) {
           <span>${vpEscapeHtml(p.name)}</span>
           <button 
             type="button" 
+            onmousedown="event.preventDefault();" 
+            onpointerdown="event.preventDefault();"
             onclick="event.stopPropagation(); vpSelectSuggestionPart('${vpEscapeHtml(p.name)}')" 
             style="font-size: 0.72rem; color: #2563eb; font-weight: 800; background: #eff6ff; padding: 3px 8px; border-radius: 5px; border: 1px solid #bfdbfe; cursor: pointer;"
           >
@@ -8995,10 +9005,13 @@ window.vpSelectSuggestionPart = function(partName) {
     vpRenderCustomTabChips();
   }
 
-  // Mantém a pesquisa aberta para que o usuário possa adicionar outras peças encontradas!
+  // Mantém a pesquisa aberta e garante que o campo mantenha o foco para o teclado do celular permanecer aberto
   const searchInput = document.getElementById('vpCustomTabPartSearch');
-  if (searchInput && searchInput.value) {
-    vpOnSearchCustomTabPartInput(searchInput.value);
+  if (searchInput) {
+    try { searchInput.focus({ preventScroll: true }); } catch (e) { searchInput.focus(); }
+    if (searchInput.value) {
+      vpOnSearchCustomTabPartInput(searchInput.value);
+    }
   }
 };
 
@@ -9013,9 +9026,12 @@ window.vpAddPartFromSearchInput = function() {
     vpRenderCustomTabChips();
   }
 
-  // Mantém a pesquisa ativa e atualiza a listagem
-  if (searchInput && searchInput.value) {
-    vpOnSearchCustomTabPartInput(searchInput.value);
+  // Mantém a pesquisa ativa e garante foco para o teclado não fechar
+  if (searchInput) {
+    try { searchInput.focus({ preventScroll: true }); } catch (e) { searchInput.focus(); }
+    if (searchInput.value) {
+      vpOnSearchCustomTabPartInput(searchInput.value);
+    }
   }
 };
 
@@ -9023,10 +9039,13 @@ window.vpRemoveChipPart = function(partName) {
   vpTempSelectedPartsInModal.delete(partName);
   vpRenderCustomTabChips();
 
-  // Atualiza as sugestões da pesquisa ativa caso a peça removida faça parte dela
+  // Atualiza as sugestões da pesquisa ativa caso a peça removida faça parte dela mantendo foco
   const searchInput = document.getElementById('vpCustomTabPartSearch');
-  if (searchInput && searchInput.value) {
-    vpOnSearchCustomTabPartInput(searchInput.value);
+  if (searchInput) {
+    try { searchInput.focus({ preventScroll: true }); } catch (e) { searchInput.focus(); }
+    if (searchInput.value) {
+      vpOnSearchCustomTabPartInput(searchInput.value);
+    }
   }
 };
 
@@ -9057,6 +9076,8 @@ function vpRenderCustomTabChips() {
         <span>${vpEscapeHtml(name)}</span>
         <button 
           type="button" 
+          onmousedown="event.preventDefault();" 
+          onpointerdown="event.preventDefault();"
           onclick="vpRemoveChipPart('${vpEscapeHtml(name)}')" 
           style="background: none; border: none; font-size: 0.85rem; color: #64748b; cursor: pointer; padding: 0 2px; line-height: 1; font-weight: 800;"
           title="Remover"
