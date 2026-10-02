@@ -8570,7 +8570,10 @@ function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
   const hasObs = Boolean(selected && selected.obs && selected.obs.trim().length > 0);
   const isObsOpen = vpOpenObsPartNames.has(item.name) || hasObs;
   const cardClass = isTroca ? 'selected-troca' : (isReparo ? 'selected-reparo' : '');
-  const orderNum = index + 1;
+
+  // O número é SEMPRE a posição prévia da peça em seu catálogo original (não muda ao selecionar)
+  const catalogIdx = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts.findIndex(p => p.name === item.name) : -1;
+  const orderNum = catalogIdx !== -1 ? (catalogIdx + 1) : (index + 1);
 
   return `
     <div 
