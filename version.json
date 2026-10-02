@@ -1,7 +1,7 @@
 {
-  "version": "2.32.0",
-  "versionCode": 2320,
-  "updatedAt": "2026-10-02T17:18:00Z",
-  "buildDate": "2026-10-02T17:18:00.000Z",
-  "changelog": "Remocao do botao superior de criar aba, busca com Add no modal e paleta azul sem rosa"
+  "version": "2.33.0",
+  "versionCode": 2330,
+  "updatedAt": "2026-10-02T17:28:00Z",
+  "buildDate": "2026-10-02T17:28:00.000Z",
+  "changelog": "Pesquisa persistente no modal de abas: peças adicionadas sobem para a listagem e resultados continuam abertos para adição múltipla"
 }

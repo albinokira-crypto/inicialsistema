@@ -8810,8 +8810,10 @@ window.vpOpenCreateCustomTabModal = function(editTabId = null) {
   const nameInput = document.getElementById('vpCustomTabNameInput');
   const searchInput = document.getElementById('vpCustomTabPartSearch');
   const suggestionsEl = document.getElementById('vpCustomTabSearchSuggestions');
+  const clearBtn = document.getElementById('vpCustomTabClearSearchBtn');
 
   if (searchInput) searchInput.value = '';
+  if (clearBtn) clearBtn.style.display = 'none';
   if (suggestionsEl) {
     suggestionsEl.style.display = 'none';
     suggestionsEl.innerHTML = '';
@@ -8846,6 +8848,8 @@ window.vpOpenEditCustomTabModal = window.vpOpenCreateCustomTabModal;
 window.vpCloseCreateCustomTabModal = function() {
   const modal = document.getElementById('vpCreateCustomTabModal');
   if (modal) modal.style.display = 'none';
+  const clearBtn = document.getElementById('vpCustomTabClearSearchBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
   const suggestionsEl = document.getElementById('vpCustomTabSearchSuggestions');
   if (suggestionsEl) {
     suggestionsEl.style.display = 'none';
@@ -8872,9 +8876,14 @@ window.vpSelectTabIcon = function(icon) {
 
 window.vpOnSearchCustomTabPartInput = function(query) {
   const suggestionsEl = document.getElementById('vpCustomTabSearchSuggestions');
+  const clearBtn = document.getElementById('vpCustomTabClearSearchBtn');
   if (!suggestionsEl) return;
 
   const q = (query || '').trim();
+  if (clearBtn) {
+    clearBtn.style.display = q ? 'block' : 'none';
+  }
+
   if (!q) {
     suggestionsEl.style.display = 'none';
     suggestionsEl.innerHTML = '';
@@ -8888,9 +8897,8 @@ window.vpOnSearchCustomTabPartInput = function(query) {
   const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
   const qNorm = norm(q);
 
+  // Busca em todo o catálogo de peças
   const matches = (vpAllVehicleParts || []).filter(p => {
-    const eff = vpGetEffectivePartName(p.name);
-    if (vpTempSelectedPartsInModal.has(eff)) return false;
     const n = norm(p.name);
     const r = norm(p.rawName);
     return n.includes(qNorm) || r.includes(qNorm);
@@ -8898,32 +8906,78 @@ window.vpOnSearchCustomTabPartInput = function(query) {
 
   if (matches.length === 0) {
     suggestionsEl.innerHTML = `
-      <div style="padding: 10px; font-size: 0.78rem; color: #64748b; text-align: center;">
-        Pressione "Add" para incluir "${vpEscapeHtml(q)}" nesta aba
+      <div style="padding: 12px; font-size: 0.80rem; color: #64748b; text-align: center;">
+        Nenhuma peça encontrada no catálogo para "${vpEscapeHtml(q)}".<br/>
+        <span style="font-size: 0.72rem; color: #2563eb;">Clique no botão "Add" para adicionar mesmo assim.</span>
       </div>
     `;
     suggestionsEl.style.display = 'block';
     return;
   }
 
-  const topMatches = matches.slice(0, 10);
+  // Mantém a ordem original das peças encontradas para que a lista não salte sob o clique
+  const displayMatches = matches.slice(0, 35);
+
   let html = '';
-  topMatches.forEach(p => {
-    html += `
-      <div 
-        onclick="vpSelectSuggestionPart('${vpEscapeHtml(p.name)}')" 
-        style="padding: 8px 12px; font-size: 0.82rem; font-weight: 700; color: #1e293b; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;"
-        onmouseover="this.style.background='#eff6ff'" 
-        onmouseout="this.style.background='#ffffff'"
-      >
-        <span>${vpEscapeHtml(p.name)}</span>
-        <span style="font-size: 0.72rem; color: #2563eb; font-weight: 800;">+ Adicionar</span>
-      </div>
-    `;
+  displayMatches.forEach(p => {
+    const eff = vpGetEffectivePartName(p.name);
+    const isAdded = vpTempSelectedPartsInModal.has(eff) || vpTempSelectedPartsInModal.has(p.name);
+
+    if (isAdded) {
+      html += `
+        <div style="padding: 7px 12px; font-size: 0.82rem; font-weight: 700; color: #166534; background: #f0fdf4; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+          <span style="display: flex; align-items: center; gap: 6px;">
+            <span style="color: #16a34a; font-size: 0.9rem;">✓</span>
+            <span>${vpEscapeHtml(p.name)}</span>
+          </span>
+          <button 
+            type="button" 
+            onclick="event.stopPropagation(); vpRemoveChipPart('${vpEscapeHtml(eff)}')" 
+            style="font-size: 0.70rem; color: #16a34a; font-weight: 800; background: #dcfce7; padding: 2px 8px; border-radius: 4px; border: 1px solid #86efac; cursor: pointer;"
+            title="Clique para remover da aba"
+          >
+            ✓ Adicionada
+          </button>
+        </div>
+      `;
+    } else {
+      html += `
+        <div 
+          onclick="vpSelectSuggestionPart('${vpEscapeHtml(p.name)}')" 
+          style="padding: 7px 12px; font-size: 0.82rem; font-weight: 700; color: #1e293b; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; transition: background 0.15s ease;"
+          onmouseover="this.style.background='#eff6ff'" 
+          onmouseout="this.style.background='#ffffff'"
+        >
+          <span>${vpEscapeHtml(p.name)}</span>
+          <button 
+            type="button" 
+            onclick="event.stopPropagation(); vpSelectSuggestionPart('${vpEscapeHtml(p.name)}')" 
+            style="font-size: 0.72rem; color: #2563eb; font-weight: 800; background: #eff6ff; padding: 3px 8px; border-radius: 5px; border: 1px solid #bfdbfe; cursor: pointer;"
+          >
+            + Adicionar
+          </button>
+        </div>
+      `;
+    }
   });
 
   suggestionsEl.innerHTML = html;
   suggestionsEl.style.display = 'block';
+};
+
+window.vpClearCustomTabSearch = function() {
+  const searchInput = document.getElementById('vpCustomTabPartSearch');
+  if (searchInput) {
+    searchInput.value = '';
+    searchInput.focus();
+  }
+  const clearBtn = document.getElementById('vpCustomTabClearSearchBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
+  const suggestionsEl = document.getElementById('vpCustomTabSearchSuggestions');
+  if (suggestionsEl) {
+    suggestionsEl.style.display = 'none';
+    suggestionsEl.innerHTML = '';
+  }
 };
 
 window.vpOnSearchCustomTabPartKeydown = function(event) {
@@ -8940,15 +8994,11 @@ window.vpSelectSuggestionPart = function(partName) {
     vpTempSelectedPartsInModal.add(eff);
     vpRenderCustomTabChips();
   }
+
+  // Mantém a pesquisa aberta para que o usuário possa adicionar outras peças encontradas!
   const searchInput = document.getElementById('vpCustomTabPartSearch');
-  if (searchInput) {
-    searchInput.value = '';
-    searchInput.focus();
-  }
-  const suggestionsEl = document.getElementById('vpCustomTabSearchSuggestions');
-  if (suggestionsEl) {
-    suggestionsEl.style.display = 'none';
-    suggestionsEl.innerHTML = '';
+  if (searchInput && searchInput.value) {
+    vpOnSearchCustomTabPartInput(searchInput.value);
   }
 };
 
@@ -8963,20 +9013,21 @@ window.vpAddPartFromSearchInput = function() {
     vpRenderCustomTabChips();
   }
 
-  if (searchInput) {
-    searchInput.value = '';
-    searchInput.focus();
-  }
-  const suggestionsEl = document.getElementById('vpCustomTabSearchSuggestions');
-  if (suggestionsEl) {
-    suggestionsEl.style.display = 'none';
-    suggestionsEl.innerHTML = '';
+  // Mantém a pesquisa ativa e atualiza a listagem
+  if (searchInput && searchInput.value) {
+    vpOnSearchCustomTabPartInput(searchInput.value);
   }
 };
 
 window.vpRemoveChipPart = function(partName) {
   vpTempSelectedPartsInModal.delete(partName);
   vpRenderCustomTabChips();
+
+  // Atualiza as sugestões da pesquisa ativa caso a peça removida faça parte dela
+  const searchInput = document.getElementById('vpCustomTabPartSearch');
+  if (searchInput && searchInput.value) {
+    vpOnSearchCustomTabPartInput(searchInput.value);
+  }
 };
 
 function vpRenderCustomTabChips() {
@@ -8992,8 +9043,8 @@ function vpRenderCustomTabChips() {
 
   if (count === 0) {
     container.innerHTML = `
-      <span id="vpCustomTabEmptyNotice" style="font-size: 0.75rem; color: #94a3b8; font-style: italic; width: 100%; text-align: center; padding: 12px 0;">
-        Nenhuma peça adicionada. Pesquise acima e clique em "Add".
+      <span id="vpCustomTabEmptyNotice" style="font-size: 0.75rem; color: #94a3b8; font-style: italic; width: 100%; text-align: center; padding: 8px 0;">
+        Nenhuma peça adicionada ainda. Pesquise abaixo e adicione.
       </span>
     `;
     return;
@@ -9019,6 +9070,7 @@ function vpRenderCustomTabChips() {
   });
 
   container.innerHTML = html;
+  container.scrollTop = container.scrollHeight;
 }
 
 window.vpSaveCustomTab = function(event) {

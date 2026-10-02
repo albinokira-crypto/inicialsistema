@@ -970,25 +970,38 @@
             <input type="hidden" id="vpCustomTabIconInput" value="📁" />
           </div>
 
-          <!-- BARRA DE PESQUISA COM BOTÃO DE ADD PARA ADICIONAR PEÇAS À ABA -->
-          <div style="display: flex; flex-direction: column; gap: 6px; position: relative;">
+          <!-- LISTAGEM DE PEÇAS ADICIONADAS À ABA (CHIPS NO TOPO) -->
+          <div style="display: flex; flex-direction: column; gap: 4px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <label style="font-size: 0.78rem; font-weight: 700; color: #334155;">Adicionar Peças do Catálogo:</label>
+              <label style="font-size: 0.78rem; font-weight: 700; color: #334155;">Peças na aba:</label>
               <span id="vpCustomTabSelectedCount" style="font-size: 0.72rem; font-weight: 800; color: #2563eb; background: #eff6ff; padding: 2px 7px; border-radius: 4px; border: 1px solid #bfdbfe;">0 na aba</span>
             </div>
+            <div id="vpCustomTabChipsContainer" style="display: flex; flex-wrap: wrap; gap: 5px; min-height: 40px; max-height: 110px; overflow-y: auto; padding: 6px 8px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px;">
+              <span id="vpCustomTabEmptyNotice" style="font-size: 0.75rem; color: #94a3b8; font-style: italic; width: 100%; text-align: center; padding: 8px 0;">Nenhuma peça adicionada ainda. Pesquise abaixo e adicione.</span>
+            </div>
+          </div>
 
-            <div style="display: flex; gap: 6px; position: relative;">
+          <!-- BARRA DE PESQUISA COM BOTÃO DE ADD -->
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 0.78rem; font-weight: 700; color: #334155;">Pesquisar peças no catálogo:</label>
+            <div style="display: flex; gap: 6px;">
               <div style="position: relative; flex: 1;">
                 <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.80rem; color: #94a3b8; pointer-events: none;">🔍</span>
                 <input 
                   type="text" 
                   id="vpCustomTabPartSearch" 
-                  placeholder="Pesquisar peça no catálogo..." 
+                  placeholder="Digite ex: Capô, Farol, Amortecedor..." 
                   autocomplete="off"
                   oninput="vpOnSearchCustomTabPartInput(this.value)"
                   onkeydown="vpOnSearchCustomTabPartKeydown(event)"
-                  style="width: 100%; box-sizing: border-box; padding: 8px 10px 8px 28px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.84rem; font-weight: 600;" 
+                  style="width: 100%; box-sizing: border-box; padding: 8px 30px 8px 28px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.84rem; font-weight: 600;" 
                 />
+                <button 
+                  id="vpCustomTabClearSearchBtn" 
+                  type="button" 
+                  onclick="vpClearCustomTabSearch()" 
+                  style="display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 0.85rem; color: #94a3b8; cursor: pointer;"
+                >✕</button>
               </div>
               <button 
                 type="button" 
@@ -999,14 +1012,9 @@
               </button>
             </div>
 
-            <!-- DROPDOWN DE SUGESTÕES DO CATÁLOGO -->
-            <div id="vpCustomTabSearchSuggestions" style="display: none; max-height: 160px; overflow-y: auto; background: #ffffff; border: 1.5px solid #bfdbfe; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.12); position: absolute; top: 58px; left: 0; right: 0; z-index: 10010;">
+            <!-- RESULTADOS DA PESQUISA DO CATÁLOGO (PERMANECEM VISÍVEIS) -->
+            <div id="vpCustomTabSearchSuggestions" style="display: none; max-height: 150px; overflow-y: auto; background: #ffffff; border: 1.5px solid #bfdbfe; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
               <!-- Itens de sugestão inseridos dinamicamente -->
-            </div>
-
-            <!-- LISTAGEM COMPACTA DE PEÇAS ADICIONADAS À ABA (CHIPS) -->
-            <div id="vpCustomTabChipsContainer" style="display: flex; flex-wrap: wrap; gap: 5px; min-height: 48px; max-height: 170px; overflow-y: auto; padding: 8px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; margin-top: 2px;">
-              <span id="vpCustomTabEmptyNotice" style="font-size: 0.75rem; color: #94a3b8; font-style: italic; width: 100%; text-align: center; padding: 10px 0;">Nenhuma peça adicionada. Pesquise acima e clique em "Add".</span>
             </div>
           </div>
 
