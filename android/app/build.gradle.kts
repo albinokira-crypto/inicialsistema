@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.vistoriainicial"
         minSdk = 24
         targetSdk = 36
-        versionCode = 224
-        versionName = "2.24"
+        versionCode = 225
+        versionName = "2.25"
     }
 
     buildTypes {
