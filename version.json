@@ -1,8 +1,7 @@
 {
-  "version": "2.23.0",
-  "versionCode": 2230,
-  "updatedAt": "2026-09-25T19:40:00Z",
-  "buildDate": "2026-09-25T19:40:00.000Z",
-  "changelog": "Correção completa de contraste nas peças do veículo, botões de seguradora, abas de vistoria, cards de veículo e relatórios em todos os temas visuais"
+  "version": "2.24.0",
+  "versionCode": 2240,
+  "updatedAt": "2026-10-01T21:10:00Z",
+  "buildDate": "2026-10-01T21:10:00.000Z",
+  "changelog": "Restauração do visual original clássico pré-atualização com sincronização instantânea sem reinstalar o aplicativo"
 }
-

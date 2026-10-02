@@ -23,7 +23,11 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.21.0';
+let CURRENT_APP_VERSION = 'v2.24.0';
+try {
+  localStorage.removeItem('gestao_app_theme');
+  document.documentElement.removeAttribute('data-theme');
+} catch(e) {}
 
 function parseVersionNum(v) {
   if (!v) return 0;
@@ -8335,14 +8339,14 @@ function vpRenderParts(filterQuery = '') {
         <!-- ZONA 1: PEÇAS DO VEÍCULO (MAIS USADAS NO TOPO) -->
         <button 
           type="button" 
-          class="vp-zone-btn vp-zone-pecas ${!isFavMode ? 'active' : ''}"
           onclick="vpSelectCategory('PECAS')"
           title="Todas as ${currentVTypeInfo.title.toLowerCase()} (as mais usadas primeiro)"
+          style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 6px 10px; border-radius: 10px; border: 2px solid ${!isFavMode ? '#2563eb' : '#cbd5e1'}; background: ${!isFavMode ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${!isFavMode ? '0 2px 6px rgba(37,99,235,0.18)' : 'none'};"
         >
           <span style="font-size: 1.05rem; line-height: 1;">${currentVTypeInfo.icon}</span>
-          <span class="vp-zone-btn-title" style="font-size: 0.82rem; font-weight: 800; line-height: 1.1;">${currentVTypeInfo.title}</span>
+          <span style="font-size: 0.82rem; font-weight: 800; color: ${!isFavMode ? '#1e3a8a' : '#475569'}; line-height: 1.1;">${currentVTypeInfo.title}</span>
           <div style="display: flex; align-items: center; gap: 3px; margin-left: 2px;">
-            <span class="vp-zone-counter" style="font-size: 0.68rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;">${todasParts.length}</span>
+            <span style="font-size: 0.68rem; font-weight: 800; color: ${!isFavMode ? '#2563eb' : '#64748b'}; background: ${!isFavMode ? '#dbeafe' : '#f1f5f9'}; padding: 1px 6px; border-radius: 999px;">${todasParts.length}</span>
             ${todasSelCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 6px; border-radius: 999px;">${todasSelCount}</span>` : ''}
           </div>
         </button>
@@ -8350,36 +8354,36 @@ function vpRenderParts(filterQuery = '') {
         <!-- ZONA 2: FAVORITAS (ORDEM ALFABÉTICA) -->
         <button 
           type="button" 
-          class="vp-zone-btn vp-zone-fav ${isFavMode ? 'active' : ''}"
           onclick="vpSelectCategory('FAVORITOS')"
           title="Peças Favoritas (em ordem alfabética)"
+          style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 6px 10px; border-radius: 10px; border: 2px solid ${isFavMode ? '#eab308' : '#cbd5e1'}; background: ${isFavMode ? '#fefce8' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${isFavMode ? '0 2px 6px rgba(234,179,8,0.22)' : 'none'};"
         >
           <span style="font-size: 1.05rem; line-height: 1;">⭐</span>
-          <span class="vp-zone-btn-title" style="font-size: 0.82rem; font-weight: 800; line-height: 1.1;">Favoritas</span>
+          <span style="font-size: 0.82rem; font-weight: 800; color: ${isFavMode ? '#854d0e' : '#475569'}; line-height: 1.1;">Favoritas</span>
           <div style="display: flex; align-items: center; gap: 3px; margin-left: 2px;">
-            <span class="vp-zone-counter" style="font-size: 0.68rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;">${favParts.length}</span>
+            <span style="font-size: 0.68rem; font-weight: 800; color: ${isFavMode ? '#a16207' : '#64748b'}; background: ${isFavMode ? '#fef08a' : '#f1f5f9'}; padding: 1px 6px; border-radius: 999px;">${favParts.length}</span>
             ${favSelCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 6px; border-radius: 999px;">${favSelCount}</span>` : ''}
           </div>
         </button>
       </div>
 
       <!-- CABEÇALHO DA ZONA ATIVA -->
-      <div class="vp-active-zone-header" style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-radius: 8px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; background: ${activeBg}; border-radius: 8px; border-left: 4px solid ${activeColor};">
         <div style="display: flex; align-items: center; gap: 5px;">
           <span style="font-size: 0.95rem;">${activeIcon}</span>
-          <strong class="vp-active-zone-title" style="font-size: 0.80rem;">${activeTitle} ${isFavMode ? '(Ordem Alfabética A-Z)' : '(Mais Usadas no Topo)'}</strong>
+          <strong style="font-size: 0.80rem; color: #0f172a;">${activeTitle} ${isFavMode ? '(Ordem Alfabética A-Z)' : '(Mais Usadas no Topo)'}</strong>
         </div>
-        <span class="vp-active-zone-count" style="font-size: 0.68rem; font-weight: 800; padding: 2px 6px; border-radius: 999px;">
+        <span style="font-size: 0.68rem; font-weight: 800; color: ${activeColor}; background: #ffffff; padding: 2px 6px; border-radius: 999px; border: 1px solid #cbd5e1;">
           ${activeList.length} peças
         </span>
       </div>
 
       <!-- ESTADO VAZIO SE NÃO HOUVER FAVORITAS -->
       ${isFavMode && favParts.length === 0 ? `
-        <div class="vp-empty-fav-box" style="width: 100%; padding: 36px 16px; text-align: center; border-radius: 12px; border: 1.5px dashed #facc15; margin-top: 4px; box-sizing: border-box;">
+        <div style="width: 100%; padding: 36px 16px; text-align: center; color: #64748b; background: #ffffff; border-radius: 12px; border: 1.5px dashed #facc15; margin-top: 4px; box-sizing: border-box;">
           <span style="font-size: 2.2rem; display: block; margin-bottom: 8px;">⭐</span>
-          <b style="font-size: 0.92rem;">Nenhuma peça favoritada ainda</b>
-          <p style="font-size: 0.80rem; margin-top: 6px; line-height: 1.4;">
+          <b style="font-size: 0.92rem; color: #1e293b;">Nenhuma peça favoritada ainda</b>
+          <p style="font-size: 0.80rem; margin-top: 6px; color: #64748b; line-height: 1.4;">
             Na zona "Peças do veículo", toque na estrela (⭐) de qualquer peça para adicioná-la aos seus favoritos!
           </p>
         </div>
@@ -8387,13 +8391,13 @@ function vpRenderParts(filterQuery = '') {
 
       <!-- SEÇÃO SUSPENSA NO TOPO: PEÇAS SELECIONADAS NA VISTORIA ATUAL (2 COLUNAS) -->
       ${selectedInActive.length > 0 ? `
-        <div class="vp-pinned-section" style="display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 6px; border-radius: 8px; box-sizing: border-box;">
+        <div style="display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 6px; background: #fef2f2; border: 1.5px dashed #f87171; border-radius: 8px; box-sizing: border-box;">
           <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px;">
             <div style="display: flex; align-items: center; gap: 4px;">
               <span style="font-size: 0.90rem;">📌</span>
-              <strong class="vp-pinned-title" style="font-size: 0.76rem;">Selecionadas nesta vistoria (${selectedInActive.length})</strong>
+              <strong style="font-size: 0.76rem; color: #991b1b;">Selecionadas nesta vistoria (${selectedInActive.length})</strong>
             </div>
-            <span class="vp-pinned-badge" style="font-size: 0.62rem; font-weight: 800; padding: 1px 5px; border-radius: 999px;">Fixadas</span>
+            <span style="font-size: 0.62rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 1px 5px; border-radius: 999px;">Fixadas</span>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
             ${selectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
@@ -8419,16 +8423,16 @@ function vpRenderPartCardHtml(item) {
   const isFav = vpIsPartFavorite(item.name);
 
   return `
-    <div class="vp-part-card ${cardClass}" data-part-name="${vpEscapeHtml(item.name)}">
+    <div class="vp-part-card ${cardClass}" style="width: 100%; min-width: 0; box-sizing: border-box; padding: 6px 6px; border-radius: 8px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#cbd5e1')}; background: ${isTroca ? '#fffafa' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
       <!-- 1ª LINHA: [⭐ Favorito] [❌ Excluir] [Descrição da Peça] [✏️ Editar] -->
       <div class="vp-card-top" style="display: flex; align-items: center; justify-content: space-between; gap: 2px; width: 100%; min-width: 0;">
         <button type="button" class="vp-btn-fav-part" title="${isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}" onclick="event.stopPropagation(); vpToggleFavoritePart('${vpEscapeHtml(item.name)}')" style="background: none; border: none; font-size: 0.95rem; cursor: pointer; padding: 2px; line-height: 1; flex-shrink: 0; transition: transform 0.15s ease; ${isFav ? 'filter: drop-shadow(0 0 2px rgba(234,179,8,0.7)); transform: scale(1.15);' : 'opacity: 0.30; filter: grayscale(100%);'}">
           ⭐
         </button>
         <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
-        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}">
+        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.78rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
           ${vpEscapeHtml(item.name)}
-          ${(vpCustomPartsList && vpCustomPartsList.some(cp => cp.name && cp.name.toLowerCase() === (item.name || '').toLowerCase())) ? '<span class="vp-badge-nova" style="font-size: 0.60rem; font-weight: 800; padding: 1px 4px; border-radius: 4px; margin-left: 3px; display: inline-block;">✨ Nova</span>' : ''}
+          ${(vpCustomPartsList && vpCustomPartsList.some(cp => cp.name && cp.name.toLowerCase() === (item.name || '').toLowerCase())) ? '<span style="font-size: 0.60rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 4px; border-radius: 4px; margin-left: 3px; display: inline-block;">✨ Nova</span>' : ''}
         </span>
         <button type="button" class="vp-btn-edit-name" title="Editar nome e zona da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')">✏️</button>
       </div>
@@ -8456,7 +8460,7 @@ function vpRenderPartCardHtml(item) {
         <button 
           type="button" 
           class="vp-btn-action btn-obs ${hasObs ? 'has-obs active' : ''}" 
-          style="flex: 0 0 20%; width: 20%; padding: 5px 1px; font-size: 0.72rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap;"
+          style="flex: 0 0 20%; width: 20%; padding: 5px 1px; font-size: 0.72rem; min-height: 28px; border-radius: 6px; font-weight: 800; white-space: nowrap; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'}; border-color: ${hasObs ? '#93c5fd' : '#cbd5e1'};"
           title="${hasObs ? 'Obs: ' + vpEscapeHtml(selected.obs) : 'Adicionar Observação'}"
           onclick="vpToggleObsBox('${vpEscapeHtml(item.name)}')"
         >
@@ -9102,106 +9106,3 @@ window.vpImportCatalogJson = function() {
   };
   input.click();
 };
-
-// ==========================================================================
-// GERENCIADOR DE TEMAS E MODELOS VISUAIS (5 MODELOS)
-// ==========================================================================
-const APP_THEMES = [
-  { id: 'original', name: 'Original (Padrão)', icon: '🌟', badge: 'Claro Original', desc: 'Visual clássico original limpo, com fundo claro e botões azuis.' },
-  { id: 'cyber-hud', name: 'Modelo 1: Cyber-HUD Sci-Fi', icon: '⚡', badge: 'Neon HUD', desc: 'Visual telemetria e diagnóstico com bordas e botões em neon ciano.' },
-  { id: 'tactile-3d', name: 'Modelo 2: Tactile 3D Matte & Neon', icon: '🟢', badge: '3D Físico Real', desc: 'Botões em relevo 3D físico real que afundam fisicamente ao toque.' },
-  { id: 'cyber-glass', name: 'Modelo 3: Cyber-Glassmorphism 3D', icon: '💎', badge: 'Vidro Espacial', desc: 'Vidro fumê translúcido e botões em cápsula 3D com brilho cristalino.' },
-  { id: 'fusion-3d', name: 'Modelo 4: Fusão 3D Futurista', icon: '🚀', badge: 'Cockpit 3D', desc: 'O melhor dos dois mundos: botões 3D táteis extrudados + acabamento em vidro escuro.' }
-];
-
-function getAppTheme() {
-  try {
-    return localStorage.getItem('gestao_app_theme') || 'original';
-  } catch(e) {
-    return 'original';
-  }
-}
-window.getAppTheme = getAppTheme;
-
-function setAppTheme(themeId, notify = true) {
-  const validThemes = ['original', 'cyber-hud', 'tactile-3d', 'cyber-glass', 'fusion-3d'];
-  const theme = validThemes.includes(themeId) ? themeId : 'original';
-  
-  try {
-    localStorage.setItem('gestao_app_theme', theme);
-  } catch(e) {}
-  
-  document.documentElement.setAttribute('data-theme', theme);
-  if (document.body) {
-    document.body.setAttribute('data-theme', theme);
-  }
-
-  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-  if (metaThemeColor) {
-    metaThemeColor.setAttribute('content', theme === 'original' ? '#2563eb' : '#070a12');
-  }
-
-  updateThemeSelectorModalUI();
-
-  if (notify && typeof showToastNotification === 'function') {
-    const selected = APP_THEMES.find(t => t.id === theme);
-    showToastNotification(`Visual ativado: ${selected ? selected.name : theme}`, 2500);
-  }
-}
-window.setAppTheme = setAppTheme;
-
-function updateThemeSelectorModalUI() {
-  const currentTheme = getAppTheme();
-  APP_THEMES.forEach(t => {
-    const item = document.getElementById(`themeCard_${t.id}`);
-    const check = document.getElementById(`themeCheck_${t.id}`);
-    if (item) {
-      item.classList.toggle('active-theme', t.id === currentTheme);
-    }
-    if (check) {
-      check.style.display = (t.id === currentTheme) ? 'inline-flex' : 'none';
-    }
-  });
-
-  const activeObj = APP_THEMES.find(t => t.id === currentTheme);
-  const activeLabel = activeObj ? activeObj.name : 'Tema';
-  const headerBtn = document.getElementById('themeSelectorBtn');
-  if (headerBtn) {
-    headerBtn.innerHTML = `🎨 ${activeObj ? activeObj.icon : '🎨'} ${activeLabel.split(':')[0]}`;
-  }
-  const innerBtn = document.getElementById('innerThemeSelectorBtn');
-  if (innerBtn) {
-    innerBtn.innerHTML = `🎨 ${activeObj ? activeObj.icon : '🎨'} ${activeLabel.split(':')[0]}`;
-  }
-}
-window.updateThemeSelectorModalUI = updateThemeSelectorModalUI;
-
-function openThemeSelectorModal() {
-  const modal = document.getElementById('themeSelectorModal');
-  if (!modal) return;
-  updateThemeSelectorModalUI();
-  modal.style.display = 'flex';
-}
-window.openThemeSelectorModal = openThemeSelectorModal;
-
-function closeThemeSelectorModal() {
-  const modal = document.getElementById('themeSelectorModal');
-  if (modal) modal.style.display = 'none';
-}
-window.closeThemeSelectorModal = closeThemeSelectorModal;
-
-// Inicialização imediata do tema ao carregar
-(function initAppTheme() {
-  const currentTheme = getAppTheme();
-  document.documentElement.setAttribute('data-theme', currentTheme);
-  if (document.body) {
-    document.body.setAttribute('data-theme', currentTheme);
-  }
-  window.addEventListener('DOMContentLoaded', () => {
-    if (document.body) {
-      document.body.setAttribute('data-theme', currentTheme);
-    }
-    updateThemeSelectorModalUI();
-  });
-})();
-
