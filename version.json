@@ -1,7 +1,7 @@
 {
-  "version": "2.38.0",
-  "versionCode": 2380,
-  "updatedAt": "2026-10-02T18:01:00Z",
-  "buildDate": "2026-10-02T18:01:00.000Z",
-  "changelog": "Suporte seguro a Vistoria Rio log sem campo trocas e sincronizacao imediata ao alternar pecas para reparo"
+  "version": "2.39.0",
+  "versionCode": 2390,
+  "updatedAt": "2026-10-02T18:12:00Z",
+  "buildDate": "2026-10-02T18:12:00.000Z",
+  "changelog": "Exibicao exclusiva de abas personalizadas no tipo de veiculo correspondente"
 }

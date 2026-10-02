@@ -7173,7 +7173,16 @@ function vpLoadState() {
     }
     const savedTabs = getSafeStorage('mobile_custom_parts_tabs', null);
     if (savedTabs && Array.isArray(savedTabs)) {
-      vpCustomTabs = savedTabs;
+      vpCustomTabs = savedTabs.map(tab => {
+        if (!tab.vehicleType) {
+          const nameLower = (tab.name || '').toLowerCase();
+          if (nameLower.includes('moto')) tab.vehicleType = 'moto';
+          else if (nameLower.includes('picape')) tab.vehicleType = 'picape';
+          else if (nameLower.includes('caminhao') || nameLower.includes('caminhão')) tab.vehicleType = 'caminhao';
+          else tab.vehicleType = 'carro';
+        }
+        return tab;
+      });
     }
   } catch(e) {}
 }
@@ -7375,9 +7384,19 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
       if (Array.isArray(cloudData.customTabs) && cloudData.customTabs.length > 0) {
         cloudData.customTabs.forEach(cloudTab => {
           if (!cloudTab || !cloudTab.id) return;
+          if (!cloudTab.vehicleType) {
+            const nameLower = (cloudTab.name || '').toLowerCase();
+            if (nameLower.includes('moto')) cloudTab.vehicleType = 'moto';
+            else if (nameLower.includes('picape')) cloudTab.vehicleType = 'picape';
+            else if (nameLower.includes('caminhao') || nameLower.includes('caminhão')) cloudTab.vehicleType = 'caminhao';
+            else cloudTab.vehicleType = 'carro';
+          }
           const localTab = vpCustomTabs.find(t => t.id === cloudTab.id);
           if (!localTab) {
             vpCustomTabs.push(cloudTab);
+            hasChanges = true;
+          } else if (!localTab.vehicleType) {
+            localTab.vehicleType = cloudTab.vehicleType;
             hasChanges = true;
           }
         });
@@ -7529,6 +7548,15 @@ window.vpSetVehicleType = function(type, forceRender = true, keepAllZonesMode = 
 
   if (!keepAllZonesMode) {
     vpViewAllZonesMode = false;
+  }
+
+  // Se a aba personalizada atualmente aberta não pertencer ao novo tipo de veículo, desseleciona para voltar ao catálogo principal
+  if (vpActiveCustomTabId && Array.isArray(vpCustomTabs)) {
+    const activeTab = vpCustomTabs.find(t => t.id === vpActiveCustomTabId);
+    const tabVType = (activeTab && activeTab.vehicleType) ? activeTab.vehicleType : 'carro';
+    if (tabVType !== vpDetectedVehicleType) {
+      vpActiveCustomTabId = null;
+    }
   }
 
   if (typeof vpRenderTabsNavBar === 'function') {
@@ -8832,8 +8860,17 @@ function vpRenderTabsNavBar() {
   if (Array.isArray(vpCustomTabs) && vpCustomTabs.length > 0) {
     const currentVType = vpDetectedVehicleType || 'carro';
     vpCustomTabs.forEach(tab => {
-      // Filtra abas pelo tipo de veículo ativo (permite abas genéricas ou que combinem com o veículo)
-      if (tab.vehicleType && tab.vehicleType !== 'all' && tab.vehicleType !== currentVType) {
+      // Infere vehicleType caso não tenha sido salvo anteriormente
+      if (!tab.vehicleType) {
+        const nameLower = (tab.name || '').toLowerCase();
+        if (nameLower.includes('moto')) tab.vehicleType = 'moto';
+        else if (nameLower.includes('picape')) tab.vehicleType = 'picape';
+        else if (nameLower.includes('caminhao') || nameLower.includes('caminhão')) tab.vehicleType = 'caminhao';
+        else tab.vehicleType = 'carro';
+      }
+
+      // Deixa aparecendo SOMENTE a aba personalizada na aba do tipo de veículo em que foi criada!
+      if (tab.vehicleType !== currentVType) {
         return;
       }
 
@@ -9371,7 +9408,12 @@ function vpRenderParts(filterQuery = '') {
   // MODO ABA PERSONALIZADA
   if (vpActiveCustomTabId) {
     const activeTab = vpCustomTabs.find(t => t.id === vpActiveCustomTabId);
-    if (!activeTab) {
+    const currentVType = vpDetectedVehicleType || 'carro';
+    const tabVType = (activeTab && activeTab.vehicleType) ? activeTab.vehicleType : (
+      (activeTab?.name || '').toLowerCase().includes('moto') ? 'moto' : 'carro'
+    );
+
+    if (!activeTab || tabVType !== currentVType) {
       vpActiveCustomTabId = null;
       vpRenderTabsNavBar();
     } else {
