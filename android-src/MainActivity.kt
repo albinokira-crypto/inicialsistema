@@ -634,13 +634,18 @@ class MainActivity : ComponentActivity() {
         if (targetVehicle.isEmpty()) return 0
 
         val uri = if (isVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        val projection = arrayOf(
+        val projectionList = mutableListOf(
             MediaStore.MediaColumns._ID,
             MediaStore.MediaColumns.DISPLAY_NAME,
             MediaStore.MediaColumns.DATE_ADDED,
             if (isVideo) MediaStore.Video.VideoColumns.DATE_TAKEN else MediaStore.Images.ImageColumns.DATE_TAKEN,
             MediaStore.MediaColumns.DATA
         )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            projectionList.add(MediaStore.MediaColumns.RELATIVE_PATH)
+            projectionList.add(MediaStore.MediaColumns.BUCKET_DISPLAY_NAME)
+        }
+        val projection = projectionList.toTypedArray()
         val sortOrder = "${MediaStore.MediaColumns.DATE_ADDED} DESC"
         val selection = "${MediaStore.MediaColumns.DATE_ADDED} >= ?"
         val selectionArgs = arrayOf(((startTime / 1000) - 30).toString()) // margem de 30 segundos
@@ -654,34 +659,46 @@ class MainActivity : ComponentActivity() {
                 val nameColumn = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
                 val dateAddedColumn = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_ADDED)
                 val dateTakenColumn = c.getColumnIndexOrThrow(if (isVideo) MediaStore.Video.VideoColumns.DATE_TAKEN else MediaStore.Images.ImageColumns.DATE_TAKEN)
-                val dataColumn = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA)
+                val dataColumn = c.getColumnIndex(MediaStore.MediaColumns.DATA)
+                val relPathColumn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) c.getColumnIndex(MediaStore.MediaColumns.RELATIVE_PATH) else -1
+                val bucketColumn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) c.getColumnIndex(MediaStore.MediaColumns.BUCKET_DISPLAY_NAME) else -1
                 
                 var count = 0
                 while (c.moveToNext() && count < limit) {
                     count++
                     val id = c.getLong(idColumn)
                     val name = c.getString(nameColumn) ?: "midia_${System.currentTimeMillis()}.${if (isVideo) "mp4" else "jpg"}"
-                    val absolutePath = c.getString(dataColumn)
+                    val absolutePath = if (dataColumn != -1) c.getString(dataColumn) else null
+                    val relativePath = if (relPathColumn != -1) c.getString(relPathColumn) else null
+                    val bucketDisplayName = if (bucketColumn != -1) c.getString(bucketColumn) else null
                     
                     // Filtro estrito: NUNCA importar mídias de WhatsApp, Telegram, redes sociais ou downloads
-                    if (isExcludedMedia(name, absolutePath)) {
+                    if (isExcludedMedia(name, absolutePath, relativePath, bucketDisplayName)) {
                         continue
                     }
 
                     // Exclude files already inside Vistorias folder or custom selected folder
                     val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
                     val customFolderName = prefs.getString("selected_folder_name", null) ?: prefs.getString("photo_folder_name_friendly", null) ?: ""
-                    if (absolutePath != null) {
-                        val lowerPath = absolutePath.lowercase()
-                        if (lowerPath.contains("/vistorias/") || (customFolderName.isNotEmpty() && lowerPath.contains("/${customFolderName.lowercase()}/"))) {
-                            continue
-                        }
-                        // Verifica se o arquivo é proveniente de diretório de câmera
-                        val isCameraOrigin = lowerPath.contains("/dcim/") || lowerPath.contains("/camera") ||
-                                             lowerPath.contains("/100andro") || lowerPath.contains("/opencamera")
-                        if (!isCameraOrigin) {
-                            continue
-                        }
+                    val lowerPath = (absolutePath ?: "").lowercase()
+                    val lowerRel = (relativePath ?: "").lowercase()
+                    val lowerBucket = (bucketDisplayName ?: "").lowercase()
+
+                    if (lowerPath.contains("/vistorias/") || lowerRel.contains("vistorias/") || 
+                        (customFolderName.isNotEmpty() && (lowerPath.contains("/${customFolderName.lowercase()}/") || lowerRel.contains("${customFolderName.lowercase()}/")))) {
+                        continue
+                    }
+                    
+                    // Verifica se o arquivo é comprovadamente proveniente de diretório de CÂMERA
+                    val isCameraOrigin = lowerPath.contains("/dcim/") || lowerPath.contains("/camera") ||
+                                         lowerPath.contains("/100andro") || lowerPath.contains("/opencamera") ||
+                                         lowerRel.contains("dcim/") || lowerRel.contains("camera") ||
+                                         lowerRel.contains("100andro") || lowerRel.contains("opencamera") ||
+                                         lowerBucket == "camera" || lowerBucket == "100andro" || lowerBucket == "opencamera" || lowerBucket == "dcim"
+
+                    if (!isCameraOrigin) {
+                        // Rejeita qualquer arquivo que não tenha vindo estritamente da câmera (bloqueia 100% WhatsApp, downloads, etc.)
+                        continue
                     }
                     
                     val dateAddedSec = c.getLong(dateAddedColumn)
@@ -1152,9 +1169,17 @@ class MainActivity : ComponentActivity() {
         return if (sanitized.isEmpty()) "Vistoria_Sem_Nome" else sanitized
     }
 
-    fun isExcludedMedia(name: String?, absolutePath: String?): Boolean {
+    fun isExcludedMedia(
+        name: String?, 
+        absolutePath: String?, 
+        relativePath: String? = null, 
+        bucketDisplayName: String? = null
+    ): Boolean {
         val lowerName = name?.lowercase() ?: ""
         val lowerPath = absolutePath?.lowercase() ?: ""
+        val lowerRel = relativePath?.lowercase() ?: ""
+        val lowerBucket = bucketDisplayName?.lowercase() ?: ""
+        val combinedPaths = "$lowerPath $lowerRel $lowerBucket"
 
         // 1. Bloqueia pastas conhecidas do WhatsApp, Telegram, redes sociais ou downloads
         val blockedPathKeywords = listOf(
@@ -1162,32 +1187,29 @@ class MainActivity : ComponentActivity() {
             "telegram", "org.telegram",
             "facebook", "instagram", "snapchat", "tiktok", "twitter",
             "screenshots", "capturas de tela", "captura de tela",
-            "download", "downloads"
+            "download", "downloads", "wa_media", "whatsapp media"
         )
         for (kw in blockedPathKeywords) {
-            if (lowerPath.contains(kw)) {
+            if (combinedPaths.contains(kw) || lowerName.contains(kw)) {
                 return true
             }
         }
 
         // 2. Bloqueia padrões típicos de nomes de arquivos do WhatsApp e mensagens
-        if (lowerName.contains("whatsapp") || lowerName.contains("telegram")) {
-            return true
-        }
-
-        // Imagens do WhatsApp: IMG-20260925-WA0001.jpg, IMG_20260925_WA0001.jpg, etc.
-        val waImageRegex = Regex("""(?i)^(img|vid)[-_]\d{4,8}[-_]wa\d+""")
-        if (waImageRegex.containsMatchIn(lowerName)) {
-            return true
-        }
-
-        val waGenericRegex = Regex("""(?i)[-_]wa\d{3,6}""")
-        if (waGenericRegex.containsMatchIn(lowerName)) {
-            return true
-        }
-
-        if (lowerName.startsWith("ptt-") || lowerName.startsWith("stk-")) {
-            return true
+        val waRegexPatterns = listOf(
+            Regex("""(?i)^(img|vid|photo|foto)[-_]\d{4,8}[-_]wa\d+"""),
+            Regex("""(?i)[-_.]wa\d{2,8}"""),
+            Regex("""(?i)^wa\d{2,8}"""),
+            Regex("""(?i)whatsapp\s*(image|video|document)"""),
+            Regex("""(?i)^ptt[-_]"""),
+            Regex("""(?i)^stk[-_]"""),
+            Regex("""(?i)^aud[-_]\d{4,8}[-_]wa\d+"""),
+            Regex("""(?i)^doc[-_]\d{4,8}[-_]wa\d+""")
+        )
+        for (pattern in waRegexPatterns) {
+            if (pattern.containsMatchIn(lowerName)) {
+                return true
+            }
         }
 
         return false

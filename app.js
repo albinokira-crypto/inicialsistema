@@ -1055,6 +1055,24 @@ setupOficinaCombobox({
   onSelectionChange: () => renderSupervisaoReport()
 });
 
+// Inicializa a pesquisa por placa na Supervisão
+const supPlateInput = document.getElementById('supervisaoPlateSearchInput');
+const supPlateClearBtn = document.getElementById('supervisaoPlateSearchClearBtn');
+if (supPlateInput) {
+  supPlateInput.addEventListener('input', () => {
+    if (supPlateClearBtn) supPlateClearBtn.style.display = supPlateInput.value ? 'block' : 'none';
+    renderSupervisaoReport();
+  });
+}
+if (supPlateClearBtn && supPlateInput) {
+  supPlateClearBtn.addEventListener('click', () => {
+    supPlateInput.value = '';
+    supPlateClearBtn.style.display = 'none';
+    supPlateInput.focus();
+    renderSupervisaoReport();
+  });
+}
+
 // Inicializa o combobox em Todas as Vistorias
 setupOficinaCombobox({
   inputId: 'vistoriaOficinaComboboxInput',
@@ -4235,12 +4253,26 @@ function renderSupervisaoReport() {
   const searchInputEl = document.getElementById('supervisaoOficinaComboboxInput');
   const searchText = searchInputEl ? searchInputEl.value.trim().toLowerCase() : '';
 
+  const plateInputEl = document.getElementById('supervisaoPlateSearchInput');
+  const plateSearchRaw = plateInputEl ? plateInputEl.value.trim().toLowerCase() : '';
+  const plateSearchClean = plateSearchRaw.replace(/[^a-z0-9]/gi, '');
+
   const filtered = supervisoes.filter((s) => {
     if (selectedSupervisaoOficina !== 'Todas' && s.oficinaId !== selectedSupervisaoOficina) return false;
     if (searchText && selectedSupervisaoOficina === 'Todas' && !searchText.startsWith('🏢')) {
       const ofObj = oficinas.find(o => o.id === s.oficinaId);
       const ofName = (ofObj ? ofObj.name : (s.oficinaName || '')).toLowerCase();
       if (!ofName.includes(searchText)) return false;
+    }
+    if (plateSearchRaw) {
+      const veh = (s.vehicle || '').toLowerCase();
+      const plate = (s.plate || '').toLowerCase();
+      const vehClean = veh.replace(/[^a-z0-9]/gi, '');
+      const plateClean = plate.replace(/[^a-z0-9]/gi, '');
+
+      const matchPlate = plate.includes(plateSearchRaw) || (plateSearchClean && plateClean.includes(plateSearchClean));
+      const matchVeh = veh.includes(plateSearchRaw) || (plateSearchClean && vehClean.includes(plateSearchClean));
+      if (!matchPlate && !matchVeh) return false;
     }
     return true;
   });
@@ -5498,9 +5530,13 @@ async function shareVistoriaWhatsApp(id, shareMode) {
     if (!filename) return false;
     const l = filename.toLowerCase();
     return l.includes('whatsapp') || l.includes('telegram') ||
-           /[-_]wa\d+/i.test(l) ||
-           /^(img|vid)[-_]\d{4,8}[-_]wa\d+/i.test(l) ||
-           l.startsWith('ptt-') || l.startsWith('stk-');
+           l.includes('screenshots') || l.includes('download') ||
+           /[-_.]wa\d+/i.test(l) ||
+           /^wa\d+/i.test(l) ||
+           /whatsapp\s*(image|video|document)/i.test(l) ||
+           /^(img|vid|photo|foto)[-_]\d{4,8}[-_]wa\d+/i.test(l) ||
+           l.startsWith('ptt-') || l.startsWith('stk-') ||
+           /^aud[-_]\d+/i.test(l) || /^doc[-_]\d+/i.test(l);
   };
 
   if (window.AndroidInterface) {
@@ -5742,8 +5778,10 @@ async function getStoredPhotosForVehicle(vehicleName) {
       if (cursor) {
         const val = cursor.value;
         if (val.visitId === vehicleName) {
-          const url = URL.createObjectURL(val.blob);
-          results.push({ name: val.name, url: url, rawBlob: val.blob });
+          if (!isWhatsAppMedia(val.name)) {
+            const url = URL.createObjectURL(val.blob);
+            results.push({ name: val.name, url: url, rawBlob: val.blob });
+          }
         }
         cursor.continue();
       } else {
@@ -5790,6 +5828,10 @@ if (capturePhotoButton) {
 
 window.onPhotoCapturedFromAndroid = async function(vehicleName, filename, base64Data) {
   try {
+    if (filename && isWhatsAppMedia(filename)) {
+      console.warn("Bloqueada mídia de WhatsApp recebida do Android:", filename);
+      return;
+    }
     if (vehicleName) {
       activePhotoVehicleName = vehicleName;
       localStorage.setItem('active_photo_vehicle_name', vehicleName);
@@ -8171,39 +8213,58 @@ function vpIncrementPartUsage(partName) {
     localStorage.setItem('vp_parts_usage_stats', JSON.stringify(stats));
   } catch(e) {}
 }
-function vpRenderParts(filterQuery = '') {
-  const listEl = document.getElementById('vpPartsScrollContainer');
-  if (!listEl) return;
+let vpAllVehicleParts = [];
 
-  const sortPartsByUsage = (partList) => {
-    return partList.sort((a, b) => {
-      const isSelA = vpSelectedPartsMap.has(a.name) ? 1 : 0;
-      const isSelB = vpSelectedPartsMap.has(b.name) ? 1 : 0;
-      if (isSelB !== isSelA) return isSelB - isSelA; // 1º: Selecionadas na sessão sempre no topo
+function vpPrecomputeUsageScores(partsList) {
+  const scoreMap = new Map();
+  let stats = {};
+  try {
+    stats = JSON.parse(localStorage.getItem('vp_parts_usage_stats') || '{}');
+  } catch(e) {}
 
-      const scoreA = vpGetPartUsageScore(a.name, a.rawName);
-      const scoreB = vpGetPartUsageScore(b.name, b.rawName);
-      if (scoreB !== scoreA) return scoreB - scoreA; // 2º: Peças mais usadas/populares no topo
-
-      return a.name.localeCompare(b.name, 'pt-BR'); // 3º: Ordem alfabética para desempate
+  const partCounts = new Map();
+  if (typeof items !== 'undefined' && Array.isArray(items)) {
+    items.forEach(it => {
+      const text = ((it.trocas || '') + ' ' + (it.reparos || '') + ' ' + 
+                    ((it.details && it.details.trocas) || '') + ' ' + 
+                    ((it.details && it.details.reparos) || '') + ' ' + 
+                    (it.avarias || '')).toLowerCase();
+      if (text) {
+        partsList.forEach(p => {
+          const n = (p.name || '').toLowerCase();
+          if (n && text.includes(n)) {
+            partCounts.set(p.name, (partCounts.get(p.name) || 0) + 2);
+          }
+        });
+      }
     });
-  };
+  }
 
-  const sortPartsAlphabetically = (partList) => {
-    return partList.sort((a, b) => {
-      const isSelA = vpSelectedPartsMap.has(a.name) ? 1 : 0;
-      const isSelB = vpSelectedPartsMap.has(b.name) ? 1 : 0;
-      if (isSelB !== isSelA) return isSelB - isSelA; // Selecionadas na sessão primeiro
+  partsList.forEach(p => {
+    const nLower = (p.name || '').toLowerCase();
+    let score = (vpUsageStats[nLower] || 0);
+    score += (stats[p.name] || 0) * 25;
+    score += (partCounts.get(p.name) || 0);
 
-      return a.name.localeCompare(b.name, 'pt-BR'); // Ordem estritamente alfabética
-    });
-  };
+    const combined = ((p.name || '') + ' ' + (p.rawName || '')).toLowerCase();
+    if (typeof VP_DEFAULT_POPULAR_KEYWORDS !== 'undefined' && Array.isArray(VP_DEFAULT_POPULAR_KEYWORDS)) {
+      for (let i = 0; i < VP_DEFAULT_POPULAR_KEYWORDS.length; i++) {
+        if (combined.includes(VP_DEFAULT_POPULAR_KEYWORDS[i])) {
+          score += (VP_DEFAULT_POPULAR_KEYWORDS.length - i) * 10;
+          break;
+        }
+      }
+    }
+    scoreMap.set(p.name, score);
+  });
 
-  // Coleta unificada de TODAS as peças do veículo (base + customizadas + renomeadas)
+  return scoreMap;
+}
+
+function vpLoadAndSortVehicleParts() {
   let allParts = [];
   const seenNames = new Set();
 
-  // 1. Peças base do tipo de veículo atual (estritamente filtradas para a categoria)
   if (Array.isArray(vpActiveZones)) {
     vpActiveZones.forEach(z => {
       if (Array.isArray(z.parts)) {
@@ -8227,7 +8288,6 @@ function vpRenderParts(filterQuery = '') {
     });
   }
 
-  // 2. Peças customizadas adicionadas pelo usuário (filtradas para pertencer à categoria do veículo)
   if (Array.isArray(vpCustomPartsList)) {
     vpCustomPartsList.forEach(p => {
       if (p && p.name) {
@@ -8249,8 +8309,170 @@ function vpRenderParts(filterQuery = '') {
     });
   }
 
-  // 3. BUSCA RÁPIDA POR TEXTO (QUANDO O USUÁRIO DIGITA NO CAMPO DE BUSCA)
-  if (filterQuery && filterQuery.trim()) {
+  const scoreMap = vpPrecomputeUsageScores(allParts);
+
+  const orderKey = 'vp_custom_order_' + (vpDetectedVehicleType || 'carro');
+  let savedOrder = [];
+  try {
+    savedOrder = JSON.parse(localStorage.getItem(orderKey) || '[]');
+  } catch(e) {}
+
+  if (Array.isArray(savedOrder) && savedOrder.length > 0) {
+    const orderMap = new Map();
+    savedOrder.forEach((name, idx) => orderMap.set((name || '').toLowerCase(), idx));
+
+    allParts.sort((a, b) => {
+      const idxA = orderMap.has(a.name.toLowerCase()) ? orderMap.get(a.name.toLowerCase()) : 999999;
+      const idxB = orderMap.has(b.name.toLowerCase()) ? orderMap.get(b.name.toLowerCase()) : 999999;
+      if (idxA !== idxB) return idxA - idxB;
+
+      const scoreA = scoreMap.get(a.name) || 0;
+      const scoreB = scoreMap.get(b.name) || 0;
+      if (scoreB !== scoreA) return scoreB - scoreA;
+
+      return a.name.localeCompare(b.name, 'pt-BR');
+    });
+  } else {
+    allParts.sort((a, b) => {
+      const scoreA = scoreMap.get(a.name) || 0;
+      const scoreB = scoreMap.get(b.name) || 0;
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return a.name.localeCompare(b.name, 'pt-BR');
+    });
+  }
+
+  vpAllVehicleParts = allParts;
+  return allParts;
+}
+
+// Suporte a Drag & Drop no Desktop
+let vpDraggedIndex = null;
+
+window.vpHandleDragStart = function(e, index) {
+  vpDraggedIndex = index;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', index.toString());
+  const card = e.currentTarget;
+  if (card) card.classList.add('is-dragging');
+};
+
+window.vpHandleDragOver = function(e, index) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+};
+
+window.vpHandleDragEnter = function(e, index) {
+  e.preventDefault();
+  const card = e.currentTarget;
+  if (card && index !== vpDraggedIndex) {
+    card.classList.add('drag-over');
+  }
+};
+
+window.vpHandleDragLeave = function(e) {
+  const card = e.currentTarget;
+  if (card) card.classList.remove('drag-over');
+};
+
+window.vpHandleDrop = function(e, targetIndex) {
+  e.preventDefault();
+  e.stopPropagation();
+  const card = e.currentTarget;
+  if (card) card.classList.remove('drag-over');
+  if (vpDraggedIndex === null || vpDraggedIndex === targetIndex) return;
+
+  vpMovePartOrder(vpDraggedIndex, targetIndex);
+  vpDraggedIndex = null;
+};
+
+window.vpHandleDragEnd = function(e) {
+  vpDraggedIndex = null;
+  document.querySelectorAll('.vp-part-card').forEach(c => {
+    c.classList.remove('is-dragging', 'drag-over');
+  });
+};
+
+// Suporte a Touch Drag no Celular / Mobile
+let vpTouchStartIndex = null;
+let vpTouchTargetIndex = null;
+let vpTouchMoved = false;
+
+window.vpHandleTouchStart = function(e, index) {
+  vpTouchStartIndex = index;
+  vpTouchTargetIndex = index;
+  vpTouchMoved = false;
+  const card = e.currentTarget.closest('.vp-part-card');
+  if (card) {
+    card.classList.add('is-dragging');
+  }
+};
+
+window.vpHandleTouchMove = function(e) {
+  if (vpTouchStartIndex === null) return;
+  vpTouchMoved = true;
+  const touch = e.touches[0];
+  const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+  const targetCard = targetEl ? targetEl.closest('.vp-part-card') : null;
+
+  document.querySelectorAll('.vp-part-card').forEach(c => c.classList.remove('drag-over'));
+
+  if (targetCard && targetCard.dataset.partIndex !== undefined) {
+    const idx = parseInt(targetCard.dataset.partIndex, 10);
+    if (!isNaN(idx) && idx !== vpTouchStartIndex) {
+      vpTouchTargetIndex = idx;
+      targetCard.classList.add('drag-over');
+    }
+  }
+};
+
+window.vpHandleTouchEnd = function(e) {
+  document.querySelectorAll('.vp-part-card').forEach(c => {
+    c.classList.remove('is-dragging', 'drag-over');
+  });
+
+  if (vpTouchStartIndex !== null && vpTouchTargetIndex !== null && vpTouchMoved && vpTouchStartIndex !== vpTouchTargetIndex) {
+    vpMovePartOrder(vpTouchStartIndex, vpTouchTargetIndex);
+  }
+  vpTouchStartIndex = null;
+  vpTouchTargetIndex = null;
+  vpTouchMoved = false;
+};
+
+function vpMovePartOrder(fromIndex, toIndex) {
+  if (!Array.isArray(vpAllVehicleParts) || fromIndex < 0 || fromIndex >= vpAllVehicleParts.length ||
+      toIndex < 0 || toIndex >= vpAllVehicleParts.length) return;
+
+  const [moved] = vpAllVehicleParts.splice(fromIndex, 1);
+  vpAllVehicleParts.splice(toIndex, 0, moved);
+
+  const orderKey = 'vp_custom_order_' + (vpDetectedVehicleType || 'carro');
+  try {
+    localStorage.setItem(orderKey, JSON.stringify(vpAllVehicleParts.map(p => p.name)));
+  } catch(e) {}
+
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+}
+
+function vpFindCardEl(name) {
+  const cards = document.querySelectorAll('.vp-part-card');
+  for (let i = 0; i < cards.length; i++) {
+    if (cards[i].dataset.partName === name) return cards[i];
+  }
+  return null;
+}
+
+function vpRenderParts(filterQuery = '') {
+  const listEl = document.getElementById('vpPartsScrollContainer');
+  if (!listEl) return;
+
+  if (!vpAllVehicleParts || vpAllVehicleParts.length === 0) {
+    vpLoadAndSortVehicleParts();
+  }
+
+  let displayParts = vpAllVehicleParts;
+  const isSearching = Boolean(filterQuery && filterQuery.trim());
+
+  if (isSearching) {
     const rawQ = filterQuery.trim();
     const normalizeSearch = (s) => (s || '')
       .toLowerCase()
@@ -8263,22 +8485,18 @@ function vpRenderParts(filterQuery = '') {
     const qTokens = qNormalized.split(' ').filter(Boolean);
     const qCompact = qNormalized.replace(/\s+/g, '');
 
-    const matching = allParts.filter(p => {
+    displayParts = vpAllVehicleParts.filter(p => {
       const nameNorm = normalizeSearch(p.name);
       const rawNorm = normalizeSearch(p.rawName);
       const nameCompact = nameNorm.replace(/\s+/g, '');
       const rawCompact = rawNorm.replace(/\s+/g, '');
 
-      // Correspondência compacta (ex: 'parachoque' encontra 'para choque' e vice-versa)
       if (qCompact && (nameCompact.includes(qCompact) || rawCompact.includes(qCompact))) return true;
-
-      // Correspondência por tokens (todas as palavras digitadas no termo de busca devem existir no nome da peça)
       if (qTokens.length > 0 && qTokens.every(tok => nameNorm.includes(tok) || rawNorm.includes(tok))) return true;
-
       return false;
     });
 
-    if (matching.length === 0) {
+    if (displayParts.length === 0) {
       listEl.innerHTML = `
         <div style="width: 100%; padding: 30px 16px; text-align: center; color: #64748b;">
           <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">🔍</span>
@@ -8288,31 +8506,7 @@ function vpRenderParts(filterQuery = '') {
       `;
       return;
     }
-
-    sortPartsByUsage(matching);
-    listEl.innerHTML = `
-      <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
-        <div style="font-size: 0.76rem; font-weight: 700; color: #475569; padding: 2px 4px;">
-          Encontradas ${matching.length} peças para "${vpEscapeHtml(filterQuery)}":
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
-          ${matching.map(item => vpRenderPartCardHtml(item)).join('')}
-        </div>
-      </div>
-    `;
-    return;
   }
-
-  // 4. DUAS ZONAS ÚNICAS: "Peças do veículo" E "Favoritas"
-  const favParts = allParts.filter(p => vpIsPartFavorite(p.name));
-  const todasParts = [...allParts];
-
-  // Ordenação solicitada: "mais usadas apareçam primeiro em Peças do veículo, nos favoritos ordem alfabética"
-  sortPartsByUsage(todasParts);
-  sortPartsAlphabetically(favParts);
-
-  const favSelCount = favParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
-  const todasSelCount = todasParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
 
   const vTypeLabels = {
     moto: { title: 'Peças da moto', icon: '🏍️' },
@@ -8321,123 +8515,83 @@ function vpRenderParts(filterQuery = '') {
     carro: { title: 'Peças do veículo', icon: '🚗' }
   };
   const currentVTypeInfo = vTypeLabels[vpDetectedVehicleType] || vTypeLabels.carro;
-
-  const isFavMode = (vpActiveCategory === 'FAVORITOS');
-  const activeList = isFavMode ? favParts : todasParts;
-  const activeTitle = isFavMode ? 'Favoritas' : currentVTypeInfo.title;
-  const activeIcon = isFavMode ? '⭐' : currentVTypeInfo.icon;
-  const activeColor = isFavMode ? '#ca8a04' : '#2563eb';
-  const activeBg = isFavMode ? '#fefce8' : '#eff6ff';
-
-  const selectedInActive = activeList.filter(p => vpSelectedPartsMap.has(p.name));
-  const unselectedInActive = activeList.filter(p => !vpSelectedPartsMap.has(p.name));
+  const todasSelCount = vpAllVehicleParts.filter(p => vpSelectedPartsMap.has(p.name)).length;
 
   listEl.innerHTML = `
     <div class="vp-category-section-wrapper" style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
-      <!-- APENAS 2 ZONAS: "Peças do veículo" e "Favoritas" -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; box-sizing: border-box;">
-        <!-- ZONA 1: PEÇAS DO VEÍCULO (MAIS USADAS NO TOPO) -->
-        <button 
-          type="button" 
-          onclick="vpSelectCategory('PECAS')"
-          title="Todas as ${currentVTypeInfo.title.toLowerCase()} (as mais usadas primeiro)"
-          style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 6px 10px; border-radius: 10px; border: 2px solid ${!isFavMode ? '#2563eb' : '#cbd5e1'}; background: ${!isFavMode ? '#eff6ff' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${!isFavMode ? '0 2px 6px rgba(37,99,235,0.18)' : 'none'};"
-        >
-          <span style="font-size: 1.05rem; line-height: 1;">${currentVTypeInfo.icon}</span>
-          <span style="font-size: 0.82rem; font-weight: 800; color: ${!isFavMode ? '#1e3a8a' : '#475569'}; line-height: 1.1;">${currentVTypeInfo.title}</span>
-          <div style="display: flex; align-items: center; gap: 3px; margin-left: 2px;">
-            <span style="font-size: 0.68rem; font-weight: 800; color: ${!isFavMode ? '#2563eb' : '#64748b'}; background: ${!isFavMode ? '#dbeafe' : '#f1f5f9'}; padding: 1px 6px; border-radius: 999px;">${todasParts.length}</span>
-            ${todasSelCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 6px; border-radius: 999px;">${todasSelCount}</span>` : ''}
+      <!-- CABEÇALHO UNIFICADO DE PEÇAS (SEM ABA DE FAVORITOS) -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; background: #eff6ff; border-radius: 10px; border-left: 4px solid #2563eb; width: 100%; box-sizing: border-box; box-shadow: 0 1px 3px rgba(37,99,235,0.08);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.2rem; line-height: 1;">${currentVTypeInfo.icon}</span>
+          <div>
+            <strong style="font-size: 0.84rem; color: #1e3a8a; display: block; line-height: 1.15;">${currentVTypeInfo.title}</strong>
+            <span style="font-size: 0.67rem; color: #64748b; font-weight: 500;">(Mais usadas no topo • Arraste pelo número para reordenar)</span>
           </div>
-        </button>
-
-        <!-- ZONA 2: FAVORITAS (ORDEM ALFABÉTICA) -->
-        <button 
-          type="button" 
-          onclick="vpSelectCategory('FAVORITOS')"
-          title="Peças Favoritas (em ordem alfabética)"
-          style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 6px 10px; border-radius: 10px; border: 2px solid ${isFavMode ? '#eab308' : '#cbd5e1'}; background: ${isFavMode ? '#fefce8' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease; box-sizing: border-box; box-shadow: ${isFavMode ? '0 2px 6px rgba(234,179,8,0.22)' : 'none'};"
-        >
-          <span style="font-size: 1.05rem; line-height: 1;">⭐</span>
-          <span style="font-size: 0.82rem; font-weight: 800; color: ${isFavMode ? '#854d0e' : '#475569'}; line-height: 1.1;">Favoritas</span>
-          <div style="display: flex; align-items: center; gap: 3px; margin-left: 2px;">
-            <span style="font-size: 0.68rem; font-weight: 800; color: ${isFavMode ? '#a16207' : '#64748b'}; background: ${isFavMode ? '#fef08a' : '#f1f5f9'}; padding: 1px 6px; border-radius: 999px;">${favParts.length}</span>
-            ${favSelCount > 0 ? `<span style="font-size: 0.64rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 1px 6px; border-radius: 999px;">${favSelCount}</span>` : ''}
-          </div>
-        </button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <span style="font-size: 0.70rem; font-weight: 800; color: #2563eb; background: #ffffff; padding: 2px 8px; border-radius: 999px; border: 1px solid #bfdbfe;">
+            ${displayParts.length} peças
+          </span>
+          ${todasSelCount > 0 ? `<span style="font-size: 0.68rem; font-weight: 800; color: #ffffff; background: #dc2626; padding: 2px 8px; border-radius: 999px;">${todasSelCount} sel.</span>` : ''}
+        </div>
       </div>
 
-      <!-- CABEÇALHO DA ZONA ATIVA -->
-      <div style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; background: ${activeBg}; border-radius: 8px; border-left: 4px solid ${activeColor};">
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="font-size: 0.95rem;">${activeIcon}</span>
-          <strong style="font-size: 0.80rem; color: #0f172a;">${activeTitle} ${isFavMode ? '(Ordem Alfabética A-Z)' : '(Mais Usadas no Topo)'}</strong>
-        </div>
-        <span style="font-size: 0.68rem; font-weight: 800; color: ${activeColor}; background: #ffffff; padding: 2px 6px; border-radius: 999px; border: 1px solid #cbd5e1;">
-          ${activeList.length} peças
-        </span>
-      </div>
-
-      <!-- ESTADO VAZIO SE NÃO HOUVER FAVORITAS -->
-      ${isFavMode && favParts.length === 0 ? `
-        <div style="width: 100%; padding: 36px 16px; text-align: center; color: #64748b; background: #ffffff; border-radius: 12px; border: 1.5px dashed #facc15; margin-top: 4px; box-sizing: border-box;">
-          <span style="font-size: 2.2rem; display: block; margin-bottom: 8px;">⭐</span>
-          <b style="font-size: 0.92rem; color: #1e293b;">Nenhuma peça favoritada ainda</b>
-          <p style="font-size: 0.80rem; margin-top: 6px; color: #64748b; line-height: 1.4;">
-            Na zona "Peças do veículo", toque na estrela (⭐) de qualquer peça para adicioná-la aos seus favoritos!
-          </p>
-        </div>
-      ` : ''}
-
-      <!-- SEÇÃO SUSPENSA NO TOPO: PEÇAS SELECIONADAS NA VISTORIA ATUAL (2 COLUNAS) -->
-      ${selectedInActive.length > 0 ? `
-        <div style="display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 6px; background: #fef2f2; border: 1.5px dashed #f87171; border-radius: 8px; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px;">
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <span style="font-size: 0.90rem;">📌</span>
-              <strong style="font-size: 0.76rem; color: #991b1b;">Selecionadas nesta vistoria (${selectedInActive.length})</strong>
-            </div>
-            <span style="font-size: 0.62rem; color: #b91c1c; font-weight: 800; background: #fee2e2; padding: 1px 5px; border-radius: 999px;">Fixadas</span>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
-            ${selectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
-          </div>
-        </div>
-      ` : ''}
-
-      <!-- RESTANTE DAS PEÇAS (2 COLUNAS) -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
-        ${unselectedInActive.map(item => vpRenderPartCardHtml(item)).join('')}
+      <!-- GRID DE PEÇAS REORDENÁVEIS (2 COLUNAS) -->
+      <div class="vp-parts-grid" id="vpPartsGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
+        ${displayParts.map((item, idx) => {
+          const globalIdx = vpAllVehicleParts.findIndex(p => p.name === item.name);
+          const orderIndex = globalIdx !== -1 ? globalIdx : idx;
+          return vpRenderPartCardHtml(item, orderIndex, isSearching);
+        }).join('')}
       </div>
     </div>
   `;
 }
 
-function vpRenderPartCardHtml(item) {
+function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
   const selected = vpSelectedPartsMap.get(item.name);
   const isTroca = selected && selected.action === 'troca';
   const isReparo = selected && selected.action === 'reparo';
-  const hasObs = selected && selected.obs && selected.obs.trim().length > 0;
+  const hasObs = Boolean(selected && selected.obs && selected.obs.trim().length > 0);
   const isObsOpen = vpOpenObsPartNames.has(item.name) || hasObs;
   const cardClass = isTroca ? 'selected-troca' : (isReparo ? 'selected-reparo' : '');
-  const isFav = vpIsPartFavorite(item.name);
+  const orderNum = index + 1;
 
   return `
-    <div class="vp-part-card ${cardClass}" style="width: 100%; min-width: 0; box-sizing: border-box; padding: 6px 6px; border-radius: 8px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#cbd5e1')}; background: ${isTroca ? '#fffafa' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-      <!-- 1ª LINHA: [⭐ Favorito] [❌ Excluir] [Descrição da Peça] [✏️ Editar] -->
-      <div class="vp-card-top" style="display: flex; align-items: center; justify-content: space-between; gap: 2px; width: 100%; min-width: 0;">
-        <button type="button" class="vp-btn-fav-part" title="${isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}" onclick="event.stopPropagation(); vpToggleFavoritePart('${vpEscapeHtml(item.name)}')" style="background: none; border: none; font-size: 0.95rem; cursor: pointer; padding: 2px; line-height: 1; flex-shrink: 0; transition: transform 0.15s ease; ${isFav ? 'filter: drop-shadow(0 0 2px rgba(234,179,8,0.7)); transform: scale(1.15);' : 'opacity: 0.30; filter: grayscale(100%);'}">
-          ⭐
-        </button>
-        <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
-        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.78rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-          ${vpEscapeHtml(item.name)}
-          ${(vpCustomPartsList && vpCustomPartsList.some(cp => cp.name && cp.name.toLowerCase() === (item.name || '').toLowerCase())) ? '<span style="font-size: 0.60rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 4px; border-radius: 4px; margin-left: 3px; display: inline-block;">✨ Nova</span>' : ''}
+    <div 
+      class="vp-part-card ${cardClass}" 
+      data-part-name="${vpEscapeHtml(item.name)}" 
+      data-part-index="${index}"
+      ${!isSearching ? `draggable="true"
+      ondragstart="vpHandleDragStart(event, ${index})"
+      ondragover="vpHandleDragOver(event, ${index})"
+      ondragenter="vpHandleDragEnter(event, ${index})"
+      ondragleave="vpHandleDragLeave(event)"
+      ondrop="vpHandleDrop(event, ${index})"
+      ondragend="vpHandleDragEnd(event)"` : ''}
+      style="width: 100%; min-width: 0; box-sizing: border-box; padding: 6px 6px; border-radius: 8px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#cbd5e1')}; background: ${isTroca ? '#fffafa' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);"
+    >
+      <!-- 1ª LINHA: [# Número / Arrastar] [❌ Excluir] [Descrição da Peça] [✏️ Editar] -->
+      <div class="vp-card-top" style="display: flex; align-items: center; justify-content: space-between; gap: 3px; width: 100%; min-width: 0;">
+        <span 
+          class="vp-part-num" 
+          title="Arraste para reordenar"
+          ${!isSearching ? `ontouchstart="vpHandleTouchStart(event, ${index})"
+          ontouchmove="vpHandleTouchMove(event)"
+          ontouchend="vpHandleTouchEnd(event)"
+          ontouchcancel="vpHandleTouchEnd(event)"` : ''}
+        >
+          #${orderNum}
         </span>
-        <button type="button" class="vp-btn-edit-name" title="Editar nome e zona da peça" onclick="vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')">✏️</button>
+        <button type="button" class="vp-btn-delete-part" title="Excluir peça do catálogo" onclick="event.stopPropagation(); vpDeletePart('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}')">✖</button>
+        <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.78rem; font-weight: 800; color: #0f172a; flex: 1; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: grab;">
+          ${vpEscapeHtml(item.name)}
+          ${(vpCustomPartsList && vpCustomPartsList.some(cp => cp.name && cp.name.toLowerCase() === (item.name || '').toLowerCase())) ? '<span style="font-size: 0.60rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 4px; border-radius: 4px; margin-left: 2px; display: inline-block;">✨ Nova</span>' : ''}
+        </span>
+        <button type="button" class="vp-btn-edit-name" title="Editar nome e zona da peça" onclick="event.stopPropagation(); vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')">✏️</button>
       </div>
 
-      <!-- 2ª LINHA: [Trocar (40%)] [Reparar (40%)] [Obs. (20%)] (SEM ÍCONES, SEM QUEBRA DE LINHA) -->
+      <!-- 2ª LINHA: [Trocar (40%)] [Reparar (40%)] [Obs. (20%)] -->
       <div class="vp-card-actions" style="display: flex; gap: 2px; width: 100%;">
         <button 
           type="button" 
@@ -8468,26 +8622,17 @@ function vpRenderPartCardHtml(item) {
         </button>
       </div>
 
-      <!-- COMBO / CAMPO DE OBSERVAÇÃO (OCULTO POR PADRÃO, ABRE AO CLICAR EM OBS) -->
-      ${isObsOpen ? `
-        <div class="vp-inline-obs-box" style="display: flex; flex-direction: column; gap: 4px; margin-top: 3px; padding: 5px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px;">
-          <div style="display: flex; gap: 2px; flex-wrap: wrap;">
-            ${['Pintura', 'Recuperar', 'Amassado', 'Riscado', 'Trincado', 'Quebrado', 'Desalinhado'].map(quick => `
-              <button type="button" onclick="vpSetQuickObs('${vpEscapeHtml(item.name)}', '${quick}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', '${vpEscapeHtml(item.rawName)}')" style="font-size: 0.62rem; font-weight: 700; padding: 2px 4px; border-radius: 4px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer;">
-                ${quick}
-              </button>
-            `).join('')}
-          </div>
-          <input 
-            type="text" 
-            class="vp-inline-obs-input" 
-            placeholder="Obs..." 
-            value="${vpEscapeHtml((selected && selected.obs) || '')}" 
-            oninput="vpChangeObs('${vpEscapeHtml(item.name)}', this.value, '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', '${vpEscapeHtml(item.rawName)}')"
-            style="width: 100%; box-sizing: border-box; padding: 4px 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.72rem;"
-          />
-        </div>
-      ` : ''}
+      <!-- CAMPO DE OBSERVAÇÃO (SEM DESCRIÇÕES RÁPIDAS, SOMENTE O CAMPO PARA DIGITAR) -->
+      <div class="vp-inline-obs-box" style="display: ${isObsOpen ? 'flex' : 'none'}; flex-direction: column; gap: 4px; margin-top: 3px; padding: 5px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px;">
+        <input 
+          type="text" 
+          class="vp-inline-obs-input" 
+          placeholder="Digite a observação..." 
+          value="${vpEscapeHtml((selected && selected.obs) || '')}" 
+          oninput="vpChangeObs('${vpEscapeHtml(item.name)}', this.value, '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', '${vpEscapeHtml(item.rawName)}')"
+          style="width: 100%; box-sizing: border-box; padding: 5px 8px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.74rem; background: #ffffff; color: #0f172a;"
+        />
+      </div>
     </div>
   `;
 }
@@ -8498,36 +8643,32 @@ window.vpToggleObsBox = function(partName) {
   } else {
     vpOpenObsPartNames.add(partName);
   }
-  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  const card = vpFindCardEl(partName);
+  if (!card) return;
+  const obsBox = card.querySelector('.vp-inline-obs-box');
+  if (obsBox) {
+    const isHidden = (obsBox.style.display === 'none');
+    obsBox.style.display = isHidden ? 'flex' : 'none';
+    if (isHidden) {
+      const input = obsBox.querySelector('.vp-inline-obs-input');
+      if (input) setTimeout(() => input.focus(), 50);
+    }
+  }
 };
 
 window.vpSetQuickObs = function(partName, quickText, zoneId, zoneName, rawName = '') {
-  let item = vpSelectedPartsMap.get(partName);
-  if (!item) {
-    item = {
-      name: partName,
-      rawName: rawName || partName,
-      zoneId: zoneId || vpActiveZoneId,
-      zoneName: zoneName || 'Veículo',
-      action: 'reparo',
-      obs: quickText
-    };
-    vpSelectedPartsMap.set(partName, item);
-  } else {
-    item.obs = quickText;
-  }
-  vpSaveState();
-  vpUpdateTriggerButton();
-  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
-  vpUpdateDockAndSheet();
+  window.vpChangeObs(partName, quickText, zoneId, zoneName, rawName);
 };
 
+// Seleção ultra-rápida (0ms de latência - atualização direta no DOM em tempo real)
 window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '') {
   const current = vpSelectedPartsMap.get(partName);
+  let newAction = null;
 
   if (current && current.action === action) {
     vpSelectedPartsMap.delete(partName);
   } else {
+    newAction = action;
     vpSelectedPartsMap.set(partName, {
       name: partName,
       rawName: rawName || partName,
@@ -8538,37 +8679,93 @@ window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '
     });
   }
 
-  vpSaveState();
+  // Atualização direta e instantânea no card do DOM (sem recriar elementos nem travar a tela)
+  const card = vpFindCardEl(partName);
+  if (card) {
+    const btnTrocar = card.querySelector('.btn-trocar');
+    const btnReparar = card.querySelector('.btn-reparar');
+
+    card.classList.remove('selected-troca', 'selected-reparo');
+    if (btnTrocar) btnTrocar.classList.remove('active');
+    if (btnReparar) btnReparar.classList.remove('active');
+
+    if (newAction === 'troca') {
+      card.classList.add('selected-troca');
+      card.style.borderColor = '#dc2626';
+      card.style.background = '#fffafa';
+      if (btnTrocar) btnTrocar.classList.add('active');
+    } else if (newAction === 'reparo') {
+      card.classList.add('selected-reparo');
+      card.style.borderColor = '#0284c7';
+      card.style.background = '#f0f9ff';
+      if (btnReparar) btnReparar.classList.add('active');
+    } else {
+      card.style.borderColor = '#cbd5e1';
+      card.style.background = '#ffffff';
+    }
+  }
+
   vpUpdateTriggerButton();
-  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
   vpUpdateDockAndSheet();
 };
 
 window.vpChangeObs = function(partName, obsText, zoneId, zoneName, rawName = '') {
   let item = vpSelectedPartsMap.get(partName);
-  if (!item && obsText.trim()) {
+  const trimmed = (obsText || '').trim();
+
+  if (!item && trimmed) {
     item = {
       name: partName,
       rawName: rawName || partName,
       zoneId: zoneId || vpActiveZoneId,
       zoneName: zoneName || 'Veículo',
       action: 'reparo',
-      obs: obsText.trim()
+      obs: trimmed
     };
     vpSelectedPartsMap.set(partName, item);
+    const card = vpFindCardEl(partName);
+    if (card) {
+      card.classList.add('selected-reparo');
+      card.style.borderColor = '#0284c7';
+      card.style.background = '#f0f9ff';
+      const btnReparar = card.querySelector('.btn-reparar');
+      if (btnReparar) btnReparar.classList.add('active');
+    }
   } else if (item) {
-    item.obs = obsText.trim();
+    item.obs = trimmed;
   }
-  vpSaveState();
+
+  const card = vpFindCardEl(partName);
+  if (card) {
+    const btnObs = card.querySelector('.btn-obs');
+    if (btnObs) {
+      const hasObs = Boolean(trimmed);
+      btnObs.classList.toggle('has-obs', hasObs);
+      btnObs.classList.toggle('active', hasObs);
+      btnObs.style.background = hasObs ? '#eff6ff' : '#f8fafc';
+      btnObs.style.color = hasObs ? '#2563eb' : '#64748b';
+      btnObs.style.borderColor = hasObs ? '#93c5fd' : '#cbd5e1';
+      btnObs.title = hasObs ? ('Obs: ' + trimmed) : 'Adicionar Observação';
+    }
+  }
+
   vpUpdateDockAndSheet();
 };
 
 window.vpRemoveSelected = function(partName) {
   if (vpSelectedPartsMap.has(partName)) {
     vpSelectedPartsMap.delete(partName);
-    vpSaveState();
+    const card = vpFindCardEl(partName);
+    if (card) {
+      card.classList.remove('selected-troca', 'selected-reparo');
+      card.style.borderColor = '#cbd5e1';
+      card.style.background = '#ffffff';
+      const btnTrocar = card.querySelector('.btn-trocar');
+      const btnReparar = card.querySelector('.btn-reparar');
+      if (btnTrocar) btnTrocar.classList.remove('active');
+      if (btnReparar) btnReparar.classList.remove('active');
+    }
     vpUpdateTriggerButton();
-    vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
     vpUpdateDockAndSheet();
   }
 };
@@ -8577,9 +8774,16 @@ window.vpClearAllSelected = function() {
   if (vpSelectedPartsMap.size === 0) return;
   if (confirm('Deseja realmente desmarcar todas as peças selecionadas?')) {
     vpSelectedPartsMap.clear();
-    vpSaveState();
+    document.querySelectorAll('.vp-part-card').forEach(card => {
+      card.classList.remove('selected-troca', 'selected-reparo');
+      card.style.borderColor = '#cbd5e1';
+      card.style.background = '#ffffff';
+      const btnTrocar = card.querySelector('.btn-trocar');
+      const btnReparar = card.querySelector('.btn-reparar');
+      if (btnTrocar) btnTrocar.classList.remove('active');
+      if (btnReparar) btnReparar.classList.remove('active');
+    });
     vpUpdateTriggerButton();
-    vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
     vpUpdateDockAndSheet();
     window.vpCloseReviewSheet();
   }

@@ -394,14 +394,24 @@
             </div>
           </div>
 
-          <!-- Filtro Único Unificado por Oficina na Supervisão (idêntico ao da Vistoria) -->
-          <div class="oficina-combobox-wrapper" style="position: relative; width: 100%; margin-top: 2px;">
+          <!-- Filtros de Pesquisa na Supervisão (Placa/Veículo e Oficina) -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px; width: 100%; margin-top: 2px;">
+            <!-- Pesquisa por Placa ou Modelo -->
             <div style="position: relative; display: flex; align-items: center; width: 100%;">
-              <input id="supervisaoOficinaComboboxInput" type="text" placeholder="🏢 Todas as Oficinas (digite ou selecione...)" autocomplete="off" style="width: 100% !important; box-sizing: border-box; padding: 10px 42px 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600; outline: none; background: #ffffff; color: #0f172a; cursor: pointer;" />
-              <button id="supervisaoOficinaComboboxClearBtn" type="button" style="display: none; position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1rem; color: #94a3b8; cursor: pointer; padding: 4px; line-height: 1;">✕</button>
-              <button id="supervisaoOficinaComboboxToggleBtn" type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 0.8rem; color: #64748b; cursor: pointer; padding: 4px; line-height: 1;">▼</button>
+              <span style="position: absolute; left: 12px; font-size: 0.95rem; color: #94a3b8; pointer-events: none;">🔍</span>
+              <input id="supervisaoPlateSearchInput" type="text" placeholder="🔍 Pesquisar por placa ou veículo..." autocomplete="off" style="width: 100% !important; box-sizing: border-box; padding: 10px 36px 10px 34px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600; outline: none; background: #ffffff; color: #0f172a;" />
+              <button id="supervisaoPlateSearchClearBtn" type="button" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1rem; color: #94a3b8; cursor: pointer; padding: 4px; line-height: 1;">✕</button>
             </div>
-            <ul id="supervisaoOficinaComboboxList" class="oficina-combobox-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; max-height: 220px; overflow-y: auto; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); z-index: 1000; padding: 4px 0; margin: 0; list-style: none;"></ul>
+
+            <!-- Filtro Único Unificado por Oficina na Supervisão -->
+            <div class="oficina-combobox-wrapper" style="position: relative; width: 100%;">
+              <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                <input id="supervisaoOficinaComboboxInput" type="text" placeholder="🏢 Todas as Oficinas (digite ou selecione...)" autocomplete="off" style="width: 100% !important; box-sizing: border-box; padding: 10px 42px 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600; outline: none; background: #ffffff; color: #0f172a; cursor: pointer;" />
+                <button id="supervisaoOficinaComboboxClearBtn" type="button" style="display: none; position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1rem; color: #94a3b8; cursor: pointer; padding: 4px; line-height: 1;">✕</button>
+                <button id="supervisaoOficinaComboboxToggleBtn" type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 0.8rem; color: #64748b; cursor: pointer; padding: 4px; line-height: 1;">▼</button>
+              </div>
+              <ul id="supervisaoOficinaComboboxList" class="oficina-combobox-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; max-height: 220px; overflow-y: auto; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); z-index: 1000; padding: 4px 0; margin: 0; list-style: none;"></ul>
+            </div>
           </div>
         </div>
 

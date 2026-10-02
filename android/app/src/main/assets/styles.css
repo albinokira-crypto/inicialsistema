@@ -1890,6 +1890,43 @@ html, body {
   box-shadow: 0 2px 6px rgba(2, 132, 199, 0.12);
 }
 
+.vp-part-card.is-dragging {
+  opacity: 0.45;
+  border: 1.5px dashed #3b82f6 !important;
+  transform: scale(0.97);
+}
+
+.vp-part-card.drag-over {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.45) !important;
+  transform: scale(1.02);
+}
+
+.vp-part-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0 4px;
+  flex-shrink: 0;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transition: all 0.15s ease;
+}
+
+.vp-part-num:active {
+  cursor: grabbing;
+  background: #dbeafe;
+}
+
 /* 1ª LINHA: [❌ Excluir] [Descrição da Peça] [✏️ Editar] */
 .vp-card-top {
   display: flex;

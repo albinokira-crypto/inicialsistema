@@ -1,7 +1,7 @@
 {
-  "version": "2.24.0",
-  "versionCode": 2240,
-  "updatedAt": "2026-10-01T21:10:00Z",
-  "buildDate": "2026-10-01T21:10:00.000Z",
-  "changelog": "Restauração do visual original clássico pré-atualização com sincronização instantânea sem reinstalar o aplicativo"
+  "version": "2.25.0",
+  "versionCode": 2250,
+  "updatedAt": "2026-10-02T13:58:00Z",
+  "buildDate": "2026-10-02T13:58:00.000Z",
+  "changelog": "Reordenacao arrastavel de pecas com numeracao sequencial automatica, remocao da aba favoritos, selecao instantanea de acoes, observacao direta sem chips, isolamento total de midia do WhatsApp e filtro de supervisao por placa"
 }
