@@ -8061,7 +8061,8 @@ window.vpSaveSelectedParts = function() {
     const item = items.find(entry => entry.id === currentVistoriaIdForParts);
     if (item) {
       if (!item.details) item.details = {};
-      if (item.type === 'Vistoria Rio log') {
+      const isRioLogItem = (item.type === 'Vistoria Rio log');
+      if (isRioLogItem) {
         item.details.avarias = allPartsList.join('\n');
       } else {
         item.details.trocas = trocasList.join('\n');
@@ -8069,42 +8070,48 @@ window.vpSaveSelectedParts = function() {
       }
       item.updatedAt = new Date().toLocaleString('pt-BR');
       item.updatedAtTime = Date.now();
-      if (typeof saveItems === 'function') saveItems();
-      if (typeof render === 'function') render();
-      if (typeof updateLocalAndServerData === 'function') {
-        updateLocalAndServerData();
+      try {
+        if (typeof saveItems === 'function') saveItems();
+        if (typeof render === 'function') render();
+        if (typeof updateLocalAndServerData === 'function') {
+          updateLocalAndServerData();
+        }
+      } catch (err) {
+        console.warn('Erro ao atualizar dados da vistoria:', err);
       }
     }
   }
 
   // Só atualiza os textareas do formulário aberto na tela se NÃO for edição direta de um card já salvo (currentVistoriaIdForParts)
   if (!currentVistoriaIdForParts) {
-    const isRioLog = (typeof selectedType !== 'undefined' && selectedType === 'Vistoria Rio log');
     const trocasTextarea = document.querySelector('textarea[name="trocas"]');
     const reparosTextarea = document.querySelector('textarea[name="reparos"]');
     const avariasTextarea = document.querySelector('textarea[name="avarias"]');
+    const isRioLog = (typeof selectedType !== 'undefined' && selectedType === 'Vistoria Rio log') || Boolean(avariasTextarea && !trocasTextarea);
 
-    if (isRioLog && avariasTextarea) {
-      avariasTextarea.value = allPartsList.join('\n');
-      avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-      avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+    if (isRioLog) {
+      if (avariasTextarea) {
+        avariasTextarea.value = allPartsList.join('\n');
+        try { avariasTextarea.dispatchEvent(new Event('input', { bubbles: true })); } catch(e) {}
+        try { avariasTextarea.dispatchEvent(new Event('change', { bubbles: true })); } catch(e) {}
+      }
     } else {
       if (trocasTextarea) {
         trocasTextarea.value = trocasList.join('\n');
-        trocasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-        trocasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+        try { trocasTextarea.dispatchEvent(new Event('input', { bubbles: true })); } catch(e) {}
+        try { trocasTextarea.dispatchEvent(new Event('change', { bubbles: true })); } catch(e) {}
       }
 
       if (reparosTextarea) {
         reparosTextarea.value = reparosList.join('\n');
-        reparosTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-        reparosTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+        try { reparosTextarea.dispatchEvent(new Event('input', { bubbles: true })); } catch(e) {}
+        try { reparosTextarea.dispatchEvent(new Event('change', { bubbles: true })); } catch(e) {}
       }
 
       if (avariasTextarea && !trocasTextarea && !reparosTextarea) {
         avariasTextarea.value = allPartsList.join('\n');
-        avariasTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-        avariasTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+        try { avariasTextarea.dispatchEvent(new Event('input', { bubbles: true })); } catch(e) {}
+        try { avariasTextarea.dispatchEvent(new Event('change', { bubbles: true })); } catch(e) {}
       }
     }
   }
@@ -9307,6 +9314,14 @@ window.vpAddAllPartsFromCurrentTab = function() {
     return;
   }
 
+  // Verifica com segurança se a vistoria atual é Rio Log
+  const activeItem = (currentVistoriaIdForParts && typeof items !== 'undefined' && Array.isArray(items)) 
+    ? items.find(entry => entry.id === currentVistoriaIdForParts) 
+    : null;
+  const isRioLog = (activeItem && activeItem.type === 'Vistoria Rio log') || 
+                   (typeof selectedType !== 'undefined' && selectedType === 'Vistoria Rio log') ||
+                   Boolean(document.querySelector('textarea[name="avarias"]') && !document.querySelector('textarea[name="trocas"]'));
+
   let count = 0;
   tab.parts.forEach(rawP => {
     const effective = vpGetEffectivePartName(rawP);
@@ -9324,17 +9339,24 @@ window.vpAddAllPartsFromCurrentTab = function() {
     }
   });
 
-  // Salva automaticamente o estado e grava as trocas diretamente na vistoria
+  // Salva automaticamente o estado e grava na vistoria (em trocas ou avarias no Rio Log)
   vpSaveState(true);
   if (typeof window.vpSaveSelectedParts === 'function') {
-    window.vpSaveSelectedParts();
+    try {
+      window.vpSaveSelectedParts();
+    } catch (err) {
+      console.warn('Erro ao salvar partes na vistoria:', err);
+    }
   }
   vpUpdateTriggerButton();
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
   vpUpdateDockAndSheet();
 
   if (typeof showToastNotification === 'function') {
-    showToastNotification(`✓ Todas as ${count} peças da aba "${tab.name}" foram adicionadas como TROCA na vistoria!`, 3500);
+    const msg = isRioLog
+      ? `✓ ${count} peças da aba "${tab.name}" adicionadas às Avarias da Vistoria Rio Log!`
+      : `✓ ${count} peças da aba "${tab.name}" adicionadas como TROCA padrão! Você pode alterar para Reparar a qualquer momento.`;
+    showToastNotification(msg, 3500);
   }
 };
 
@@ -9741,6 +9763,16 @@ window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '
       action: action,
       obs: current ? (current.obs || '') : ''
     });
+  }
+
+  // Atualiza automaticamente o estado e a vistoria para que a troca para reparo ou desmarcação reflita na hora
+  vpSaveState(true);
+  if (typeof window.vpSaveSelectedParts === 'function') {
+    try {
+      window.vpSaveSelectedParts();
+    } catch (err) {
+      console.warn('Erro ao atualizar partes na vistoria:', err);
+    }
   }
 
   // Preserva posição do scroll para não causar salto visual brusco

@@ -1,7 +1,7 @@
 {
-  "version": "2.37.0",
-  "versionCode": 2370,
-  "updatedAt": "2026-10-02T17:54:00Z",
-  "buildDate": "2026-10-02T17:54:00.000Z",
-  "changelog": "Botao Add Todas as pecas adiciona todas as pecas da aba como troca automaticamente na vistoria"
+  "version": "2.38.0",
+  "versionCode": 2380,
+  "updatedAt": "2026-10-02T18:01:00Z",
+  "buildDate": "2026-10-02T18:01:00.000Z",
+  "changelog": "Suporte seguro a Vistoria Rio log sem campo trocas e sincronizacao imediata ao alternar pecas para reparo"
 }
