@@ -1,7 +1,7 @@
 {
-  "version": "2.27.0",
-  "versionCode": 2270,
-  "updatedAt": "2026-10-02T14:38:00Z",
-  "buildDate": "2026-10-02T14:38:00.000Z",
-  "changelog": "Pecas selecionadas mantem o numero previo original de sua ordem no catalogo ao irem para o topo"
+  "version": "2.28.0",
+  "versionCode": 2280,
+  "updatedAt": "2026-10-02T14:45:00Z",
+  "buildDate": "2026-10-02T14:45:00.000Z",
+  "changelog": "Clique no numero da peca para digitar a posicao desejada diretamente mesmo ao pesquisar, alem de arrastar"
 }

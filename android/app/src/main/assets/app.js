@@ -8432,12 +8432,17 @@ window.vpHandleTouchEnd = function(e) {
     c.classList.remove('is-dragging', 'drag-over');
   });
 
-  if (vpTouchDraggedPartName && vpTouchTargetPartName && vpTouchMoved && vpTouchDraggedPartName !== vpTouchTargetPartName) {
+  const didMove = vpTouchMoved;
+  if (vpTouchDraggedPartName && vpTouchTargetPartName && didMove && vpTouchDraggedPartName !== vpTouchTargetPartName) {
     vpMovePartByName(vpTouchDraggedPartName, vpTouchTargetPartName);
   }
   vpTouchDraggedPartName = null;
   vpTouchTargetPartName = null;
   vpTouchMoved = false;
+
+  if (didMove && e && e.cancelable) {
+    e.preventDefault();
+  }
 };
 
 function vpMovePartByName(fromName, toName) {
@@ -8456,6 +8461,80 @@ function vpMovePartByName(fromName, toName) {
 
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
 }
+
+window.vpOpenReorderPositionModal = function(partName) {
+  if (vpTouchMoved) return;
+  if (!partName || !Array.isArray(vpAllVehicleParts)) return;
+  const currentIdx = vpAllVehicleParts.findIndex(p => p.name === partName);
+  if (currentIdx === -1) return;
+
+  const currentPos = currentIdx + 1;
+  const totalParts = vpAllVehicleParts.length;
+
+  const modal = document.getElementById('vpReorderPositionModal');
+  const partNameInput = document.getElementById('vpReorderPartName');
+  const partTitle = document.getElementById('vpReorderPartTitle');
+  const currentInfo = document.getElementById('vpReorderCurrentInfo');
+  const posInput = document.getElementById('vpReorderPositionInput');
+  const lastBtn = document.getElementById('vpReorderLastBtn');
+
+  if (partNameInput) partNameInput.value = partName;
+  if (partTitle) partTitle.textContent = partName;
+  if (currentInfo) currentInfo.textContent = `Posição atual no catálogo: #${currentPos} de ${totalParts} peças`;
+  if (posInput) {
+    posInput.max = totalParts;
+    posInput.value = currentPos;
+    setTimeout(() => {
+      posInput.focus();
+      posInput.select();
+    }, 100);
+  }
+  if (lastBtn) lastBtn.textContent = `${totalParts}º (Último)`;
+  if (modal) modal.style.display = 'flex';
+};
+
+window.vpCloseReorderPositionModal = function() {
+  const modal = document.getElementById('vpReorderPositionModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.vpSetReorderQuickPosition = function(val) {
+  const posInput = document.getElementById('vpReorderPositionInput');
+  if (!posInput || !Array.isArray(vpAllVehicleParts)) return;
+  if (val === 'last') {
+    posInput.value = vpAllVehicleParts.length;
+  } else {
+    posInput.value = Math.min(Math.max(1, parseInt(val, 10)), vpAllVehicleParts.length);
+  }
+};
+
+window.vpSaveReorderPosition = function(e) {
+  if (e) e.preventDefault();
+  const partName = document.getElementById('vpReorderPartName')?.value;
+  const posInput = document.getElementById('vpReorderPositionInput');
+  if (!partName || !posInput || !Array.isArray(vpAllVehicleParts)) return;
+
+  let newPos = parseInt(posInput.value, 10);
+  if (isNaN(newPos) || newPos < 1) newPos = 1;
+  if (newPos > vpAllVehicleParts.length) newPos = vpAllVehicleParts.length;
+
+  const currentIdx = vpAllVehicleParts.findIndex(p => p.name === partName);
+  if (currentIdx === -1) return;
+
+  const targetIdx = newPos - 1;
+  if (currentIdx !== targetIdx) {
+    const [moved] = vpAllVehicleParts.splice(currentIdx, 1);
+    vpAllVehicleParts.splice(targetIdx, 0, moved);
+
+    const orderKey = 'vp_custom_order_' + (vpDetectedVehicleType || 'carro');
+    try {
+      localStorage.setItem(orderKey, JSON.stringify(vpAllVehicleParts.map(p => p.name)));
+    } catch(err) {}
+  }
+
+  vpCloseReorderPositionModal();
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+};
 
 function vpFindCardEl(name) {
   const cards = document.querySelectorAll('.vp-part-card');
@@ -8542,7 +8621,7 @@ function vpRenderParts(filterQuery = '') {
           <span style="font-size: 1.2rem; line-height: 1;">${currentVTypeInfo.icon}</span>
           <div>
             <strong style="font-size: 0.84rem; color: #1e3a8a; display: block; line-height: 1.15;">${currentVTypeInfo.title}</strong>
-            <span style="font-size: 0.67rem; color: #64748b; font-weight: 500;">(Selecionadas no topo • Arraste pelo número para reordenar)</span>
+            <span style="font-size: 0.67rem; color: #64748b; font-weight: 500;">(Toque no número ou arraste para definir a ordem)</span>
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 4px;">
@@ -8589,11 +8668,12 @@ function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
       ondragend="vpHandleDragEnd(event)"` : ''}
       style="width: 100%; min-width: 0; box-sizing: border-box; padding: 5px 6px; border-radius: 8px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#cbd5e1')}; background: ${isTroca ? '#fffafa' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);"
     >
-      <!-- 1ª LINHA: [Número Puro] [Descrição da Peça (Máximo Espaço)] [✖ Excluir] -->
+      <!-- 1ª LINHA: [Número Puro (Clicável / Arrastável)] [Descrição da Peça (Máximo Espaço)] [✖ Excluir] -->
       <div class="vp-card-top" style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
         <span 
           class="vp-part-num" 
-          title="Arraste para reordenar"
+          title="Toque para digitar a posição ou arraste para reordenar"
+          onclick="event.stopPropagation(); vpOpenReorderPositionModal('${vpEscapeHtml(item.name)}')"
           ${!isSearching ? `ontouchstart="vpHandleTouchStart(event, '${vpEscapeHtml(item.name)}')"
           ontouchmove="vpHandleTouchMove(event)"
           ontouchend="vpHandleTouchEnd(event)"
