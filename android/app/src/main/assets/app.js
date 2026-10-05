@@ -23,7 +23,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.24.0';
+let CURRENT_APP_VERSION = 'v2.40.0';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -872,6 +872,12 @@ if (vistoriaTypeTabs) {
     
     renderDynamicSurveyFields();
     render();
+
+    // Sincroniza o tipo de veículo ativo para o seletor de partes e catálogo
+    if (typeof window.vpSetVehicleType === 'function') {
+      const targetVehicleType = selectedType === 'Moto' ? 'moto' : 'carro';
+      window.vpSetVehicleType(targetVehicleType, false, true);
+    }
   });
 }
 
@@ -1154,6 +1160,14 @@ function openReportModal(id) {
       whatsappReportPreviewBtn.innerHTML = isInspection ? '📲 Enviar Vistoria' : '📲 Enviar Supervisão';
       whatsappReportPreviewBtn.style.background = '#16a34a';
     }
+  }
+
+  if (partsReportPreviewBtn) {
+    const isMoto = item.type === 'Moto' || item.vehicleType === 'moto';
+    const repVType = item.vehicleType || (isMoto ? 'moto' : vpDetectVehicleTypeFromText(item.plate || item.vehicle || ''));
+    const repIcon = repVType === 'moto' ? '🏍️' : (repVType === 'caminhao' ? '🚛' : (repVType === 'picape' ? '🛻' : '🚗'));
+    const repLabel = repVType === 'moto' ? 'Partes da Moto' : (repVType === 'caminhao' ? 'Partes do Caminhão' : (repVType === 'picape' ? 'Partes da Picape' : 'Partes do Veículo'));
+    partsReportPreviewBtn.innerHTML = `${repIcon} ${repLabel}`;
   }
 
   if (modalEl) {
@@ -1530,11 +1544,13 @@ function saveItem(event) {
     });
   }
 
+  const detectedVehicleType = type === 'Moto' ? 'moto' : (typeof vpDetectedVehicleType !== 'undefined' && vpDetectedVehicleType ? vpDetectedVehicleType : 'carro');
+
   if (editingId) {
     const existing = items.find((i) => i.id === editingId);
     const mergedDetails = { ...(existing?.details || {}), ...details };
     items = items.map((item) => item.id === editingId ? { 
-      ...item, date, day, plate, provider, value, providerId, type, oficinaId, oficinaName, details: mergedDetails,
+      ...item, date, day, plate, provider, value, providerId, type, vehicleType: (type === 'Moto' ? 'moto' : (item.vehicleType || detectedVehicleType)), oficinaId, oficinaName, details: mergedDetails,
       updatedAt: new Date().toLocaleString('pt-BR'),
       updatedAtTime: Date.now()
     } : item);
@@ -1548,6 +1564,7 @@ function saveItem(event) {
       providerId,
       value,
       type,
+      vehicleType: detectedVehicleType,
       oficinaId,
       oficinaName,
       details,
@@ -2123,13 +2140,16 @@ function render() {
   itemList.innerHTML = filtered.map((item) => {
     const badgeClass = badgeClasses[item.type || 'Inicial'] || 'badge-inicial';
     const dataCriacao = item.date ? formatDateString(item.date) : (item.createdAt || '—');
-    const dataAtualizacao = item.updatedAt || item.createdAt || '—';
+    const isMotoItem = item.type === 'Moto' || item.vehicleType === 'moto';
+    const itemVType = item.vehicleType || (isMotoItem ? 'moto' : vpDetectVehicleTypeFromText(item.plate || item.vehicle || ''));
+    const itemIcon = itemVType === 'moto' ? '🏍️' : (itemVType === 'caminhao' ? '🚛' : (itemVType === 'picape' ? '🛻' : '🚗'));
+    const partsLabel = itemVType === 'moto' ? 'Partes da Moto' : (itemVType === 'caminhao' ? 'Partes do Caminhão' : (itemVType === 'picape' ? 'Partes da Picape' : 'Partes do Veículo'));
 
     return `
       <li class="item-card compact-item-card">
         <div class="item-main-info">
           <div class="plate-badge compact-plate-badge clickable-plate-link" data-action="open-report" data-id="${item.id}" title="Clique para abrir o relatório" style="cursor: pointer;">
-            <span class="plate-badge-text">🚗 ${escapeHtml(item.plate)}</span>
+            <span class="plate-badge-text">${itemIcon} ${escapeHtml(item.plate)}</span>
           </div>
           <div class="item-details">
             <strong class="item-provider">${escapeHtml(item.provider || 'Sem seguradora')}</strong>
@@ -2151,7 +2171,7 @@ function render() {
           </div>
           <div class="btn-row" style="margin-top: 4px; display: flex; gap: 6px;">
             <button class="action-btn" type="button" data-action="parts" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; flex: 0.9; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
-              🚗 Partes do Veículo
+              ${itemIcon} ${partsLabel}
             </button>
             <button class="action-btn" type="button" data-action="share-whatsapp-sequence" data-id="${item.id}" style="font-weight: 800; font-size: 0.82rem !important; padding: 10px 8px !important; background: ${item.sent ? '#059669' : '#16a34a'}; color: #ffffff; border: none; border-radius: 10px; flex: 1.1; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: ${item.sent ? '0 2px 4px rgba(5,150,105,0.35)' : '0 2px 4px rgba(22,163,74,0.2)'};">
               ${item.sent ? '✅ Enviado' : '📲 Enviar Vistoria'}
@@ -7537,6 +7557,13 @@ window.vpSetVehicleType = function(type, forceRender = true, keepAllZonesMode = 
     if (typeBadge) typeBadge.textContent = '🚗 Automóvel / SUV';
   }
 
+  // RECONSTRÓI IMEDIATAMENTE O CATÁLOGO DE PEÇAS ESPECÍFICO DO TIPO DE VEÍCULO!
+  vpAllVehicleParts = null;
+  vpAllVehiclePartsType = null;
+  if (typeof vpLoadAndSortVehicleParts === 'function') {
+    vpLoadAndSortVehicleParts();
+  }
+
   // Se estiver visualizando/editando uma vistoria existente, salva a alteração manual do tipo
   if (currentVistoriaIdForParts) {
     const activeItem = items.find(entry => entry.id === currentVistoriaIdForParts);
@@ -8434,6 +8461,7 @@ function vpIncrementPartUsage(partName) {
   } catch(e) {}
 }
 let vpAllVehicleParts = [];
+let vpAllVehiclePartsType = null;
 
 function vpPrecomputeUsageScores(partsList) {
   const scoreMap = new Map();
@@ -8562,6 +8590,7 @@ function vpLoadAndSortVehicleParts() {
   }
 
   vpAllVehicleParts = allParts;
+  vpAllVehiclePartsType = vpDetectedVehicleType || 'carro';
   return allParts;
 }
 
@@ -9401,7 +9430,7 @@ function vpRenderParts(filterQuery = '') {
   const listEl = document.getElementById('vpPartsScrollContainer');
   if (!listEl) return;
 
-  if (!vpAllVehicleParts || vpAllVehicleParts.length === 0) {
+  if (!vpAllVehicleParts || vpAllVehicleParts.length === 0 || vpAllVehiclePartsType !== (vpDetectedVehicleType || 'carro')) {
     vpLoadAndSortVehicleParts();
   }
 
@@ -10432,7 +10461,13 @@ if (typeof plateInput !== 'undefined' && plateInput) {
   plateInput.addEventListener('input', () => {
     const text = plateInput.value.trim();
     if (!text) return;
-    const type = vpDetectVehicleTypeFromText(text);
+    const isCurrentlyMoto = typeof selectedType !== 'undefined' && selectedType === 'Moto';
+    let type = vpDetectVehicleTypeFromText(text);
+
+    // Se o usuário já selecionou a aba Moto no formulário, mantém o tipo como moto mesmo digitando apenas a placa
+    if (isCurrentlyMoto && type === 'carro') {
+      type = 'moto';
+    }
 
     // Sincroniza o tipo de veículo ativo para o seletor de partes e catálogo
     if (typeof window.vpSetVehicleType === 'function') {
@@ -10453,23 +10488,14 @@ if (typeof plateInput !== 'undefined' && plateInput) {
       }
     }
 
-    // 2. Sincroniza aba principal do formulário (Moto vs Inicial)
+    // 2. Sincroniza aba principal do formulário (detecta Moto se digitar explicitamente modelo de moto)
     if (typeof vistoriaTypeTabs !== 'undefined' && vistoriaTypeTabs) {
-      const isCurrentlyMoto = typeof selectedType !== 'undefined' && selectedType === 'Moto';
       if (type === 'moto' && !isCurrentlyMoto && (selectedType === 'Inicial' || !selectedType)) {
         selectedType = 'Moto';
         vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach(b => {
           b.classList.toggle('active', b.dataset.type === 'Moto');
         });
         if (typeof typeInput !== 'undefined' && typeInput) typeInput.value = 'Moto';
-        if (typeof updateVistoriaFormTitle === 'function') updateVistoriaFormTitle();
-        if (typeof renderDynamicSurveyFields === 'function') renderDynamicSurveyFields();
-      } else if (type !== 'moto' && isCurrentlyMoto) {
-        selectedType = 'Inicial';
-        vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach(b => {
-          b.classList.toggle('active', b.dataset.type === 'Inicial');
-        });
-        if (typeof typeInput !== 'undefined' && typeInput) typeInput.value = 'Inicial';
         if (typeof updateVistoriaFormTitle === 'function') updateVistoriaFormTitle();
         if (typeof renderDynamicSurveyFields === 'function') renderDynamicSurveyFields();
       }

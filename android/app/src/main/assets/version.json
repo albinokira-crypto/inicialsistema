@@ -1,7 +1,7 @@
 {
-  "version": "2.39.0",
-  "versionCode": 2390,
-  "updatedAt": "2026-10-02T18:12:00Z",
-  "buildDate": "2026-10-02T18:12:00.000Z",
-  "changelog": "Exibicao exclusiva de abas personalizadas no tipo de veiculo correspondente"
+  "version": "2.40.0",
+  "versionCode": 2400,
+  "updatedAt": "2026-10-05T20:10:00Z",
+  "buildDate": "2026-10-05T20:10:00.000Z",
+  "changelog": "Correcao na alternancia de pecas entre moto e carro (sem inversao de catalogo)"
 }
