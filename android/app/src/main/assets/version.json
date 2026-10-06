@@ -1,7 +1,7 @@
 {
-  "version": "2.41.0",
-  "versionCode": 2410,
-  "updatedAt": "2026-10-06T15:00:00Z",
-  "buildDate": "2026-10-06T15:00:00.000Z",
-  "changelog": "Correção na exibição de nova vistoria salva, navegação limpa sem travar tela e busca por placa em todas as vistorias e supervisão"
+  "version": "2.42.0",
+  "versionCode": 2420,
+  "updatedAt": "2026-10-06T15:45:00Z",
+  "buildDate": "2026-10-06T15:45:00.000Z",
+  "changelog": "Exibição automática das vistorias feitas no dia abaixo do formulário na aba Vistorias com seletor de dias da semana"
 }

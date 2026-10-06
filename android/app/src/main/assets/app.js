@@ -11,6 +11,11 @@ function backToHomeMenu() {
   selectedTodasVistoriasFilter = 'Vistorias';
   selectedTodasVistoriasDateFilter = 'Todas';
   todasVistoriasOficinaSearchQuery = '';
+  selectedVistoriaOficina = 'Todas';
+  const vOfInput = document.getElementById('vistoriaOficinaComboboxInput');
+  if (vOfInput) vOfInput.value = '';
+  const vOfClear = document.getElementById('vistoriaOficinaComboboxClearBtn');
+  if (vOfClear) vOfClear.style.display = 'none';
   selectedDay = getAutomaticDayOfWeek() || 'Segunda';
   if (typeof searchInput !== 'undefined' && searchInput) {
     searchInput.value = '';
@@ -1375,12 +1380,14 @@ function handleMenuButtonClick(targetDay) {
       selectedTodasVistoriasFilter = 'Vistorias';
       selectedTodasVistoriasDateFilter = 'Todas';
       todasVistoriasOficinaSearchQuery = '';
+      selectedVistoriaOficina = 'Todas';
+      const vOfInput = document.getElementById('vistoriaOficinaComboboxInput');
+      if (vOfInput) vOfInput.value = '';
+      const vOfClear = document.getElementById('vistoriaOficinaComboboxClearBtn');
+      if (vOfClear) vOfClear.style.display = 'none';
       if (typeof searchInput !== 'undefined' && searchInput) {
         searchInput.value = '';
         if (typeof clearSearchButton !== 'undefined' && clearSearchButton) clearSearchButton.hidden = true;
-      }
-      if (typeof itemList !== 'undefined' && itemList) {
-        itemList.innerHTML = '';
       }
     } else {
       selectedDay = targetDay;
@@ -1444,6 +1451,11 @@ window.backToHomeMenu = function() {
   selectedTodasVistoriasFilter = 'Vistorias';
   selectedTodasVistoriasDateFilter = 'Todas';
   todasVistoriasOficinaSearchQuery = '';
+  selectedVistoriaOficina = 'Todas';
+  const vOfInput = document.getElementById('vistoriaOficinaComboboxInput');
+  if (vOfInput) vOfInput.value = '';
+  const vOfClear = document.getElementById('vistoriaOficinaComboboxClearBtn');
+  if (vOfClear) vOfClear.style.display = 'none';
   selectedDay = getAutomaticDayOfWeek() || 'Segunda';
   if (typeof searchInput !== 'undefined' && searchInput) {
     searchInput.value = '';
@@ -2158,6 +2170,78 @@ function render() {
     return;
   }
 
+// Helper functions para associação de vistorias ao dia da semana
+function normalizeWeekday(dayStr) {
+  if (!dayStr) return '';
+  return String(dayStr)
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/-feira/g, '')
+    .trim();
+}
+
+function isSameWeekday(day1, day2) {
+  if (!day1 || !day2) return false;
+  return normalizeWeekday(day1) === normalizeWeekday(day2);
+}
+
+function getWeekdayFromDate(dateStr) {
+  if (!dateStr) return null;
+  const str = String(dateStr).trim();
+  let d = null;
+  if (str.includes('-')) {
+    const parts = str.split('-');
+    if (parts.length === 3) {
+      d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+  } else if (str.includes('/')) {
+    const parts = str.split('/');
+    if (parts.length === 3) {
+      d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+    }
+  }
+  if (d && !isNaN(d.getTime())) {
+    const weekdayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    return weekdayNames[d.getDay()];
+  }
+  return null;
+}
+
+function isTodayItem(item) {
+  if (!item) return false;
+  if (lastSavedVistoriaId && item.id === lastSavedVistoriaId) return true;
+  const todayYmd = getTodayDateValue();
+  if (item.date && String(item.date).trim() === todayYmd) return true;
+  const todayBr = new Date().toLocaleDateString('pt-BR');
+  if (item.date && String(item.date).trim() === todayBr) return true;
+  if (item.createdAt && String(item.createdAt).includes(todayBr)) return true;
+  return false;
+}
+
+function isItemForDay(item, targetDay) {
+  if (!item || !targetDay) return false;
+  if (lastSavedVistoriaId && item.id === lastSavedVistoriaId) return true;
+
+  // 1. Pelo campo item.day (ex: Terça, terça, Terça-feira)
+  if (item.day && isSameWeekday(item.day, targetDay)) return true;
+
+  // 2. Pela data do item convertida para dia da semana
+  if (item.date) {
+    const w = getWeekdayFromDate(item.date);
+    if (w && isSameWeekday(w, targetDay)) return true;
+  }
+
+  // 3. Se targetDay for o dia de HOJE, incluir qualquer registro feito hoje
+  const todayWd = getAutomaticDayOfWeek() || 'Segunda';
+  if (isSameWeekday(targetDay, todayWd) && isTodayItem(item)) {
+    return true;
+  }
+
+  return false;
+}
+
   // Normal filtering for regular vistorias na aba Vistorias
   const vistoriaOficinaInput = document.getElementById('vistoriaOficinaComboboxInput');
   const vistoriaOficinaText = vistoriaOficinaInput ? vistoriaOficinaInput.value.trim().toLowerCase() : '';
@@ -2165,31 +2249,41 @@ function render() {
   const qRaw = (query || '').trim().toLowerCase();
   const qClean = qRaw.replace(/[^a-z0-9]/gi, '');
 
-  const filtered = items.filter((item) => {
-    // 1. O item recém-salvo SEMPRE é exibido na lista (a menos que haja uma busca por texto explícita que não combine)
-    if (lastSavedVistoriaId && item.id === lastSavedVistoriaId) {
-      if (!qRaw) return true;
-    }
+  const activeDay = selectedDay || getAutomaticDayOfWeek() || 'Segunda';
 
-    if (selectedVistoriaOficina && selectedVistoriaOficina !== 'Todas' && item.oficinaId !== selectedVistoriaOficina) {
+  const filtered = items.filter((item) => {
+    // 1. O item recém-salvo nesta sessão sempre passa na filtragem de dia
+    const isRecentlySaved = Boolean(lastSavedVistoriaId && item.id === lastSavedVistoriaId);
+
+    // 2. Filtro do dia da semana (ex: vistorias de Terça-feira)
+    const matchesDay = isRecentlySaved || isItemForDay(item, activeDay);
+    if (!matchesDay) return false;
+
+    // 3. Registros de hoje ou recém-salvos nunca são bloqueados por clearedFromWeek
+    const isToday = isTodayItem(item);
+    if (item.clearedFromWeek === true && !isToday && !isRecentlySaved) {
       return false;
     }
-    if (vistoriaOficinaText && selectedVistoriaOficina === 'Todas' && !vistoriaOficinaText.startsWith('🏢')) {
+
+    // 4. Filtro por oficina caso selecionada
+    if (selectedVistoriaOficina && selectedVistoriaOficina !== 'Todas' && item.oficinaId !== selectedVistoriaOficina && !isRecentlySaved) {
+      return false;
+    }
+    if (vistoriaOficinaText && selectedVistoriaOficina === 'Todas' && !vistoriaOficinaText.startsWith('🏢') && !isRecentlySaved) {
       const ofName = (item.oficinaName || '').toLowerCase();
       if (!ofName.includes(vistoriaOficinaText)) return false;
     }
 
-    // Busca rápida com suporte a placa sem traço/espaço
+    // 5. Busca rápida com suporte a placa sem traço/espaço
     if (qRaw) {
       const itemPlate = (item.plate || '').toLowerCase();
       const itemPlateClean = itemPlate.replace(/[^a-z0-9]/gi, '');
-      const full = `${item.date || ''} ${item.day || ''} ${itemPlate} ${item.provider || ''} ${item.oficinaName || ''}`.toLowerCase();
+      const full = `${item.date || ''} ${item.day || ''} ${itemPlate} ${item.provider || ''} ${item.oficinaName || ''} ${item.type || ''}`.toLowerCase();
       const matchesQ = full.includes(qRaw) || (qClean && itemPlateClean.includes(qClean));
       if (!matchesQ) return false;
     }
 
-    // Exibe todos os registros da semana ativa (não some se o dia da semana divergir)
-    return item.clearedFromWeek !== true;
+    return true;
   });
 
   // Garante que a vistoria recém-salva esteja em primeiríssimo lugar na lista
@@ -2203,6 +2297,11 @@ function render() {
 
   clearSearchButton.hidden = !query;
   installButton.hidden = !deferredPrompt;
+
+  const recordsTitleEl = document.getElementById('recordsTitle');
+  if (recordsTitleEl) {
+    recordsTitleEl.textContent = `Registros de ${activeDay}-feira (${filtered.length})`;
+  }
 
   const statsItems = items.filter(item => item.clearedFromWeek !== true);
   const vistoriasComValor = statsItems.filter(item => Number(item.value) > 0);
@@ -2235,7 +2334,7 @@ function render() {
   `;
 
   if (!filtered.length) {
-    itemList.innerHTML = '<li class="empty">Nenhum registro encontrado.</li>';
+    itemList.innerHTML = `<li class="empty">Nenhum registro de vistoria encontrado para ${escapeHtml(activeDay)}-feira.</li>`;
     renderReport(filtered);
     return;
   }
@@ -2255,6 +2354,7 @@ function render() {
   itemList.innerHTML = filtered.map((item) => {
     const badgeClass = badgeClasses[item.type || 'Inicial'] || 'badge-inicial';
     const dataCriacao = item.date ? formatDateString(item.date) : (item.createdAt || '—');
+    const dataAtualizacao = item.updatedAt || item.createdAt || '—';
     const isMotoItem = item.type === 'Moto' || item.vehicleType === 'moto';
     const itemVType = item.vehicleType || (isMotoItem ? 'moto' : vpDetectVehicleTypeFromText(item.plate || item.vehicle || ''));
     const itemIcon = itemVType === 'moto' ? '🏍️' : (itemVType === 'caminhao' ? '🚛' : (itemVType === 'picape' ? '🛻' : '🚗'));
@@ -2859,6 +2959,11 @@ function updateFormDisplay() {
   if (recordsCard) recordsCard.hidden = !isWeekday && selectedDay !== 'Todas as vistorias';
   if (reportCard) reportCard.hidden = selectedDay !== 'Total da semana';
   
+  const weekdayTabsCardEl = document.getElementById('weekdayTabsCard');
+  if (weekdayTabsCardEl) {
+    weekdayTabsCardEl.style.display = isWeekday ? 'block' : 'none';
+  }
+
   if (vistoriaTypeTabsCard) {
     vistoriaTypeTabsCard.style.display = isWeekday ? 'block' : 'none';
   }
