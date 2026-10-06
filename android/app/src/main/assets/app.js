@@ -1,3 +1,5 @@
+let lastSavedVistoriaId = null;
+
 function openMenuSection(targetDay) {
   handleMenuButtonClick(targetDay);
 }
@@ -6,6 +8,19 @@ window.openMenuSection = openMenuSection;
 function backToHomeMenu() {
   selectedOficinaForTodasVistorias = null;
   showOficinasInTodasVistorias = false;
+  selectedTodasVistoriasFilter = 'Vistorias';
+  selectedTodasVistoriasDateFilter = 'Todas';
+  todasVistoriasOficinaSearchQuery = '';
+  selectedDay = getAutomaticDayOfWeek() || 'Segunda';
+  if (typeof searchInput !== 'undefined' && searchInput) {
+    searchInput.value = '';
+    if (typeof clearSearchButton !== 'undefined' && clearSearchButton) clearSearchButton.hidden = true;
+  }
+  const supPlateInputEl = document.getElementById('supervisaoPlateSearchInput');
+  const supPlateClearEl = document.getElementById('supervisaoPlateSearchClearBtn');
+  if (supPlateInputEl) supPlateInputEl.value = '';
+  if (supPlateClearEl) supPlateClearEl.style.display = 'none';
+
   showWelcomeScreen();
   if (typeof window.scrollTo === 'function') {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -23,7 +38,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.40.0';
+let CURRENT_APP_VERSION = 'v2.41.0';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -1061,23 +1076,35 @@ setupOficinaCombobox({
   onSelectionChange: () => renderSupervisaoReport()
 });
 
-// Inicializa a pesquisa por placa na Supervisão
-const supPlateInput = document.getElementById('supervisaoPlateSearchInput');
-const supPlateClearBtn = document.getElementById('supervisaoPlateSearchClearBtn');
-if (supPlateInput) {
-  supPlateInput.addEventListener('input', () => {
-    if (supPlateClearBtn) supPlateClearBtn.style.display = supPlateInput.value ? 'block' : 'none';
-    renderSupervisaoReport();
-  });
+// Inicializa a pesquisa por placa na Supervisão com suporte a múltiplos eventos
+function setupSupervisaoPlateSearch() {
+  const supPlateInput = document.getElementById('supervisaoPlateSearchInput');
+  const supPlateClearBtn = document.getElementById('supervisaoPlateSearchClearBtn');
+  if (supPlateInput && !supPlateInput.dataset.searchListenerAttached) {
+    supPlateInput.dataset.searchListenerAttached = 'true';
+    let supDebounce = null;
+    const triggerSearch = () => {
+      if (supPlateClearBtn) supPlateClearBtn.style.display = supPlateInput.value.trim() ? 'block' : 'none';
+      if (supDebounce) clearTimeout(supDebounce);
+      supDebounce = setTimeout(() => {
+        renderSupervisaoReport();
+      }, 50);
+    };
+    ['input', 'keyup', 'change', 'paste'].forEach(evt => {
+      supPlateInput.addEventListener(evt, triggerSearch);
+    });
+  }
+  if (supPlateClearBtn && supPlateInput && !supPlateClearBtn.dataset.searchListenerAttached) {
+    supPlateClearBtn.dataset.searchListenerAttached = 'true';
+    supPlateClearBtn.addEventListener('click', () => {
+      supPlateInput.value = '';
+      supPlateClearBtn.style.display = 'none';
+      supPlateInput.focus();
+      renderSupervisaoReport();
+    });
+  }
 }
-if (supPlateClearBtn && supPlateInput) {
-  supPlateClearBtn.addEventListener('click', () => {
-    supPlateInput.value = '';
-    supPlateClearBtn.style.display = 'none';
-    supPlateInput.focus();
-    renderSupervisaoReport();
-  });
-}
+setupSupervisaoPlateSearch();
 
 // Inicializa o combobox em Todas as Vistorias
 setupOficinaCombobox({
@@ -1342,7 +1369,19 @@ function handleMenuButtonClick(targetDay) {
     const appContentEl = document.getElementById('appContent');
 
     if (targetDay === 'Vistorias') {
-      selectedDay = getAutomaticDayOfWeek();
+      selectedDay = getAutomaticDayOfWeek() || 'Segunda';
+      selectedOficinaForTodasVistorias = null;
+      showOficinasInTodasVistorias = false;
+      selectedTodasVistoriasFilter = 'Vistorias';
+      selectedTodasVistoriasDateFilter = 'Todas';
+      todasVistoriasOficinaSearchQuery = '';
+      if (typeof searchInput !== 'undefined' && searchInput) {
+        searchInput.value = '';
+        if (typeof clearSearchButton !== 'undefined' && clearSearchButton) clearSearchButton.hidden = true;
+      }
+      if (typeof itemList !== 'undefined' && itemList) {
+        itemList.innerHTML = '';
+      }
     } else {
       selectedDay = targetDay;
     }
@@ -1380,6 +1419,7 @@ function handleMenuButtonClick(targetDay) {
       populateSupervisaoOficinaSelect();
       populateSupervisaoOficinaFilter();
       populateSupervisaoStageSelect();
+      setupSupervisaoPlateSearch();
       renderSupervisaoReport();
     } else if (selectedDay === 'Seguradoras') {
       renderInsurers();
@@ -1400,6 +1440,20 @@ window.openMenuSection = function(targetDay) {
 
 window.backToHomeMenu = function() {
   selectedOficinaForTodasVistorias = null;
+  showOficinasInTodasVistorias = false;
+  selectedTodasVistoriasFilter = 'Vistorias';
+  selectedTodasVistoriasDateFilter = 'Todas';
+  todasVistoriasOficinaSearchQuery = '';
+  selectedDay = getAutomaticDayOfWeek() || 'Segunda';
+  if (typeof searchInput !== 'undefined' && searchInput) {
+    searchInput.value = '';
+    if (typeof clearSearchButton !== 'undefined' && clearSearchButton) clearSearchButton.hidden = true;
+  }
+  const supPlateInputEl = document.getElementById('supervisaoPlateSearchInput');
+  const supPlateClearEl = document.getElementById('supervisaoPlateSearchClearBtn');
+  if (supPlateInputEl) supPlateInputEl.value = '';
+  if (supPlateClearEl) supPlateClearEl.style.display = 'none';
+
   showWelcomeScreen();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -1425,9 +1479,7 @@ function attachMenuListeners() {
   if (backToMenuButton) {
     backToMenuButton.addEventListener('click', (e) => {
       e.preventDefault();
-      selectedOficinaForTodasVistorias = null;
-      showWelcomeScreen();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      backToHomeMenu();
     });
   }
 }
@@ -1492,6 +1544,7 @@ function initAppWithDOM() {
   showWelcomeScreen();
   attachMenuListeners();
   attachGlobalEventListeners();
+  setupSupervisaoPlateSearch();
 }
 
 if (window.AndroidInterface || window.location.protocol === 'file:') {
@@ -1554,9 +1607,11 @@ function saveItem(event) {
       updatedAt: new Date().toLocaleString('pt-BR'),
       updatedAtTime: Date.now()
     } : item);
+    lastSavedVistoriaId = editingId;
   } else {
-    items.unshift({
-      id: Date.now().toString(),
+    const newItemId = Date.now().toString();
+    const newItem = {
+      id: newItemId,
       date,
       day,
       plate,
@@ -1571,7 +1626,9 @@ function saveItem(event) {
       createdAt: new Date().toLocaleString('pt-BR'),
       updatedAt: new Date().toLocaleString('pt-BR'),
       updatedAtTime: Date.now()
-    });
+    };
+    items.unshift(newItem);
+    lastSavedVistoriaId = newItemId;
   }
 
   saveItems();
@@ -1597,6 +1654,18 @@ function saveItem(event) {
   updateTypeButtonsHighlight();
   updateInsurerButtonsHighlight();
   editingId = null;
+
+  // Limpa filtro de busca e oficina conflitante para que o item recém-salvo não suma da tela
+  if (typeof searchInput !== 'undefined' && searchInput) {
+    searchInput.value = '';
+    if (typeof clearSearchButton !== 'undefined' && clearSearchButton) clearSearchButton.hidden = true;
+  }
+  if (selectedVistoriaOficina && selectedVistoriaOficina !== 'Todas' && selectedVistoriaOficina !== oficinaId) {
+    selectedVistoriaOficina = 'Todas';
+    const vOfInput = document.getElementById('vistoriaOficinaComboboxInput');
+    if (vOfInput) vOfInput.value = '';
+  }
+
   updateFormState();
   updateFormDisplay();
   renderDynamicSurveyFields();
@@ -1694,18 +1763,32 @@ function render() {
     // =========================================================================
     if (query) {
       const q = query.trim().toLowerCase();
+      const qClean = q.replace(/[^a-z0-9]/gi, '');
+
       const filteredVistorias = items.filter(item => {
         const dStr = item.date ? formatDateString(item.date) : '';
         const ofName = item.oficinaName || (oficinas.find(o => o.id === item.oficinaId) ? oficinas.find(o => o.id === item.oficinaId).name : '');
-        const fullText = `${item.date || ''} ${dStr} ${item.day || ''} ${item.plate || ''} ${item.provider || ''} ${item.type || ''} ${ofName} ${JSON.stringify(item.details || {})}`.toLowerCase();
-        return fullText.includes(q);
+        const plateRaw = (item.plate || '').toLowerCase();
+        const plateClean = plateRaw.replace(/[^a-z0-9]/gi, '');
+        const fullText = `${item.date || ''} ${dStr} ${item.day || ''} ${plateRaw} ${item.provider || ''} ${item.type || ''} ${ofName} ${JSON.stringify(item.details || {})}`.toLowerCase();
+        
+        if (fullText.includes(q)) return true;
+        if (qClean && plateClean.includes(qClean)) return true;
+        return false;
       });
 
       const filteredSupervisoes = supervisoes.filter(s => {
         const dStr = s.date ? formatDateString(s.date) : '';
         const ofName = s.oficinaName || (oficinas.find(o => o.id === s.oficinaId) ? oficinas.find(o => o.id === s.oficinaId).name : '');
-        const fullText = `${s.date || ''} ${dStr} ${s.day || ''} ${s.vehicle || ''} ${s.plate || ''} ${s.attended || ''} ${s.stage || ''} ${ofName} ${s.parts || ''} ${s.other || ''}`.toLowerCase();
-        return fullText.includes(q);
+        const vehRaw = (s.vehicle || '').toLowerCase();
+        const plateRaw = (s.plate || '').toLowerCase();
+        const vehClean = vehRaw.replace(/[^a-z0-9]/gi, '');
+        const plateClean = plateRaw.replace(/[^a-z0-9]/gi, '');
+        const fullText = `${s.date || ''} ${dStr} ${s.day || ''} ${vehRaw} ${plateRaw} ${s.attended || ''} ${s.stage || ''} ${ofName} ${s.parts || ''} ${s.other || ''}`.toLowerCase();
+
+        if (fullText.includes(q)) return true;
+        if (qClean && (plateClean.includes(qClean) || vehClean.includes(qClean))) return true;
+        return false;
       });
 
       // Alterna automaticamente para a aba com resultados se a aba atual estiver vazia
@@ -1735,16 +1818,21 @@ function render() {
               <strong style="color: #1e40af; font-size: 0.92rem;">🔍 Resultados para: "${escapeHtml(query)}"</strong>
               <div style="font-size: 0.75rem; color: #3b82f6; font-weight: 600;">${filteredVistorias.length + filteredSupervisoes.length} registro(s) encontrado(s)</div>
             </div>
-            <button id="clearGlobalSearchBtn" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #ffffff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 999px; cursor: pointer;">
-              ✕ Limpar Busca
-            </button>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button onclick="openMenuSection('Vistorias')" type="button" style="font-size: 0.76rem; padding: 6px 12px; font-weight: 800; background: #2563eb; color: #ffffff; border: none; border-radius: 999px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                ➕ Nova Vistoria
+              </button>
+              <button id="clearGlobalSearchBtn" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #ffffff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 999px; cursor: pointer;">
+                ✕ Limpar
+              </button>
+            </div>
           </div>
           <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
-            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-              Vistorias (${filteredVistorias.length})
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 14px;">
+              📋 Vistorias (${filteredVistorias.length})
             </button>
-            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-              Supervisões (${filteredSupervisoes.length})
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 14px;">
+              🔍 Supervisões (${filteredSupervisoes.length})
             </button>
           </div>
         </li>
@@ -1797,18 +1885,23 @@ function render() {
       
       const headerHtml = `
         <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0; flex-wrap: wrap; gap: 8px;">
             <strong style="color: #15803d; font-size: 0.95rem;">🏢 Oficina: ${escapeHtml(o.name)}</strong>
-            <button id="backToOficinasList" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 999px; cursor: pointer;">
-              ← Voltar às Oficinas
-            </button>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button onclick="openMenuSection('Vistorias')" type="button" style="font-size: 0.76rem; padding: 6px 12px; font-weight: 800; background: #2563eb; color: #ffffff; border: none; border-radius: 999px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                ➕ Nova Vistoria
+              </button>
+              <button id="backToOficinasList" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 999px; cursor: pointer;">
+                ← Voltar às Oficinas
+              </button>
+            </div>
           </div>
           <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
-            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-              Vistorias (${filteredVistorias.length})
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 14px;">
+              📋 Vistorias (${filteredVistorias.length})
             </button>
-            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-              Supervisões (${filteredSupervisoes.length})
+            <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 14px;">
+              🔍 Supervisões (${filteredSupervisoes.length})
             </button>
           </div>
         </li>
@@ -1978,9 +2071,14 @@ function render() {
     const headerHtml = `
       <li style="list-style: none; grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap;">
-          <button id="btnExibirOficinas" class="ghost-btn" style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 8px 14px; font-weight: 700; background: #eff6ff; color: #1e40af; border: 1.5px solid #93c5fd; border-radius: 10px; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 1px 3px rgba(37,99,235,0.1);">
-            🏢 Exibir Oficinas (${oficinas.length})
-          </button>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button onclick="openMenuSection('Vistorias')" type="button" style="font-size: 0.82rem; padding: 8px 14px; font-weight: 800; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(37,99,235,0.2);">
+              ➕ Nova Vistoria
+            </button>
+            <button id="btnExibirOficinas" class="ghost-btn" style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 8px 14px; font-weight: 700; background: #eff6ff; color: #1e40af; border: 1.5px solid #93c5fd; border-radius: 10px; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 1px 3px rgba(37,99,235,0.1);">
+              🏢 Exibir Oficinas (${oficinas.length})
+            </button>
+          </div>
           <button id="tabClearAllButton" class="ghost-btn" style="font-size: 0.76rem; padding: 6px 12px; width: auto; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 999px; cursor: pointer;">
             🧹 Limpar Tudo
           </button>
@@ -2006,10 +2104,10 @@ function render() {
 
         <div class="tabs" style="display: flex; gap: 8px; width: 100%;">
           <button class="tab-btn ${selectedTodasVistoriasFilter === 'Vistorias' ? 'active' : ''}" type="button" id="toggleFilterVistorias" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-            Vistorias (${filteredVistorias.length})
+            📋 Vistorias (${filteredVistorias.length})
           </button>
           <button class="tab-btn ${selectedTodasVistoriasFilter === 'Supervisões' ? 'active' : ''}" type="button" id="toggleFilterSupervisoes" style="flex: 1; text-align: center; font-weight: 700; border-radius: 12px; padding: 12px 16px;">
-            Supervisões (${filteredSupervisoes.length})
+            🔍 Supervisões (${filteredSupervisoes.length})
           </button>
         </div>
       </li>
@@ -2060,11 +2158,19 @@ function render() {
     return;
   }
 
-  // Normal day filtering for regular vistorias
+  // Normal filtering for regular vistorias na aba Vistorias
   const vistoriaOficinaInput = document.getElementById('vistoriaOficinaComboboxInput');
   const vistoriaOficinaText = vistoriaOficinaInput ? vistoriaOficinaInput.value.trim().toLowerCase() : '';
 
+  const qRaw = (query || '').trim().toLowerCase();
+  const qClean = qRaw.replace(/[^a-z0-9]/gi, '');
+
   const filtered = items.filter((item) => {
+    // 1. O item recém-salvo SEMPRE é exibido na lista (a menos que haja uma busca por texto explícita que não combine)
+    if (lastSavedVistoriaId && item.id === lastSavedVistoriaId) {
+      if (!qRaw) return true;
+    }
+
     if (selectedVistoriaOficina && selectedVistoriaOficina !== 'Todas' && item.oficinaId !== selectedVistoriaOficina) {
       return false;
     }
@@ -2073,18 +2179,27 @@ function render() {
       if (!ofName.includes(vistoriaOficinaText)) return false;
     }
 
-    const isTotalWeek = selectedDay === 'Total da semana';
-    const matchesQuery = `${item.date} ${item.day} ${item.plate} ${item.provider} ${item.oficinaName || ''}`.toLowerCase().includes(query);
-    if (!matchesQuery) return false;
-
-    if (isTotalWeek) {
-      return item.clearedFromWeek !== true;
+    // Busca rápida com suporte a placa sem traço/espaço
+    if (qRaw) {
+      const itemPlate = (item.plate || '').toLowerCase();
+      const itemPlateClean = itemPlate.replace(/[^a-z0-9]/gi, '');
+      const full = `${item.date || ''} ${item.day || ''} ${itemPlate} ${item.provider || ''} ${item.oficinaName || ''}`.toLowerCase();
+      const matchesQ = full.includes(qRaw) || (qClean && itemPlateClean.includes(qClean));
+      if (!matchesQ) return false;
     }
-    
-    // Filter by day (showing all vistorias done on that day)
-    const sameDay = item.day === selectedDay;
-    return sameDay && item.clearedFromWeek !== true;
+
+    // Exibe todos os registros da semana ativa (não some se o dia da semana divergir)
+    return item.clearedFromWeek !== true;
   });
+
+  // Garante que a vistoria recém-salva esteja em primeiríssimo lugar na lista
+  if (lastSavedVistoriaId) {
+    const savedIdx = filtered.findIndex(i => i.id === lastSavedVistoriaId);
+    if (savedIdx > 0) {
+      const [savedItem] = filtered.splice(savedIdx, 1);
+      filtered.unshift(savedItem);
+    }
+  }
 
   clearSearchButton.hidden = !query;
   installButton.hidden = !deferredPrompt;
@@ -4278,21 +4393,26 @@ function renderSupervisaoReport() {
   const plateSearchClean = plateSearchRaw.replace(/[^a-z0-9]/gi, '');
 
   const filtered = supervisoes.filter((s) => {
+    if (plateSearchRaw) {
+      const veh = (s.vehicle || '').toLowerCase();
+      const plate = (s.plate || '').toLowerCase();
+      const other = (s.other || '').toLowerCase();
+      const vehClean = veh.replace(/[^a-z0-9]/gi, '');
+      const plateClean = plate.replace(/[^a-z0-9]/gi, '');
+      const otherClean = other.replace(/[^a-z0-9]/gi, '');
+
+      const matchPlate = plate.includes(plateSearchRaw) || (plateSearchClean && plateClean.includes(plateSearchClean));
+      const matchVeh = veh.includes(plateSearchRaw) || (plateSearchClean && vehClean.includes(plateSearchClean));
+      const matchOther = other.includes(plateSearchRaw) || (plateSearchClean && otherClean.includes(plateSearchClean));
+      if (!matchPlate && !matchVeh && !matchOther) return false;
+      return true;
+    }
+
     if (selectedSupervisaoOficina !== 'Todas' && s.oficinaId !== selectedSupervisaoOficina) return false;
     if (searchText && selectedSupervisaoOficina === 'Todas' && !searchText.startsWith('🏢')) {
       const ofObj = oficinas.find(o => o.id === s.oficinaId);
       const ofName = (ofObj ? ofObj.name : (s.oficinaName || '')).toLowerCase();
       if (!ofName.includes(searchText)) return false;
-    }
-    if (plateSearchRaw) {
-      const veh = (s.vehicle || '').toLowerCase();
-      const plate = (s.plate || '').toLowerCase();
-      const vehClean = veh.replace(/[^a-z0-9]/gi, '');
-      const plateClean = plate.replace(/[^a-z0-9]/gi, '');
-
-      const matchPlate = plate.includes(plateSearchRaw) || (plateSearchClean && plateClean.includes(plateSearchClean));
-      const matchVeh = veh.includes(plateSearchRaw) || (plateSearchClean && vehClean.includes(plateSearchClean));
-      if (!matchPlate && !matchVeh) return false;
     }
     return true;
   });

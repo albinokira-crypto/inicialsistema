@@ -1,7 +1,7 @@
 {
-  "version": "2.40.0",
-  "versionCode": 2400,
-  "updatedAt": "2026-10-05T20:10:00Z",
-  "buildDate": "2026-10-05T20:10:00.000Z",
-  "changelog": "Correcao na alternancia de pecas entre moto e carro (sem inversao de catalogo)"
+  "version": "2.41.0",
+  "versionCode": 2410,
+  "updatedAt": "2026-10-06T15:00:00Z",
+  "buildDate": "2026-10-06T15:00:00.000Z",
+  "changelog": "Correção na exibição de nova vistoria salva, navegação limpa sem travar tela e busca por placa em todas as vistorias e supervisão"
 }

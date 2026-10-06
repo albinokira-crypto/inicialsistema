@@ -17,7 +17,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <link rel="stylesheet" href="styles.css?v=2190" />
+    <link rel="stylesheet" href="styles.css?v=2410" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -69,10 +69,11 @@
       </section>
 
       <div id="appContent" hidden>
-        <div class="card view-header-card" style="display: flex; align-items: center; width: 100%; padding: 12px 14px; margin-top: 32px; margin-bottom: 14px; box-sizing: border-box; background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div class="card view-header-card" style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 12px 14px; margin-top: 32px; margin-bottom: 14px; box-sizing: border-box; background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
           <button id="backToMenuButton" class="ghost-btn" type="button" onclick="backToHomeMenu()" style="font-size: 0.78rem; padding: 6px 12px; flex: 0 0 auto; white-space: nowrap; font-weight: 700; background: #eef4ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 999px;">
             ← Voltar ao Menu
           </button>
+          <span id="currentPageTitle" style="font-weight: 800; color: #1e40af; font-size: 0.98rem; text-align: right;"></span>
         </div>
 
         <section class="summary-grid" id="summaryGrid" style="display: none;"></section>
@@ -1125,6 +1126,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=2191"></script>
+    <script src="app.js?v=2410"></script>
   </body>
 </html>
