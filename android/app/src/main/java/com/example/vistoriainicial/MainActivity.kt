@@ -97,7 +97,7 @@ class MainActivity : ComponentActivity() {
                 val url = request?.url ?: return null
                 val host = url.host ?: ""
                 
-                if (host.contains("gestao-vistoria-inicial.vercel.app")) {
+                if (host.contains("inicialsistema.pages.dev") || host.contains("gestao-vistoria-inicial.vercel.app")) {
                     val path = url.path ?: "/"
                     val assetName = when {
                         path == "/" || path.endsWith("/index.html") || path.endsWith("/index") -> "index.html"
@@ -176,7 +176,7 @@ class MainActivity : ComponentActivity() {
                 description: String?,
                 failingUrl: String?
             ) {
-                if (failingUrl?.contains("gestao-vistoria-inicial.vercel.app") == true) {
+                if (failingUrl?.contains("inicialsistema.pages.dev") == true || failingUrl?.contains("gestao-vistoria-inicial.vercel.app") == true) {
                     val targetAsset = if (failingUrl.contains("dashboard")) "dashboard.html" else "index.html"
                     view?.post {
                         view.loadUrl("file:///android_asset/$targetAsset")
@@ -432,8 +432,8 @@ class MainActivity : ComponentActivity() {
             }
         })
 
-        // Carregar sistema online (Vercel) com fallback automático para assets locais se offline
-        webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/index.html?v=2160")
+        // Carregar sistema online (Cloudflare) com fallback automático para assets locais se offline
+        webView.loadUrl("https://inicialsistema.pages.dev/index.html?v=2420")
 
         // Request Permissions
         checkPermissions()
@@ -1653,7 +1653,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
         mainAct.runOnUiThread {
             mainAct.webView.clearCache(true)
             android.widget.Toast.makeText(mainAct, "Cache limpo! Recarregando sistema...", android.widget.Toast.LENGTH_SHORT).show()
-            mainAct.webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/dashboard.html?v=2160&_t=" + System.currentTimeMillis())
+            mainAct.webView.loadUrl("https://inicialsistema.pages.dev/dashboard.html?v=2420&_t=" + System.currentTimeMillis())
         }
     }
 
@@ -2808,7 +2808,7 @@ class AndroidInterface(private val activity: ComponentActivity) {
         activity.runOnUiThread {
             try {
                 val mainAct = activity as MainActivity
-                mainAct.webView.loadUrl("https://gestao-vistoria-inicial.vercel.app/dashboard.html?t=" + System.currentTimeMillis())
+                mainAct.webView.loadUrl("https://inicialsistema.pages.dev/dashboard.html?t=" + System.currentTimeMillis())
             } catch (e: Exception) {
                 e.printStackTrace()
             }

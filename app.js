@@ -76,7 +76,7 @@ async function checkForSystemUpdates(showFeedback = false) {
   try {
     const timestamp = Date.now();
     const endpoints = [
-      'https://gestao-vistoria-inicial.vercel.app/version.json?_t=' + timestamp,
+      'https://inicialsistema.pages.dev/version.json?_t=' + timestamp,
       '/version.json?_t=' + timestamp
     ];
     let data = null;
@@ -5244,7 +5244,7 @@ async function forceAppRefresh(targetVer = null) {
   const verParam = targetVer ? encodeURIComponent(String(targetVer).replace(/^v/i, '')) : '211';
   const cleanPath = (window.location.pathname.split('?')[0] || '/dashboard.html');
   const targetPath = cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath;
-  const targetUrl = `https://gestao-vistoria-inicial.vercel.app${targetPath}?v=${verParam}&_t=${Date.now()}`;
+  const targetUrl = `https://inicialsistema.pages.dev${targetPath}?v=${verParam}&_t=${Date.now()}`;
 
   setTimeout(() => {
     window.location.replace(targetUrl);
@@ -7322,7 +7322,7 @@ let vpViewAllZonesMode = false;
 
 const VP_CLOUD_ENDPOINTS = [
   '/api/catalog',
-  'https://gestao-vistoria-inicial.vercel.app/api/catalog'
+  'https://inicialsistema.pages.dev/api/catalog'
 ];
 function vpCleanPartDashes(name) {
   if (!name || typeof name !== 'string') return '';
