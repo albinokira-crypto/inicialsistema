@@ -6443,7 +6443,11 @@ function restoreBackupFromJsonString(jsonString) {
       let restoredKeys = 0;
       localStorage.clear();
       Object.keys(data).forEach(key => {
-        localStorage.setItem(key, data[key]);
+        const val = typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]);
+        localStorage.setItem(key, val);
+        if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+          try { window.AndroidInterface.saveNativeData(key, val); } catch(e) {}
+        }
         restoredKeys++;
       });
       alert(`✅ Backup importado com sucesso! (${restoredKeys} chaves restauradas). O sistema será recarregado.`);
