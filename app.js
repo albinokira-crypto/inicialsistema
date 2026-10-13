@@ -7450,24 +7450,6 @@ function vpGetPartEffectiveZoneId(rawName, defaultZoneId) {
   return defaultZoneId;
 }
 
-
-  // Analisa ocorrências reais em vistorias salvas no sistema
-  if (typeof items !== 'undefined' && Array.isArray(items)) {
-    items.forEach(it => {
-      if (it.trocas && typeof it.trocas === 'string') {
-        const tLower = it.trocas.toLowerCase();
-        if (tLower.includes(nLower) || (rLower && tLower.includes(rLower))) score += 2;
-      }
-      if (it.reparos && typeof it.reparos === 'string') {
-        const rLowerText = it.reparos.toLowerCase();
-        if (rLowerText.includes(nLower) || (rLower && rLowerText.includes(rLower))) score += 2;
-      }
-    });
-  }
-
-  return score;
-}
-
 async function vpPushCatalogToCloud() {
   if (vpIsSyncingCloud) return;
   vpIsSyncingCloud = true;
@@ -8655,7 +8637,7 @@ function vpGetPartUsageScore(partName, rawName = '') {
   } catch(e) {}
 
   return score;
-
+}
 
 function vpPrecomputeUsageScores(partsList) {
   const scoreMap = new Map();
