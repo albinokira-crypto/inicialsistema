@@ -8655,18 +8655,7 @@ function vpGetPartUsageScore(partName, rawName = '') {
   } catch(e) {}
 
   return score;
-}
 
-function vpIncrementPartUsage(partName) {
-  if (!partName) return;
-  try {
-    const stats = JSON.parse(localStorage.getItem('vp_parts_usage_stats') || '{}');
-    stats[partName] = (stats[partName] || 0) + 1;
-    localStorage.setItem('vp_parts_usage_stats', JSON.stringify(stats));
-  } catch(e) {}
-}
-let vpAllVehicleParts = [];
-let vpAllVehiclePartsType = null;
 
 function vpPrecomputeUsageScores(partsList) {
   const scoreMap = new Map();
