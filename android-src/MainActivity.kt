@@ -342,9 +342,39 @@ class MainActivity : ComponentActivity() {
                             }
                             
                             runOnUiThread {
+                                val adapter = object : android.widget.ArrayAdapter<android.content.pm.ResolveInfo>(
+                                    this@MainActivity,
+                                    android.R.layout.select_dialog_item,
+                                    android.R.id.text1,
+                                    cameraActivities
+                                ) {
+                                    override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                                        val view = super.getView(position, convertView, parent) as android.widget.TextView
+                                        val info = getItem(position)
+                                        if (info != null) {
+                                            try {
+                                                val icon = info.loadIcon(pm)
+                                                val iconSize = (44 * resources.displayMetrics.density).toInt()
+                                                icon.setBounds(0, 0, iconSize, iconSize)
+                                                view.setCompoundDrawables(icon, null, null, null)
+                                                view.compoundDrawablePadding = (16 * resources.displayMetrics.density).toInt()
+                                            } catch (e: Exception) {
+                                                view.setCompoundDrawables(null, null, null, null)
+                                            }
+                                            view.text = info.loadLabel(pm)
+                                            view.gravity = android.view.Gravity.CENTER_VERTICAL
+                                            view.textSize = 15f
+                                            val padV = (10 * resources.displayMetrics.density).toInt()
+                                            val padH = (16 * resources.displayMetrics.density).toInt()
+                                            view.setPadding(padH, padV, padH, padV)
+                                        }
+                                        return view
+                                    }
+                                }
+
                                 val builder = android.app.AlertDialog.Builder(this@MainActivity)
-                                builder.setTitle("Selecione o aplicativo de Câmera")
-                                builder.setItems(names.toTypedArray()) { dialog, which ->
+                                builder.setTitle("Selecione o Aplicativo de Câmera")
+                                builder.setAdapter(adapter) { dialog, which ->
                                     val selectedIntent = intents[which]
                                     val selectedPkg = selectedIntent.`package`
                                     val selectedLabel = names[which]
@@ -1077,7 +1107,8 @@ class MainActivity : ComponentActivity() {
         }
         val launcherActivities = pm.queryIntentActivities(launcherIntent, 0)
         val cameraActivities = ArrayList<android.content.pm.ResolveInfo>()
-        val cameraKeywords = listOf("camera", "câmera", "camer", "foto", "photo", "gcam", "opencamera", "camara")
+        val otherActivities = ArrayList<android.content.pm.ResolveInfo>()
+        val cameraKeywords = listOf("camera", "câmera", "camer", "foto", "photo", "gcam", "opencamera", "camara", "cam")
         
         for (info in launcherActivities) {
             val pkgName = info.activityInfo.packageName.lowercase()
@@ -1086,23 +1117,62 @@ class MainActivity : ComponentActivity() {
             val isCameraApp = cameraKeywords.any { pkgName.contains(it) || label.contains(it) }
             if (isCameraApp) {
                 cameraActivities.add(info)
+            } else {
+                otherActivities.add(info)
             }
         }
 
-        if (cameraActivities.isNotEmpty()) {
-            val names = ArrayList<String>()
-            val packages = ArrayList<String>()
-            for (resolveInfo in cameraActivities) {
-                names.add(resolveInfo.loadLabel(pm).toString())
-                packages.add(resolveInfo.activityInfo.packageName)
-            }
-            
+        cameraActivities.sortWith { a, b ->
+            a.loadLabel(pm).toString().compareTo(b.loadLabel(pm).toString(), ignoreCase = true)
+        }
+        otherActivities.sortWith { a, b ->
+            a.loadLabel(pm).toString().compareTo(b.loadLabel(pm).toString(), ignoreCase = true)
+        }
+
+        val allSelectableApps = ArrayList<android.content.pm.ResolveInfo>()
+        allSelectableApps.addAll(cameraActivities)
+        allSelectableApps.addAll(otherActivities)
+
+        if (allSelectableApps.isNotEmpty()) {
             runOnUiThread {
+                val adapter = object : android.widget.ArrayAdapter<android.content.pm.ResolveInfo>(
+                    this,
+                    android.R.layout.select_dialog_item,
+                    android.R.id.text1,
+                    allSelectableApps
+                ) {
+                    override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                        val view = super.getView(position, convertView, parent) as android.widget.TextView
+                        val info = getItem(position)
+                        if (info != null) {
+                            try {
+                                val icon = info.loadIcon(pm)
+                                val iconSize = (44 * resources.displayMetrics.density).toInt()
+                                icon.setBounds(0, 0, iconSize, iconSize)
+                                view.setCompoundDrawables(icon, null, null, null)
+                                view.compoundDrawablePadding = (16 * resources.displayMetrics.density).toInt()
+                            } catch (e: Exception) {
+                                view.setCompoundDrawables(null, null, null, null)
+                            }
+                            val isCamera = cameraActivities.contains(info)
+                            val label = info.loadLabel(pm).toString()
+                            view.text = if (isCamera) "$label  📷" else label
+                            view.gravity = android.view.Gravity.CENTER_VERTICAL
+                            view.textSize = 15f
+                            val padV = (10 * resources.displayMetrics.density).toInt()
+                            val padH = (16 * resources.displayMetrics.density).toInt()
+                            view.setPadding(padH, padV, padH, padV)
+                        }
+                        return view
+                    }
+                }
+
                 android.app.AlertDialog.Builder(this)
-                    .setTitle("Selecione a Câmera desta Empresa")
-                    .setItems(names.toTypedArray()) { dialog, which ->
-                        val selectedPkg = packages[which]
-                        val selectedLabel = names[which]
+                    .setTitle("Selecione o Aplicativo (Área Iniciar)")
+                    .setAdapter(adapter) { dialog, which ->
+                        val selectedInfo = allSelectableApps[which]
+                        val selectedPkg = selectedInfo.activityInfo.packageName
+                        val selectedLabel = selectedInfo.loadLabel(pm).toString()
                         val keyPkg = if (companyId.isNotEmpty()) "preferred_camera_package_" + companyId else "preferred_camera_package"
                         val keyLabel = if (companyId.isNotEmpty()) "preferred_camera_label_" + companyId else "preferred_camera_label"
                         prefs.edit()
@@ -1121,7 +1191,7 @@ class MainActivity : ComponentActivity() {
             }
         } else {
             runOnUiThread {
-                Toast.makeText(this, "Nenhum aplicativo de câmera encontrado.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Nenhum aplicativo encontrado na área iniciar.", Toast.LENGTH_SHORT).show()
             }
         }
     }

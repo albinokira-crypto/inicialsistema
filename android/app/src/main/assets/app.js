@@ -334,6 +334,23 @@ let insurers = loadInsurers();
 let oficinas = loadOficinas();
 let supervisoes = loadSupervisoes();
 let stages = loadStages();
+const COMPANIES_STORAGE_KEY = 'web-system-companies-v1';
+const DEFAULT_COMPANIES = [
+  { id: 'empresa-1', name: 'Empresa Principal', color: '#2563eb' },
+  { id: 'empresa-2', name: 'Segunda Empresa', color: '#7c3aed' }
+];
+
+function loadCompanies() {
+  const parsed = getSafeStorage(COMPANIES_STORAGE_KEY, DEFAULT_COMPANIES);
+  return Array.isArray(parsed) && parsed.length ? parsed : DEFAULT_COMPANIES;
+}
+
+function saveCompanies() {
+  setSafeStorage(COMPANIES_STORAGE_KEY, companies);
+}
+
+let companies = loadCompanies();
+let activeCompanyId = localStorage.getItem('active_company_id') || (companies[0] ? companies[0].id : 'empresa-1');
 let editingId = null;
 let editingInsurerId = null;
 let editingOficinaId = null;
@@ -426,6 +443,7 @@ function renderVistoriaOrSupervisaoCard(entry) {
             <span class="item-meta">· R$ ${(Number(entry.value) || 0).toFixed(2).replace('.', ',')}</span>
             <span class="item-meta">· 📅 ${escapeHtml(dataCriacao)}</span>
             <span class="${badgeClass}" style="margin-left: 6px;">${escapeHtml(entry.type || 'Inicial')}</span>
+            ${entry.companyName ? `<span class="badge-empresa">🏢 ${escapeHtml(entry.companyName)}</span>` : ''}
             ${ofName ? `<div class="item-meta" style="margin-top: 4px; color: var(--color-slate-700);">Oficina: <strong>${escapeHtml(ofName)}</strong></div>` : ''}
             <div style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">🕒 Atualizado: ${escapeHtml(dataAtualizacao)}</div>
           </div>
@@ -1538,6 +1556,7 @@ function initializeApp() {
     render();
     renderInsurers();
     renderOficinas();
+    renderCompanyButtons();
     checkForSystemUpdates(false);
   } catch (error) {
     console.error('Erro ao iniciar o app:', error);
@@ -1604,11 +1623,17 @@ function saveItem(event) {
 
   const detectedVehicleType = type === 'Moto' ? 'moto' : (typeof vpDetectedVehicleType !== 'undefined' && vpDetectedVehicleType ? vpDetectedVehicleType : 'carro');
 
+  const activeCompany = companies.find((c) => c.id === activeCompanyId) || { id: activeCompanyId, name: 'Empresa Principal' };
+  const companyId = activeCompany.id;
+  const companyName = activeCompany.name;
+
   if (editingId) {
     const existing = items.find((i) => i.id === editingId);
     const mergedDetails = { ...(existing?.details || {}), ...details };
     items = items.map((item) => item.id === editingId ? { 
       ...item, date, day, plate, provider, value, providerId, type, vehicleType: (type === 'Moto' ? 'moto' : (item.vehicleType || detectedVehicleType)), oficinaId, oficinaName, details: mergedDetails,
+      companyId: item.companyId || companyId,
+      companyName: item.companyName || companyName,
       updatedAt: new Date().toLocaleString('pt-BR'),
       updatedAtTime: Date.now()
     } : item);
@@ -1627,6 +1652,8 @@ function saveItem(event) {
       vehicleType: detectedVehicleType,
       oficinaId,
       oficinaName,
+      companyId,
+      companyName,
       details,
       createdAt: new Date().toLocaleString('pt-BR'),
       updatedAt: new Date().toLocaleString('pt-BR'),
@@ -2800,6 +2827,9 @@ function handleAction(action, id) {
   
   selectedType = item.type || 'Inicial';
   if (typeInput) typeInput.value = selectedType;
+  if (item.companyId) {
+    selectCompany(item.companyId);
+  }
   
   if (vistoriaTypeTabs) {
     vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
@@ -5301,6 +5331,180 @@ if (clearCameraBtn) {
   });
 }
 
+// MULTI-EMPRESA & CÂMERA POR EMPRESA FUNCTIONS
+function renderCompanyButtons() {
+  const container = document.getElementById('companyButtonsContainer');
+  if (!container) return;
+
+  if (!companies.find(c => c.id === activeCompanyId)) {
+    activeCompanyId = companies[0] ? companies[0].id : 'empresa-1';
+    localStorage.setItem('active_company_id', activeCompanyId);
+  }
+
+  container.innerHTML = companies.map(c => {
+    const isActive = c.id === activeCompanyId;
+    return `
+      <button type="button" class="company-toggle-btn ${isActive ? 'active' : ''}" onclick="selectCompany('${c.id}')" data-company-id="${c.id}">
+        <span style="font-size: 1rem;">🏢</span>
+        <span>${escapeHtml(c.name)}</span>
+        ${isActive ? '<span style="font-weight: 900; margin-left: 2px;">✓</span>' : ''}
+      </button>
+    `;
+  }).join('');
+
+  updateCompanyCameraUI();
+}
+window.renderCompanyButtons = renderCompanyButtons;
+
+function selectCompany(companyId) {
+  activeCompanyId = companyId;
+  localStorage.setItem('active_company_id', companyId);
+  renderCompanyButtons();
+}
+window.selectCompany = selectCompany;
+
+function updateCompanyCameraUI() {
+  const labelEl = document.getElementById('companyCameraLabelText');
+  if (!labelEl) return;
+
+  let label = 'Padrão do Sistema';
+  if (window.AndroidInterface && typeof window.AndroidInterface.getPreferredCameraLabelForCompany === 'function') {
+    const androidLabel = window.AndroidInterface.getPreferredCameraLabelForCompany(activeCompanyId);
+    if (androidLabel && androidLabel !== 'Nenhuma') {
+      label = androidLabel;
+      localStorage.setItem('preferred_camera_label_' + activeCompanyId, androidLabel);
+    }
+  } else {
+    const saved = localStorage.getItem('preferred_camera_label_' + activeCompanyId);
+    if (saved) label = saved;
+  }
+
+  labelEl.textContent = label;
+}
+window.updateCompanyCameraUI = updateCompanyCameraUI;
+
+function handleChangeCompanyCamera() {
+  if (window.AndroidInterface && typeof window.AndroidInterface.selectPreferredCameraForCompany === 'function') {
+    window.AndroidInterface.selectPreferredCameraForCompany(activeCompanyId);
+  } else {
+    const comp = companies.find(c => c.id === activeCompanyId) || { name: 'esta empresa' };
+    const current = localStorage.getItem('preferred_camera_label_' + activeCompanyId) || '';
+    const newName = prompt(`Informe o nome ou app de câmera para ${comp.name}:`, current);
+    if (newName !== null) {
+      localStorage.setItem('preferred_camera_label_' + activeCompanyId, newName.trim() || 'Padrão do Sistema');
+      updateCompanyCameraUI();
+    }
+  }
+}
+window.handleChangeCompanyCamera = handleChangeCompanyCamera;
+
+function openManageCompaniesModal() {
+  const m = document.getElementById('manageCompaniesModal');
+  if (m) {
+    m.style.display = 'flex';
+    renderManageCompaniesList();
+  }
+}
+window.openManageCompaniesModal = openManageCompaniesModal;
+
+function closeManageCompaniesModal() {
+  const m = document.getElementById('manageCompaniesModal');
+  if (m) m.style.display = 'none';
+}
+window.closeManageCompaniesModal = closeManageCompaniesModal;
+
+function renderManageCompaniesList() {
+  const container = document.getElementById('companiesListContainer');
+  if (!container) return;
+
+  container.innerHTML = companies.map(c => {
+    let camLabel = 'Padrão';
+    if (window.AndroidInterface && typeof window.AndroidInterface.getPreferredCameraLabelForCompany === 'function') {
+      camLabel = window.AndroidInterface.getPreferredCameraLabelForCompany(c.id);
+    } else {
+      camLabel = localStorage.getItem('preferred_camera_label_' + c.id) || 'Padrão';
+    }
+
+    return `
+      <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
+        <div>
+          <div style="font-weight: 700; color: #1e3a8a; font-size: 0.9rem;">🏢 ${escapeHtml(c.name)}</div>
+          <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">📷 Câmera: <strong>${escapeHtml(camLabel)}</strong></div>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="ghost-btn" onclick="handleRenameCompany('${c.id}')" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: white; cursor: pointer;">Renomear</button>
+          <button type="button" class="ghost-btn" onclick="handleSelectCameraForSpecificCompany('${c.id}')" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; border: 1px solid #bfdbfe; background: #eff6ff; color: #1e40af; cursor: pointer;">Câmera</button>
+          ${companies.length > 1 ? `<button type="button" class="ghost-btn" onclick="handleDeleteCompany('${c.id}')" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; cursor: pointer;">Excluir</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function handleAddCompanySubmit(e) {
+  e.preventDefault();
+  const input = document.getElementById('newCompanyNameInput');
+  if (!input) return;
+  const name = input.value.trim();
+  if (!name) return;
+
+  const newId = 'empresa-' + Date.now();
+  companies.push({ id: newId, name, color: '#2563eb' });
+  saveCompanies();
+  input.value = '';
+  renderManageCompaniesList();
+  renderCompanyButtons();
+}
+window.handleAddCompanySubmit = handleAddCompanySubmit;
+
+function handleRenameCompany(id) {
+  const c = companies.find(comp => comp.id === id);
+  if (!c) return;
+  const newName = prompt('Novo nome para a empresa:', c.name);
+  if (newName && newName.trim()) {
+    c.name = newName.trim();
+    saveCompanies();
+    renderManageCompaniesList();
+    renderCompanyButtons();
+  }
+}
+window.handleRenameCompany = handleRenameCompany;
+
+function handleSelectCameraForSpecificCompany(id) {
+  if (window.AndroidInterface && typeof window.AndroidInterface.selectPreferredCameraForCompany === 'function') {
+    window.AndroidInterface.selectPreferredCameraForCompany(id);
+  } else {
+    const c = companies.find(comp => comp.id === id) || { name: 'esta empresa' };
+    const current = localStorage.getItem('preferred_camera_label_' + id) || '';
+    const newName = prompt(`Informe o nome ou app de câmera para ${c.name}:`, current);
+    if (newName !== null) {
+      localStorage.setItem('preferred_camera_label_' + id, newName.trim() || 'Padrão do Sistema');
+      renderManageCompaniesList();
+      updateCompanyCameraUI();
+    }
+  }
+}
+window.handleSelectCameraForSpecificCompany = handleSelectCameraForSpecificCompany;
+
+function handleDeleteCompany(id) {
+  if (companies.length <= 1) {
+    alert('O sistema precisa ter pelo menos uma empresa cadastrada.');
+    return;
+  }
+  const c = companies.find(comp => comp.id === id);
+  if (confirm(`Deseja realmente remover a empresa "${c ? c.name : id}"?`)) {
+    companies = companies.filter(comp => comp.id !== id);
+    if (activeCompanyId === id) {
+      activeCompanyId = companies[0].id;
+      localStorage.setItem('active_company_id', activeCompanyId);
+    }
+    saveCompanies();
+    renderManageCompaniesList();
+    renderCompanyButtons();
+  }
+}
+window.handleDeleteCompany = handleDeleteCompany;
+
 if (systemSettingsBtn) {
   systemSettingsBtn.addEventListener('click', openSystemSettings);
 }
@@ -5907,7 +6111,15 @@ function openPhotoManagerForVehicle(id, vehicleName) {
     }
   }
 
-  if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
+  let targetCompanyId = activeCompanyId;
+  const targetItem = items.find(it => it.id === id || (it.plate && it.plate === vehicleName));
+  if (targetItem && targetItem.companyId) {
+    targetCompanyId = targetItem.companyId;
+  }
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCaptureForCompany === 'function') {
+    window.AndroidInterface.launchCameraCaptureForCompany(vehicleName, targetCompanyId);
+  } else if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
     window.AndroidInterface.launchCameraCapture(vehicleName);
   } else if (photoSystemCameraInput) {
     photoSystemCameraInput.click();
@@ -6056,7 +6268,14 @@ async function removePhotoFromDb(vehicleName, name) {
 
 if (capturePhotoButton) {
   capturePhotoButton.addEventListener('click', () => {
-    if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
+    let targetCompanyId = activeCompanyId;
+    const targetItem = items.find(it => it.id === activePhotoId || (it.plate && it.plate === activePhotoVehicleName));
+    if (targetItem && targetItem.companyId) {
+      targetCompanyId = targetItem.companyId;
+    }
+    if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCaptureForCompany === 'function') {
+      window.AndroidInterface.launchCameraCaptureForCompany(activePhotoVehicleName, targetCompanyId);
+    } else if (window.AndroidInterface && typeof window.AndroidInterface.launchCameraCapture === 'function') {
       window.AndroidInterface.launchCameraCapture(activePhotoVehicleName);
     } else if (photoSystemCameraInput) {
       photoSystemCameraInput.click();

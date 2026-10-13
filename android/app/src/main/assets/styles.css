@@ -2381,5 +2381,54 @@ html, body {
   color: #1e40af;
 }
 
+/* MULTI-EMPRESA & CÂMERA POR EMPRESA STYLES */
+.company-selection-box {
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.company-toggle-btn {
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 700;
+  font-size: 0.84rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.company-toggle-btn:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.company-toggle-btn.active {
+  background: #eff6ff !important;
+  border-color: #2563eb !important;
+  color: #1e40af !important;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
+
+.badge-empresa {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 1px 6px;
+  margin-left: 6px;
+}
+
 
 
