@@ -531,13 +531,6 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-function closeSystemSettings() {
-  const modal = document.getElementById('systemSettingsModal');
-  if (modal) {
-    modal.style.display = 'none';
-  }
-}
-
 function attachGlobalEventListeners() {
   // Logout (home)
   if (homeLogoutButton) {
