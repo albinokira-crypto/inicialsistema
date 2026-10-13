@@ -7450,19 +7450,6 @@ function vpGetPartEffectiveZoneId(rawName, defaultZoneId) {
   return defaultZoneId;
 }
 
-function vpIncrementPartUsage(name) {
-  if (!name) return;
-  const key = name.toLowerCase().trim();
-  vpUsageStats[key] = (vpUsageStats[key] || 0) + 1;
-}
-
-function vpGetPartUsageScore(name, rawName) {
-  const nLower = (name || '').toLowerCase().trim();
-  const rLower = (rawName || '').toLowerCase().trim();
-  let score = (vpUsageStats[nLower] || 0);
-  if (rLower && rLower !== nLower) {
-    score = Math.max(score, vpUsageStats[rLower] || 0);
-  }
 
   // Analisa ocorrências reais em vistorias salvas no sistema
   if (typeof items !== 'undefined' && Array.isArray(items)) {
