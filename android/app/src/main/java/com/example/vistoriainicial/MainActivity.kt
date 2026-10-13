@@ -1053,6 +1053,79 @@ class MainActivity : ComponentActivity() {
         startCameraAndRecordTime(preferredPkg)
     }
 
+    fun launchCameraCaptureForCompany(vehicleName: String, companyId: String) {
+        activeCameraVehicleName = vehicleName
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        prefs.edit().putString("active_camera_vehicle_name", vehicleName).apply()
+        val keyPkg = if (companyId.isNotEmpty()) "preferred_camera_package_" + companyId else "preferred_camera_package"
+        val preferredPkg = prefs.getString(keyPkg, null) ?: prefs.getString("preferred_camera_package", null)
+
+        if (preferredPkg == null) {
+            selectPreferredCameraForCompanyInternal(companyId) { selectedPkg ->
+                startCameraAndRecordTime(selectedPkg)
+            }
+        } else {
+            startCameraAndRecordTime(preferredPkg)
+        }
+    }
+
+    fun selectPreferredCameraForCompanyInternal(companyId: String, onSelected: ((String) -> Unit)? = null) {
+        val pm = packageManager
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        val launcherIntent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
+        }
+        val launcherActivities = pm.queryIntentActivities(launcherIntent, 0)
+        val cameraActivities = ArrayList<android.content.pm.ResolveInfo>()
+        val cameraKeywords = listOf("camera", "câmera", "camer", "foto", "photo", "gcam", "opencamera", "camara")
+        
+        for (info in launcherActivities) {
+            val pkgName = info.activityInfo.packageName.lowercase()
+            val label = info.loadLabel(pm).toString().lowercase()
+            if (pkgName == packageName.lowercase()) continue
+            val isCameraApp = cameraKeywords.any { pkgName.contains(it) || label.contains(it) }
+            if (isCameraApp) {
+                cameraActivities.add(info)
+            }
+        }
+
+        if (cameraActivities.isNotEmpty()) {
+            val names = ArrayList<String>()
+            val packages = ArrayList<String>()
+            for (resolveInfo in cameraActivities) {
+                names.add(resolveInfo.loadLabel(pm).toString())
+                packages.add(resolveInfo.activityInfo.packageName)
+            }
+            
+            runOnUiThread {
+                android.app.AlertDialog.Builder(this)
+                    .setTitle("Selecione a Câmera desta Empresa")
+                    .setItems(names.toTypedArray()) { dialog, which ->
+                        val selectedPkg = packages[which]
+                        val selectedLabel = names[which]
+                        val keyPkg = if (companyId.isNotEmpty()) "preferred_camera_package_" + companyId else "preferred_camera_package"
+                        val keyLabel = if (companyId.isNotEmpty()) "preferred_camera_label_" + companyId else "preferred_camera_label"
+                        prefs.edit()
+                            .putString(keyPkg, selectedPkg)
+                            .putString(keyLabel, selectedLabel)
+                            .putString("preferred_camera_package", selectedPkg)
+                            .putString("preferred_camera_label", selectedLabel)
+                            .commit()
+                        dialog.dismiss()
+                        Toast.makeText(this, "Câmera salva: $selectedLabel", Toast.LENGTH_SHORT).show()
+                        webView.evaluateJavascript("if (typeof updateCompanyCameraUI === 'function') updateCompanyCameraUI();", null)
+                        onSelected?.invoke(selectedPkg)
+                    }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            }
+        } else {
+            runOnUiThread {
+                Toast.makeText(this, "Nenhum aplicativo de câmera encontrado.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun startCameraAndRecordTime(preferredPkg: String?) {
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
         val startTime = System.currentTimeMillis()
@@ -2501,6 +2574,42 @@ class AndroidInterface(private val activity: ComponentActivity) {
         } catch (e: Exception) {
             "Câmera Preferida"
         }
+    }
+
+    @JavascriptInterface
+    fun launchCameraCaptureForCompany(vehicleName: String, companyId: String) {
+        val mainAct = activity as MainActivity
+        mainAct.runOnUiThread {
+            mainAct.launchCameraCaptureForCompany(vehicleName, companyId)
+        }
+    }
+
+    @JavascriptInterface
+    fun selectPreferredCameraForCompany(companyId: String) {
+        val mainAct = activity as MainActivity
+        mainAct.runOnUiThread {
+            mainAct.selectPreferredCameraForCompanyInternal(companyId, null)
+        }
+    }
+
+    @JavascriptInterface
+    fun getPreferredCameraLabelForCompany(companyId: String): String {
+        val prefs = activity.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+        val keyLabel = if (companyId.isNotEmpty()) "preferred_camera_label_" + companyId else "preferred_camera_label"
+        val keyPkg = if (companyId.isNotEmpty()) "preferred_camera_package_" + companyId else "preferred_camera_package"
+        val savedLabel = prefs.getString(keyLabel, null)
+        val pkg = prefs.getString(keyPkg, null)
+        if (savedLabel != null && savedLabel.isNotEmpty()) return savedLabel
+        if (pkg != null) {
+            return try {
+                val pm = activity.packageManager
+                val appInfo = pm.getApplicationInfo(pkg, 0)
+                pm.getApplicationLabel(appInfo).toString()
+            } catch (e: Exception) {
+                "Câmera ($pkg)"
+            }
+        }
+        return getPreferredCameraLabel()
     }
 
     @JavascriptInterface

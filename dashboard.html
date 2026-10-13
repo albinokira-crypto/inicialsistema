@@ -145,6 +145,32 @@
           </div>
           <input id="dateInput" name="date" type="hidden" />
           <input id="dayInput" name="day" type="hidden" />
+
+          <!-- SELEÇÃO DE EMPRESA DA VISTORIA -->
+          <div id="companySelectionContainer" class="company-selection-box" style="grid-column: 1 / -1; margin-bottom: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 12px 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-weight: 800; font-size: 0.88rem; color: #1e3a8a; display: flex; align-items: center; gap: 6px;">
+                🏢 Empresa da Vistoria
+              </span>
+              <button id="manageCompaniesBtn" type="button" class="ghost-btn" onclick="openManageCompaniesModal()" style="font-size: 0.74rem; font-weight: 700; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 4px 8px; cursor: pointer;">
+                ⚙️ Gerenciar Empresas
+              </button>
+            </div>
+
+            <!-- Botões das Empresas -->
+            <div id="companyButtonsContainer" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+
+            <!-- Câmera vinculada à empresa ativa -->
+            <div id="companyCameraInfoRow" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #475569;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span>📷 Câmera desta empresa:</span>
+                <strong id="companyCameraLabelText" style="color: #0f172a;">Padrão do Sistema</strong>
+              </div>
+              <button id="selectCameraForCompanyBtn" type="button" class="ghost-btn" onclick="handleChangeCompanyCamera()" style="font-size: 0.75rem; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 8px; padding: 4px 10px; cursor: pointer;">
+                Trocar Câmera
+              </button>
+            </div>
+          </div>
           <label>
             Veículo (Modelo e Placa)
             <div style="display: flex; gap: 8px; align-items: stretch;">
@@ -1111,6 +1137,31 @@
 
         <div class="photo-modal-actions" style="margin-top: 14px;">
           <button class="cancel-btn" type="button" onclick="closeReportPreviewModal()" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; background: #f1f5f9; cursor: pointer;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL GERENCIAR EMPRESAS -->
+    <div id="manageCompaniesModal" class="photo-modal-overlay" style="display: none;">
+      <div class="photo-modal" style="max-width: 480px; width: 95%;">
+        <div class="photo-modal-header" style="margin-bottom: 16px;">
+          <h3 style="margin: 0; font-size: 1.15rem; color: #1e3a8a; display: flex; align-items: center; gap: 8px;">
+            🏢 Gerenciar Empresas
+          </h3>
+          <button type="button" class="photo-modal-close" onclick="closeManageCompaniesModal()">✕</button>
+        </div>
+        <p style="font-size: 0.82rem; color: #64748b; margin-top: 0; margin-bottom: 14px;">
+          Cadastre suas empresas e configure o app de câmera específico de cada uma.
+        </p>
+        <div id="companiesListContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; max-height: 250px; overflow-y: auto;"></div>
+        
+        <form id="addCompanyForm" onsubmit="handleAddCompanySubmit(event)" style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <input type="text" id="newCompanyNameInput" placeholder="Nome da nova empresa..." required style="flex: 1; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.85rem;" />
+          <button type="submit" class="primary-btn" style="padding: 10px 16px; font-weight: 700; font-size: 0.85rem; border-radius: 10px;">Adicionar</button>
+        </form>
+
+        <div class="photo-modal-actions">
+          <button type="button" class="cancel-btn" onclick="closeManageCompaniesModal()" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; background: #f1f5f9; cursor: pointer;">Fechar</button>
         </div>
       </div>
     </div>
