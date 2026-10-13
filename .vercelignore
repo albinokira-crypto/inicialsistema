@@ -15,5 +15,10 @@ job_log.txt
 jobs.json
 java/
 *.zip
+*.apk
+*.xlsx
+*.map
 *.bat
 *.ps1
+backup_pre_modelo3/
+valeiros/
