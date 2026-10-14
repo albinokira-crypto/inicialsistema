@@ -24,4 +24,5 @@ node_modules/
 !login.js
 !api/catalog.js
 backup_pre_modelo3/
-
+opencamera_sf/
+*.apk
