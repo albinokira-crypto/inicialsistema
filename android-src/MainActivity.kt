@@ -1099,6 +1099,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    data class AppChoiceItem(
+        val packageName: String,
+        val label: String,
+        val icon: android.graphics.drawable.Drawable?,
+        val isCamera: Boolean = true,
+        val isSecureFolder: Boolean = false
+    )
+
     fun selectPreferredCameraForCompanyInternal(companyId: String, onSelected: ((String) -> Unit)? = null) {
         val pm = packageManager
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
@@ -1106,36 +1114,108 @@ class MainActivity : ComponentActivity() {
             addCategory(Intent.CATEGORY_LAUNCHER)
         }
         val launcherActivities = pm.queryIntentActivities(launcherIntent, 0)
-        val cameraActivities = ArrayList<android.content.pm.ResolveInfo>()
-        val otherActivities = ArrayList<android.content.pm.ResolveInfo>()
         val cameraKeywords = listOf("camera", "câmera", "camer", "foto", "photo", "gcam", "opencamera", "camara", "cam")
         
+        val itemsMap = LinkedHashMap<String, AppChoiceItem>()
+
+        // 1. Adiciona opção prioritária dedicada para Open Camera (Pasta Segura / Knox / Atalho)
+        val openCamIcon = try {
+            pm.getApplicationIcon("net.sourceforge.opencamera")
+        } catch (e: Exception) {
+            ContextCompat.getDrawable(this, android.R.drawable.ic_menu_camera)
+        }
+        itemsMap["net.sourceforge.opencamera"] = AppChoiceItem(
+            packageName = "net.sourceforge.opencamera",
+            label = "Open Camera (Pasta Segura / Atalho)",
+            icon = openCamIcon,
+            isCamera = true,
+            isSecureFolder = true
+        )
+
+        // 2. Tenta detectar aplicativos em perfis de usuário adicionais (Pasta Segura / Work Profile)
+        try {
+            val launcherApps = getSystemService(android.content.Context.LAUNCHER_APPS_SERVICE) as? android.content.pm.LauncherApps
+            val userManager = getSystemService(android.content.Context.USER_SERVICE) as? android.os.UserManager
+            if (launcherApps != null && userManager != null) {
+                for (profile in userManager.userProfiles) {
+                    val isWorkProfile = (profile != android.os.Process.myUserHandle())
+                    try {
+                        val acts = launcherApps.getActivityList(null, profile)
+                        for (act in acts) {
+                            val pkg = act.applicationInfo.packageName
+                            if (pkg == packageName) continue
+                            val label = act.label.toString()
+                            val isCam = cameraKeywords.any { pkg.lowercase().contains(it) || label.lowercase().contains(it) } || pkg == "net.sourceforge.opencamera"
+                            if (isCam || isWorkProfile) {
+                                val icon = try {
+                                    act.getBadgedIcon(resources.displayMetrics.densityDpi)
+                                } catch (e: Exception) {
+                                    act.applicationInfo.loadIcon(pm)
+                                }
+                                val displayLabel = if (isWorkProfile) "$label (Pasta Segura)" else label
+                                itemsMap[pkg + (if (isWorkProfile) "_sec" else "")] = AppChoiceItem(
+                                    packageName = pkg,
+                                    label = displayLabel,
+                                    icon = icon,
+                                    isCamera = isCam,
+                                    isSecureFolder = isWorkProfile
+                                )
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // 3. Adiciona aplicativos da área iniciar do perfil principal
         for (info in launcherActivities) {
-            val pkgName = info.activityInfo.packageName.lowercase()
-            val label = info.loadLabel(pm).toString().lowercase()
-            if (pkgName == packageName.lowercase()) continue
-            val isCameraApp = cameraKeywords.any { pkgName.contains(it) || label.contains(it) }
-            if (isCameraApp) {
-                cameraActivities.add(info)
+            val pkg = info.activityInfo.packageName
+            if (pkg == packageName) continue
+            if (itemsMap.containsKey(pkg)) continue
+            val label = info.loadLabel(pm).toString()
+            val isCam = cameraKeywords.any { pkg.lowercase().contains(it) || label.lowercase().contains(it) }
+            itemsMap[pkg] = AppChoiceItem(
+                packageName = pkg,
+                label = label,
+                icon = try { info.loadIcon(pm) } catch (e: Exception) { null },
+                isCamera = isCam,
+                isSecureFolder = false
+            )
+        }
+
+        // Separa câmeras e demais apps
+        val cameraItems = ArrayList<AppChoiceItem>()
+        val otherItems = ArrayList<AppChoiceItem>()
+
+        for (item in itemsMap.values) {
+            if (item.isCamera || item.isSecureFolder) {
+                cameraItems.add(item)
             } else {
-                otherActivities.add(info)
+                otherItems.add(item)
             }
         }
 
-        cameraActivities.sortWith { a, b ->
-            a.loadLabel(pm).toString().compareTo(b.loadLabel(pm).toString(), ignoreCase = true)
+        // Open Camera da pasta segura sempre no topo, depois as demais câmeras ordenadas
+        cameraItems.sortWith { a, b ->
+            if (a.packageName == "net.sourceforge.opencamera") -1
+            else if (b.packageName == "net.sourceforge.opencamera") 1
+            else a.label.compareTo(b.label, ignoreCase = true)
         }
-        otherActivities.sortWith { a, b ->
-            a.loadLabel(pm).toString().compareTo(b.loadLabel(pm).toString(), ignoreCase = true)
+        otherItems.sortWith { a, b ->
+            a.label.compareTo(b.label, ignoreCase = true)
         }
 
-        val allSelectableApps = ArrayList<android.content.pm.ResolveInfo>()
-        allSelectableApps.addAll(cameraActivities)
-        allSelectableApps.addAll(otherActivities)
+        val allSelectableApps = ArrayList<AppChoiceItem>()
+        allSelectableApps.addAll(cameraItems)
+        allSelectableApps.addAll(otherItems)
 
         if (allSelectableApps.isNotEmpty()) {
             runOnUiThread {
-                val adapter = object : android.widget.ArrayAdapter<android.content.pm.ResolveInfo>(
+                val adapter = object : android.widget.ArrayAdapter<AppChoiceItem>(
                     this,
                     android.R.layout.select_dialog_item,
                     android.R.id.text1,
@@ -1143,20 +1223,19 @@ class MainActivity : ComponentActivity() {
                 ) {
                     override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
                         val view = super.getView(position, convertView, parent) as android.widget.TextView
-                        val info = getItem(position)
-                        if (info != null) {
-                            try {
-                                val icon = info.loadIcon(pm)
+                        val item = getItem(position)
+                        if (item != null) {
+                            val icon = item.icon
+                            if (icon != null) {
                                 val iconSize = (44 * resources.displayMetrics.density).toInt()
                                 icon.setBounds(0, 0, iconSize, iconSize)
                                 view.setCompoundDrawables(icon, null, null, null)
                                 view.compoundDrawablePadding = (16 * resources.displayMetrics.density).toInt()
-                            } catch (e: Exception) {
+                            } else {
                                 view.setCompoundDrawables(null, null, null, null)
                             }
-                            val isCamera = cameraActivities.contains(info)
-                            val label = info.loadLabel(pm).toString()
-                            view.text = if (isCamera) "$label  📷" else label
+                            val badge = if (item.isSecureFolder) " 📷 🔒" else if (item.isCamera) " 📷" else ""
+                            view.text = "${item.label}$badge"
                             view.gravity = android.view.Gravity.CENTER_VERTICAL
                             view.textSize = 15f
                             val padV = (10 * resources.displayMetrics.density).toInt()
@@ -1168,11 +1247,11 @@ class MainActivity : ComponentActivity() {
                 }
 
                 android.app.AlertDialog.Builder(this)
-                    .setTitle("Selecione o Aplicativo (Área Iniciar)")
+                    .setTitle("Selecione a Câmera / App da Empresa")
                     .setAdapter(adapter) { dialog, which ->
-                        val selectedInfo = allSelectableApps[which]
-                        val selectedPkg = selectedInfo.activityInfo.packageName
-                        val selectedLabel = selectedInfo.loadLabel(pm).toString()
+                        val selectedItem = allSelectableApps[which]
+                        val selectedPkg = selectedItem.packageName
+                        val selectedLabel = selectedItem.label
                         val keyPkg = if (companyId.isNotEmpty()) "preferred_camera_package_" + companyId else "preferred_camera_package"
                         val keyLabel = if (companyId.isNotEmpty()) "preferred_camera_label_" + companyId else "preferred_camera_label"
                         prefs.edit()
@@ -1191,7 +1270,7 @@ class MainActivity : ComponentActivity() {
             }
         } else {
             runOnUiThread {
-                Toast.makeText(this, "Nenhum aplicativo encontrado na área iniciar.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Nenhum aplicativo encontrado.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -1214,19 +1293,89 @@ class MainActivity : ComponentActivity() {
     private fun launchStandaloneCamera(preferredPkg: String?, isVideo: Boolean) {
         val pm = packageManager
         try {
+            // Se for o Open Camera (ou app de Pasta Segura)
+            if (preferredPkg == "net.sourceforge.opencamera") {
+                // 1. Tenta iniciar através de LauncherApps (suporta perfis de usuário adicionais/Pasta Segura)
+                try {
+                    val launcherApps = getSystemService(android.content.Context.LAUNCHER_APPS_SERVICE) as? android.content.pm.LauncherApps
+                    val userManager = getSystemService(android.content.Context.USER_SERVICE) as? android.os.UserManager
+                    if (launcherApps != null && userManager != null) {
+                        for (profile in userManager.userProfiles) {
+                            try {
+                                val acts = launcherApps.getActivityList("net.sourceforge.opencamera", profile)
+                                if (acts.isNotEmpty()) {
+                                    launcherApps.startMainActivity(acts[0].componentName, profile, null, null)
+                                    return
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                // 2. Tenta Intent explícito para a Activity do Open Camera
+                try {
+                    val explicitIntent = Intent().apply {
+                        setComponent(android.content.ComponentName("net.sourceforge.opencamera", "net.sourceforge.opencamera.MainActivity"))
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(explicitIntent)
+                    return
+                } catch (e: Exception) {
+                    // segue para fallback
+                }
+
+                // 3. Tenta Launch Intent padrão caso esteja no mesmo perfil
+                val launchIntent = pm.getLaunchIntentForPackage("net.sourceforge.opencamera")
+                if (launchIntent != null) {
+                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(launchIntent)
+                    return
+                }
+
+                // 4. Tenta Intent de captura de imagem direcionado ao pacote
+                try {
+                    val captureIntent = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                        setPackage("net.sourceforge.opencamera")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(captureIntent)
+                    return
+                } catch (e: Exception) {
+                    // segue para chooser
+                }
+
+                // 5. Fallback especial para Pasta Segura do Samsung:
+                // Abre o Seletor do Sistema que exibe os ícones com cadeado da Pasta Segura
+                try {
+                    val stillIntent = Intent(android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    val chooser = Intent.createChooser(stillIntent, "Selecione o Open Camera (Pasta Segura 🔒)").apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(chooser)
+                    return
+                } catch (e: Exception) {
+                    // segue para o fluxo geral
+                }
+            }
+
             var intent: Intent? = null
-            
             if (preferredPkg != null) {
                 intent = pm.getLaunchIntentForPackage(preferredPkg)
             }
             
-        if (intent == null) {
-            intent = Intent(android.provider.MediaStore.INTENT_ACTION_VIDEO_CAMERA)
-            val resolved = pm.queryIntentActivities(intent, 0)
-            if (resolved.isEmpty()) {
-                intent = Intent(android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
+            if (intent == null) {
+                intent = Intent(if (isVideo) android.provider.MediaStore.INTENT_ACTION_VIDEO_CAMERA else android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
+                val resolved = pm.queryIntentActivities(intent, 0)
+                if (resolved.isEmpty()) {
+                    intent = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+                }
             }
-        }
             
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
