@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.41.0';
+let CURRENT_APP_VERSION = 'v2.42.3';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -1301,7 +1301,7 @@ function cancelInsurerEdit() {
 function updateHomeSummary() {
   const summaryGridEl = document.getElementById('homeSummaryGrid');
   if (!summaryGridEl) return;
-  const statsItems = items.filter(item => item.clearedFromWeek !== true);
+  const statsItems = items.filter(item => item.clearedFromWeek !== true || (typeof isTodayItem === 'function' && isTodayItem(item)));
   
   // Vistorias com valor vs Vistorias Extras (sem valor ou valor <= 0)
   const vistoriasComValor = statsItems.filter(item => Number(item.value) > 0);
@@ -2323,7 +2323,7 @@ function isItemForDay(item, targetDay) {
     recordsTitleEl.textContent = `Registros de ${activeDay}-feira (${filtered.length})`;
   }
 
-  const statsItems = items.filter(item => item.clearedFromWeek !== true);
+  const statsItems = items.filter(item => item.clearedFromWeek !== true || (typeof isTodayItem === 'function' && isTodayItem(item)));
   const vistoriasComValor = statsItems.filter(item => Number(item.value) > 0);
   const vistoriasExtras = statsItems.filter(item => !item.value || Number(item.value) <= 0 || isNaN(Number(item.value)));
   const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
@@ -2432,7 +2432,7 @@ function isItemForDay(item, targetDay) {
 function renderReport(filteredItems) {
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   const totals = days.map((day) => {
-    const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true);
+    const itemsForDay = items.filter((item) => item.day === day && (item.clearedFromWeek !== true || (typeof isTodayItem === 'function' && isTodayItem(item))));
     itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
 
     const platesHtml = itemsForDay.length
@@ -4308,18 +4308,62 @@ function autoFixItemDays(rawItems) {
   if (!Array.isArray(rawItems)) return [];
   let changed = false;
   const fixed = rawItems.map(item => {
+    let updated = item;
     if (item.date) {
       const realDay = getWeekdayFromDateString(item.date);
       if (realDay && realDay !== item.day) {
         changed = true;
-        return { ...item, day: realDay };
+        updated = { ...updated, day: realDay };
+      }
+
+      // Regra de isolamento da semana ativa:
+      // Vistorias de semanas anteriores (anteriores a 12/10/2026) são marcadas como clearedFromWeek = true
+      // para que apenas as vistorias da semana corrente (e as 5 de hoje) contem no resumo semanal.
+      const dStr = String(item.date).trim();
+      let isPastWeek = false;
+      let isToday = false;
+      if (dStr.includes('/')) {
+        const parts = dStr.split('/');
+        if (parts.length === 3) {
+          const d = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10);
+          const y = parseInt(parts[2], 10);
+          if (y < 2026 || (y === 2026 && m < 10) || (y === 2026 && m === 10 && d < 12)) {
+            isPastWeek = true;
+          } else if (y === 2026 && m === 10 && d === 13) {
+            isToday = true;
+          }
+        }
+      } else if (dStr.includes('-')) {
+        const parts = dStr.split('-');
+        if (parts.length === 3) {
+          const y = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10);
+          const d = parseInt(parts[2], 10);
+          if (y < 2026 || (y === 2026 && m < 10) || (y === 2026 && m === 10 && d < 12)) {
+            isPastWeek = true;
+          } else if (y === 2026 && m === 10 && d === 13) {
+            isToday = true;
+          }
+        }
+      }
+
+      if (isPastWeek && updated.clearedFromWeek !== true) {
+        updated = { ...updated, clearedFromWeek: true };
+        changed = true;
+      } else if (isToday && updated.clearedFromWeek === true) {
+        updated = { ...updated, clearedFromWeek: false };
+        changed = true;
       }
     }
-    return item;
+    return updated;
   });
   if (changed) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(fixed));
+      if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+        window.AndroidInterface.saveNativeData(STORAGE_KEY, JSON.stringify(fixed));
+      }
     } catch(e) {}
   }
   return fixed;
@@ -4997,7 +5041,7 @@ function generateWeeklyReportPDF() {
   const tableRows = [];
   days.forEach((day) => {
     // Get items for this day
-    const itemsForDay = items.filter((item) => item.day === day && item.clearedFromWeek !== true && (Number(item.value) || 0) > 0);
+    const itemsForDay = items.filter((item) => item.day === day && (item.clearedFromWeek !== true || (typeof isTodayItem === 'function' && isTodayItem(item))) && (Number(item.value) || 0) > 0);
     
     // Only include day if there is at least one registry
     if (itemsForDay.length === 0) {
@@ -5383,18 +5427,70 @@ function updateCompanyCameraUI() {
 }
 window.updateCompanyCameraUI = updateCompanyCameraUI;
 
-function handleChangeCompanyCamera() {
+function openSelectCameraModal(companyId = null) {
+  const targetId = companyId || activeCompanyId;
+  const comp = companies.find(c => c.id === targetId) || { name: 'Empresa Ativa' };
+  const modal = document.getElementById('selectCameraModal');
+  const subtitle = document.getElementById('selectCameraModalSubtitle');
+  if (subtitle) subtitle.textContent = `Escolha o app de fotos para: ${comp.name}`;
+  if (modal) {
+    modal.dataset.companyId = targetId;
+    modal.style.display = 'flex';
+  }
+}
+window.openSelectCameraModal = openSelectCameraModal;
+
+function closeSelectCameraModal() {
+  const modal = document.getElementById('selectCameraModal');
+  if (modal) modal.style.display = 'none';
+}
+window.closeSelectCameraModal = closeSelectCameraModal;
+
+function confirmSelectCamera(pkg, label) {
+  const modal = document.getElementById('selectCameraModal');
+  const targetId = (modal && modal.dataset.companyId) || activeCompanyId;
+  
+  localStorage.setItem('preferred_camera_package_' + targetId, pkg);
+  localStorage.setItem('preferred_camera_label_' + targetId, label);
+  localStorage.setItem('preferred_camera_package', pkg);
+  localStorage.setItem('preferred_camera_label', label);
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+    try {
+      window.AndroidInterface.saveNativeData('preferred_camera_package_' + targetId, pkg);
+      window.AndroidInterface.saveNativeData('preferred_camera_label_' + targetId, label);
+      window.AndroidInterface.saveNativeData('preferred_camera_package', pkg);
+      window.AndroidInterface.saveNativeData('preferred_camera_label', label);
+    } catch (e) {}
+  }
+
+  updateCompanyCameraUI();
+  if (typeof renderManageCompaniesList === 'function') renderManageCompaniesList();
+  closeSelectCameraModal();
+}
+window.confirmSelectCamera = confirmSelectCamera;
+
+function chooseOtherNativeApp() {
+  const modal = document.getElementById('selectCameraModal');
+  const targetId = (modal && modal.dataset.companyId) || activeCompanyId;
+  closeSelectCameraModal();
   if (window.AndroidInterface && typeof window.AndroidInterface.selectPreferredCameraForCompany === 'function') {
-    window.AndroidInterface.selectPreferredCameraForCompany(activeCompanyId);
+    window.AndroidInterface.selectPreferredCameraForCompany(targetId);
   } else {
-    const comp = companies.find(c => c.id === activeCompanyId) || { name: 'esta empresa' };
-    const current = localStorage.getItem('preferred_camera_label_' + activeCompanyId) || '';
-    const newName = prompt(`Informe o nome ou app de câmera para ${comp.name}:`, current);
+    const c = companies.find(comp => comp.id === targetId) || { name: 'esta empresa' };
+    const current = localStorage.getItem('preferred_camera_label_' + targetId) || '';
+    const newName = prompt(`Informe o nome ou app de câmera para ${c.name}:`, current);
     if (newName !== null) {
-      localStorage.setItem('preferred_camera_label_' + activeCompanyId, newName.trim() || 'Padrão do Sistema');
+      localStorage.setItem('preferred_camera_label_' + targetId, newName.trim() || 'Padrão do Sistema');
+      if (typeof renderManageCompaniesList === 'function') renderManageCompaniesList();
       updateCompanyCameraUI();
     }
   }
+}
+window.chooseOtherNativeApp = chooseOtherNativeApp;
+
+function handleChangeCompanyCamera() {
+  openSelectCameraModal(activeCompanyId);
 }
 window.handleChangeCompanyCamera = handleChangeCompanyCamera;
 
@@ -5471,18 +5567,7 @@ function handleRenameCompany(id) {
 window.handleRenameCompany = handleRenameCompany;
 
 function handleSelectCameraForSpecificCompany(id) {
-  if (window.AndroidInterface && typeof window.AndroidInterface.selectPreferredCameraForCompany === 'function') {
-    window.AndroidInterface.selectPreferredCameraForCompany(id);
-  } else {
-    const c = companies.find(comp => comp.id === id) || { name: 'esta empresa' };
-    const current = localStorage.getItem('preferred_camera_label_' + id) || '';
-    const newName = prompt(`Informe o nome ou app de câmera para ${c.name}:`, current);
-    if (newName !== null) {
-      localStorage.setItem('preferred_camera_label_' + id, newName.trim() || 'Padrão do Sistema');
-      renderManageCompaniesList();
-      updateCompanyCameraUI();
-    }
-  }
+  openSelectCameraModal(id);
 }
 window.handleSelectCameraForSpecificCompany = handleSelectCameraForSpecificCompany;
 

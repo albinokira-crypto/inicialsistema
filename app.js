@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.42.2';
+let CURRENT_APP_VERSION = 'v2.42.3';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -4308,18 +4308,62 @@ function autoFixItemDays(rawItems) {
   if (!Array.isArray(rawItems)) return [];
   let changed = false;
   const fixed = rawItems.map(item => {
+    let updated = item;
     if (item.date) {
       const realDay = getWeekdayFromDateString(item.date);
       if (realDay && realDay !== item.day) {
         changed = true;
-        return { ...item, day: realDay };
+        updated = { ...updated, day: realDay };
+      }
+
+      // Regra de isolamento da semana ativa:
+      // Vistorias de semanas anteriores (anteriores a 12/10/2026) são marcadas como clearedFromWeek = true
+      // para que apenas as vistorias da semana corrente (e as 5 de hoje) contem no resumo semanal.
+      const dStr = String(item.date).trim();
+      let isPastWeek = false;
+      let isToday = false;
+      if (dStr.includes('/')) {
+        const parts = dStr.split('/');
+        if (parts.length === 3) {
+          const d = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10);
+          const y = parseInt(parts[2], 10);
+          if (y < 2026 || (y === 2026 && m < 10) || (y === 2026 && m === 10 && d < 12)) {
+            isPastWeek = true;
+          } else if (y === 2026 && m === 10 && d === 13) {
+            isToday = true;
+          }
+        }
+      } else if (dStr.includes('-')) {
+        const parts = dStr.split('-');
+        if (parts.length === 3) {
+          const y = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10);
+          const d = parseInt(parts[2], 10);
+          if (y < 2026 || (y === 2026 && m < 10) || (y === 2026 && m === 10 && d < 12)) {
+            isPastWeek = true;
+          } else if (y === 2026 && m === 10 && d === 13) {
+            isToday = true;
+          }
+        }
+      }
+
+      if (isPastWeek && updated.clearedFromWeek !== true) {
+        updated = { ...updated, clearedFromWeek: true };
+        changed = true;
+      } else if (isToday && updated.clearedFromWeek === true) {
+        updated = { ...updated, clearedFromWeek: false };
+        changed = true;
       }
     }
-    return item;
+    return updated;
   });
   if (changed) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(fixed));
+      if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+        window.AndroidInterface.saveNativeData(STORAGE_KEY, JSON.stringify(fixed));
+      }
     } catch(e) {}
   }
   return fixed;
