@@ -17,7 +17,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <link rel="stylesheet" href="styles.css?v=2420" />
+    <link rel="stylesheet" href="styles.css?v=2424" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -65,6 +65,8 @@
       <!-- CARD DE RESUMO NA HOME -->
       <section class="card" id="homeSummaryCard" style="margin-top: 14px; padding: 16px; text-align: center;">
         <h2 style="margin-bottom: 12px; color: #1e40af; font-size: 1.05rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">Resumo da Semana</h2>
+        <!-- SELETOR SEPARADO DE EMPRESAS NO RESUMO DA SEMANA -->
+        <div id="homeSummaryCompanyTabs" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px;"></div>
         <div class="summary-grid" id="homeSummaryGrid"></div>
       </section>
 
@@ -78,15 +80,8 @@
 
         <section class="summary-grid" id="summaryGrid" style="display: none;"></section>
 
-        <section class="card tabs-card" id="weekdayTabsCard" style="display: none; padding: 10px 14px; margin-bottom: 12px; border-radius: 14px;">
-          <div id="dayTabs" class="tabs" style="display: flex; gap: 8px; justify-content: space-between; overflow-x: auto; width: 100%;">
-            <button class="tab-btn" type="button" data-day="Segunda" style="flex: 1; text-align: center; padding: 10px 6px; font-weight: 700; font-size: 0.85rem;">Segunda</button>
-            <button class="tab-btn" type="button" data-day="Terça" style="flex: 1; text-align: center; padding: 10px 6px; font-weight: 700; font-size: 0.85rem;">Terça</button>
-            <button class="tab-btn" type="button" data-day="Quarta" style="flex: 1; text-align: center; padding: 10px 6px; font-weight: 700; font-size: 0.85rem;">Quarta</button>
-            <button class="tab-btn" type="button" data-day="Quinta" style="flex: 1; text-align: center; padding: 10px 6px; font-weight: 700; font-size: 0.85rem;">Quinta</button>
-            <button class="tab-btn" type="button" data-day="Sexta" style="flex: 1; text-align: center; padding: 10px 6px; font-weight: 700; font-size: 0.85rem;">Sexta</button>
-          </div>
-        </section>
+        <!-- Elemento invisível mantido para compatibilidade de listeners JS, sem renderizar cards visuais -->
+        <div id="dayTabs" style="display: none;"></div>
 
         <section class="card tabs-card" id="vistoriaTypeTabsCard" style="margin-top: 10px;">
           <div id="vistoriaTypeTabs" class="vistoria-type-tabs">
@@ -146,29 +141,15 @@
           <input id="dateInput" name="date" type="hidden" />
           <input id="dayInput" name="day" type="hidden" />
 
-          <!-- SELEÇÃO DE EMPRESA DA VISTORIA -->
-          <div id="companySelectionContainer" class="company-selection-box" style="grid-column: 1 / -1; margin-bottom: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 12px 14px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span style="font-weight: 800; font-size: 0.88rem; color: #1e3a8a; display: flex; align-items: center; gap: 6px;">
-                🏢 Empresa da Vistoria
-              </span>
-              <button id="manageCompaniesBtn" type="button" class="ghost-btn" onclick="openManageCompaniesModal()" style="font-size: 0.74rem; font-weight: 700; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 4px 8px; cursor: pointer;">
-                ⚙️ Gerenciar Empresas
-              </button>
-            </div>
-
-            <!-- Botões das Empresas -->
+          <!-- SELEÇÃO DE EMPRESA DA VISTORIA (Apenas os botões das empresas cadastradas) -->
+          <div id="companySelectionContainer" class="company-selection-box" style="grid-column: 1 / -1; margin-bottom: 12px; background: transparent; border: none; padding: 0;">
+            <!-- Botões das Empresas Cadastradas -->
             <div id="companyButtonsContainer" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
 
-            <!-- Câmera vinculada à empresa ativa -->
-            <div id="companyCameraInfoRow" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #475569;">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span>📷 Câmera desta empresa:</span>
-                <strong id="companyCameraLabelText" style="color: #0f172a;">Padrão do Sistema</strong>
-              </div>
-              <button id="selectCameraForCompanyBtn" type="button" class="ghost-btn" onclick="handleChangeCompanyCamera()" style="font-size: 0.75rem; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 8px; padding: 4px 10px; cursor: pointer;">
-                Trocar Câmera
-              </button>
+            <!-- Elementos invisíveis mantidos para compatibilidade de listeners JS -->
+            <div id="companyCameraInfoRow" style="display: none !important;">
+              <span id="companyCameraLabelText"></span>
+              <button id="selectCameraForCompanyBtn" type="button" style="display: none;"></button>
             </div>
           </div>
           <label>
@@ -277,10 +258,12 @@
       </section>
 
       <section class="card" id="reportCard">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;justify-content:space-between; flex-wrap: wrap; gap: 8px;">
           <h2>Relatório semanal</h2>
           <button id="sharePdfButton" class="primary-btn" type="button">Compartilhar Relatório (PDF)</button>
         </div>
+        <!-- SELETOR DE EMPRESAS NO RELATÓRIO SEMANAL -->
+        <div id="reportCompanyTabs" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; margin-bottom: 14px;"></div>
         <table class="report-table">
           <thead>
             <tr>
@@ -477,6 +460,20 @@
             ✏️ Editar Partes do Veículo
           </button>
         </div>
+
+        <!-- GERENCIAMENTO DE EMPRESAS NO MENU DE CONFIGURAÇÕES -->
+        <div style="background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 14px; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.35rem;">🏢</span>
+            <div>
+              <div style="font-size: 0.88rem; font-weight: 800; color: #1e40af;">Empresas Cadastradas</div>
+              <div style="font-size: 0.72rem; color: #4b5563;">Cadastre, edite empresas e gerencie as câmeras</div>
+            </div>
+          </div>
+          <button id="btnManageCompaniesFromSettings" type="button" onclick="openManageCompaniesModalFromSettings()" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 14px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 0.90rem; cursor: pointer; box-shadow: 0 2px 5px rgba(37,99,235,0.3); transition: all 0.2s;">
+            ⚙️ Gerenciar Empresas
+          </button>
+        </div>
         
         <!-- SELEÇÃO DE PASTA (INVISÍVEL) -->
         <div id="folderSettingsSection" style="display: none !important; flex-direction: column; gap: 12px; margin-top: 16px;">
@@ -507,7 +504,7 @@
               <span style="font-size: 1.4rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.42.3</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.42.4</div>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -523,7 +520,7 @@
             <div style="display: flex; align-items: center; gap: 6px; color: #475569;">
               <span>🌐</span>
               <span>Servidor (version.json):</span>
-              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v2.42.3</strong>
+              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v2.42.4</strong>
             </div>
             <button type="button" onclick="checkForSystemUpdates(true)" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-weight: 700; font-size: 0.72rem; padding: 3px 8px; border-radius: 5px; cursor: pointer;">
               🔍 Checar
@@ -534,8 +531,8 @@
             🔄 Forçar Atualização (Recarregar App)
           </button>
 
-          <a href="https://github.com/albinokira-crypto/inicialsistema/releases/download/v2.42.3/VistoriaInicial.apk" target="_blank" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #059669; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(5,150,105,0.25);">
-            📥 Baixar APK Atualizado (v2.42.3)
+          <a href="https://github.com/albinokira-crypto/inicialsistema/releases/download/v2.42.4/VistoriaInicial.apk" target="_blank" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #059669; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(5,150,105,0.25);">
+            📥 Baixar APK Atualizado (v2.42.4)
           </a>
 
           <a href="https://github.com/albinokira-crypto/inicialsistema/releases/download/v2.42.3/OpenCamera2.apk" target="_blank" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(124,58,237,0.25);">
@@ -1249,6 +1246,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=2423"></script>
+    <script src="app.js?v=2424"></script>
   </body>
 </html>

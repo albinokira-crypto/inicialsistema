@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.42.3';
+let CURRENT_APP_VERSION = 'v2.42.4';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -336,13 +336,27 @@ let supervisoes = loadSupervisoes();
 let stages = loadStages();
 const COMPANIES_STORAGE_KEY = 'web-system-companies-v1';
 const DEFAULT_COMPANIES = [
-  { id: 'empresa-1', name: 'Empresa Principal', color: '#2563eb' },
+  { id: 'empresa-1', name: 'RL', color: '#2563eb' },
   { id: 'empresa-2', name: 'Segunda Empresa', color: '#7c3aed' }
 ];
 
 function loadCompanies() {
   const parsed = getSafeStorage(COMPANIES_STORAGE_KEY, DEFAULT_COMPANIES);
-  return Array.isArray(parsed) && parsed.length ? parsed : DEFAULT_COMPANIES;
+  let list = Array.isArray(parsed) && parsed.length ? parsed : DEFAULT_COMPANIES;
+  let changed = false;
+  list = list.map(c => {
+    if (c.id === 'empresa-1' && (c.name === 'Empresa Principal' || !c.name)) {
+      changed = true;
+      return { ...c, name: 'RL' };
+    }
+    return c;
+  });
+  if (changed) {
+    try {
+      setSafeStorage(COMPANIES_STORAGE_KEY, list);
+    } catch (e) {}
+  }
+  return list;
 }
 
 function saveCompanies() {
@@ -1298,20 +1312,95 @@ function cancelInsurerEdit() {
   cancelInsurerEditButton.hidden = true;
 }
 
+let selectedHomeSummaryCompanyId = 'Todas';
+
+function selectHomeSummaryCompany(compKey) {
+  selectedHomeSummaryCompanyId = compKey;
+  updateHomeSummary();
+}
+window.selectHomeSummaryCompany = selectHomeSummaryCompany;
+
 function updateHomeSummary() {
   const summaryGridEl = document.getElementById('homeSummaryGrid');
+  const tabsContainerEl = document.getElementById('homeSummaryCompanyTabs');
   if (!summaryGridEl) return;
-  const statsItems = items.filter(item => item.clearedFromWeek !== true || (typeof isTodayItem === 'function' && isTodayItem(item)));
-  
+
+  const allStatsItems = items.filter(item => item.clearedFromWeek !== true || (typeof isTodayItem === 'function' && isTodayItem(item)));
+
+  // Render company filter pills inside homeSummaryCompanyTabs
+  if (tabsContainerEl) {
+    const totalAll = allStatsItems.length;
+    let tabsHtml = `
+      <button type="button" onclick="selectHomeSummaryCompany('Todas')" style="padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 0.80rem; cursor: pointer; border: 1.5px solid ${selectedHomeSummaryCompanyId === 'Todas' ? '#2563eb' : '#cbd5e1'}; background: ${selectedHomeSummaryCompanyId === 'Todas' ? '#2563eb' : '#ffffff'}; color: ${selectedHomeSummaryCompanyId === 'Todas' ? '#ffffff' : '#334155'}; transition: all 0.2s;">
+        🏢 Todas (${totalAll})
+      </button>
+    `;
+
+    companies.forEach(c => {
+      const cItems = allStatsItems.filter(i => (i.companyId || 'empresa-1') === c.id);
+      const isAct = selectedHomeSummaryCompanyId === c.id;
+      const cColor = c.color || '#2563eb';
+      tabsHtml += `
+        <button type="button" onclick="selectHomeSummaryCompany('${c.id}')" style="padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 0.80rem; cursor: pointer; border: 1.5px solid ${isAct ? cColor : '#cbd5e1'}; background: ${isAct ? cColor : '#ffffff'}; color: ${isAct ? '#ffffff' : '#334155'}; transition: all 0.2s;">
+          🏢 ${escapeHtml(c.name)} (${cItems.length})
+        </button>
+      `;
+    });
+    tabsContainerEl.innerHTML = tabsHtml;
+  }
+
+  // Filter items for the selected company or all
+  const statsItems = (selectedHomeSummaryCompanyId === 'Todas')
+    ? allStatsItems
+    : allStatsItems.filter(item => (item.companyId || 'empresa-1') === selectedHomeSummaryCompanyId);
+
   // Vistorias com valor vs Vistorias Extras (sem valor ou valor <= 0)
   const vistoriasComValor = statsItems.filter(item => Number(item.value) > 0);
   const vistoriasExtras = statsItems.filter(item => !item.value || Number(item.value) <= 0 || isNaN(Number(item.value)));
-  
+
   const countComValor = vistoriasComValor.length;
   const countExtras = vistoriasExtras.length;
   const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
   const uniqueDays = new Set(statsItems.map((item) => item.day)).size;
   const lastRecord = statsItems.length ? (statsItems[0].date ? formatDateString(statsItems[0].date) : (statsItems[0].createdAt || '—')) : '—';
+
+  // Per-company breakdown cards displayed below the summary grid
+  let perCompanyCardsHtml = '';
+  if (companies.length > 0) {
+    perCompanyCardsHtml = `
+      <div style="grid-column: 1 / -1; margin-top: 14px; text-align: left; width: 100%;">
+        <div style="font-size: 0.82rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+          Separado por Empresa Cadastrada:
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; width: 100%;">
+          ${companies.map(c => {
+            const cItems = allStatsItems.filter(i => (i.companyId || 'empresa-1') === c.id);
+            const cComValor = cItems.filter(i => Number(i.value) > 0).length;
+            const cExtras = cItems.filter(i => !i.value || Number(i.value) <= 0 || isNaN(Number(i.value))).length;
+            const cTotal = cItems.reduce((sum, i) => sum + (Number(i.value) || 0), 0);
+            const isSelected = selectedHomeSummaryCompanyId === c.id;
+            const cColor = c.color || '#2563eb';
+            return `
+              <div onclick="selectHomeSummaryCompany('${c.id}')" style="background: ${isSelected ? '#eff6ff' : '#ffffff'}; border: 1.5px solid ${isSelected ? '#3b82f6' : '#cbd5e1'}; border-radius: 12px; padding: 11px 13px; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <strong style="color: ${cColor}; font-size: 0.95rem;">🏢 ${escapeHtml(c.name)}</strong>
+                  <span style="font-size: 0.72rem; font-weight: 800; background: ${cColor}18; color: ${cColor}; padding: 2px 7px; border-radius: 999px;">
+                    ${cItems.length} vistorias
+                  </span>
+                </div>
+                <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 4px;">
+                  Com valor: <strong>${cComValor}</strong> | Extras: <strong>${cExtras}</strong>
+                </div>
+                <div style="font-size: 0.92rem; font-weight: 800; color: #059669;">
+                  R$ ${cTotal.toFixed(2).replace('.', ',')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
 
   summaryGridEl.innerHTML = `
     <!-- LINHA 1 (3 CARDS) -->
@@ -1340,6 +1429,8 @@ function updateHomeSummary() {
       <strong style="font-size: 0.95rem; color: #6b21a8; display: block; word-break: break-word; font-weight: 800;">${lastRecord}</strong>
       <span style="font-size: 0.72rem; color: #9333ea; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">Último Registro</span>
     </article>
+
+    ${perCompanyCardsHtml}
   `;
 }
 
@@ -2429,14 +2520,52 @@ function isItemForDay(item, targetDay) {
   renderReport(filtered);
 }
 
+let selectedReportCompanyId = 'Todas';
+
+function selectReportCompany(companyId) {
+  selectedReportCompanyId = companyId;
+  renderReport();
+}
+window.selectReportCompany = selectReportCompany;
+
 function renderReport(filteredItems) {
+  const reportCompanyTabsEl = document.getElementById('reportCompanyTabs');
+  if (reportCompanyTabsEl) {
+    const allWeekItems = items.filter((item) => (item.clearedFromWeek !== true || (typeof isTodayItem === 'function' && isTodayItem(item))));
+    let tabsHtml = `
+      <button type="button" onclick="selectReportCompany('Todas')" style="padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 0.80rem; cursor: pointer; border: 1.5px solid ${selectedReportCompanyId === 'Todas' ? '#2563eb' : '#cbd5e1'}; background: ${selectedReportCompanyId === 'Todas' ? '#2563eb' : '#ffffff'}; color: ${selectedReportCompanyId === 'Todas' ? '#ffffff' : '#334155'}; transition: all 0.2s;">
+        🏢 Todas (${allWeekItems.length})
+      </button>
+    `;
+
+    companies.forEach(c => {
+      const cItems = allWeekItems.filter(i => (i.companyId || 'empresa-1') === c.id);
+      const isAct = selectedReportCompanyId === c.id;
+      const cColor = c.color || '#2563eb';
+      tabsHtml += `
+        <button type="button" onclick="selectReportCompany('${c.id}')" style="padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 0.80rem; cursor: pointer; border: 1.5px solid ${isAct ? cColor : '#cbd5e1'}; background: ${isAct ? cColor : '#ffffff'}; color: ${isAct ? '#ffffff' : '#334155'}; transition: all 0.2s;">
+          🏢 ${escapeHtml(c.name)} (${cItems.length})
+        </button>
+      `;
+    });
+    reportCompanyTabsEl.innerHTML = tabsHtml;
+  }
+
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   const totals = days.map((day) => {
-    const itemsForDay = items.filter((item) => item.day === day && (item.clearedFromWeek !== true || (typeof isTodayItem === 'function' && isTodayItem(item))));
+    const itemsForDay = items.filter((item) => {
+      if (item.day !== day) return false;
+      if (item.clearedFromWeek === true && !(typeof isTodayItem === 'function' && isTodayItem(item))) return false;
+      if (selectedReportCompanyId !== 'Todas') {
+        const cId = item.companyId || 'empresa-1';
+        if (cId !== selectedReportCompanyId) return false;
+      }
+      return true;
+    });
     itemsForDay.sort((a, b) => a.id.localeCompare(b.id));
 
     const platesHtml = itemsForDay.length
-      ? itemsForDay.map((item, index) => '<div style="padding: 3px 0; border-bottom: 1px dashed #cbd5e1; font-weight: 500;">' + (index + 1) + '. ' + escapeHtml(item.plate) + '</div>').join('')
+      ? itemsForDay.map((item, index) => '<div style="padding: 3px 0; border-bottom: 1px dashed #cbd5e1; font-weight: 500;">' + (index + 1) + '. ' + escapeHtml(item.plate) + (selectedReportCompanyId === 'Todas' && item.companyName ? ` <span style="font-size:0.75rem; color:#64748b; font-weight:700;">[${escapeHtml(item.companyName)}]</span>` : '') + '</div>').join('')
       : '-';
     return {
       day,
@@ -2984,7 +3113,7 @@ function updateFormDisplay() {
   
   const weekdayTabsCardEl = document.getElementById('weekdayTabsCard');
   if (weekdayTabsCardEl) {
-    weekdayTabsCardEl.style.display = isWeekday ? 'block' : 'none';
+    weekdayTabsCardEl.style.display = 'none';
   }
 
   if (vistoriaTypeTabsCard) {
@@ -4351,9 +4480,11 @@ function autoFixItemDays(rawItems) {
       if (isPastWeek && updated.clearedFromWeek !== true) {
         updated = { ...updated, clearedFromWeek: true };
         changed = true;
-      } else if (isToday && updated.clearedFromWeek === true) {
-        updated = { ...updated, clearedFromWeek: false };
-        changed = true;
+      } else if (isToday) {
+        if (updated.clearedFromWeek === true || updated.companyId !== 'empresa-1' || updated.companyName !== 'RL') {
+          updated = { ...updated, clearedFromWeek: false, companyId: 'empresa-1', companyName: 'RL' };
+          changed = true;
+        }
       }
     }
     return updated;
@@ -5015,18 +5146,21 @@ function generateWeeklyReportPDF() {
 
   const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
 
+  const selectedComp = companies.find(c => c.id === selectedReportCompanyId);
+  const companyTitle = selectedComp ? ` - ${selectedComp.name}` : '';
+
   // Title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(37, 99, 235);
-  doc.text("Gestão de Vistorias - Relatório Semanal", pageWidth / 2, 20, { align: "center" });
+  doc.text(`Gestão de Vistorias - Relatório Semanal${companyTitle}`, pageWidth / 2, 20, { align: "center" });
 
   // Subtitle
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(75, 93, 118);
   const todayStr = new Date().toLocaleDateString('pt-BR');
-  doc.text(`Gerado em ${todayStr}`, pageWidth / 2, 27, { align: "center" });
+  doc.text(`Gerado em ${todayStr}${selectedComp ? ` | Empresa: ${selectedComp.name}` : ' | Todas as Empresas'}`, pageWidth / 2, 27, { align: "center" });
 
   // Line
   doc.setDrawColor(215, 226, 240);
@@ -5040,8 +5174,17 @@ function generateWeeklyReportPDF() {
 
   const tableRows = [];
   days.forEach((day) => {
-    // Get items for this day
-    const itemsForDay = items.filter((item) => item.day === day && (item.clearedFromWeek !== true || (typeof isTodayItem === 'function' && isTodayItem(item))) && (Number(item.value) || 0) > 0);
+    // Get items for this day filtered by company
+    const itemsForDay = items.filter((item) => {
+      if (item.day !== day) return false;
+      if (item.clearedFromWeek === true && !(typeof isTodayItem === 'function' && isTodayItem(item))) return false;
+      if ((Number(item.value) || 0) <= 0) return false;
+      if (selectedReportCompanyId !== 'Todas') {
+        const cId = item.companyId || 'empresa-1';
+        if (cId !== selectedReportCompanyId) return false;
+      }
+      return true;
+    });
     
     // Only include day if there is at least one registry
     if (itemsForDay.length === 0) {
@@ -5058,7 +5201,10 @@ function generateWeeklyReportPDF() {
     // Format vistorias on numbered lines in ascending order: "1. ABC-1234", "2. DEF-5678", ...
     let numberedPlatesText = '—';
     if (itemsForDay.length > 0) {
-      numberedPlatesText = itemsForDay.map((item, index) => `${index + 1}. ${item.plate}${item.type ? ` (${item.type})` : ''}`).join('\n');
+      numberedPlatesText = itemsForDay.map((item, index) => {
+        const compTag = (selectedReportCompanyId === 'Todas' && item.companyName) ? ` [${item.companyName}]` : '';
+        return `${index + 1}. ${item.plate}${item.type ? ` (${item.type})` : ''}${compTag}`;
+      }).join('\n');
     }
 
     const dayDisplayName = day === 'Sábado' ? 'Sábado' : `${day}-feira`;
@@ -5103,7 +5249,8 @@ function generateWeeklyReportPDF() {
     }
   });
 
-  const filename = `relatorio_semanal_${new Date().toISOString().slice(0, 10)}.pdf`;
+  const compSlug = selectedComp ? `_${selectedComp.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : '';
+  const filename = `relatorio_semanal${compSlug}_${new Date().toISOString().slice(0, 10)}.pdf`;
   try {
     if (window.AndroidInterface && typeof window.AndroidInterface.sharePdf === 'function') {
       const base64Pdf = doc.output('datauristring').split(',')[1];
@@ -5502,6 +5649,13 @@ function openManageCompaniesModal() {
   }
 }
 window.openManageCompaniesModal = openManageCompaniesModal;
+
+function openManageCompaniesModalFromSettings() {
+  const settingsModal = document.getElementById('systemSettingsModal');
+  if (settingsModal) settingsModal.style.display = 'none';
+  openManageCompaniesModal();
+}
+window.openManageCompaniesModalFromSettings = openManageCompaniesModalFromSettings;
 
 function closeManageCompaniesModal() {
   const m = document.getElementById('manageCompaniesModal');
