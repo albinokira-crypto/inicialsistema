@@ -1126,10 +1126,23 @@ class MainActivity : ComponentActivity() {
         }
         itemsMap["net.sourceforge.opencamera"] = AppChoiceItem(
             packageName = "net.sourceforge.opencamera",
-            label = "Open Camera (Pasta Segura / Atalho)",
+            label = "Open Camera (Empresa 1)",
             icon = openCamIcon,
             isCamera = true,
-            isSecureFolder = true
+            isSecureFolder = false
+        )
+
+        val openCam2Icon = try {
+            pm.getApplicationIcon("net.sourceforge.opencamera.empresa2")
+        } catch (e: Exception) {
+            ContextCompat.getDrawable(this, android.R.drawable.ic_menu_camera)
+        }
+        itemsMap["net.sourceforge.opencamera.empresa2"] = AppChoiceItem(
+            packageName = "net.sourceforge.opencamera.empresa2",
+            label = "Open Camera 2 (Empresa 2)",
+            icon = openCam2Icon,
+            isCamera = true,
+            isSecureFolder = false
         )
 
         // 2. Tenta detectar aplicativos em perfis de usuário adicionais (Pasta Segura / Work Profile)
@@ -1293,16 +1306,37 @@ class MainActivity : ComponentActivity() {
     private fun launchStandaloneCamera(preferredPkg: String?, isVideo: Boolean) {
         val pm = packageManager
         try {
-            // Se for o Open Camera (ou app de Pasta Segura)
-            if (preferredPkg == "net.sourceforge.opencamera") {
-                // 1. Tenta iniciar através de LauncherApps (suporta perfis de usuário adicionais/Pasta Segura)
+            // Se for o Open Camera 1 ou Open Camera 2
+            if (preferredPkg == "net.sourceforge.opencamera" || preferredPkg == "net.sourceforge.opencamera.empresa2") {
+                val targetPkg = preferredPkg
+                // 1. Tenta Launch Intent direto padrão (abre imediatamente no perfil atual sem passar pela Pasta Segura)
+                val launchIntent = pm.getLaunchIntentForPackage(targetPkg)
+                if (launchIntent != null) {
+                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(launchIntent)
+                    return
+                }
+
+                // 2. Tenta Intent explícito para a Activity do Open Camera
+                try {
+                    val explicitIntent = Intent().apply {
+                        setComponent(android.content.ComponentName(targetPkg, "net.sourceforge.opencamera.MainActivity"))
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(explicitIntent)
+                    return
+                } catch (e: Exception) {
+                    // segue para fallback
+                }
+
+                // 3. Tenta iniciar através de LauncherApps caso esteja em outro perfil / Pasta Segura
                 try {
                     val launcherApps = getSystemService(android.content.Context.LAUNCHER_APPS_SERVICE) as? android.content.pm.LauncherApps
                     val userManager = getSystemService(android.content.Context.USER_SERVICE) as? android.os.UserManager
                     if (launcherApps != null && userManager != null) {
                         for (profile in userManager.userProfiles) {
                             try {
-                                val acts = launcherApps.getActivityList("net.sourceforge.opencamera", profile)
+                                val acts = launcherApps.getActivityList(targetPkg, profile)
                                 if (acts.isNotEmpty()) {
                                     launcherApps.startMainActivity(acts[0].componentName, profile, null, null)
                                     return
@@ -1314,26 +1348,6 @@ class MainActivity : ComponentActivity() {
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                }
-
-                // 2. Tenta Intent explícito para a Activity do Open Camera
-                try {
-                    val explicitIntent = Intent().apply {
-                        setComponent(android.content.ComponentName("net.sourceforge.opencamera", "net.sourceforge.opencamera.MainActivity"))
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    startActivity(explicitIntent)
-                    return
-                } catch (e: Exception) {
-                    // segue para fallback
-                }
-
-                // 3. Tenta Launch Intent padrão caso esteja no mesmo perfil
-                val launchIntent = pm.getLaunchIntentForPackage("net.sourceforge.opencamera")
-                if (launchIntent != null) {
-                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(launchIntent)
-                    return
                 }
 
                 // 4. Tenta Intent de captura de imagem direcionado ao pacote

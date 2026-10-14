@@ -537,6 +537,10 @@
           <a href="https://github.com/albinokira-crypto/inicialsistema/releases/download/v2.42.3/VistoriaInicial.apk" target="_blank" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #059669; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(5,150,105,0.25);">
             📥 Baixar APK Atualizado (v2.42.3)
           </a>
+
+          <a href="https://github.com/albinokira-crypto/inicialsistema/releases/download/v2.42.3/OpenCamera2.apk" target="_blank" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(124,58,237,0.25);">
+            📸 Baixar Open Camera 2 APK (2ª Empresa)
+          </a>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px; border-top: 1.5px dashed #e2e8f0; padding-top: 16px;">
@@ -1184,27 +1188,28 @@
         </p>
         
         <div style="display: flex; flex-direction: column; gap: 10px;">
-          <!-- Opção 1: Open Camera (Pasta Segura) -->
-          <button type="button" onclick="confirmSelectCamera('net.sourceforge.opencamera', 'Open Camera (Pasta Segura 🔒)')" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; cursor: pointer; text-align: left; width: 100%; box-sizing: border-box;">
-            <span style="font-size: 1.6rem;">🔒</span>
+          <!-- Opção 1: Open Camera (Empresa 1) -->
+          <button type="button" onclick="confirmSelectCamera('net.sourceforge.opencamera', 'Open Camera (Principal)')" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; cursor: pointer; text-align: left; width: 100%; box-sizing: border-box;">
+            <span style="font-size: 1.6rem;">📷</span>
             <div style="flex: 1;">
-              <div style="font-weight: 800; color: #1e40af; font-size: 0.92rem;">Open Camera (Pasta Segura)</div>
-              <div style="font-size: 0.72rem; color: #3b82f6;">Atalho / App na Pasta Segura (Knox)</div>
+              <div style="font-weight: 800; color: #1e40af; font-size: 0.92rem;">Open Camera (Principal)</div>
+              <div style="font-size: 0.72rem; color: #3b82f6;">Câmera padrão da 1ª Empresa</div>
             </div>
             <span style="font-size: 0.75rem; background: #2563eb; color: #ffffff; padding: 4px 8px; border-radius: 999px; font-weight: 700;">Selecionar</span>
           </button>
 
-          <!-- Opção 2: Open Camera Padrão -->
-          <button type="button" onclick="confirmSelectCamera('net.sourceforge.opencamera', 'Open Camera')" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; cursor: pointer; text-align: left; width: 100%; box-sizing: border-box;">
-            <span style="font-size: 1.6rem;">📷</span>
+          <!-- Opção 2: Open Camera 2 (Segunda Empresa) -->
+          <button type="button" onclick="confirmSelectCamera('net.sourceforge.opencamera.empresa2', 'Open Camera 2 (2ª Empresa)')" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #fdf2f8; border: 2px solid #ec4899; border-radius: 12px; cursor: pointer; text-align: left; width: 100%; box-sizing: border-box;">
+            <span style="font-size: 1.6rem;">📸</span>
             <div style="flex: 1;">
-              <div style="font-weight: 700; color: #334155; font-size: 0.90rem;">Open Camera (Normal)</div>
-              <div style="font-size: 0.72rem; color: #64748b;">Instalado no perfil padrão do celular</div>
+              <div style="font-weight: 800; color: #9d174d; font-size: 0.92rem;">Open Camera 2 (2ª Empresa)</div>
+              <div style="font-size: 0.72rem; color: #db2777;">Câmera clonada independente para a 2ª Empresa</div>
             </div>
+            <span style="font-size: 0.75rem; background: #db2777; color: #ffffff; padding: 4px 8px; border-radius: 999px; font-weight: 700;">Selecionar</span>
           </button>
 
           <!-- Opção 3: Câmera Padrão do Sistema -->
-          <button type="button" onclick="confirmSelectCamera('', 'Padrão do Sistema')" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; cursor: pointer; text-align: left; width: 100%; box-sizing: border-box;">
+          <button type="button" onclick="confirmSelectCamera('', 'Câmera do Celular')" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; cursor: pointer; text-align: left; width: 100%; box-sizing: border-box;">
             <span style="font-size: 1.6rem;">📱</span>
             <div style="flex: 1;">
               <div style="font-weight: 700; color: #334155; font-size: 0.90rem;">Câmera do Celular (Padrão)</div>
@@ -1220,6 +1225,16 @@
               <div style="font-size: 0.72rem; color: #94a3b8;">Ver todos os apps da tela inicial</div>
             </div>
           </button>
+
+          <!-- Card de Download do Open Camera 2 caso ainda não tenha instalado -->
+          <div style="background: #f5f3ff; border: 1.5px dashed #c4b5fd; border-radius: 12px; padding: 10px 12px; margin-top: 4px; text-align: center;">
+            <div style="font-size: 0.76rem; color: #5b21b6; font-weight: 700; margin-bottom: 6px;">
+              💡 Ainda não instalou o Open Camera 2 no celular?
+            </div>
+            <a href="https://github.com/albinokira-crypto/inicialsistema/releases/download/v2.42.3/OpenCamera2.apk" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; background: #7c3aed; color: #ffffff; border-radius: 8px; font-weight: 700; font-size: 0.78rem;">
+              📥 Baixar APK do Open Camera 2
+            </a>
+          </div>
         </div>
 
         <div style="margin-top: 16px; text-align: right;">
