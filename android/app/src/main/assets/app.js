@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.42.4';
+let CURRENT_APP_VERSION = 'v2.42.5';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -284,14 +284,13 @@ const DEFAULT_STAGES = [
 ];
 
 function getSafeStorage(key, defaultVal) {
+  let localData = null;
+  let nativeData = null;
+
   try {
     const raw = localStorage.getItem(key);
-    if (raw && raw !== 'null' && raw !== 'undefined') {
-      const parsed = JSON.parse(raw);
-      if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
-        try { window.AndroidInterface.saveNativeData(key, raw); } catch(e) {}
-      }
-      return parsed;
+    if (raw && raw !== 'null' && raw !== 'undefined' && raw !== '') {
+      localData = JSON.parse(raw);
     }
   } catch (e) {}
 
@@ -299,12 +298,58 @@ function getSafeStorage(key, defaultVal) {
     try {
       const nativeRaw = window.AndroidInterface.getNativeData(key);
       if (nativeRaw && nativeRaw !== 'null' && nativeRaw !== 'undefined' && nativeRaw !== '') {
-        const parsed = JSON.parse(nativeRaw);
-        try { localStorage.setItem(key, nativeRaw); } catch(e) {}
-        return parsed;
+        nativeData = JSON.parse(nativeRaw);
       }
     } catch (e) {}
   }
+
+  // Se ambas as fontes possuem arrays de registros (ex: vistorias / supervisões), fazemos MERGE bidirecional seguro
+  // garantindo que NENHUM registro seja perdido se uma das pontas estiver desatualizada
+  if (Array.isArray(localData) && Array.isArray(nativeData)) {
+    const mergedMap = new Map();
+    // 1. Insere itens nativos primeiro
+    nativeData.forEach(item => {
+      if (item && item.id) mergedMap.set(String(item.id), item);
+    });
+    // 2. Mescla itens do localStorage (mantém o que tiver dados mais completos ou timestamp mais recente)
+    localData.forEach(item => {
+      if (!item || !item.id) return;
+      const strId = String(item.id);
+      if (!mergedMap.has(strId)) {
+        mergedMap.set(strId, item);
+      } else {
+        const existing = mergedMap.get(strId);
+        const existingTime = existing.updatedAtTime || 0;
+        const itemTime = item.updatedAtTime || 0;
+        if (itemTime >= existingTime) {
+          mergedMap.set(strId, { ...existing, ...item });
+        }
+      }
+    });
+    const merged = Array.from(mergedMap.values());
+    // Sincroniza em ambas as pontas para ficarem 100% íntegras
+    try {
+      const jsonStr = JSON.stringify(merged);
+      localStorage.setItem(key, jsonStr);
+      if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+        window.AndroidInterface.saveNativeData(key, jsonStr);
+      }
+    } catch(e) {}
+    return merged;
+  }
+
+  if (localData !== null) {
+    if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+      try { window.AndroidInterface.saveNativeData(key, JSON.stringify(localData)); } catch(e) {}
+    }
+    return localData;
+  }
+
+  if (nativeData !== null) {
+    try { localStorage.setItem(key, JSON.stringify(nativeData)); } catch(e) {}
+    return nativeData;
+  }
+
   return defaultVal;
 }
 
@@ -317,6 +362,28 @@ function setSafeStorage(key, value) {
     try {
       window.AndroidInterface.saveNativeData(key, jsonStr);
     } catch (e) {}
+  }
+
+  // Backup imutável de segurança: preserva cópia das últimas 100 vistorias
+  if (key === STORAGE_KEY && Array.isArray(value)) {
+    try {
+      const backupHistoryKey = 'web-system-items-backup-history';
+      let historyList = [];
+      try {
+        const existingHistoryRaw = localStorage.getItem(backupHistoryKey);
+        if (existingHistoryRaw) historyList = JSON.parse(existingHistoryRaw);
+      } catch(e) {}
+      if (!Array.isArray(historyList)) historyList = [];
+      const historyMap = new Map();
+      historyList.forEach(i => { if (i && i.id) historyMap.set(String(i.id), i); });
+      value.forEach(i => { if (i && i.id) historyMap.set(String(i.id), i); });
+      const mergedHistory = Array.from(historyMap.values()).slice(0, 100);
+      const historyJson = JSON.stringify(mergedHistory);
+      localStorage.setItem(backupHistoryKey, historyJson);
+      if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+        window.AndroidInterface.saveNativeData(backupHistoryKey, historyJson);
+      }
+    } catch(e) {}
   }
 }
 
@@ -4436,7 +4503,7 @@ function safeParseJson(raw, fallback) {
 function autoFixItemDays(rawItems) {
   if (!Array.isArray(rawItems)) return [];
   let changed = false;
-  const fixed = rawItems.map(item => {
+  let fixed = rawItems.map(item => {
     let updated = item;
     if (item.date) {
       const realDay = getWeekdayFromDateString(item.date);
@@ -4445,12 +4512,13 @@ function autoFixItemDays(rawItems) {
         updated = { ...updated, day: realDay };
       }
 
-      // Regra de isolamento da semana ativa:
-      // Vistorias de semanas anteriores (anteriores a 12/10/2026) são marcadas como clearedFromWeek = true
-      // para que apenas as vistorias da semana corrente (e as 5 de hoje) contem no resumo semanal.
+      // Regra de isolamento de semana ativa:
+      // Apenas vistorias estritamente anteriores a 12/10/2026 recebem clearedFromWeek = true.
+      // Qualquer vistoria da semana corrente (>= 12/10/2026) NUNCA fica com clearedFromWeek = true.
       const dStr = String(item.date).trim();
       let isPastWeek = false;
-      let isToday = false;
+      let isCurrentWeekOrNewer = false;
+
       if (dStr.includes('/')) {
         const parts = dStr.split('/');
         if (parts.length === 3) {
@@ -4459,8 +4527,8 @@ function autoFixItemDays(rawItems) {
           const y = parseInt(parts[2], 10);
           if (y < 2026 || (y === 2026 && m < 10) || (y === 2026 && m === 10 && d < 12)) {
             isPastWeek = true;
-          } else if (y === 2026 && m === 10 && d === 13) {
-            isToday = true;
+          } else if (y === 2026 && m === 10 && d >= 12) {
+            isCurrentWeekOrNewer = true;
           }
         }
       } else if (dStr.includes('-')) {
@@ -4471,8 +4539,8 @@ function autoFixItemDays(rawItems) {
           const d = parseInt(parts[2], 10);
           if (y < 2026 || (y === 2026 && m < 10) || (y === 2026 && m === 10 && d < 12)) {
             isPastWeek = true;
-          } else if (y === 2026 && m === 10 && d === 13) {
-            isToday = true;
+          } else if (y === 2026 && m === 10 && d >= 12) {
+            isCurrentWeekOrNewer = true;
           }
         }
       }
@@ -4480,15 +4548,109 @@ function autoFixItemDays(rawItems) {
       if (isPastWeek && updated.clearedFromWeek !== true) {
         updated = { ...updated, clearedFromWeek: true };
         changed = true;
-      } else if (isToday) {
-        if (updated.clearedFromWeek === true || updated.companyId !== 'empresa-1' || updated.companyName !== 'RL') {
-          updated = { ...updated, clearedFromWeek: false, companyId: 'empresa-1', companyName: 'RL' };
+      } else if (isCurrentWeekOrNewer) {
+        if (updated.clearedFromWeek === true) {
+          updated = { ...updated, clearedFromWeek: false };
           changed = true;
         }
       }
     }
     return updated;
   });
+
+  // RESTAURAÇÃO AUTOMÁTICA DA VISTORIA LON-2I83 (FIAT PALIO BRANCO - 15/10 - SOS AUTOS / APVS)
+  const palioTrocas = [
+    'Farol Diant. LD',
+    'Capô do motor',
+    'Para choque Diant.',
+    'Painel frontal / mini frente',
+    'Braço LD do Capô',
+    'Para lama Diant. LD',
+    'Moldura do milha LD',
+    'Moldura da caixa de roda LD',
+    'Farol de milha LD',
+    'Para barro Diant. LD',
+    'Alma do para choque Diant.'
+  ].join('\n');
+
+  const palioReparos = [
+    'Porta Diant. LD',
+    'Caixa de roda Diant. LD'
+  ].join('\n');
+
+  const palioFullDetails = {
+    rebocado: 'Sim',
+    chaveVeiculo: 'Sim',
+    motorFunciona: 'Sim',
+    arCondicionado: 'Não',
+    estepe: 'Sim',
+    macaco: 'Sim',
+    triangulo: 'Sim',
+    chaveRoda: 'Sim',
+    radio: 'Outra',
+    radioBrand: 'Positron',
+    parabrisa: 'Bom',
+    bateria: 'Moura',
+    numeroMotor: 'Não',
+    obs: 'Número do motor Inacessível, devido a natureza do evento conforme mostra em vídeo enviado.',
+    trocas: palioTrocas,
+    reparos: palioReparos
+  };
+
+  const palioIndex = fixed.findIndex(i => {
+    const p = (i.plate || '').toUpperCase();
+    return p.includes('LON-2I83') || p.includes('LON2I83');
+  });
+
+  if (palioIndex >= 0) {
+    const existing = fixed[palioIndex];
+    const details = { ...(existing.details || {}), ...palioFullDetails };
+    // Garante data 15/10 (Quinta-feira), oficina e seguradora corretas
+    fixed[palioIndex] = {
+      ...existing,
+      date: '2026-10-15',
+      day: 'Quinta',
+      plate: 'LON-2I83 - FIAT PALIO BRANCO - INICIAL - SOS AUTOS - DUQUE DE CAXIAS',
+      provider: existing.provider || 'APVS',
+      oficinaName: existing.oficinaName || 'SOS AUTOS - DUQUE DE CAXIAS',
+      type: 'Inicial',
+      vehicleType: 'carro',
+      companyId: existing.companyId || 'empresa-1',
+      companyName: existing.companyName || 'RL',
+      sent: true,
+      clearedFromWeek: false,
+      details: details,
+      updatedAt: '15/10/2026, 17:00:00',
+      updatedAtTime: existing.updatedAtTime || Date.now()
+    };
+    changed = true;
+  } else {
+    // Se não existia nenhum registro com a placa, cria e insere
+    const palioNew = {
+      id: 'vistoria_lon2i83_1510',
+      date: '2026-10-15',
+      day: 'Quinta',
+      plate: 'LON-2I83 - FIAT PALIO BRANCO - INICIAL - SOS AUTOS - DUQUE DE CAXIAS',
+      provider: 'APVS',
+      providerId: 'seg_apvs',
+      oficinaId: 'of_sos_autos',
+      oficinaName: 'SOS AUTOS - DUQUE DE CAXIAS',
+      value: 0,
+      type: 'Inicial',
+      vehicleType: 'carro',
+      companyId: 'empresa-1',
+      companyName: 'RL',
+      sent: true,
+      clearedFromWeek: false,
+      details: palioFullDetails,
+      createdAt: '15/10/2026, 17:00:00',
+      updatedAt: '15/10/2026, 17:00:00',
+      updatedAtTime: Date.now()
+    };
+    fixed.unshift(palioNew);
+    changed = true;
+  }
+
   if (changed) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(fixed));

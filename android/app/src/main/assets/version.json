@@ -1,8 +1,8 @@
 {
-  "version": "2.42.4",
-  "versionCode": 2424,
-  "updatedAt": "2026-10-13T23:00:00Z",
-  "buildDate": "2026-10-13T23:00:00.000Z",
-  "changelog": "Gerenciar empresas no menu de configurações, botões limpos de empresa na vistoria, remoção dos cards de dia da semana na vistoria, e resumo/relatório semanal separados por empresa cadastrada"
+  "version": "2.42.5",
+  "versionCode": 2425,
+  "updatedAt": "2026-10-16T16:30:00Z",
+  "buildDate": "2026-10-16T16:30:00.000Z",
+  "changelog": "Restauração da vistoria LON-2I83 (15/10 Quinta), blindagem do armazenamento seguro contra perda de dados com merge bidirecional entre localStorage e AndroidInterface, histórico imutável de emergência e correção de isolamento de semana ativa"
 }
 
