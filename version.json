@@ -1,8 +1,8 @@
 {
-  "version": "2.42.5",
-  "versionCode": 2425,
-  "updatedAt": "2026-10-16T16:30:00Z",
-  "buildDate": "2026-10-16T16:30:00.000Z",
-  "changelog": "Restauração da vistoria LON-2I83 (15/10 Quinta), blindagem do armazenamento seguro contra perda de dados com merge bidirecional entre localStorage e AndroidInterface, histórico imutável de emergência e correção de isolamento de semana ativa"
+  "version": "2.42.6",
+  "versionCode": 2426,
+  "updatedAt": "2026-10-17T10:15:00Z",
+  "buildDate": "2026-10-17T10:15:00.000Z",
+  "changelog": "Correção definitiva da limpeza de vistorias da semana: os registros limpos agora persistem como limpos após fechar e reiniciar o aplicativo, sem ressurgir."
 }
 

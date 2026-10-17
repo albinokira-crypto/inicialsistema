@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.42.5';
+let CURRENT_APP_VERSION = 'v2.42.6';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -759,6 +759,7 @@ function attachGlobalEventListeners() {
         'Para confirmar, digite a palavra LIMPAR abaixo:'
       );
       if (verification && verification.trim().toUpperCase() === 'LIMPAR') {
+        lastSavedVistoriaId = null;
         items.forEach((item) => {
           item.clearedFromWeek = true;
         });
@@ -871,10 +872,12 @@ if (supervisaoOficinaSelect) {
 if (clearWeekButton) {
   clearWeekButton.addEventListener('click', () => {
     if (window.confirm('Deseja apagar os registros da semana atual? Eles continuarão no relatório mensal.')) {
+      lastSavedVistoriaId = null;
       items.forEach((item) => {
         item.clearedFromWeek = true;
       });
       saveItems();
+      updateHomeSummary();
       render();
     }
   });
@@ -1392,7 +1395,7 @@ function updateHomeSummary() {
   const tabsContainerEl = document.getElementById('homeSummaryCompanyTabs');
   if (!summaryGridEl) return;
 
-  const allStatsItems = items.filter(item => item.clearedFromWeek !== true || (typeof isTodayItem === 'function' && isTodayItem(item)));
+  const allStatsItems = items.filter(item => item.clearedFromWeek !== true);
 
   // Render company filter pills inside homeSummaryCompanyTabs
   if (tabsContainerEl) {
@@ -1646,6 +1649,7 @@ window.homeClearWeek = function() {
     'Para confirmar, digite a palavra LIMPAR abaixo:'
   );
   if (verification && verification.trim().toUpperCase() === 'LIMPAR') {
+    lastSavedVistoriaId = null;
     items.forEach((item) => {
       item.clearedFromWeek = true;
     });
@@ -2437,9 +2441,8 @@ function isItemForDay(item, targetDay) {
     const matchesDay = isRecentlySaved || isItemForDay(item, activeDay);
     if (!matchesDay) return false;
 
-    // 3. Registros de hoje ou recém-salvos nunca são bloqueados por clearedFromWeek
-    const isToday = isTodayItem(item);
-    if (item.clearedFromWeek === true && !isToday && !isRecentlySaved) {
+    // 3. Registros com clearedFromWeek = true são ocultados da semana (exceto se recém-salvos nesta sessão)
+    if (item.clearedFromWeek === true && !isRecentlySaved) {
       return false;
     }
 
@@ -2481,7 +2484,7 @@ function isItemForDay(item, targetDay) {
     recordsTitleEl.textContent = `Registros de ${activeDay}-feira (${filtered.length})`;
   }
 
-  const statsItems = items.filter(item => item.clearedFromWeek !== true || (typeof isTodayItem === 'function' && isTodayItem(item)));
+  const statsItems = items.filter(item => item.clearedFromWeek !== true);
   const vistoriasComValor = statsItems.filter(item => Number(item.value) > 0);
   const vistoriasExtras = statsItems.filter(item => !item.value || Number(item.value) <= 0 || isNaN(Number(item.value)));
   const totalValue = statsItems.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
@@ -2598,7 +2601,7 @@ window.selectReportCompany = selectReportCompany;
 function renderReport(filteredItems) {
   const reportCompanyTabsEl = document.getElementById('reportCompanyTabs');
   if (reportCompanyTabsEl) {
-    const allWeekItems = items.filter((item) => (item.clearedFromWeek !== true || (typeof isTodayItem === 'function' && isTodayItem(item))));
+    const allWeekItems = items.filter((item) => item.clearedFromWeek !== true);
     let tabsHtml = `
       <button type="button" onclick="selectReportCompany('Todas')" style="padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 0.80rem; cursor: pointer; border: 1.5px solid ${selectedReportCompanyId === 'Todas' ? '#2563eb' : '#cbd5e1'}; background: ${selectedReportCompanyId === 'Todas' ? '#2563eb' : '#ffffff'}; color: ${selectedReportCompanyId === 'Todas' ? '#ffffff' : '#334155'}; transition: all 0.2s;">
         🏢 Todas (${allWeekItems.length})
@@ -2622,7 +2625,7 @@ function renderReport(filteredItems) {
   const totals = days.map((day) => {
     const itemsForDay = items.filter((item) => {
       if (item.day !== day) return false;
-      if (item.clearedFromWeek === true && !(typeof isTodayItem === 'function' && isTodayItem(item))) return false;
+      if (item.clearedFromWeek === true) return false;
       if (selectedReportCompanyId !== 'Todas') {
         const cId = item.companyId || 'empresa-1';
         if (cId !== selectedReportCompanyId) return false;
@@ -4548,11 +4551,6 @@ function autoFixItemDays(rawItems) {
       if (isPastWeek && updated.clearedFromWeek !== true) {
         updated = { ...updated, clearedFromWeek: true };
         changed = true;
-      } else if (isCurrentWeekOrNewer) {
-        if (updated.clearedFromWeek === true) {
-          updated = { ...updated, clearedFromWeek: false };
-          changed = true;
-        }
       }
     }
     return updated;
@@ -4618,7 +4616,7 @@ function autoFixItemDays(rawItems) {
       companyId: existing.companyId || 'empresa-1',
       companyName: existing.companyName || 'RL',
       sent: true,
-      clearedFromWeek: false,
+      clearedFromWeek: Boolean(existing.clearedFromWeek),
       details: details,
       updatedAt: '15/10/2026, 17:00:00',
       updatedAtTime: existing.updatedAtTime || Date.now()
@@ -5339,7 +5337,7 @@ function generateWeeklyReportPDF() {
     // Get items for this day filtered by company
     const itemsForDay = items.filter((item) => {
       if (item.day !== day) return false;
-      if (item.clearedFromWeek === true && !(typeof isTodayItem === 'function' && isTodayItem(item))) return false;
+      if (item.clearedFromWeek === true) return false;
       if ((Number(item.value) || 0) <= 0) return false;
       if (selectedReportCompanyId !== 'Todas') {
         const cId = item.companyId || 'empresa-1';
