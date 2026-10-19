@@ -1,8 +1,8 @@
 {
-  "version": "2.42.6",
-  "versionCode": 2426,
-  "updatedAt": "2026-10-17T10:15:00Z",
-  "buildDate": "2026-10-17T10:15:00.000Z",
-  "changelog": "Correção definitiva da limpeza de vistorias da semana: os registros limpos agora persistem como limpos após fechar e reiniciar o aplicativo, sem ressurgir."
+  "version": "2.42.7",
+  "versionCode": 2427,
+  "updatedAt": "2026-10-19T14:22:00Z",
+  "buildDate": "2026-10-19T14:22:00.000Z",
+  "changelog": "Correção definitiva da persistência de tipos de serviços cadastrados: os tipos agora persistem com integridade ao reiniciar o app sem zerar."
 }
 

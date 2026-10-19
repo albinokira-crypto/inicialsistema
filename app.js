@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.42.6';
+let CURRENT_APP_VERSION = 'v2.42.7';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -306,6 +306,28 @@ function getSafeStorage(key, defaultVal) {
   // Se ambas as fontes possuem arrays de registros (ex: vistorias / supervisões), fazemos MERGE bidirecional seguro
   // garantindo que NENHUM registro seja perdido se uma das pontas estiver desatualizada
   if (Array.isArray(localData) && Array.isArray(nativeData)) {
+    // Caso especial para arrays de strings (como etapas/tipos de serviço)
+    const isStringArray = (localData.length > 0 && typeof localData[0] === 'string') ||
+                          (nativeData.length > 0 && typeof nativeData[0] === 'string');
+    if (isStringArray) {
+      const mergedSet = new Set();
+      // Insere primeiro os dados locais mais recentes e depois os nativos preservando tudo
+      localData.forEach(s => { if (typeof s === 'string' && s.trim()) mergedSet.add(s.trim()); });
+      nativeData.forEach(s => { if (typeof s === 'string' && s.trim()) mergedSet.add(s.trim()); });
+      let merged = Array.from(mergedSet);
+      if (merged.length === 0 && Array.isArray(defaultVal)) {
+        merged = [...defaultVal];
+      }
+      try {
+        const jsonStr = JSON.stringify(merged);
+        localStorage.setItem(key, jsonStr);
+        if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+          window.AndroidInterface.saveNativeData(key, jsonStr);
+        }
+      } catch(e) {}
+      return merged;
+    }
+
     const mergedMap = new Map();
     // 1. Insere itens nativos primeiro
     nativeData.forEach(item => {
@@ -388,7 +410,12 @@ function setSafeStorage(key, value) {
 }
 
 function loadStages() {
-  return getSafeStorage(STAGES_STORAGE_KEY, DEFAULT_STAGES);
+  const loaded = getSafeStorage(STAGES_STORAGE_KEY, DEFAULT_STAGES);
+  if (!Array.isArray(loaded) || loaded.length === 0) {
+    setSafeStorage(STAGES_STORAGE_KEY, DEFAULT_STAGES);
+    return [...DEFAULT_STAGES];
+  }
+  return loaded;
 }
 
 function saveStages() {
