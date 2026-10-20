@@ -1,8 +1,8 @@
 {
-  "version": "2.42.8",
-  "versionCode": 2428,
-  "updatedAt": "2026-10-20T17:15:00Z",
-  "buildDate": "2026-10-20T17:15:00.000Z",
-  "changelog": "Varredura automática e persistência permanente de peças criadas nas vistorias para o catálogo de busca global."
+  "version": "2.42.9",
+  "versionCode": 2429,
+  "updatedAt": "2026-10-20T20:38:00Z",
+  "buildDate": "2026-10-20T20:38:00.000Z",
+  "changelog": "Ajuste visual na aba de peças: botões em linha única e ocultação dos controles de backup/nuvem."
 }
 
