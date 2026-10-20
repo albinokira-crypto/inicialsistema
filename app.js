@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.42.7';
+let CURRENT_APP_VERSION = 'v2.42.8';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -1853,6 +1853,9 @@ function saveItem(event) {
   }
 
   saveItems();
+  if (typeof vpScanAndHarvestPartsFromAllVistorias === 'function') {
+    vpScanAndHarvestPartsFromAllVistorias(true);
+  }
   form.reset();
   if (typeof vpSelectedPartsMap !== 'undefined' && vpSelectedPartsMap) {
     vpSelectedPartsMap.clear();
@@ -8071,8 +8074,96 @@ function vpLoadState() {
         return tab;
       });
     }
+
+    // Varre e incorpora automaticamente todas as peças registradas nas vistorias
+    setTimeout(() => {
+      if (typeof vpScanAndHarvestPartsFromAllVistorias === 'function') {
+        vpScanAndHarvestPartsFromAllVistorias(true);
+      }
+    }, 100);
   } catch(e) {}
 }
+
+function vpScanAndHarvestPartsFromAllVistorias(silent = false) {
+  if (typeof items === 'undefined' || !Array.isArray(items) || items.length === 0) {
+    return 0;
+  }
+
+  let newlyAdded = 0;
+  const existingSet = new Set((vpCustomPartsList || []).map(p => (p.name || '').toLowerCase()));
+
+  const harvestLines = (text) => {
+    if (!text || typeof text !== 'string') return;
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    lines.forEach(line => {
+      let name = vpCleanPartDashes(line);
+      const match = line.match(/^(.*?)\s*\((.*?)\)$/);
+      if (match) {
+        name = vpCleanPartDashes(match[1].trim());
+      }
+      if (name && name.length >= 2) {
+        const lower = name.toLowerCase();
+        if (!existingSet.has(lower)) {
+          existingSet.add(lower);
+          // Remove de deletedPartsList se estava excluída
+          if (Array.isArray(vpDeletedPartsList)) {
+            vpDeletedPartsList = vpDeletedPartsList.filter(d => (d || '').toLowerCase() !== lower);
+          }
+          if (Array.isArray(vpCustomPartsList)) {
+            vpCustomPartsList.push({
+              name: name,
+              zoneId: 'geral',
+              vehicleType: 'all' // Garante que a peça aparece em qualquer veículo
+            });
+          }
+          newlyAdded++;
+        }
+      }
+    });
+  };
+
+  const todayStr = (typeof getTodayDateValue === 'function') ? getTodayDateValue() : '';
+  const todayItems = items.filter(i => i && (i.date === todayStr || (i.details && i.details.date === todayStr)));
+  const otherItems = items.filter(i => i && !todayItems.includes(i));
+
+  // 1. Processa com máxima prioridade as vistorias de hoje
+  todayItems.forEach(item => {
+    const trocas = (item.details && item.details.trocas) || item.trocas || '';
+    const reparos = (item.details && item.details.reparos) || item.reparos || '';
+    const avarias = (item.details && item.details.avarias) || item.avarias || '';
+    harvestLines(trocas);
+    harvestLines(reparos);
+    harvestLines(avarias);
+  });
+
+  // 2. Processa as demais vistorias cadastradas no sistema
+  otherItems.forEach(item => {
+    const trocas = (item.details && item.details.trocas) || item.trocas || '';
+    const reparos = (item.details && item.details.reparos) || item.reparos || '';
+    const avarias = (item.details && item.details.avarias) || item.avarias || '';
+    harvestLines(trocas);
+    harvestLines(reparos);
+    harvestLines(avarias);
+  });
+
+  if (newlyAdded > 0) {
+    vpSaveState(true);
+    vpAllVehicleParts = null;
+    vpLoadAndSortVehicleParts();
+    if (typeof vpRenderParts === 'function') {
+      const searchVal = document.getElementById('vpSearchInput')?.value || '';
+      vpRenderParts(searchVal);
+    }
+  }
+
+  if (!silent && typeof showToastNotification === 'function') {
+    showToastNotification(`Varredura concluída: ${newlyAdded} peça(s) das vistorias foram catalogadas com sucesso!`, 3500);
+  }
+
+  return newlyAdded;
+}
+window.vpScanAndHarvestPartsFromAllVistorias = vpScanAndHarvestPartsFromAllVistorias;
+window.vpHarvestPartsNow = () => vpScanAndHarvestPartsFromAllVistorias(false);
 
 function vpSaveState(syncToCloud = false) {
   try {
@@ -8942,6 +9033,21 @@ window.vpSaveSelectedParts = function() {
       reparosList.push(formatted);
       if (typeof vpIncrementPartUsage === 'function') vpIncrementPartUsage(part.name);
     }
+
+    // Garante que a peça selecionada nesta vistoria seja imediatamente salva no catálogo customizado permanente
+    const cleanName = vpCleanPartDashes(part.name);
+    if (cleanName && cleanName.length >= 2) {
+      const lower = cleanName.toLowerCase();
+      const exists = (vpCustomPartsList || []).some(p => (p.name || '').toLowerCase() === lower);
+      if (!exists) {
+        if (Array.isArray(vpDeletedPartsList)) {
+          vpDeletedPartsList = vpDeletedPartsList.filter(d => (d || '').toLowerCase() !== lower);
+        }
+        if (Array.isArray(vpCustomPartsList)) {
+          vpCustomPartsList.push({ name: cleanName, zoneId: part.zoneId || 'geral', vehicleType: 'all' });
+        }
+      }
+    }
   }
 
   if (vpSelectedPartsMap.size > 0 && typeof vpSaveState === 'function') {
@@ -9367,7 +9473,8 @@ function vpLoadAndSortVehicleParts() {
         const effective = vpGetEffectivePartName(p.name);
         const effLower = (effective || '').toLowerCase();
         if (effective && !vpIsPartDeleted(p.name, effective) && !seenNames.has(effLower)) {
-          if (vpPartMatchesVehicleType(effective, vpDetectedVehicleType)) {
+          const isCompatible = (!p.vehicleType || p.vehicleType === 'all') || vpPartMatchesVehicleType(effective, vpDetectedVehicleType);
+          if (isCompatible) {
             seenNames.add(effLower);
             allParts.push({
               rawName: p.name,
@@ -10440,7 +10547,7 @@ function vpRenderParts(filterQuery = '') {
     const qTokens = qNormalized.split(' ').filter(Boolean);
     const qCompact = qNormalized.replace(/\s+/g, '');
 
-    displayParts = vpAllVehicleParts.filter(p => {
+    displayParts = (vpAllVehicleParts || []).filter(p => {
       const nameNorm = normalizeSearch(p.name);
       const rawNorm = normalizeSearch(p.rawName);
       const nameCompact = nameNorm.replace(/\s+/g, '');
@@ -10450,6 +10557,34 @@ function vpRenderParts(filterQuery = '') {
       if (qTokens.length > 0 && qTokens.every(tok => nameNorm.includes(tok) || rawNorm.includes(tok))) return true;
       return false;
     });
+
+    // Se estiver pesquisando, busca também em TODO o catálogo customizado de peças
+    // para garantir que qualquer peça cadastrada pelo usuário seja encontrada imediatamente!
+    if (Array.isArray(vpCustomPartsList)) {
+      const currentNames = new Set(displayParts.map(p => (p.name || '').toLowerCase()));
+      vpCustomPartsList.forEach(cp => {
+        if (!cp || !cp.name) return;
+        const cpEff = vpGetEffectivePartName(cp.name);
+        if (vpIsPartDeleted(cp.name, cpEff)) return;
+        const nameNorm = normalizeSearch(cpEff);
+        const rawNorm = normalizeSearch(cp.name);
+        const nameCompact = nameNorm.replace(/\s+/g, '');
+        const rawCompact = rawNorm.replace(/\s+/g, '');
+
+        const matches = (qCompact && (nameCompact.includes(qCompact) || rawCompact.includes(qCompact))) ||
+                        (qTokens.length > 0 && qTokens.every(tok => nameNorm.includes(tok) || rawNorm.includes(tok)));
+        if (matches && !currentNames.has(cpEff.toLowerCase())) {
+          currentNames.add(cpEff.toLowerCase());
+          displayParts.push({
+            rawName: cp.name,
+            name: cpEff,
+            zoneId: cp.zoneId || 'geral',
+            zoneName: 'Peças do veículo',
+            icon: '✨'
+          });
+        }
+      });
+    }
 
     if (displayParts.length === 0) {
       listEl.innerHTML = `

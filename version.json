@@ -1,8 +1,8 @@
 {
-  "version": "2.42.7",
-  "versionCode": 2427,
-  "updatedAt": "2026-10-19T14:22:00Z",
-  "buildDate": "2026-10-19T14:22:00.000Z",
-  "changelog": "Correção definitiva da persistência de tipos de serviços cadastrados: os tipos agora persistem com integridade ao reiniciar o app sem zerar."
+  "version": "2.42.8",
+  "versionCode": 2428,
+  "updatedAt": "2026-10-20T17:15:00Z",
+  "buildDate": "2026-10-20T17:15:00.000Z",
+  "changelog": "Varredura automática e persistência permanente de peças criadas nas vistorias para o catálogo de busca global."
 }
 
