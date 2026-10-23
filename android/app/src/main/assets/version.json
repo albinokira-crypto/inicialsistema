@@ -1,7 +1,7 @@
 {
-  "version": "2.45.0",
-  "versionCode": 2450,
-  "updatedAt": "2026-10-22T22:30:00Z",
-  "buildDate": "2026-10-22T22:30:00.000Z",
-  "changelog": "Modelo detalhado: nome do pneu 50% mais largo e layout unificado em um unico card sem bordas individuais."
+  "version": "2.46.0",
+  "versionCode": 2460,
+  "updatedAt": "2026-10-22T22:36:00Z",
+  "buildDate": "2026-10-22T22:36:00.000Z",
+  "changelog": "Modelo detalhado: campo de digitar nome/marca do pneu ampliado em mais de 50% para acomodar nomes longos sem cortar."
 }

@@ -3875,13 +3875,13 @@ function renderDynamicSurveyFields() {
     `;
 
     const renderTireRow = (label, prefix, isLast = false) => `
-      <div style="display: flex; align-items: center; gap: 6px; padding: 7px 0; ${isLast ? '' : 'border-bottom: 1px solid #f1f5f9;'} width: 100%; box-sizing: border-box;">
-        <span style="font-size: 0.82rem; font-weight: 800; color: #1e293b; width: 96px; min-width: 96px; flex: 0 0 96px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" title="${label}">${label}:</span>
-        <input type="text" name="${prefix}_marca" placeholder="Marca" style="flex: 1; min-width: 60px; padding: 7px 8px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.82rem;" />
-        <input type="text" inputmode="numeric" name="${prefix}_medida" class="tire-size-mask" placeholder="xxx/xx-xx" style="width: 78px; flex: 0 0 78px; padding: 7px 4px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.82rem; text-align: center;" />
-        <div class="type-buttons-container" data-input-id="input_${prefix}_estado" style="display: inline-flex; gap: 3px; flex: 0 0 auto;">
-          <button type="button" class="type-btn active" data-value="Bom" style="padding: 7px 10px; font-size: 0.74rem; min-width: 40px; line-height: 1;">Bom</button>
-          <button type="button" class="type-btn" data-value="Ruim" style="padding: 7px 10px; font-size: 0.74rem; min-width: 40px; line-height: 1;">Ruim</button>
+      <div style="display: flex; align-items: center; gap: 5px; padding: 7px 0; ${isLast ? '' : 'border-bottom: 1px solid #f1f5f9;'} width: 100%; box-sizing: border-box;">
+        <span style="font-size: 0.76rem; font-weight: 800; color: #475569; width: 68px; min-width: 68px; flex: 0 0 68px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" title="${label}">${label}:</span>
+        <input type="text" name="${prefix}_marca" placeholder="Nome / Marca do pneu" style="flex: 2.4; min-width: 120px; padding: 7px 8px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.84rem;" />
+        <input type="text" inputmode="numeric" name="${prefix}_medida" class="tire-size-mask" placeholder="Medida" style="width: 70px; min-width: 70px; flex: 0 0 70px; padding: 7px 4px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.80rem; text-align: center;" />
+        <div class="type-buttons-container" data-input-id="input_${prefix}_estado" style="display: inline-flex; gap: 2px; flex: 0 0 auto;">
+          <button type="button" class="type-btn active" data-value="Bom" style="padding: 7px 8px; font-size: 0.72rem; min-width: 36px; line-height: 1;">Bom</button>
+          <button type="button" class="type-btn" data-value="Ruim" style="padding: 7px 8px; font-size: 0.72rem; min-width: 36px; line-height: 1;">Ruim</button>
         </div>
         <input type="hidden" id="input_${prefix}_estado" name="${prefix}_estado" value="Bom" />
       </div>
