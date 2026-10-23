@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.42.8';
+let CURRENT_APP_VERSION = 'v2.43.0';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -456,6 +456,67 @@ function loadCompanies() {
 function saveCompanies() {
   setSafeStorage(COMPANIES_STORAGE_KEY, companies);
 }
+
+const COMPANY_REPORT_TEMPLATES_KEY = 'web-system-company-report-templates-v1';
+
+function getCompanyReportTemplate(companyId) {
+  const targetId = companyId || activeCompanyId || 'empresa-1';
+  const savedMap = getSafeStorage(COMPANY_REPORT_TEMPLATES_KEY, {});
+  if (savedMap && typeof savedMap === 'object' && savedMap[targetId]) {
+    return savedMap[targetId];
+  }
+  return 'detalhado'; // Padrão: Modelo Detalhado
+}
+window.getCompanyReportTemplate = getCompanyReportTemplate;
+
+function setCompanyReportTemplate(companyId, templateId) {
+  const targetId = companyId || activeCompanyId || 'empresa-1';
+  let savedMap = getSafeStorage(COMPANY_REPORT_TEMPLATES_KEY, {});
+  if (!savedMap || typeof savedMap !== 'object' || Array.isArray(savedMap)) {
+    savedMap = {};
+  }
+  savedMap[targetId] = templateId;
+  setSafeStorage(COMPANY_REPORT_TEMPLATES_KEY, savedMap);
+}
+window.setCompanyReportTemplate = setCompanyReportTemplate;
+
+function isDetailedVistoriaEligible(type = selectedType) {
+  const t = (type || selectedType || '').trim();
+  return ['Inicial', 'Incêndio', 'Enchente', 'Roubo Recuperado', 'Roubo'].includes(t);
+}
+window.isDetailedVistoriaEligible = isDetailedVistoriaEligible;
+
+function updateCompanyReportTemplateUI() {
+  const container = document.getElementById('companyReportTemplateContainer');
+  const selectEl = document.getElementById('companyReportTemplateSelect');
+  if (!container || !selectEl) return;
+
+  if (isDetailedVistoriaEligible(selectedType)) {
+    container.style.display = 'block';
+    selectEl.value = getCompanyReportTemplate(activeCompanyId);
+  } else {
+    container.style.display = 'none';
+  }
+}
+window.updateCompanyReportTemplateUI = updateCompanyReportTemplateUI;
+
+function saveActiveCompanyReportTemplate() {
+  const selectEl = document.getElementById('companyReportTemplateSelect');
+  if (!selectEl) return;
+  const chosen = selectEl.value;
+  setCompanyReportTemplate(activeCompanyId, chosen);
+
+  const activeComp = companies.find(c => c.id === activeCompanyId) || { name: 'Empresa' };
+  if (typeof showToastNotification === 'function') {
+    showToastNotification(`Modelo "${chosen === 'detalhado' ? 'Detalhado' : 'Padrão'}" salvo para a empresa ${activeComp.name}!`, 3000);
+  } else {
+    alert(`Modelo salvo com sucesso para a empresa ${activeComp.name}!`);
+  }
+
+  // Recarrega os campos dinâmicos da vistoria para refletir o novo modelo imediatamente
+  renderDynamicSurveyFields();
+}
+window.saveActiveCompanyReportTemplate = saveActiveCompanyReportTemplate;
 
 let companies = loadCompanies();
 let activeCompanyId = localStorage.getItem('active_company_id') || (companies[0] ? companies[0].id : 'empresa-1');
@@ -1011,7 +1072,7 @@ if (vistoriaTypeTabs) {
     if (typeInput) typeInput.value = selectedType;
     
     updateVistoriaFormTitle();
-    
+    updateCompanyReportTemplateUI();
     renderDynamicSurveyFields();
     render();
 
@@ -2712,7 +2773,68 @@ function getSurveyText(id) {
 
   let sections = [];
 
-  if (item.type === 'Incêndio') {
+  const isDetailed = isDetailedVistoriaEligible(item.type) && (getCompanyReportTemplate(item.companyId || activeCompanyId) === 'detalhado');
+
+  if (isDetailed) {
+    sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
+
+    let checklist = [];
+    checklist.push(`VISTORIA REALIZADA EM: ${formattedDate}`);
+    if (details.contatoOficina) checklist.push(`CONTATO DA OFICINA: ${details.contatoOficina}`);
+    if (details.telefoneOficina) checklist.push(`TELEFONE DA OFICINA: ${details.telefoneOficina}`);
+    if (details.emailOficina) checklist.push(`EMAIL DA OFICINA: ${details.emailOficina}`);
+    checklist.push('');
+
+    checklist.push(`REBOCADO?: ${getCheckmark(details.rebocado || 'Não')}`);
+    checklist.push(`MOTOR FUNCIONANDO?: ${getCheckmark(details.motorFunciona || 'Não')}`);
+
+    const formatPneuLine = (label, marca, medida, estado) => {
+      const parts = [];
+      if (marca && marca.trim()) parts.push(marca.trim());
+      if (medida && medida.trim()) parts.push(medida.trim());
+      if (estado && estado.trim()) parts.push(estado.trim());
+      return `${label}: ${parts.join(' ') || (estado || 'Bom')}`;
+    };
+
+    checklist.push(formatPneuLine('PNEU D.D.', details.pneu_dd_marca, details.pneu_dd_medida, details.pneu_dd_estado || 'Bom'));
+    checklist.push(formatPneuLine('PNEU T.D.', details.pneu_td_marca, details.pneu_td_medida, details.pneu_td_estado || 'Bom'));
+    checklist.push(formatPneuLine('PNEU T.E.', details.pneu_te_marca, details.pneu_te_medida, details.pneu_te_estado || 'Bom'));
+    checklist.push(formatPneuLine('PNEU D.E.', details.pneu_de_marca, details.pneu_de_medida, details.pneu_de_estado || 'Bom'));
+    checklist.push(formatPneuLine('ESTEPE', details.estepe_marca, details.estepe_medida, details.estepe_estado || 'Bom'));
+
+    checklist.push(`MACACO?: ${getCheckmark(details.macaco || 'Não')}`);
+    checklist.push(`TRIÂNGULO?: ${getCheckmark(details.triangulo || 'Não')}`);
+    checklist.push(`CHAVE DE RODA?: ${getCheckmark(details.chaveRoda || 'Não')}`);
+    checklist.push(`RÁDIO / MARCA: ${radioVal}`);
+    checklist.push(`PARABRISA: ${details.parabrisa || 'Bom'}`);
+    checklist.push(`BATERIA / MARCA: ${details.bateria || 'Ausente'}`);
+
+    const altImpacto = details.alturaImpacto ? (String(details.alturaImpacto).toLowerCase().includes('cm') ? details.alturaImpacto : `${details.alturaImpacto} cm`) : '';
+    checklist.push(`ALTURA DO PONTO DE IMPACTO: ${altImpacto}`);
+
+    const vestCor = details.vestigioCor === 'Sim' ? `Sim (${details.corVestigio || ''})` : 'Não';
+    checklist.push(`HÁ VESTÍGIO DE COR NAS PARTES AFETADAS?: ${vestCor}`);
+
+    checklist.push(`NÍVEIS DE FLUÍDOS:`);
+    checklist.push(`Nível de óleo: ${details.fluidoOleo || 'OK'}`);
+    checklist.push(`Arrefecimento: ${details.fluidoArrefecimento || 'OK'}`);
+    checklist.push(`Óleo hidráulico: ${details.fluidoHidraulico || 'OK'}`);
+
+    checklist.push(`PLACA / CHASSI: ${details.placaChassi || 'Confere'}`);
+    checklist.push(`OBS.: ${details.obs || ''}`);
+
+    if (details.ressalvas === 'Sim') {
+      checklist.push(`RESSALVAS: Sim`);
+      if (details.pecasRessalva && details.pecasRessalva.trim()) {
+        checklist.push(`QUAIS PEÇAS DE RESSALVA: ${details.pecasRessalva.trim()}`);
+      }
+    }
+
+    const estimativa = details.estimativaServico ? `${details.estimativaServico} dias úteis após chegada de peças` : `dias úteis após chegada de peças`;
+    checklist.push(`ESTIMATIVA DE TEMPO DE SERVIÇO: ${estimativa}`);
+
+    sections.push(checklist.join('\n'));
+  } else if (item.type === 'Incêndio') {
     sections.push(`Incêndio`);
     sections.push(`${item.plate || ''} - ${item.provider || 'Sem seguradora'} - ${item.oficinaName || 'Sem oficina'}`);
     
@@ -3104,6 +3226,30 @@ function handleAction(action, id) {
           }
         }
 
+        if (key === 'vestigioCor') {
+          const corInput = document.getElementById('input_cor_vestigio');
+          if (corInput) {
+            corInput.style.display = item.details[key] === 'Sim' ? 'block' : 'none';
+          }
+        }
+
+        if (key === 'ressalvas') {
+          const ressalvaBox = document.getElementById('containerPecasRessalva');
+          if (ressalvaBox) {
+            ressalvaBox.style.display = item.details[key] === 'Sim' ? 'block' : 'none';
+          }
+        }
+
+        if (key === 'bateria') {
+          const btnBat = document.getElementById('btnToggleBateriaAusente');
+          if (btnBat) {
+            const isAus = item.details[key] === 'Ausente';
+            btnBat.style.background = isAus ? '#fee2e2' : '#f1f5f9';
+            btnBat.style.color = isAus ? '#dc2626' : '#475569';
+            btnBat.textContent = isAus ? '✓ Ausente' : '❌ Ausente';
+          }
+        }
+
         if (container && container.dataset.obsId) {
           const obsInput = document.getElementById(container.dataset.obsId);
           if (obsInput) {
@@ -3424,20 +3570,28 @@ function saveOficina(event) {
   const name = oficinaNameInput.value.trim();
   if (!name) return;
 
+  const phoneInput = document.getElementById('oficinaPhoneInput');
+  const emailInput = document.getElementById('oficinaEmailInput');
+  const phone = phoneInput ? phoneInput.value.trim() : '';
+  const email = emailInput ? emailInput.value.trim() : '';
   const responsaveis = getResponsaveisFromForm();
 
   if (editingOficinaId) {
-    oficinas = oficinas.map((oficina) => oficina.id === editingOficinaId ? { ...oficina, name, responsaveis } : oficina);
+    oficinas = oficinas.map((oficina) => oficina.id === editingOficinaId ? { ...oficina, name, responsaveis, phone, email } : oficina);
   } else {
     oficinas.push({
       id: Date.now().toString(),
       name,
-      responsaveis
+      responsaveis,
+      phone,
+      email
     });
   }
 
   saveOficinas();
   oficinaForm.reset();
+  if (phoneInput) phoneInput.value = '';
+  if (emailInput) emailInput.value = '';
   setResponsaveisForm([]);
   editingOficinaId = null;
   cancelOficinaEditButton.hidden = true;
@@ -3455,6 +3609,10 @@ function saveOficina(event) {
 function cancelOficinaEdit() {
   editingOficinaId = null;
   oficinaForm.reset();
+  const phoneInput = document.getElementById('oficinaPhoneInput');
+  const emailInput = document.getElementById('oficinaEmailInput');
+  if (phoneInput) phoneInput.value = '';
+  if (emailInput) emailInput.value = '';
   setResponsaveisForm([]);
   cancelOficinaEditButton.hidden = true;
 }
@@ -3468,12 +3626,21 @@ function renderOficinas() {
       const responsaveisHtml = responsaveisArr.length
         ? `<div style="margin-top: 4px; font-size: 0.8rem; color: #4b5563;">Responsáveis: ${responsaveisArr.map(r => escapeHtml(r)).join(', ')}</div>`
         : '<div style="margin-top: 4px; font-size: 0.8rem; color: #9ca3af; font-style: italic;">Nenhum responsável cadastrado</div>';
+      
+      const contactParts = [];
+      if (oficina.phone || oficina.telefone) contactParts.push(`📞 ${escapeHtml(oficina.phone || oficina.telefone)}`);
+      if (oficina.email) contactParts.push(`✉️ ${escapeHtml(oficina.email)}`);
+      const contactHtml = contactParts.length
+        ? `<div style="margin-top: 3px; font-size: 0.78rem; color: #2563eb; font-weight: 600;">${contactParts.join(' &nbsp;|&nbsp; ')}</div>`
+        : '';
+
       return `
       <li class="item-card">
         <header>
           <div>
             <strong>${escapeHtml(oficina.name)}</strong>
             ${responsaveisHtml}
+            ${contactHtml}
           </div>
           <div class="actions">
             <button class="action-btn" type="button" data-action="edit-oficina" data-id="${oficina.id}">Editar</button>
@@ -3505,6 +3672,10 @@ function handleOficinaAction(action, id) {
 
   editingOficinaId = oficina.id;
   oficinaNameInput.value = oficina.name;
+  const phoneInput = document.getElementById('oficinaPhoneInput');
+  const emailInput = document.getElementById('oficinaEmailInput');
+  if (phoneInput) phoneInput.value = oficina.phone || oficina.telefone || '';
+  if (emailInput) emailInput.value = oficina.email || '';
   setResponsaveisForm(oficina.responsaveis || []);
   cancelOficinaEditButton.hidden = false;
   oficinaNameInput.focus();
@@ -3670,7 +3841,213 @@ function renderDynamicSurveyFields() {
 
   const extraFieldsHtml = obsHtml;
 
-  if (selectedType === 'Inicial') {
+  const isDetailed = isDetailedVistoriaEligible(selectedType) && (getCompanyReportTemplate(activeCompanyId) === 'detalhado');
+
+  if (isDetailed) {
+    const contactBoxHtml = `
+      <div class="detailed-report-contact-box" style="grid-column: 1 / -1; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 12px; display: grid; gap: 10px; margin-top: 4px;">
+        <div style="font-size: 0.84rem; font-weight: 800; color: #1e3a8a; display: flex; align-items: center; gap: 6px;">
+          <span>🏢</span> Informações de Contato da Oficina
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 3px; display: block;">Contato da Oficina (Responsável)</label>
+            <input type="text" id="input_contato_oficina" name="contatoOficina" placeholder="Nome do responsável" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.85rem;" />
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 3px; display: block;">Telefone da Oficina</label>
+            <input type="tel" inputmode="numeric" id="input_telefone_oficina" name="telefoneOficina" placeholder="DDD + Telefone" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.85rem;" />
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 3px; display: block;">Email da Oficina</label>
+            <input type="email" id="input_email_oficina" name="emailOficina" placeholder="email@oficina.com" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.85rem;" />
+          </div>
+        </div>
+      </div>
+    `;
+
+    const renderTireRow = (label, prefix) => `
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <span style="font-size: 0.80rem; font-weight: 800; color: #334155; min-width: 82px;">${label}:</span>
+        <input type="text" name="${prefix}_marca" placeholder="Marca" style="flex: 1.2; min-width: 90px; padding: 7px 10px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.82rem;" />
+        <input type="text" inputmode="numeric" name="${prefix}_medida" class="tire-size-mask" placeholder="xxx/xx-xx" style="flex: 1; min-width: 85px; padding: 7px 10px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.82rem;" />
+        <div class="type-buttons-container" data-input-id="input_${prefix}_estado" style="display: flex; gap: 4px;">
+          <button type="button" class="type-btn active" data-value="Bom" style="padding: 6px 12px; font-size: 0.78rem;">Bom</button>
+          <button type="button" class="type-btn" data-value="Ruim" style="padding: 6px 12px; font-size: 0.78rem;">Ruim</button>
+        </div>
+        <input type="hidden" id="input_${prefix}_estado" name="${prefix}_estado" value="Bom" />
+      </div>
+    `;
+
+    const detailedTiresHtml = `
+      <div style="grid-column: 1 / -1; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <div style="font-size: 0.84rem; font-weight: 800; color: #0f172a; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+          <span>🛞</span> Condições e Medidas dos Pneus
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${renderTireRow('PNEU D.D.', 'pneu_dd')}
+          ${renderTireRow('PNEU T.D.', 'pneu_td')}
+          ${renderTireRow('PNEU T.E.', 'pneu_te')}
+          ${renderTireRow('PNEU D.E.', 'pneu_de')}
+          ${renderTireRow('ESTEPE', 'estepe')}
+        </div>
+      </div>
+    `;
+
+    const detailedImpactAndColorHtml = `
+      <div class="form-toggle-field">
+        <span class="status-label">Altura do ponto de impacto</span>
+        <div style="position: relative; display: flex; align-items: center;">
+          <input type="text" inputmode="numeric" id="input_altura_impacto" name="alturaImpacto" placeholder="Ex: 60" style="width: 100%; box-sizing: border-box; padding: 9px 40px 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.85rem;" />
+          <span style="position: absolute; right: 12px; font-weight: 800; color: #64748b; font-size: 0.85rem; pointer-events: none;">cm</span>
+        </div>
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Há vestígio de cor nas partes afetadas?</span>
+        <div class="type-buttons-container" data-input-id="input_vestigio_cor" style="margin-bottom: 6px;">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+        </div>
+        <input type="hidden" id="input_vestigio_cor" name="vestigioCor" value="Não" />
+        <input type="text" id="input_cor_vestigio" name="corVestigio" placeholder="Digite a cor observada..." style="display: none; width: 100%; box-sizing: border-box; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.85rem;" />
+      </div>
+    `;
+
+    const detailedFluidsHtml = `
+      <div style="grid-column: 1 / -1; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px;">
+        <span class="status-label" style="display: block; font-weight: 800; color: #1e3a8a; margin-bottom: 8px;">💧 Níveis de Fluídos</span>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px;">
+          <div>
+            <span style="font-size: 0.78rem; font-weight: 700; color: #334155; display: block; margin-bottom: 4px;">Nível de óleo:</span>
+            <div class="type-buttons-container" data-input-id="input_fluido_oleo">
+              <button type="button" class="type-btn active" data-value="OK">OK</button>
+              <button type="button" class="type-btn" data-value="Baixo">Baixo</button>
+              <button type="button" class="type-btn" data-value="Sem">Sem</button>
+            </div>
+            <input type="hidden" id="input_fluido_oleo" name="fluidoOleo" value="OK" />
+          </div>
+
+          <div>
+            <span style="font-size: 0.78rem; font-weight: 700; color: #334155; display: block; margin-bottom: 4px;">Arrefecimento:</span>
+            <div class="type-buttons-container" data-input-id="input_fluido_arrefecimento">
+              <button type="button" class="type-btn active" data-value="OK">OK</button>
+              <button type="button" class="type-btn" data-value="SEM">SEM</button>
+            </div>
+            <input type="hidden" id="input_fluido_arrefecimento" name="fluidoArrefecimento" value="OK" />
+          </div>
+
+          <div>
+            <span style="font-size: 0.78rem; font-weight: 700; color: #334155; display: block; margin-bottom: 4px;">Óleo hidráulico:</span>
+            <div class="type-buttons-container" data-input-id="input_fluido_hidraulico">
+              <button type="button" class="type-btn active" data-value="OK">OK</button>
+              <button type="button" class="type-btn" data-value="SEM">SEM</button>
+            </div>
+            <input type="hidden" id="input_fluido_hidraulico" name="fluidoHidraulico" value="OK" />
+          </div>
+        </div>
+      </div>
+    `;
+
+    const detailedPlacaChassiHtml = `
+      <div class="form-toggle-field">
+        <span class="status-label">Placa / Chassi</span>
+        <div class="type-buttons-container" data-input-id="input_placa_chassi">
+          <button type="button" class="type-btn active" data-value="Confere">Confere</button>
+          <button type="button" class="type-btn" data-value="Não confere">Não confere</button>
+        </div>
+        <input type="hidden" id="input_placa_chassi" name="placaChassi" value="Confere" />
+      </div>
+
+      <div class="form-toggle-field">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span class="status-label" style="margin: 0;">Bateria / Marca</span>
+          <button type="button" id="btnToggleBateriaAusente" onclick="toggleBateriaAusente()" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; font-size: 0.74rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; cursor: pointer;">
+            ❌ Ausente
+          </button>
+        </div>
+        <input type="text" id="input_bateria" name="bateria" placeholder="Marca da bateria" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.85rem;" />
+      </div>
+    `;
+
+    const detailedRessalvasAndEstimateHtml = `
+      <div class="form-toggle-field" style="grid-column: 1 / -1;">
+        <span class="status-label">Ressalvas?</span>
+        <div class="type-buttons-container" data-input-id="input_ressalvas" style="margin-bottom: 6px;">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+        </div>
+        <input type="hidden" id="input_ressalvas" name="ressalvas" value="Não" />
+        
+        <div id="containerPecasRessalva" style="display: none; margin-top: 6px;">
+          <label style="font-size: 0.80rem; font-weight: 700; color: #b91c1c; display: block; margin-bottom: 4px;">QUAIS PEÇAS DE RESSALVA:</label>
+          <textarea id="input_pecas_ressalva" name="pecasRessalva" rows="2" placeholder="Descreva aqui quais peças de ressalva..." style="width: 100%; box-sizing: border-box; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #f87171; font-size: 0.85rem;"></textarea>
+        </div>
+      </div>
+
+      <div class="form-toggle-field" style="grid-column: 1 / -1;">
+        <span class="status-label">Estimativa de Tempo de Serviço</span>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <input type="number" inputmode="numeric" id="input_estimativa_servico" name="estimativaServico" placeholder="0" min="0" style="width: 80px; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.90rem; font-weight: 700; text-align: center;" />
+          <span style="font-size: 0.85rem; font-weight: 700; color: #334155;">dias úteis após chegada de peças</span>
+        </div>
+      </div>
+    `;
+
+    const detailedEquipmentsHtml = `
+      <div class="form-toggle-field">
+        <span class="status-label">Macaco?</span>
+        <div class="type-buttons-container" data-input-id="input_macaco">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+        </div>
+        <input type="hidden" id="input_macaco" name="macaco" value="Não" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Triângulo?</span>
+        <div class="type-buttons-container" data-input-id="input_triangulo">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+        </div>
+        <input type="hidden" id="input_triangulo" name="triangulo" value="Não" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Chave de roda?</span>
+        <div class="type-buttons-container" data-input-id="input_chave">
+          <button type="button" class="type-btn" data-value="Sim">Sim</button>
+          <button type="button" class="type-btn active" data-value="Não">Não</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+        </div>
+        <input type="hidden" id="input_chave" name="chaveRoda" value="Não" />
+      </div>
+
+      <div class="form-toggle-field" style="grid-column: 1 / -1;">
+        <span class="status-label">Rádio / Marca</span>
+        <div class="type-buttons-container radio-toggle" data-input-id="input_radio" style="margin-bottom: 8px;">
+          <button type="button" class="type-btn active" data-value="Original">Original</button>
+          <button type="button" class="type-btn" data-value="Outra">Outra</button>
+          <button type="button" class="type-btn" data-value="N/I">N/I</button>
+        </div>
+        <input type="hidden" id="input_radio" name="radio" value="Original" />
+        <input type="text" id="input_radio_brand" name="radioBrand" placeholder="Digite a marca do rádio" style="display: none;" />
+      </div>
+
+      <div class="form-toggle-field">
+        <span class="status-label">Parabrisa</span>
+        <div class="type-buttons-container" data-input-id="input_parabrisa">
+          <button type="button" class="type-btn active" data-value="Bom">Bom</button>
+          <button type="button" class="type-btn" data-value="Quebrado">Quebrado</button>
+        </div>
+        <input type="hidden" id="input_parabrisa" name="parabrisa" value="Bom" />
+      </div>
+    `;
+
+    fieldsHtml = contactBoxHtml + commonChecklistHtml + detailedTiresHtml + detailedEquipmentsHtml + detailedPlacaChassiHtml + detailedImpactAndColorHtml + detailedFluidsHtml + obsHtml + detailedRessalvasAndEstimateHtml;
+  } else if (selectedType === 'Inicial') {
     fieldsHtml = commonChecklistHtml + arCondicionadoHtml + vehicleExtraChecklistHtml + extraFieldsHtml;
   } else if (selectedType === 'Moto') {
     fieldsHtml = commonChecklistHtml + extraFieldsHtml;
@@ -3949,6 +4326,25 @@ function renderDynamicSurveyFields() {
         }
       }
 
+      if (inputId === 'input_vestigio_cor') {
+        const corInput = document.getElementById('input_cor_vestigio');
+        if (corInput) {
+          corInput.style.display = value === 'Sim' ? 'block' : 'none';
+          if (value === 'Sim') setTimeout(() => corInput.focus(), 50);
+        }
+      }
+
+      if (inputId === 'input_ressalvas') {
+        const containerPecas = document.getElementById('containerPecasRessalva');
+        if (containerPecas) {
+          containerPecas.style.display = value === 'Sim' ? 'block' : 'none';
+          if (value === 'Sim') {
+            const pInput = document.getElementById('input_pecas_ressalva');
+            if (pInput) setTimeout(() => pInput.focus(), 50);
+          }
+        }
+      }
+
       // Custom rule 1: If motor doesn't work, set arCondicionado to "Não"
       if (inputId === 'input_motor' && value === 'Não') {
         const arInput = document.getElementById('input_ar_condicionado');
@@ -4025,9 +4421,85 @@ function renderDynamicSurveyFields() {
     });
   }
 
+  // Máscara dinâmica para campos de medida dos pneus (xxx/xx-xx)
+  dynamicFieldsContainer.querySelectorAll('.tire-size-mask').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      e.target.value = formatTireSize(e.target.value);
+    });
+  });
+
   // Initialize searchable combobox in the dynamic fields form
   setupItemFormOficinaCombobox();
 }
+
+function formatTireSize(val) {
+  if (!val) return '';
+  const digits = String(val).replace(/\D/g, '').slice(0, 7);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 5) return digits.slice(0, 3) + '/' + digits.slice(3);
+  return digits.slice(0, 3) + '/' + digits.slice(3, 5) + '-' + digits.slice(5);
+}
+window.formatTireSize = formatTireSize;
+
+function toggleBateriaAusente() {
+  const batInput = document.getElementById('input_bateria');
+  const btn = document.getElementById('btnToggleBateriaAusente');
+  if (!batInput) return;
+  if (batInput.value === 'Ausente') {
+    batInput.value = '';
+    batInput.placeholder = 'Marca da bateria';
+    if (btn) {
+      btn.style.background = '#f1f5f9';
+      btn.style.color = '#475569';
+      btn.textContent = '❌ Ausente';
+    }
+    batInput.focus();
+  } else {
+    batInput.value = 'Ausente';
+    if (btn) {
+      btn.style.background = '#fee2e2';
+      btn.style.color = '#dc2626';
+      btn.textContent = '✓ Ausente';
+    }
+  }
+}
+window.toggleBateriaAusente = toggleBateriaAusente;
+
+function applyOficinaAutoFill(oficinaId) {
+  if (!oficinaId) return;
+  const curOficina = oficinas.find(o => o.id === oficinaId);
+  if (!curOficina) return;
+
+  const contatoInp = document.getElementById('input_contato_oficina');
+  const telInp = document.getElementById('input_telefone_oficina');
+  const emailInp = document.getElementById('input_email_oficina');
+
+  if (contatoInp) {
+    if (curOficina.responsaveis && curOficina.responsaveis.length > 0) {
+      if (!contatoInp.value || curOficina.responsaveis.includes(contatoInp.value)) {
+        contatoInp.value = curOficina.responsaveis[0];
+      }
+    }
+  }
+
+  if (telInp) {
+    const phoneVal = curOficina.phone || curOficina.telefone || '';
+    if (phoneVal) {
+      if (!telInp.value || telInp.value === phoneVal) {
+        telInp.value = phoneVal;
+      }
+    }
+  }
+
+  if (emailInp) {
+    if (curOficina.email) {
+      if (!emailInp.value || emailInp.value === curOficina.email) {
+        emailInp.value = curOficina.email;
+      }
+    }
+  }
+}
+window.applyOficinaAutoFill = applyOficinaAutoFill;
 
 let quickAddOficinaSource = 'vistoria';
 
@@ -4036,8 +4508,12 @@ function openQuickAddOficinaModal(source = 'vistoria') {
   const modal = document.getElementById('quickAddOficinaModal');
   const nameInput = document.getElementById('quickAddOficinaNameInput');
   const respInput = document.getElementById('quickAddOficinaResponsavelInput');
+  const telInput = document.getElementById('quickAddOficinaTelefoneInput');
+  const emailInput = document.getElementById('quickAddOficinaEmailInput');
   if (nameInput) nameInput.value = '';
   if (respInput) respInput.value = '';
+  if (telInput) telInput.value = '';
+  if (emailInput) emailInput.value = '';
   if (modal) modal.style.display = 'flex';
   if (nameInput) setTimeout(() => nameInput.focus(), 100);
 }
@@ -4053,9 +4529,13 @@ function handleQuickAddOficinaSubmit(e) {
   if (e) e.preventDefault();
   const nameInput = document.getElementById('quickAddOficinaNameInput');
   const respInput = document.getElementById('quickAddOficinaResponsavelInput');
+  const telInput = document.getElementById('quickAddOficinaTelefoneInput');
+  const emailInput = document.getElementById('quickAddOficinaEmailInput');
   const rawEnteredName = nameInput ? nameInput.value.trim() : '';
   const name = vpCleanPartDashes(rawEnteredName);
   const resp = respInput ? respInput.value.trim() : '';
+  const phone = telInput ? telInput.value.trim() : '';
+  const email = emailInput ? emailInput.value.trim() : '';
 
   if (!name) return;
 
@@ -4068,7 +4548,9 @@ function handleQuickAddOficinaSubmit(e) {
   const newOficina = {
     id: Date.now().toString(),
     name: name,
-    responsaveis: resp ? [resp] : []
+    responsaveis: resp ? [resp] : [],
+    phone: phone,
+    email: email
   };
 
   oficinas.push(newOficina);
@@ -4097,6 +4579,7 @@ function handleQuickAddOficinaSubmit(e) {
     if (selectEl) selectEl.value = newOficina.id;
     if (inputEl) inputEl.value = newOficina.name;
     if (clearBtn) clearBtn.style.display = 'block';
+    applyOficinaAutoFill(newOficina.id);
   }
 }
 window.handleQuickAddOficinaSubmit = handleQuickAddOficinaSubmit;
@@ -4148,6 +4631,7 @@ function setupItemFormOficinaCombobox() {
     inputEl.value = oficinaName;
     if (clearBtn) clearBtn.style.display = 'block';
     closeDropdown();
+    applyOficinaAutoFill(oficinaId);
   }
 
   if (selectEl.value) {
@@ -5734,6 +6218,7 @@ function renderCompanyButtons() {
   }).join('');
 
   updateCompanyCameraUI();
+  updateCompanyReportTemplateUI();
 }
 window.renderCompanyButtons = renderCompanyButtons;
 
@@ -5741,6 +6226,8 @@ function selectCompany(companyId) {
   activeCompanyId = companyId;
   localStorage.setItem('active_company_id', companyId);
   renderCompanyButtons();
+  updateCompanyReportTemplateUI();
+  renderDynamicSurveyFields();
 }
 window.selectCompany = selectCompany;
 
@@ -8061,18 +8548,24 @@ function vpLoadState() {
       });
       vpUsageStats = cleanStats;
     }
-    const savedTabs = getSafeStorage('mobile_custom_parts_tabs', null);
-    if (savedTabs && Array.isArray(savedTabs)) {
+    let savedTabs = getSafeStorage('mobile_custom_parts_tabs', null);
+    if (!savedTabs || !Array.isArray(savedTabs) || savedTabs.length === 0) {
+      savedTabs = getSafeStorage('mobile_custom_parts_tabs_backup', null) || getSafeStorage('mobile_custom_parts_tabs_emergency', null);
+    }
+    if (savedTabs && Array.isArray(savedTabs) && savedTabs.length > 0) {
       vpCustomTabs = savedTabs.map(tab => {
         if (!tab.vehicleType) {
           const nameLower = (tab.name || '').toLowerCase();
           if (nameLower.includes('moto')) tab.vehicleType = 'moto';
           else if (nameLower.includes('picape')) tab.vehicleType = 'picape';
           else if (nameLower.includes('caminhao') || nameLower.includes('caminhão')) tab.vehicleType = 'caminhao';
-          else tab.vehicleType = 'carro';
+          else tab.vehicleType = 'all';
         }
         return tab;
       });
+      // Salva redundância imediatamente
+      setSafeStorage('mobile_custom_parts_tabs_backup', vpCustomTabs);
+      setSafeStorage('mobile_custom_parts_tabs_emergency', vpCustomTabs);
     }
 
     // Varre e incorpora automaticamente todas as peças registradas nas vistorias
@@ -8083,6 +8576,9 @@ function vpLoadState() {
     }, 100);
   } catch(e) {}
 }
+
+// EXECUTA IMEDIATAMENTE NA INICIALIZAÇÃO
+try { vpLoadState(); } catch(e) {}
 
 function vpScanAndHarvestPartsFromAllVistorias(silent = false) {
   if (typeof items === 'undefined' || !Array.isArray(items) || items.length === 0) {
@@ -8173,7 +8669,23 @@ function vpSaveState(syncToCloud = false) {
     setSafeStorage('mobile_parts_vehicle_type_map', vpPartVehicleTypeMap);
     setSafeStorage('mobile_parts_deleted', vpDeletedPartsList);
     setSafeStorage('mobile_parts_usage_stats', vpUsageStats);
-    setSafeStorage('mobile_custom_parts_tabs', vpCustomTabs);
+
+    // BLINDAGEM PERMANENTE: Se vpCustomTabs estiver preenchido, salva chaves normal e de redundância
+    if (Array.isArray(vpCustomTabs) && vpCustomTabs.length > 0) {
+      setSafeStorage('mobile_custom_parts_tabs', vpCustomTabs);
+      setSafeStorage('mobile_custom_parts_tabs_backup', vpCustomTabs);
+      setSafeStorage('mobile_custom_parts_tabs_emergency', vpCustomTabs);
+    } else {
+      // Se vpCustomTabs estiver vazio em memória, NUNCA sobregrava o storage com array vazio caso existissem abas salvas
+      const previousTabs = getSafeStorage('mobile_custom_parts_tabs', null) ||
+                           getSafeStorage('mobile_custom_parts_tabs_backup', null) ||
+                           getSafeStorage('mobile_custom_parts_tabs_emergency', null);
+      if (Array.isArray(previousTabs) && previousTabs.length > 0) {
+        vpCustomTabs = previousTabs;
+      } else {
+        setSafeStorage('mobile_custom_parts_tabs', vpCustomTabs);
+      }
+    }
   } catch(e) {}
 
   if (syncToCloud) {
@@ -9830,8 +10342,8 @@ function vpRenderTabsNavBar() {
         else tab.vehicleType = 'carro';
       }
 
-      // Deixa aparecendo SOMENTE a aba personalizada na aba do tipo de veículo em que foi criada!
-      if (tab.vehicleType !== currentVType) {
+      // Deixa aparecendo a aba personalizada se for do tipo atual, 'all' ou sem restrição
+      if (tab.vehicleType && tab.vehicleType !== 'all' && tab.vehicleType !== currentVType) {
         return;
       }
 
@@ -10285,6 +10797,109 @@ window.vpDeleteCustomTab = function(tabId) {
   }
 };
 
+// --- COPIAR PEÇAS ENTRE SUB-ABAS PERSONALIZADAS ---
+window.vpOpenCopyPartsModal = function(sourceTabId) {
+  const modal = document.getElementById('vpCopyPartsModal');
+  if (!modal) return;
+  const sourceTab = vpCustomTabs.find(t => t.id === sourceTabId);
+  if (!sourceTab) {
+    alert('Aba de origem não encontrada.');
+    return;
+  }
+  const sourceInput = document.getElementById('vpCopySourceTabId');
+  if (sourceInput) sourceInput.value = sourceTabId;
+
+  const titleEl = document.getElementById('vpCopyPartsModalTitle');
+  if (titleEl) {
+    titleEl.innerHTML = `<span>📋</span> Copiar Peças de: ${vpEscapeHtml(sourceTab.name)}`;
+  }
+
+  const targetSelect = document.getElementById('vpCopyTargetTabSelect');
+  if (targetSelect) {
+    const otherTabs = vpCustomTabs.filter(t => t.id !== sourceTabId);
+    if (otherTabs.length === 0) {
+      alert('Você precisa ter pelo menos mais uma aba personalizada criada para copiar peças para ela.\nCrie outra aba tocando em "+ Nova Aba".');
+      return;
+    }
+    targetSelect.innerHTML = otherTabs.map(t => `<option value="${t.id}">${t.icon || '📁'} ${vpEscapeHtml(t.name)} (${(t.parts || []).length} peças)</option>`).join('');
+  }
+
+  const listContainer = document.getElementById('vpCopyPartsListContainer');
+  if (listContainer) {
+    const parts = Array.isArray(sourceTab.parts) ? sourceTab.parts : [];
+    if (parts.length === 0) {
+      listContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #64748b; font-size: 0.8rem;">Esta aba de origem não possui nenhuma peça para copiar.</div>';
+    } else {
+      listContainer.innerHTML = parts.map((rawP) => {
+        const eff = vpGetEffectivePartName(rawP);
+        return `
+          <label style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: white; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.82rem; font-weight: 600; color: #1e293b; cursor: pointer;">
+            <input type="checkbox" class="vp-copy-part-check" value="${vpEscapeHtml(eff)}" checked style="width: 16px; height: 16px; accent-color: #2563eb;" />
+            <span>${vpEscapeHtml(eff)}</span>
+          </label>
+        `;
+      }).join('');
+    }
+  }
+
+  modal.style.display = 'flex';
+};
+
+window.vpCloseCopyPartsModal = function() {
+  const modal = document.getElementById('vpCopyPartsModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.vpCopySelectAll = function(select) {
+  const checks = document.querySelectorAll('.vp-copy-part-check');
+  checks.forEach(c => c.checked = Boolean(select));
+};
+
+window.vpConfirmCopyParts = function() {
+  const sourceId = document.getElementById('vpCopySourceTabId')?.value;
+  const targetId = document.getElementById('vpCopyTargetTabSelect')?.value;
+  if (!sourceId || !targetId) {
+    alert('Selecione uma aba de destino válida.');
+    return;
+  }
+  const sourceTab = vpCustomTabs.find(t => t.id === sourceId);
+  const targetTab = vpCustomTabs.find(t => t.id === targetId);
+  if (!sourceTab || !targetTab) {
+    alert('Abas não encontradas.');
+    return;
+  }
+
+  const checkedEls = document.querySelectorAll('.vp-copy-part-check:checked');
+  if (checkedEls.length === 0) {
+    alert('Selecione pelo menos uma peça para copiar.');
+    return;
+  }
+
+  if (!Array.isArray(targetTab.parts)) targetTab.parts = [];
+  const targetPartsSet = new Set(targetTab.parts.map(p => vpGetEffectivePartName(p).toLowerCase()));
+  let copiedCount = 0;
+
+  checkedEls.forEach(el => {
+    const partName = el.value.trim();
+    if (partName && !targetPartsSet.has(partName.toLowerCase())) {
+      targetTab.parts.push(partName);
+      targetPartsSet.add(partName.toLowerCase());
+      copiedCount++;
+    }
+  });
+
+  vpSaveState(true);
+  window.vpCloseCopyPartsModal();
+  vpRenderTabsNavBar();
+  if (vpActiveCustomTabId === targetId) {
+    vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  }
+
+  if (typeof showToastNotification === 'function') {
+    showToastNotification(`✓ ${copiedCount} peça(s) copiada(s) para a aba "${targetTab.name}" com sucesso!`, 3000);
+  }
+};
+
 window.vpRemovePartFromCustomTab = function(partName, tabId) {
   const targetId = tabId || vpActiveCustomTabId;
   const tab = vpCustomTabs.find(t => t.id === targetId);
@@ -10370,11 +10985,9 @@ function vpRenderParts(filterQuery = '') {
   if (vpActiveCustomTabId) {
     const activeTab = vpCustomTabs.find(t => t.id === vpActiveCustomTabId);
     const currentVType = vpDetectedVehicleType || 'carro';
-    const tabVType = (activeTab && activeTab.vehicleType) ? activeTab.vehicleType : (
-      (activeTab?.name || '').toLowerCase().includes('moto') ? 'moto' : 'carro'
-    );
+    const tabVType = activeTab?.vehicleType || 'all';
 
-    if (!activeTab || tabVType !== currentVType) {
+    if (!activeTab || (tabVType !== 'all' && tabVType !== currentVType)) {
       vpActiveCustomTabId = null;
       vpRenderTabsNavBar();
     } else {
@@ -10473,6 +11086,15 @@ function vpRenderParts(filterQuery = '') {
                 style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; font-size: 0.76rem; font-weight: 800; padding: 7px 12px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 6px rgba(16,185,129,0.3); transition: transform 0.1s ease;"
               >
                 <span>⚡</span> Add Todas as peças
+              </button>
+
+              <button 
+                type="button" 
+                onclick="vpOpenCopyPartsModal('${activeTab.id}')" 
+                title="Copiar peças desta aba para outra sub-aba" 
+                style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; font-size: 0.72rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
+              >
+                <span>📋</span> Copiar Peças
               </button>
 
               <button 

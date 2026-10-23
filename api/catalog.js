@@ -45,6 +45,7 @@ let cachedCatalogData = {
   renames: {},
   zoneOverrides: {},
   usageStats: {},
+  customTabs: [],
   updatedAt: Date.now()
 };
 
@@ -109,6 +110,12 @@ module.exports = async (req, res) => {
         }
         if (data.usageStats && typeof data.usageStats === 'object') {
           cachedCatalogData.usageStats = Object.assign({}, cachedCatalogData.usageStats, data.usageStats);
+        }
+        if (Array.isArray(data.customTabs)) {
+          const tabMap = new Map();
+          (cachedCatalogData.customTabs || []).forEach(t => { if (t && t.id) tabMap.set(t.id, t); });
+          data.customTabs.forEach(t => { if (t && t.id) tabMap.set(t.id, t); });
+          cachedCatalogData.customTabs = Array.from(tabMap.values());
         }
 
         // Garante sanitização final: nenhuma peça ativa pode estar em deletedParts

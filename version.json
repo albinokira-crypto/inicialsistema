@@ -1,8 +1,7 @@
 {
-  "version": "2.42.9",
-  "versionCode": 2429,
-  "updatedAt": "2026-10-20T20:38:00Z",
-  "buildDate": "2026-10-20T20:38:00.000Z",
-  "changelog": "Ajuste visual na aba de peças: botões em linha única e ocultação dos controles de backup/nuvem."
+  "version": "2.43.0",
+  "versionCode": 2430,
+  "updatedAt": "2026-10-22T21:15:00Z",
+  "buildDate": "2026-10-22T21:15:00.000Z",
+  "changelog": "Modelo detalhado de vistoria por empresa, telefone/email da oficina com preenchimento automático, cópia de peças entre abas e blindagem definitiva das sub-abas."
 }
-
