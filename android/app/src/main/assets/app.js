@@ -3238,6 +3238,14 @@ function handleAction(action, id) {
           if (ressalvaBox) {
             ressalvaBox.style.display = item.details[key] === 'Sim' ? 'block' : 'none';
           }
+          if (item.details[key] === 'Sim') {
+            const pecas = item.details.pecasRessalva || '';
+            const pInput = document.getElementById('input_pecas_ressalva');
+            if (pInput) pInput.value = pecas;
+            if (typeof renderPecasRessalvaBadges === 'function') {
+              renderPecasRessalvaBadges(pecas);
+            }
+          }
         }
 
         if (key === 'bateria') {
@@ -3867,13 +3875,13 @@ function renderDynamicSurveyFields() {
     `;
 
     const renderTireRow = (label, prefix) => `
-      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-        <span style="font-size: 0.80rem; font-weight: 800; color: #334155; min-width: 82px;">${label}:</span>
-        <input type="text" name="${prefix}_marca" placeholder="Marca" style="flex: 1.2; min-width: 90px; padding: 7px 10px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.82rem;" />
-        <input type="text" inputmode="numeric" name="${prefix}_medida" class="tire-size-mask" placeholder="xxx/xx-xx" style="flex: 1; min-width: 85px; padding: 7px 10px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.82rem;" />
-        <div class="type-buttons-container" data-input-id="input_${prefix}_estado" style="display: flex; gap: 4px;">
-          <button type="button" class="type-btn active" data-value="Bom" style="padding: 6px 12px; font-size: 0.78rem;">Bom</button>
-          <button type="button" class="type-btn" data-value="Ruim" style="padding: 6px 12px; font-size: 0.78rem;">Ruim</button>
+      <div style="display: flex; align-items: center; gap: 4px; padding: 6px 8px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; width: 100%; box-sizing: border-box;">
+        <span style="font-size: 0.74rem; font-weight: 800; color: #334155; width: 62px; flex: 0 0 62px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" title="${label}">${label}:</span>
+        <input type="text" name="${prefix}_marca" placeholder="Marca" style="flex: 1; min-width: 50px; padding: 6px 6px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.78rem;" />
+        <input type="text" inputmode="numeric" name="${prefix}_medida" class="tire-size-mask" placeholder="xxx/xx-xx" style="width: 76px; flex: 0 0 76px; padding: 6px 4px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.78rem; text-align: center;" />
+        <div class="type-buttons-container" data-input-id="input_${prefix}_estado" style="display: inline-flex; gap: 2px; flex: 0 0 auto;">
+          <button type="button" class="type-btn active" data-value="Bom" style="padding: 6px 8px; font-size: 0.72rem; min-width: 38px; line-height: 1;">Bom</button>
+          <button type="button" class="type-btn" data-value="Ruim" style="padding: 6px 8px; font-size: 0.72rem; min-width: 38px; line-height: 1;">Ruim</button>
         </div>
         <input type="hidden" id="input_${prefix}_estado" name="${prefix}_estado" value="Bom" />
       </div>
@@ -3881,10 +3889,10 @@ function renderDynamicSurveyFields() {
 
     const detailedTiresHtml = `
       <div style="grid-column: 1 / -1; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-        <div style="font-size: 0.84rem; font-weight: 800; color: #0f172a; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+        <div style="font-size: 0.84rem; font-weight: 800; color: #0f172a; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
           <span>🛞</span> Condições e Medidas dos Pneus
         </div>
-        <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
           ${renderTireRow('PNEU D.D.', 'pneu_dd')}
           ${renderTireRow('PNEU T.D.', 'pneu_td')}
           ${renderTireRow('PNEU T.E.', 'pneu_te')}
@@ -3915,33 +3923,33 @@ function renderDynamicSurveyFields() {
     `;
 
     const detailedFluidsHtml = `
-      <div style="grid-column: 1 / -1; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px;">
-        <span class="status-label" style="display: block; font-weight: 800; color: #1e3a8a; margin-bottom: 8px;">💧 Níveis de Fluídos</span>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px;">
-          <div>
-            <span style="font-size: 0.78rem; font-weight: 700; color: #334155; display: block; margin-bottom: 4px;">Nível de óleo:</span>
-            <div class="type-buttons-container" data-input-id="input_fluido_oleo">
-              <button type="button" class="type-btn active" data-value="OK">OK</button>
-              <button type="button" class="type-btn" data-value="Baixo">Baixo</button>
-              <button type="button" class="type-btn" data-value="Sem">Sem</button>
+      <div style="grid-column: 1 / -1; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 10px; box-sizing: border-box;">
+        <span class="status-label" style="display: block; font-weight: 800; color: #1e3a8a; margin-bottom: 6px; font-size: 0.82rem;">💧 Níveis de Fluídos</span>
+        <div style="display: grid; grid-template-columns: 1.15fr 0.9fr 0.95fr; gap: 4px; align-items: start; width: 100%; box-sizing: border-box;">
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 4px; text-align: center;">
+            <span style="font-size: 0.72rem; font-weight: 800; color: #334155; display: block; margin-bottom: 3px; white-space: nowrap;">Nível Óleo</span>
+            <div class="type-buttons-container" data-input-id="input_fluido_oleo" style="display: flex; gap: 2px;">
+              <button type="button" class="type-btn active" data-value="OK" style="flex: 1; min-width: 0; padding: 5px 2px; font-size: 0.70rem; line-height: 1;">OK</button>
+              <button type="button" class="type-btn" data-value="Baixo" style="flex: 1.2; min-width: 0; padding: 5px 2px; font-size: 0.68rem; line-height: 1;">Baixo</button>
+              <button type="button" class="type-btn" data-value="Sem" style="flex: 1; min-width: 0; padding: 5px 2px; font-size: 0.70rem; line-height: 1;">Sem</button>
             </div>
             <input type="hidden" id="input_fluido_oleo" name="fluidoOleo" value="OK" />
           </div>
 
-          <div>
-            <span style="font-size: 0.78rem; font-weight: 700; color: #334155; display: block; margin-bottom: 4px;">Arrefecimento:</span>
-            <div class="type-buttons-container" data-input-id="input_fluido_arrefecimento">
-              <button type="button" class="type-btn active" data-value="OK">OK</button>
-              <button type="button" class="type-btn" data-value="SEM">SEM</button>
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 4px; text-align: center;">
+            <span style="font-size: 0.72rem; font-weight: 800; color: #334155; display: block; margin-bottom: 3px; white-space: nowrap;">Arrefec.</span>
+            <div class="type-buttons-container" data-input-id="input_fluido_arrefecimento" style="display: flex; gap: 2px;">
+              <button type="button" class="type-btn active" data-value="OK" style="flex: 1; min-width: 0; padding: 5px 2px; font-size: 0.70rem; line-height: 1;">OK</button>
+              <button type="button" class="type-btn" data-value="SEM" style="flex: 1; min-width: 0; padding: 5px 2px; font-size: 0.70rem; line-height: 1;">SEM</button>
             </div>
             <input type="hidden" id="input_fluido_arrefecimento" name="fluidoArrefecimento" value="OK" />
           </div>
 
-          <div>
-            <span style="font-size: 0.78rem; font-weight: 700; color: #334155; display: block; margin-bottom: 4px;">Óleo hidráulico:</span>
-            <div class="type-buttons-container" data-input-id="input_fluido_hidraulico">
-              <button type="button" class="type-btn active" data-value="OK">OK</button>
-              <button type="button" class="type-btn" data-value="SEM">SEM</button>
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 4px; text-align: center;">
+            <span style="font-size: 0.72rem; font-weight: 800; color: #334155; display: block; margin-bottom: 3px; white-space: nowrap;">Hidráulico</span>
+            <div class="type-buttons-container" data-input-id="input_fluido_hidraulico" style="display: flex; gap: 2px;">
+              <button type="button" class="type-btn active" data-value="OK" style="flex: 1; min-width: 0; padding: 5px 2px; font-size: 0.70rem; line-height: 1;">OK</button>
+              <button type="button" class="type-btn" data-value="SEM" style="flex: 1; min-width: 0; padding: 5px 2px; font-size: 0.70rem; line-height: 1;">SEM</button>
             </div>
             <input type="hidden" id="input_fluido_hidraulico" name="fluidoHidraulico" value="OK" />
           </div>
@@ -3979,9 +3987,24 @@ function renderDynamicSurveyFields() {
         </div>
         <input type="hidden" id="input_ressalvas" name="ressalvas" value="Não" />
         
-        <div id="containerPecasRessalva" style="display: none; margin-top: 6px;">
-          <label style="font-size: 0.80rem; font-weight: 700; color: #b91c1c; display: block; margin-bottom: 4px;">QUAIS PEÇAS DE RESSALVA:</label>
-          <textarea id="input_pecas_ressalva" name="pecasRessalva" rows="2" placeholder="Descreva aqui quais peças de ressalva..." style="width: 100%; box-sizing: border-box; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #f87171; font-size: 0.85rem;"></textarea>
+        <div id="containerPecasRessalva" style="display: none; margin-top: 8px; background: #fff7ed; border: 1.5px solid #fdba74; border-radius: 10px; padding: 10px; box-sizing: border-box;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+            <label style="font-size: 0.82rem; font-weight: 800; color: #c2410c; margin: 0; display: flex; align-items: center; gap: 4px;">
+              <span>⚠️</span> PEÇAS DE RESSALVA (<span id="countPecasRessalva">0</span>)
+            </label>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" onclick="openVehiclePartsForRessalvas()" style="background: #ea580c; color: white; border: none; font-size: 0.76rem; font-weight: 800; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(234,88,12,0.3);">
+                🚗 Selecionar Peças
+              </button>
+              <button type="button" id="btnLimparRessalvas" onclick="limparPecasRessalva()" style="background: #ffffff; color: #991b1b; border: 1px solid #fca5a5; font-size: 0.72rem; font-weight: 700; padding: 5px 8px; border-radius: 6px; cursor: pointer; display: none;">
+                🗑️ Limpar
+              </button>
+            </div>
+          </div>
+          <div id="listaPecasRessalvaBadges" style="display: flex; flex-wrap: wrap; gap: 4px; min-height: 24px;">
+            <span style="font-size: 0.76rem; color: #9a3412; font-style: italic;">Nenhuma peça selecionada ainda. Toque em "Selecionar Peças" acima.</span>
+          </div>
+          <input type="hidden" id="input_pecas_ressalva" name="pecasRessalva" value="" />
         </div>
       </div>
 
@@ -4339,8 +4362,21 @@ function renderDynamicSurveyFields() {
         if (containerPecas) {
           containerPecas.style.display = value === 'Sim' ? 'block' : 'none';
           if (value === 'Sim') {
+            if (typeof renderPecasRessalvaBadges === 'function') {
+              renderPecasRessalvaBadges();
+            }
             const pInput = document.getElementById('input_pecas_ressalva');
-            if (pInput) setTimeout(() => pInput.focus(), 50);
+            if (!pInput || !pInput.value || !pInput.value.trim()) {
+              setTimeout(() => {
+                if (typeof openVehiclePartsForRessalvas === 'function') {
+                  openVehiclePartsForRessalvas();
+                }
+              }, 120);
+            }
+          } else {
+            if (typeof limparPecasRessalva === 'function') {
+              limparPecasRessalva(true);
+            }
           }
         }
       }
@@ -4440,6 +4476,47 @@ function formatTireSize(val) {
   return digits.slice(0, 3) + '/' + digits.slice(3, 5) + '-' + digits.slice(5);
 }
 window.formatTireSize = formatTireSize;
+
+window.renderPecasRessalvaBadges = function(customText = null) {
+  const inputEl = document.getElementById('input_pecas_ressalva');
+  const badgesContainer = document.getElementById('listaPecasRessalvaBadges');
+  const countEl = document.getElementById('countPecasRessalva');
+  const btnLimpar = document.getElementById('btnLimparRessalvas');
+  if (!badgesContainer) return;
+
+  const text = customText !== null ? customText : (inputEl ? inputEl.value : '');
+  const pieces = (text || '').split('\n').map(p => p.trim()).filter(Boolean);
+
+  if (countEl) countEl.textContent = pieces.length;
+  if (btnLimpar) btnLimpar.style.display = pieces.length > 0 ? 'inline-block' : 'none';
+
+  if (pieces.length === 0) {
+    badgesContainer.innerHTML = '<span style="font-size: 0.76rem; color: #9a3412; font-style: italic;">Nenhuma peça selecionada ainda. Toque em "Selecionar Peças" acima.</span>';
+    return;
+  }
+
+  badgesContainer.innerHTML = pieces.map(name => `
+    <span style="display: inline-flex; align-items: center; gap: 4px; background: #ffffff; border: 1.5px solid #fdba74; color: #c2410c; font-size: 0.76rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+      <span>⚠️ ${escapeHtml(name)}</span>
+      <button type="button" onclick="removerPecaRessalva('${escapeHtml(name)}')" title="Remover esta peça" style="background: none; border: none; color: #ea580c; font-weight: 900; font-size: 0.80rem; cursor: pointer; padding: 0 2px; line-height: 1;">✕</button>
+    </span>
+  `).join('');
+};
+
+window.removerPecaRessalva = function(nameToRemove) {
+  const inputEl = document.getElementById('input_pecas_ressalva');
+  if (!inputEl) return;
+  const pieces = inputEl.value.split('\n').map(p => p.trim()).filter(Boolean);
+  const filtered = pieces.filter(p => p.toLowerCase() !== (nameToRemove || '').toLowerCase());
+  inputEl.value = filtered.join('\n');
+  renderPecasRessalvaBadges();
+};
+
+window.limparPecasRessalva = function(silent = false) {
+  const inputEl = document.getElementById('input_pecas_ressalva');
+  if (inputEl) inputEl.value = '';
+  renderPecasRessalvaBadges();
+};
 
 function toggleBateriaAusente() {
   const batInput = document.getElementById('input_bateria');
@@ -9528,6 +9605,111 @@ window.openVehiclePartsModal = function() {
   if (modal) modal.style.display = 'flex';
 };
 
+let vpIsRessalvaMode = false;
+window.openVehiclePartsForRessalvas = function() {
+  vpIsSettingsMode = false;
+  vpIsRessalvaMode = true;
+  currentVistoriaIdForParts = null;
+  vpViewAllZonesMode = true;
+  vpActiveCategory = 'PECAS';
+  vpOpenObsPartNames.clear();
+  if (typeof vpNewlyAddedPartNames !== 'undefined' && vpNewlyAddedPartNames) {
+    vpNewlyAddedPartNames.clear();
+  }
+  vpLoadState();
+  if (typeof window.vpSyncCatalogWithCloud === 'function') {
+    window.vpSyncCatalogWithCloud(false);
+  }
+
+  const dockCamBtn = document.getElementById('vpDockCameraButton');
+  if (dockCamBtn) dockCamBtn.style.display = 'none';
+
+  const finishBtns = document.querySelectorAll('button[onclick="vpApplyAndClose()"]');
+  finishBtns.forEach(btn => {
+    btn.textContent = '✓ Concluir Ressalvas';
+  });
+
+  const plateInput = document.getElementById('plateInput');
+  const vehicleTitle = plateInput ? plateInput.value.trim() : '';
+  vpCurrentVehicleModelName = vehicleTitle;
+
+  const titleDisplay = document.getElementById('vpVehicleTitle');
+  if (titleDisplay) {
+    titleDisplay.textContent = vehicleTitle ? `${vehicleTitle} • Peças de Ressalva` : 'Selecionar Peças de Ressalva';
+  }
+
+  const badgeDisplay = document.getElementById('vpVehicleBadge');
+  if (badgeDisplay) {
+    badgeDisplay.textContent = '⚠️ Modo Ressalvas';
+    badgeDisplay.style.background = '#fff7ed';
+    badgeDisplay.style.color = '#c2410c';
+  }
+
+  const dockStandard = document.getElementById('vpDockStandardCounts');
+  const dockRessalva = document.getElementById('vpDockRessalvaIndicator');
+  if (dockStandard) dockStandard.style.display = 'none';
+  if (dockRessalva) dockRessalva.style.display = 'inline-flex';
+
+  const detectedType = (typeof selectedType !== 'undefined' && selectedType === 'Moto') ? 'moto' : vpDetectVehicleTypeFromText(vehicleTitle);
+  window.vpSetVehicleType(detectedType, false, true);
+  vpViewAllZonesMode = true;
+
+  // Carrega as peças de ressalva que já constam no input_pecas_ressalva
+  vpSelectedPartsMap.clear();
+  const inputEl = document.getElementById('input_pecas_ressalva');
+  if (inputEl && inputEl.value) {
+    const lines = inputEl.value.split('\n');
+    lines.forEach(l => {
+      const name = vpCleanPartDashes(l);
+      if (name) {
+        vpSelectedPartsMap.set(name, {
+          name: name,
+          rawName: name,
+          zoneId: 'geral',
+          zoneName: 'Ressalva',
+          action: 'ressalva',
+          obs: ''
+        });
+      }
+    });
+  }
+
+  vpSetupSearch();
+  vpUpdateTriggerButton();
+  vpRenderTabsNavBar();
+  vpRenderParts();
+  vpUpdateDockAndSheet();
+
+  const modal = document.getElementById('vehiclePartsModal');
+  if (modal) modal.style.display = 'flex';
+};
+
+window.vpTogglePartRessalva = function(partName) {
+  if (!partName) return;
+  const clean = vpCleanPartDashes(partName);
+  const eff = vpGetEffectivePartName(clean);
+  const targetName = eff || clean;
+
+  if (vpSelectedPartsMap.has(targetName)) {
+    vpSelectedPartsMap.delete(targetName);
+  } else {
+    vpSelectedPartsMap.set(targetName, {
+      name: targetName,
+      rawName: clean,
+      zoneId: 'geral',
+      zoneName: 'Ressalva',
+      action: 'ressalva',
+      obs: ''
+    });
+  }
+
+  const listEl = document.getElementById('vpPartsScrollContainer');
+  const savedScroll = listEl ? listEl.scrollTop : 0;
+  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  if (listEl) listEl.scrollTop = savedScroll;
+  vpUpdateDockAndSheet();
+};
+
 window.vpSaveSelectedParts = function() {
   if (typeof vpSelectedPartsMap === 'undefined' || !vpSelectedPartsMap) return false;
 
@@ -9629,6 +9811,40 @@ window.vpSaveSelectedParts = function() {
 };
 
 window.closeVehiclePartsModal = function(skipSave = false) {
+  if (typeof vpIsRessalvaMode !== 'undefined' && vpIsRessalvaMode) {
+    if (!skipSave) {
+      const ressalvasList = [];
+      for (const part of vpSelectedPartsMap.values()) {
+        if (part.action === 'ressalva') ressalvasList.push(part.name);
+      }
+      const inputEl = document.getElementById('input_pecas_ressalva');
+      if (inputEl) inputEl.value = ressalvasList.join('\n');
+      if (typeof renderPecasRessalvaBadges === 'function') {
+        renderPecasRessalvaBadges(ressalvasList.join('\n'));
+      }
+    }
+    vpIsRessalvaMode = false;
+    const modal = document.getElementById('vehiclePartsModal');
+    if (modal) modal.style.display = 'none';
+    if (typeof window.vpCloseReviewSheet === 'function') {
+      window.vpCloseReviewSheet();
+    }
+    const finishBtns = document.querySelectorAll('button[onclick="vpApplyAndClose()"]');
+    finishBtns.forEach(btn => { btn.textContent = '✓ Concluir'; });
+    const badgeDisplay = document.getElementById('vpVehicleBadge');
+    if (badgeDisplay) {
+      badgeDisplay.style.background = '#eff6ff';
+      badgeDisplay.style.color = '#2563eb';
+    }
+    const dockCamBtn = document.getElementById('vpDockCameraButton');
+    if (dockCamBtn) dockCamBtn.style.display = 'inline-flex';
+    const dockStandard = document.getElementById('vpDockStandardCounts');
+    const dockRessalva = document.getElementById('vpDockRessalvaIndicator');
+    if (dockStandard) dockStandard.style.display = 'flex';
+    if (dockRessalva) dockRessalva.style.display = 'none';
+    return;
+  }
+
   if (vpIsSettingsMode) {
     vpSaveState(true);
     vpIsSettingsMode = false;
@@ -9718,6 +9934,27 @@ window.vpOpenPhotosFromDock = function() {
 };
 
 window.vpApplyAndClose = function() {
+  if (typeof vpIsRessalvaMode !== 'undefined' && vpIsRessalvaMode) {
+    const ressalvasList = [];
+    for (const part of vpSelectedPartsMap.values()) {
+      if (part.action === 'ressalva') {
+        ressalvasList.push(part.name);
+      }
+    }
+    const inputEl = document.getElementById('input_pecas_ressalva');
+    if (inputEl) {
+      inputEl.value = ressalvasList.join('\n');
+    }
+    if (typeof renderPecasRessalvaBadges === 'function') {
+      renderPecasRessalvaBadges(ressalvasList.join('\n'));
+    }
+    window.closeVehiclePartsModal(true);
+    if (typeof showToastNotification === 'function') {
+      showToastNotification(`Peças de ressalva salvas (${ressalvasList.length} itens)`, 2500);
+    }
+    return;
+  }
+
   if (vpIsSettingsMode) {
     vpSaveState(true);
     showCenteredSuccessModal('Alterações no catálogo salvas com sucesso!', 2000, () => {
@@ -11272,6 +11509,40 @@ function vpRenderParts(filterQuery = '') {
 }
 
 function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
+  if (typeof vpIsRessalvaMode !== 'undefined' && vpIsRessalvaMode) {
+    const selected = vpSelectedPartsMap.get(item.name);
+    const isRessalva = Boolean(selected && selected.action === 'ressalva');
+    const catalogIdx = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts.findIndex(p => (p.name || '').toLowerCase() === (item.name || '').toLowerCase()) : -1;
+    const orderNum = catalogIdx !== -1 ? (catalogIdx + 1) : (index + 1);
+
+    return `
+      <div 
+        class="vp-part-card ${isRessalva ? 'selected-ressalva' : ''}" 
+        data-part-name="${vpEscapeHtml(item.name)}" 
+        data-raw-name="${vpEscapeHtml(item.rawName || item.name)}"
+        data-part-index="${index}"
+        onclick="vpTogglePartRessalva('${vpEscapeHtml(item.name)}')"
+        style="width: 100%; min-width: 0; box-sizing: border-box; padding: 6px 8px; border-radius: 8px; border: 2px solid ${isRessalva ? '#ea580c' : '#cbd5e1'}; background: ${isRessalva ? '#fff7ed' : '#ffffff'}; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); cursor: pointer; transition: all 0.15s ease;"
+      >
+        <div class="vp-card-top" style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
+          <span class="vp-part-num" style="background: ${isRessalva ? '#ea580c' : '#f1f5f9'}; color: ${isRessalva ? '#ffffff' : '#475569'};">${orderNum}</span>
+          <span class="vp-part-title" title="${vpEscapeHtml(item.name)}" style="font-size: 0.82rem; font-weight: 800; color: ${isRessalva ? '#9a3412' : '#0f172a'}; flex: 1; min-width: 0; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            ${vpEscapeHtml(item.name)}
+          </span>
+          <span style="font-size: 0.85rem;">${isRessalva ? '✅' : '⚪'}</span>
+        </div>
+        <div style="width: 100%;">
+          <button 
+            type="button" 
+            style="width: 100%; padding: 5px; font-size: 0.72rem; border-radius: 6px; font-weight: 800; border: none; background: ${isRessalva ? '#ea580c' : '#f8fafc'}; color: ${isRessalva ? '#ffffff' : '#64748b'}; pointer-events: none;"
+          >
+            ${isRessalva ? '✓ Ressalva Selecionada' : '+ Marcar Ressalva'}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   const selected = vpSelectedPartsMap.get(item.name);
   const isTroca = selected && selected.action === 'troca';
   const isReparo = selected && selected.action === 'reparo';
@@ -11510,6 +11781,24 @@ window.vpClearAllSelected = function() {
 };
 
 function vpUpdateDockAndSheet() {
+  const isRessalvaMode = Boolean(typeof vpIsRessalvaMode !== 'undefined' && vpIsRessalvaMode);
+  const dockStandard = document.getElementById('vpDockStandardCounts');
+  const dockRessalva = document.getElementById('vpDockRessalvaIndicator');
+  const dockRessalvaCount = document.getElementById('vpDockRessalvaCount');
+
+  if (dockStandard && dockRessalva) {
+    dockStandard.style.display = isRessalvaMode ? 'none' : 'flex';
+    dockRessalva.style.display = isRessalvaMode ? 'inline-flex' : 'none';
+  }
+
+  if (isRessalvaMode) {
+    let rCount = 0;
+    for (const part of vpSelectedPartsMap.values()) {
+      if (part.action === 'ressalva') rCount++;
+    }
+    if (dockRessalvaCount) dockRessalvaCount.textContent = rCount;
+  }
+
   const trocas = [];
   const reparos = [];
 

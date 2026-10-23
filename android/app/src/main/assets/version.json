@@ -1,7 +1,7 @@
 {
-  "version": "2.43.0",
-  "versionCode": 2430,
-  "updatedAt": "2026-10-22T21:15:00Z",
-  "buildDate": "2026-10-22T21:15:00.000Z",
-  "changelog": "Modelo detalhado de vistoria por empresa, telefone/email da oficina com preenchimento automático, cópia de peças entre abas e blindagem definitiva das sub-abas."
+  "version": "2.44.0",
+  "versionCode": 2440,
+  "updatedAt": "2026-10-22T22:15:00Z",
+  "buildDate": "2026-10-22T22:15:00.000Z",
+  "changelog": "Modelo detalhado: pneus e fluidos alinhados na mesma linha, selecao direta de pecas de ressalva nas partes do veiculo."
 }

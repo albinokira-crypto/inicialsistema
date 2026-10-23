@@ -789,12 +789,17 @@
         <!-- DOCK FLUTUANTE INFERIOR -->
         <div style="position: absolute; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e2e8f0; padding: 8px 12px; box-shadow: 0 -4px 15px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; gap: 6px; z-index: 10; box-sizing: border-box; flex-wrap: wrap;">
           <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; flex: 1; min-width: 0;">
-            <div onclick="vpOpenReviewSheet()" style="display: flex; gap: 6px; cursor: pointer; align-items: center; flex-wrap: wrap;">
+            <div id="vpDockStandardCounts" onclick="vpOpenReviewSheet()" style="display: flex; gap: 6px; cursor: pointer; align-items: center; flex-wrap: wrap;">
               <span style="background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; font-size: 0.76rem; font-weight: 800; padding: 5px 8px; border-radius: 999px; white-space: nowrap;">
                 🔁 Trocas: <span id="vpDockTrocaCount">0</span>
               </span>
               <span style="background: #f0f9ff; border: 1px solid #bae6fd; color: #0284c7; font-size: 0.76rem; font-weight: 800; padding: 5px 8px; border-radius: 999px; white-space: nowrap;">
                 🛠️ Reparos: <span id="vpDockReparoCount">0</span>
+              </span>
+            </div>
+            <div id="vpDockRessalvaIndicator" style="display: none; align-items: center;">
+              <span style="background: #fff7ed; border: 1.5px solid #fdba74; color: #c2410c; font-size: 0.78rem; font-weight: 800; padding: 5px 10px; border-radius: 999px; white-space: nowrap;">
+                ⚠️ Ressalvas: <span id="vpDockRessalvaCount">0</span>
               </span>
             </div>
             <button type="button" id="vpDockCameraButton" onclick="vpOpenPhotosFromDock()" title="Abrir Câmera / Fotos do Veículo" style="background: #eff6ff; border: 1.5px solid #93c5fd; color: #1e40af; font-size: 0.78rem; font-weight: 800; padding: 5px 10px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 5px rgba(37,99,235,0.15); flex-shrink: 0; white-space: nowrap;">
@@ -1335,6 +1340,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=2430"></script>
+    <script src="app.js?v=2440"></script>
   </body>
 </html>
