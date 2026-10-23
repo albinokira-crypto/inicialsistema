@@ -3874,30 +3874,30 @@ function renderDynamicSurveyFields() {
       </div>
     `;
 
-    const renderTireRow = (label, prefix) => `
-      <div style="display: flex; align-items: center; gap: 4px; padding: 6px 8px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; width: 100%; box-sizing: border-box;">
-        <span style="font-size: 0.74rem; font-weight: 800; color: #334155; width: 62px; flex: 0 0 62px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" title="${label}">${label}:</span>
-        <input type="text" name="${prefix}_marca" placeholder="Marca" style="flex: 1; min-width: 50px; padding: 6px 6px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.78rem;" />
-        <input type="text" inputmode="numeric" name="${prefix}_medida" class="tire-size-mask" placeholder="xxx/xx-xx" style="width: 76px; flex: 0 0 76px; padding: 6px 4px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.78rem; text-align: center;" />
-        <div class="type-buttons-container" data-input-id="input_${prefix}_estado" style="display: inline-flex; gap: 2px; flex: 0 0 auto;">
-          <button type="button" class="type-btn active" data-value="Bom" style="padding: 6px 8px; font-size: 0.72rem; min-width: 38px; line-height: 1;">Bom</button>
-          <button type="button" class="type-btn" data-value="Ruim" style="padding: 6px 8px; font-size: 0.72rem; min-width: 38px; line-height: 1;">Ruim</button>
+    const renderTireRow = (label, prefix, isLast = false) => `
+      <div style="display: flex; align-items: center; gap: 6px; padding: 7px 0; ${isLast ? '' : 'border-bottom: 1px solid #f1f5f9;'} width: 100%; box-sizing: border-box;">
+        <span style="font-size: 0.82rem; font-weight: 800; color: #1e293b; width: 96px; min-width: 96px; flex: 0 0 96px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" title="${label}">${label}:</span>
+        <input type="text" name="${prefix}_marca" placeholder="Marca" style="flex: 1; min-width: 60px; padding: 7px 8px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.82rem;" />
+        <input type="text" inputmode="numeric" name="${prefix}_medida" class="tire-size-mask" placeholder="xxx/xx-xx" style="width: 78px; flex: 0 0 78px; padding: 7px 4px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.82rem; text-align: center;" />
+        <div class="type-buttons-container" data-input-id="input_${prefix}_estado" style="display: inline-flex; gap: 3px; flex: 0 0 auto;">
+          <button type="button" class="type-btn active" data-value="Bom" style="padding: 7px 10px; font-size: 0.74rem; min-width: 40px; line-height: 1;">Bom</button>
+          <button type="button" class="type-btn" data-value="Ruim" style="padding: 7px 10px; font-size: 0.74rem; min-width: 40px; line-height: 1;">Ruim</button>
         </div>
         <input type="hidden" id="input_${prefix}_estado" name="${prefix}_estado" value="Bom" />
       </div>
     `;
 
     const detailedTiresHtml = `
-      <div style="grid-column: 1 / -1; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-        <div style="font-size: 0.84rem; font-weight: 800; color: #0f172a; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+      <div style="grid-column: 1 / -1; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <div style="font-size: 0.85rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
           <span>🛞</span> Condições e Medidas dos Pneus
         </div>
-        <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; flex-direction: column;">
           ${renderTireRow('PNEU D.D.', 'pneu_dd')}
           ${renderTireRow('PNEU T.D.', 'pneu_td')}
           ${renderTireRow('PNEU T.E.', 'pneu_te')}
           ${renderTireRow('PNEU D.E.', 'pneu_de')}
-          ${renderTireRow('ESTEPE', 'estepe')}
+          ${renderTireRow('ESTEPE', 'estepe', true)}
         </div>
       </div>
     `;
