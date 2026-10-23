@@ -146,21 +146,37 @@
             <!-- Botões das Empresas Cadastradas -->
             <div id="companyButtonsContainer" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
 
+            <!-- RESUMO DISCRETO DO MODELO SALVO COM OPÇÃO DE ALTERAR -->
+            <div id="companyReportTemplateSummaryBar" style="display: none; margin-top: 6px; padding: 5px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #334155;">
+                <span>📋</span>
+                <span>Modelo de Relatório: <strong id="companyReportTemplateSummaryText" style="color: #1e40af;">Detalhado</strong></span>
+              </div>
+              <button type="button" onclick="toggleCompanyReportTemplateEdit(true)" style="background: none; border: none; color: #2563eb; font-size: 0.75rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 3px; padding: 2px 6px;">
+                ⚙️ Alterar modelo
+              </button>
+            </div>
+
             <!-- SELETOR DE MODELO DE RELATÓRIO POR EMPRESA -->
-            <div id="companyReportTemplateContainer" style="display: none; margin-top: 8px; padding: 10px 12px; background: #f0f7ff; border: 1.5px solid #bfdbfe; border-radius: 12px;">
+            <div id="companyReportTemplateContainer" style="display: none; margin-top: 6px; padding: 10px 12px; background: #f0f7ff; border: 1.5px solid #bfdbfe; border-radius: 12px;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px;">
-                  <span style="font-size: 0.85rem; font-weight: 800; color: #1e40af; display: flex; align-items: center; gap: 4px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px;">
+                  <span style="font-size: 0.82rem; font-weight: 800; color: #1e40af; display: flex; align-items: center; gap: 4px;">
                     <span>📋</span> Relatório da Empresa:
                   </span>
-                  <select id="companyReportTemplateSelect" style="flex: 1; min-width: 150px; padding: 6px 10px; border-radius: 8px; border: 1.5px solid #93c5fd; background: #ffffff; color: #1e3a8a; font-weight: 700; font-size: 0.82rem; outline: none;">
+                  <select id="companyReportTemplateSelect" style="flex: 1; min-width: 140px; padding: 6px 10px; border-radius: 8px; border: 1.5px solid #93c5fd; background: #ffffff; color: #1e3a8a; font-weight: 700; font-size: 0.80rem; outline: none;">
                     <option value="detalhado">Modelo Detalhado (Completo)</option>
                     <option value="padrao">Modelo Padrão</option>
                   </select>
                 </div>
-                <button type="button" id="saveCompanyReportTemplateBtn" onclick="saveActiveCompanyReportTemplate()" style="padding: 6px 14px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 800; font-size: 0.80rem; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(37,99,235,0.25);">
-                  💾 Salvar
-                </button>
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" id="saveCompanyReportTemplateBtn" onclick="saveActiveCompanyReportTemplate()" style="padding: 6px 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 800; font-size: 0.78rem; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(37,99,235,0.25);">
+                    💾 Salvar
+                  </button>
+                  <button type="button" onclick="toggleCompanyReportTemplateEdit(false)" style="padding: 6px 10px; background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 700; font-size: 0.78rem; cursor: pointer;">
+                    Ocultar
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1340,6 +1356,6 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=2460"></script>
+    <script src="app.js?v=2470"></script>
   </body>
 </html>

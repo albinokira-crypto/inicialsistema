@@ -486,16 +486,37 @@ function isDetailedVistoriaEligible(type = selectedType) {
 }
 window.isDetailedVistoriaEligible = isDetailedVistoriaEligible;
 
+let companyReportTemplateEditOpen = false;
+
+window.toggleCompanyReportTemplateEdit = function(open) {
+  companyReportTemplateEditOpen = Boolean(open);
+  updateCompanyReportTemplateUI();
+};
+
 function updateCompanyReportTemplateUI() {
   const container = document.getElementById('companyReportTemplateContainer');
+  const summaryBar = document.getElementById('companyReportTemplateSummaryBar');
+  const summaryText = document.getElementById('companyReportTemplateSummaryText');
   const selectEl = document.getElementById('companyReportTemplateSelect');
   if (!container || !selectEl) return;
 
   if (isDetailedVistoriaEligible(selectedType)) {
-    container.style.display = 'block';
-    selectEl.value = getCompanyReportTemplate(activeCompanyId);
+    const currentTpl = getCompanyReportTemplate(activeCompanyId);
+    selectEl.value = currentTpl;
+    if (summaryText) {
+      summaryText.textContent = currentTpl === 'detalhado' ? 'Detalhado' : 'Padrão';
+    }
+
+    if (companyReportTemplateEditOpen) {
+      container.style.display = 'block';
+      if (summaryBar) summaryBar.style.display = 'none';
+    } else {
+      container.style.display = 'none';
+      if (summaryBar) summaryBar.style.display = 'flex';
+    }
   } else {
     container.style.display = 'none';
+    if (summaryBar) summaryBar.style.display = 'none';
   }
 }
 window.updateCompanyReportTemplateUI = updateCompanyReportTemplateUI;
@@ -505,6 +526,10 @@ function saveActiveCompanyReportTemplate() {
   if (!selectEl) return;
   const chosen = selectEl.value;
   setCompanyReportTemplate(activeCompanyId, chosen);
+
+  // Oculta o card após salvar e exibe o resumo discreto com botão de reaparecer
+  companyReportTemplateEditOpen = false;
+  updateCompanyReportTemplateUI();
 
   const activeComp = companies.find(c => c.id === activeCompanyId) || { name: 'Empresa' };
   if (typeof showToastNotification === 'function') {

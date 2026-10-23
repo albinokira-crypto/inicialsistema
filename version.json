@@ -1,7 +1,7 @@
 {
-  "version": "2.46.0",
-  "versionCode": 2460,
-  "updatedAt": "2026-10-22T22:36:00Z",
-  "buildDate": "2026-10-22T22:36:00.000Z",
-  "changelog": "Modelo detalhado: campo de digitar nome/marca do pneu ampliado em mais de 50% para acomodar nomes longos sem cortar."
+  "version": "2.47.0",
+  "versionCode": 2470,
+  "updatedAt": "2026-10-22T22:45:00Z",
+  "buildDate": "2026-10-22T22:45:00.000Z",
+  "changelog": "Botoes de seguradoras compactos na mesma linha e seletor de modelo de relatorio recolhivel com opcao de alterar."
 }
