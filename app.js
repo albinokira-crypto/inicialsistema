@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.43.0';
+let CURRENT_APP_VERSION = 'v2.49.0';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -8583,6 +8583,112 @@ let vpCustomTabs = []; // Array de { id, name, icon, parts: string[] }
 let vpActiveCustomTabId = null; // null = aba padrão "Peças do veículo", string = id da aba personalizada
 let vpTempSelectedPartsInModal = new Set();
 
+// GUARD DE IMUTABILIDADE DAS CONFIGURAÇÕES DO USUÁRIO
+// Garante que qualquer peça configurada, reordenada ou transferida pelo usuário NUNCA seja sobrescrita por atualizações
+let vpConfigGuard = {
+  configuredParts: {}, // key: lowerName -> { vehicleType, userLocked: true, updatedAt }
+  customOrders: {},
+  updatedAt: Date.now()
+};
+
+function vpInferPartVehicleType(name) {
+  if (!name || typeof name !== 'string') return 'carro';
+  const clean = vpCleanPartDashes(name);
+  const upper = clean.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  // 1. MOTO EXCLUSIVO (Guidão, manetes, bengalas, rabeta, monoshock, estator, alça do garupa, etc.)
+  const isMotoStrict = /\b(GUIDAO|GUIDÃO|MESA SUPERIOR|MESA INFERIOR|BENGALA|BENGALAS|GARFO DIANT|TUBO DO GARFO|MANETE|MANETES|MANOPLA|MANOPLAS|CARENAGEM DO FAROL|BOLHA|RABETA|MONOSHOCK|AMORTECEDOR CENTRAL|CAVALETE CENTRAL|CAVALETE LATERAL|DESCANSO LATERAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA|ALÇA DO GARUPA|ALCA DO GARUPA|PEDALEIRA|PEDALEIRAS|PEDAL DE CAMBIO|PEDAL DE CÂMBIO|CORRENTE DE TRANSMISSAO|RELAÇÃO|RELACAO|TAMPA DO ESTATOR|TAMPA DA EMBREAGEM|PROTETOR DE CARENAGEM|BANCO DA MOTO|TAMPA DO MOTOR LATERAL|GUIA DE CORRENTE|CAPA DE CORRENTE)\b/i.test(upper);
+  if (isMotoStrict) return 'moto';
+
+  // 2. PICAPE EXCLUSIVO
+  const isPicapeStrict = /\b(CACAMBA|CAÇAMBA|TAMPA DA CACAMBA|TAMPA DA CAÇAMBA|PROTETOR DE CACAMBA|PROTETOR DE CAÇAMBA|SANTO ANTONIO|SANTO ANTÔNIO|CAPOTA MARITIMA|CAPOTA MARÍTIMA|ASSOALHO DA CACAMBA|ASSOALHO DA CAÇAMBA)\b/i.test(upper);
+  if (isPicapeStrict) return 'picape';
+
+  // 3. CAMINHÃO EXCLUSIVO
+  const isCaminhaoStrict = /\b(CABINE DIANTEIRA|CLIMATIZADOR DE TETO|QUINTA RODA|PORTAS TRAS DO BAU|PORTAS TRAS DO BAÚ|CUICA DE FREIO|CUÍCA DE FREIO|SUSPENSOR PNEUMATICO|FAIXAS REFLETIVAS|SEMI REBOQUE|SEMIRREBOQUE|CARRETA|CHASSI PESADO)\b/i.test(upper);
+  if (isCaminhaoStrict) return 'caminhao';
+
+  // 4. CARRO EXCLUSIVO (NUNCA EXISTE EM MOTOS: portas, capô, parachoque, porta-malas, parabarro, parabrisa, bandeja, etc.)
+  const isCarStrict = /\b(PORTA DIANT|PORTA TRAS|PORTAS|FORRO DE PORTA|FORRO DA PORTA|FECHADURA DA PORTA|FECHADURA DE PORTA|MACANETA DA PORTA|MAÇANETA DA PORTA|VIDRO DA PORTA|LIMITADOR DE PORTA|BORRACHA DA PORTA|FRISO DA PORTA|CAPO DO MOTOR|CAPÔ DO MOTOR|CAPO|CAPÔ|TRAVA DO CAPO|TRAVA DO CAPÔ|PORTA-MALAS|PORTA MALAS|TAMPA DO PORTA MALAS|FECHADURA DA TAMPA DO PORTA MALAS|AMORTECEDOR DA TAMPA TRAS|ASSOALHO DO PORTA MALAS|PARA CHOQUE|PARACHOQUE|ALMA DO PARA|ALMA DO PARACHOQUE|GRADE DIANT|GRADE DO RADIADOR|GRADE INFERIOR|PARA BARRO|PARABARRO|PARA-BRISA|PARABRISA|VIDRO PARA BRISA|VIDRO TRAS|VIDRO VIGIA|TETO SOLAR|FORRO DO TETO|AIRBAG MOTORISTA|AIRBAG PASSAGEIRO|AIRBAG|BANDEJA DE SUSPENSAO|BANDEJA|PIVO DA BANDEJA|PIVÔ DA BANDEJA|PIVO|PIVÔ|BIELETA|BARRA AXIAL|TERMINAL DE DIRECAO|TERMINAL DE DIREÇÃO|BARRA ESTABILIZADORA|COXIM DO AMORTECEDOR|BATENTE DO AMORTECEDOR|HOMOCINETICA|SEMIEIXO|PROTETOR DE CARTER|PROTETOR DE CÁRTER|PEITO DE ACO|PEITO DE AÇO|SENSOR DE ESTACIONAMENTO|CAMERA DE RE|CÂMERA DE RÉ|CAIXA DE AR|SOLEIRA|COLUNA A|COLUNA B|COLUNA C)\b/i.test(upper);
+  if (isCarStrict) return 'carro';
+
+  return 'carro';
+}
+window.vpInferPartVehicleType = vpInferPartVehicleType;
+
+function vpSweepAndClassifyAllParts(silent = true) {
+  let changedCount = 0;
+
+  if (Array.isArray(vpCustomPartsList)) {
+    vpCustomPartsList.forEach(p => {
+      if (!p || !p.name) return;
+      const clean = vpCleanPartDashes(p.name);
+      p.name = clean;
+      const lower = clean.toLowerCase();
+
+      // Se o usuário travou/configurou manualmente, NUNCA mexe!
+      if (vpConfigGuard && vpConfigGuard.configuredParts && vpConfigGuard.configuredParts[lower] && vpConfigGuard.configuredParts[lower].userLocked) {
+        const lockedType = vpConfigGuard.configuredParts[lower].vehicleType;
+        if (lockedType && p.vehicleType !== lockedType) {
+          p.vehicleType = lockedType;
+          vpPartVehicleTypeMap[clean] = lockedType;
+          vpPartVehicleTypeMap[lower] = lockedType;
+          changedCount++;
+        }
+        return;
+      }
+
+      // Se a peça tiver veículo explícito configurado pelo usuário no map
+      const mapped = vpPartVehicleTypeMap[lower] || vpPartVehicleTypeMap[clean];
+      if (mapped && mapped !== 'all') {
+        if (p.vehicleType !== mapped) {
+          p.vehicleType = mapped;
+          changedCount++;
+        }
+        return;
+      }
+
+      // Classificação automática precisa
+      const inferred = vpInferPartVehicleType(clean);
+      if (inferred && p.vehicleType !== inferred) {
+        p.vehicleType = inferred;
+        vpPartVehicleTypeMap[clean] = inferred;
+        vpPartVehicleTypeMap[lower] = inferred;
+        changedCount++;
+      }
+    });
+  }
+
+  // Também sanitiza vpPartVehicleTypeMap
+  if (vpPartVehicleTypeMap && typeof vpPartVehicleTypeMap === 'object') {
+    Object.keys(vpPartVehicleTypeMap).forEach(key => {
+      const lower = key.toLowerCase();
+      if (vpConfigGuard && vpConfigGuard.configuredParts && vpConfigGuard.configuredParts[lower] && vpConfigGuard.configuredParts[lower].userLocked) {
+        return;
+      }
+      const current = vpPartVehicleTypeMap[key];
+      if (!current || current === 'all') {
+        const inferred = vpInferPartVehicleType(key);
+        vpPartVehicleTypeMap[key] = inferred;
+        changedCount++;
+      }
+    });
+  }
+
+  if (changedCount > 0) {
+    vpSaveState(true);
+    vpAllVehicleParts = null;
+    vpLoadAndSortVehicleParts();
+  }
+
+  if (!silent && typeof showToastNotification === 'function') {
+    showToastNotification(`✓ Varredura concluída! Peças organizadas em suas respectivas abas (Carros e Motos) e protegidas contra alterações.`, 3500);
+  }
+
+  return changedCount;
+}
+window.vpSweepAndClassifyAllParts = vpSweepAndClassifyAllParts;
+
 function vpUpdateCloudIndicator(status, text) {
   const iconEl = document.getElementById('vpCloudSyncIcon');
   const textEl = document.getElementById('vpCloudSyncText');
@@ -8619,6 +8725,15 @@ function vpUpdateCloudIndicator(status, text) {
 
 function vpLoadState() {
   try {
+    // 1. Carrega Guard de Imutabilidade das Configurações do Usuário
+    let savedGuard = getSafeStorage('mobile_user_config_guard', null);
+    if (!savedGuard || typeof savedGuard !== 'object') {
+      savedGuard = getSafeStorage('mobile_user_config_guard_backup', null) || {};
+    }
+    if (savedGuard && typeof savedGuard === 'object') {
+      vpConfigGuard = Object.assign({ configuredParts: {}, customOrders: {}, updatedAt: Date.now() }, savedGuard);
+    }
+
     const savedCustom = getSafeStorage('mobile_parts_custom', null);
     if (savedCustom && Array.isArray(savedCustom)) {
       vpCustomPartsList = savedCustom.map(p => {
@@ -8670,7 +8785,10 @@ function vpLoadState() {
       setSafeStorage('mobile_custom_parts_tabs_emergency', vpCustomTabs);
     }
 
-    // Varre e incorpora automaticamente todas as peças registradas nas vistorias
+    // 2. Executa varredura e sanitização imediata das peças para garantir cada peça na sua aba
+    vpSweepAndClassifyAllParts(true);
+
+    // 3. Varre e incorpora com classificação segura todas as peças registradas nas vistorias
     setTimeout(() => {
       if (typeof vpScanAndHarvestPartsFromAllVistorias === 'function') {
         vpScanAndHarvestPartsFromAllVistorias(true);
@@ -8690,7 +8808,7 @@ function vpScanAndHarvestPartsFromAllVistorias(silent = false) {
   let newlyAdded = 0;
   const existingSet = new Set((vpCustomPartsList || []).map(p => (p.name || '').toLowerCase()));
 
-  const harvestLines = (text) => {
+  const harvestLines = (text, defaultTypeForVistoria) => {
     if (!text || typeof text !== 'string') return;
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     lines.forEach(line => {
@@ -8701,6 +8819,13 @@ function vpScanAndHarvestPartsFromAllVistorias(silent = false) {
       }
       if (name && name.length >= 2) {
         const lower = name.toLowerCase();
+
+        // Se o usuário travou/configurou manualmente, NUNCA sobrescreve!
+        if (vpConfigGuard && vpConfigGuard.configuredParts && vpConfigGuard.configuredParts[lower] && vpConfigGuard.configuredParts[lower].userLocked) {
+          return;
+        }
+
+        const inferred = vpInferPartVehicleType(name) || defaultTypeForVistoria || 'carro';
         if (!existingSet.has(lower)) {
           existingSet.add(lower);
           // Remove de deletedPartsList se estava excluída
@@ -8711,9 +8836,11 @@ function vpScanAndHarvestPartsFromAllVistorias(silent = false) {
             vpCustomPartsList.push({
               name: name,
               zoneId: 'geral',
-              vehicleType: 'all' // Garante que a peça aparece em qualquer veículo
+              vehicleType: inferred // Classificado de acordo com o veículo e natureza da peça
             });
           }
+          vpPartVehicleTypeMap[name] = inferred;
+          vpPartVehicleTypeMap[lower] = inferred;
           newlyAdded++;
         }
       }
@@ -8726,22 +8853,24 @@ function vpScanAndHarvestPartsFromAllVistorias(silent = false) {
 
   // 1. Processa com máxima prioridade as vistorias de hoje
   todayItems.forEach(item => {
+    const vType = item.vehicleType || (item.type === 'Moto' ? 'moto' : vpDetectVehicleTypeFromText((item.plate || '') + ' ' + (item.brand || '') + ' ' + (item.model || '')));
     const trocas = (item.details && item.details.trocas) || item.trocas || '';
     const reparos = (item.details && item.details.reparos) || item.reparos || '';
     const avarias = (item.details && item.details.avarias) || item.avarias || '';
-    harvestLines(trocas);
-    harvestLines(reparos);
-    harvestLines(avarias);
+    harvestLines(trocas, vType);
+    harvestLines(reparos, vType);
+    harvestLines(avarias, vType);
   });
 
   // 2. Processa as demais vistorias cadastradas no sistema
   otherItems.forEach(item => {
+    const vType = item.vehicleType || (item.type === 'Moto' ? 'moto' : vpDetectVehicleTypeFromText((item.plate || '') + ' ' + (item.brand || '') + ' ' + (item.model || '')));
     const trocas = (item.details && item.details.trocas) || item.trocas || '';
     const reparos = (item.details && item.details.reparos) || item.reparos || '';
     const avarias = (item.details && item.details.avarias) || item.avarias || '';
-    harvestLines(trocas);
-    harvestLines(reparos);
-    harvestLines(avarias);
+    harvestLines(trocas, vType);
+    harvestLines(reparos, vType);
+    harvestLines(avarias, vType);
   });
 
   if (newlyAdded > 0) {
@@ -8755,13 +8884,16 @@ function vpScanAndHarvestPartsFromAllVistorias(silent = false) {
   }
 
   if (!silent && typeof showToastNotification === 'function') {
-    showToastNotification(`Varredura concluída: ${newlyAdded} peça(s) das vistorias foram catalogadas com sucesso!`, 3500);
+    showToastNotification(`Varredura concluída: ${newlyAdded} peça(s) catalogadas nas suas abas correspondentes!`, 3500);
   }
 
   return newlyAdded;
 }
 window.vpScanAndHarvestPartsFromAllVistorias = vpScanAndHarvestPartsFromAllVistorias;
-window.vpHarvestPartsNow = () => vpScanAndHarvestPartsFromAllVistorias(false);
+window.vpHarvestPartsNow = () => {
+  vpSweepAndClassifyAllParts(true);
+  vpScanAndHarvestPartsFromAllVistorias(false);
+};
 
 function vpSaveState(syncToCloud = false) {
   try {
@@ -8772,13 +8904,35 @@ function vpSaveState(syncToCloud = false) {
     setSafeStorage('mobile_parts_deleted', vpDeletedPartsList);
     setSafeStorage('mobile_parts_usage_stats', vpUsageStats);
 
+    // Salva ConfigGuard com redundância
+    if (vpConfigGuard && typeof vpConfigGuard === 'object') {
+      setSafeStorage('mobile_user_config_guard', vpConfigGuard);
+      setSafeStorage('mobile_user_config_guard_backup', vpConfigGuard);
+    }
+
+    // BLINDAGEM DAS ORDENS CUSTOMIZADAS: Salva todas em SafeStorage / SQLite do Android
+    ['carro', 'moto', 'picape', 'caminhao'].forEach(type => {
+      const key = 'vp_custom_order_' + type;
+      let order = (vpConfigGuard && vpConfigGuard.customOrders && vpConfigGuard.customOrders[type]) || null;
+      if (!order) {
+        order = getSafeStorage(key, null);
+      }
+      if (!order) {
+        try { order = JSON.parse(localStorage.getItem(key) || 'null'); } catch(e) {}
+      }
+      if (Array.isArray(order) && order.length > 0) {
+        setSafeStorage(key, order);
+        setSafeStorage(key + '_backup', order);
+        setSafeStorage(key + '_permanent', order);
+      }
+    });
+
     // BLINDAGEM PERMANENTE: Se vpCustomTabs estiver preenchido, salva chaves normal e de redundância
     if (Array.isArray(vpCustomTabs) && vpCustomTabs.length > 0) {
       setSafeStorage('mobile_custom_parts_tabs', vpCustomTabs);
       setSafeStorage('mobile_custom_parts_tabs_backup', vpCustomTabs);
       setSafeStorage('mobile_custom_parts_tabs_emergency', vpCustomTabs);
     } else {
-      // Se vpCustomTabs estiver vazio em memória, NUNCA sobregrava o storage com array vazio caso existissem abas salvas
       const previousTabs = getSafeStorage('mobile_custom_parts_tabs', null) ||
                            getSafeStorage('mobile_custom_parts_tabs_backup', null) ||
                            getSafeStorage('mobile_custom_parts_tabs_emergency', null);
@@ -8810,6 +8964,13 @@ async function vpPushCatalogToCloud() {
   vpUpdateCloudIndicator('syncing', 'Salvando...');
 
   try {
+    const ordersObj = {};
+    ['carro', 'moto', 'picape', 'caminhao'].forEach(t => {
+      const ord = getSafeStorage('vp_custom_order_' + t, null) || 
+                  (vpConfigGuard && vpConfigGuard.customOrders && vpConfigGuard.customOrders[t]) || null;
+      if (Array.isArray(ord) && ord.length > 0) ordersObj[t] = ord;
+    });
+
     const payload = {
       data: {
         customParts: vpCustomPartsList,
@@ -8817,6 +8978,8 @@ async function vpPushCatalogToCloud() {
         renames: vpCustomPartRenamesMap,
         zoneOverrides: vpPartZoneOverridesMap,
         vehicleTypeMap: vpPartVehicleTypeMap,
+        customOrders: ordersObj,
+        configGuard: vpConfigGuard,
         usageStats: vpUsageStats,
         customTabs: vpCustomTabs,
         updatedAt: Date.now()
@@ -8884,16 +9047,50 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
     if (cloudData) {
       let hasChanges = false;
 
-      // 1. Merge de peças customizadas da nuvem (se houver na nuvem)
+      // 0. Merge seguro do ConfigGuard (preserva trava do usuário)
+      if (cloudData.configGuard && typeof cloudData.configGuard === 'object') {
+        if (!vpConfigGuard.configuredParts) vpConfigGuard.configuredParts = {};
+        if (cloudData.configGuard.configuredParts) {
+          Object.keys(cloudData.configGuard.configuredParts).forEach(k => {
+            if (!vpConfigGuard.configuredParts[k]) {
+              vpConfigGuard.configuredParts[k] = cloudData.configGuard.configuredParts[k];
+            }
+          });
+        }
+      }
+
+      // 0b. Merge de ordens customizadas salvas na nuvem
+      if (cloudData.customOrders && typeof cloudData.customOrders === 'object') {
+        Object.keys(cloudData.customOrders).forEach(t => {
+          const cloudOrder = cloudData.customOrders[t];
+          const localOrder = getSafeStorage('vp_custom_order_' + t, null);
+          if (Array.isArray(cloudOrder) && cloudOrder.length > 0 && (!localOrder || !Array.isArray(localOrder) || localOrder.length === 0)) {
+            setSafeStorage('vp_custom_order_' + t, cloudOrder);
+            setSafeStorage('vp_custom_order_' + t + '_backup', cloudOrder);
+            if (!vpConfigGuard.customOrders) vpConfigGuard.customOrders = {};
+            vpConfigGuard.customOrders[t] = cloudOrder;
+            hasChanges = true;
+          }
+        });
+      }
+
+      // 1. Merge de peças customizadas da nuvem com classificação precisa
       if (Array.isArray(cloudData.customParts) && cloudData.customParts.length > 0) {
         cloudData.customParts.forEach(cloudPart => {
           if (!cloudPart || !cloudPart.name) return;
-          const existsLocally = vpCustomPartsList.some(p => p.name.toLowerCase() === cloudPart.name.toLowerCase());
+          const cleanName = vpCleanPartDashes(cloudPart.name);
+          const lower = cleanName.toLowerCase();
+
+          // Determina o tipo seguro respeitando trava do usuário
+          let correctType = (vpConfigGuard.configuredParts && vpConfigGuard.configuredParts[lower] && vpConfigGuard.configuredParts[lower].vehicleType) ||
+                            (cloudPart.vehicleType && cloudPart.vehicleType !== 'all' ? cloudPart.vehicleType : vpInferPartVehicleType(cleanName));
+
+          const existsLocally = vpCustomPartsList.some(p => p.name.toLowerCase() === lower);
           if (!existsLocally) {
             vpCustomPartsList.push({
-              name: cloudPart.name,
-              zoneId: cloudPart.zoneId || 'dianteira',
-              vehicleType: cloudPart.vehicleType || 'all'
+              name: cleanName,
+              zoneId: cloudPart.zoneId || 'geral',
+              vehicleType: correctType
             });
             hasChanges = true;
           }
@@ -8923,6 +9120,11 @@ window.vpSyncCatalogWithCloud = async function(showFeedback = false) {
       // 4. Merge de alterações de tipo/seção de veículo (transferência de categoria)
       if (cloudData.vehicleTypeMap && typeof cloudData.vehicleTypeMap === 'object') {
         Object.keys(cloudData.vehicleTypeMap).forEach(key => {
+          const lower = key.toLowerCase();
+          // Não sobrescreve se o usuário travou no ConfigGuard
+          if (vpConfigGuard.configuredParts && vpConfigGuard.configuredParts[lower] && vpConfigGuard.configuredParts[lower].userLocked) {
+            return;
+          }
           if (!vpPartVehicleTypeMap[key]) {
             vpPartVehicleTypeMap[key] = cloudData.vehicleTypeMap[key];
             hasChanges = true;
@@ -9251,17 +9453,32 @@ function vpGetPartVehicleType(rawName) {
 }
 window.vpGetPartVehicleType = vpGetPartVehicleType;
 
-window.vpTransferPartVehicleType = function(rawName, targetType) {
-  if (!rawName || !targetType) return;
+window.vpTransferPartVehicleType = function(rawName, targetType, targetCustomTabId = null) {
+  if (!rawName) return;
   const clean = vpCleanPartDashes(rawName);
   const eff = vpGetEffectivePartName(rawName);
-  vpPartVehicleTypeMap[rawName] = targetType;
-  vpPartVehicleTypeMap[clean] = targetType;
-  vpPartVehicleTypeMap[eff] = targetType;
-  vpPartVehicleTypeMap[rawName.toLowerCase()] = targetType;
-  vpPartVehicleTypeMap[clean.toLowerCase()] = targetType;
-  vpPartVehicleTypeMap[eff.toLowerCase()] = targetType;
+  const finalTargetType = targetType || (vpDetectedVehicleType || 'carro');
 
+  // 1. Atualiza mapas de tipo de veículo
+  const keys = [rawName, clean, eff, rawName.toLowerCase(), clean.toLowerCase(), eff.toLowerCase()];
+  keys.forEach(k => {
+    if (k) vpPartVehicleTypeMap[k] = finalTargetType;
+  });
+
+  // 2. Proteção Imutável (vpConfigGuard) - Trava a decisão do usuário para NUNCA ser sobrescrita
+  if (!vpConfigGuard.configuredParts) vpConfigGuard.configuredParts = {};
+  const guardRecord = {
+    vehicleType: finalTargetType,
+    displayName: eff,
+    userLocked: true,
+    customTabId: targetCustomTabId || null,
+    updatedAt: Date.now()
+  };
+  vpConfigGuard.configuredParts[eff.toLowerCase()] = guardRecord;
+  vpConfigGuard.configuredParts[clean.toLowerCase()] = guardRecord;
+  vpConfigGuard.configuredParts[rawName.toLowerCase()] = guardRecord;
+
+  // 3. Atualiza ou adiciona na lista de peças customizadas
   if (Array.isArray(vpCustomPartsList)) {
     const customItem = vpCustomPartsList.find(p => 
       p && p.name && (
@@ -9271,44 +9488,153 @@ window.vpTransferPartVehicleType = function(rawName, targetType) {
       )
     );
     if (customItem) {
-      customItem.vehicleType = targetType;
+      customItem.vehicleType = finalTargetType;
     } else {
-      vpCustomPartsList.push({ name: eff, zoneId: 'geral', vehicleType: targetType });
+      vpCustomPartsList.push({ name: eff, zoneId: 'geral', vehicleType: finalTargetType });
     }
   }
 
+  // 4. Se foi especificada uma aba personalizada de destino
+  if (targetCustomTabId && Array.isArray(vpCustomTabs)) {
+    const destTab = vpCustomTabs.find(t => t.id === targetCustomTabId);
+    if (destTab) {
+      if (!Array.isArray(destTab.parts)) destTab.parts = [];
+      if (!destTab.parts.some(p => (vpGetEffectivePartName(p) || '').toLowerCase() === eff.toLowerCase())) {
+        destTab.parts.push(eff);
+      }
+    }
+  }
+
+  // 5. Atualiza ordens salvas (remove da aba de origem e adiciona na aba de destino)
+  ['carro', 'moto', 'picape', 'caminhao'].forEach(type => {
+    const orderKey = 'vp_custom_order_' + type;
+    let list = getSafeStorage(orderKey) || [];
+    if (typeof list === 'string') {
+      try { list = JSON.parse(list); } catch(e) { list = []; }
+    }
+    if (Array.isArray(list) && list.length > 0) {
+      if (type !== finalTargetType) {
+        list = list.filter(item => {
+          if (typeof item === 'string') {
+            const itemLower = item.toLowerCase();
+            return itemLower !== eff.toLowerCase() && itemLower !== clean.toLowerCase() && itemLower !== rawName.toLowerCase();
+          }
+          return true;
+        });
+      } else {
+        const alreadyInList = list.some(item => typeof item === 'string' && item.toLowerCase() === eff.toLowerCase());
+        if (!alreadyInList) {
+          list.push(eff);
+        }
+      }
+      setSafeStorage(orderKey, list);
+      setSafeStorage(orderKey + '_backup', list);
+      setSafeStorage(orderKey + '_permanent', list);
+      if (!vpConfigGuard.customOrders) vpConfigGuard.customOrders = {};
+      vpConfigGuard.customOrders[type] = list;
+    }
+  });
+
+  // 6. Invalida cache e recarrega
   vpAllVehicleParts = null;
   vpLoadAndSortVehicleParts();
   vpSaveState(true);
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  vpRenderTabsNavBar();
+  
+  if (typeof showToastNotification === 'function') {
+    const catLabels = { carro: 'Carros', moto: 'Motos', picape: 'Picapes', caminhao: 'Caminhões' };
+    showToastNotification(`✓ Peça "${eff}" transferida para a aba de ${catLabels[finalTargetType] || finalTargetType} com sucesso!`, 3000);
+  }
+};
+
+window.vpOpenQuickTransferModal = function(partName) {
+  if (!partName) return;
+  const modal = document.getElementById('vpQuickTransferModal');
+  const nameEl = document.getElementById('vpQuickTransferPartName');
+  const catSelect = document.getElementById('vpQuickTransferTargetCategory');
+  const customTabSelect = document.getElementById('vpQuickTransferCustomTabSelect');
+  const customTabSection = document.getElementById('vpQuickTransferCustomTabSection');
+
+  const eff = vpGetEffectivePartName(partName);
+  const currentCat = vpGetPartVehicleType(eff) || vpDetectedVehicleType || 'carro';
+
+  if (nameEl) {
+    nameEl.textContent = eff;
+    nameEl.dataset.partName = eff;
+  }
+  if (catSelect) {
+    catSelect.value = currentCat;
+  }
+
+  // Preenche opções de abas personalizadas se existirem
+  if (customTabSelect && customTabSection) {
+    if (Array.isArray(vpCustomTabs) && vpCustomTabs.length > 0) {
+      customTabSection.style.display = 'block';
+      customTabSelect.innerHTML = '<option value="">-- Nenhuma (Manter apenas na categoria de veículo) --</option>' +
+        vpCustomTabs.map(t => `<option value="${t.id}">${t.icon || '📑'} ${t.name}</option>`).join('');
+    } else {
+      customTabSection.style.display = 'none';
+      customTabSelect.innerHTML = '<option value="">Nenhuma aba criada</option>';
+    }
+  }
+
+  if (modal) modal.style.display = 'flex';
+};
+
+window.vpCloseQuickTransferModal = function() {
+  const modal = document.getElementById('vpQuickTransferModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.vpApplyQuickTransfer = function() {
+  const nameEl = document.getElementById('vpQuickTransferPartName');
+  const catSelect = document.getElementById('vpQuickTransferTargetCategory');
+  const customTabSelect = document.getElementById('vpQuickTransferCustomTabSelect');
+  
+  const partName = nameEl?.dataset?.partName || nameEl?.textContent || '';
+  const targetCat = catSelect ? catSelect.value : 'carro';
+  const targetCustomTabId = customTabSelect ? customTabSelect.value : null;
+
+  if (!partName) return;
+  window.vpTransferPartVehicleType(partName, targetCat, targetCustomTabId);
+  window.vpCloseQuickTransferModal();
 };
 
 // Filtro rigoroso por categoria de veículo para garantir que a busca e listagem mostrem apenas peças compatíveis
 function vpPartMatchesVehicleType(partObjOrName, currentVehicleType) {
   const raw = typeof partObjOrName === 'string' ? partObjOrName : (partObjOrName?.name || partObjOrName?.rawName || '');
   const vType = currentVehicleType || vpDetectedVehicleType || 'carro';
+  const clean = vpCleanPartDashes(raw);
+  const eff = vpGetEffectivePartName(raw);
+  const lower = eff.toLowerCase();
 
-  // Prioridade 1: Atribuição manual/explícita feita pelo usuário
+  // Prioridade 1: Configuração travada pelo usuário (vpConfigGuard)
+  if (vpConfigGuard?.configuredParts?.[lower]?.vehicleType) {
+    return vpConfigGuard.configuredParts[lower].vehicleType === vType;
+  }
+  if (vpConfigGuard?.configuredParts?.[clean.toLowerCase()]?.vehicleType) {
+    return vpConfigGuard.configuredParts[clean.toLowerCase()].vehicleType === vType;
+  }
+
+  // Prioridade 2: Atribuição manual/explícita feita pelo usuário
   const explicitType = vpGetPartVehicleType(raw) || (typeof partObjOrName === 'object' && partObjOrName?.vehicleType);
   if (explicitType && explicitType !== 'all') {
     return explicitType === vType;
-  }
-  if (explicitType === 'all') {
-    return true;
   }
 
   const name = (raw || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   if (vType === 'moto') {
     // Moto NUNCA tem portas, capô de carro, porta-malas, para-choques de carro, caçamba, airbag de volante, ar condicionado, etc.
-    const isCarOnly = /\b(PORTA DIANT|PORTA TRAS|PORTAS|CAPO DO MOTOR|CAPO|PORTA MALAS|PORTA-MALAS|PARA CHOQUE|PARACHOQUE|ALMA DO PARA|ALMA DO PARA-CHOQUE|GRADE DIANT|GRADE INFERIOR|CACAMBA|CAÇAMBA|PROTETOR DE CACAMBA|SANTO ANTONIO|CAPOTA MARITIMA|QUINTA RODA|TETO SOLAR|FORRO DO TETO|AIRBAG MOTORISTA|AIRBAG PASSAGEIRO|VIDRO PARA BRISA|VIDRO TRAS|VIDRO VIGIA|ESTRIBO LATERAL|CABINE)\b/i.test(name);
+    const isCarOnly = /\b(PORTA DIANT|PORTA TRAS|PORTAS|CAPO DO MOTOR|CAPO|PORTA MALAS|PORTA-MALAS|PARA CHOQUE|PARACHOQUE|ALMA DO PARA|ALMA DO PARA-CHOQUE|GRADE DIANT|GRADE INFERIOR|CACAMBA|CAÇAMBA|PROTETOR DE CACAMBA|SANTO ANTONIO|CAPOTA MARITIMA|QUINTA RODA|TETO SOLAR|FORRO DO TETO|AIRBAG MOTORISTA|AIRBAG PASSAGEIRO|VIDRO PARA BRISA|VIDRO TRAS|VIDRO VIGIA|ESTRIBO LATERAL|CABINE|BANDEJA|PARABARRO|SOLEIRA)\b/i.test(name);
     if (isCarOnly) return false;
     return true;
   }
 
   if (vType === 'carro') {
     // Carro não tem guidão, bengala, manete, rabeta, monoshock, quinta roda de caminhão, etc.
-    const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|RABETA|MONOSHOCK|CAVALETE CENTRAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA|PEDALEIRA DIANT|PEDALEIRA TRAS|TAMPA DO MOTOR LATERAL)\b/i.test(name);
+    const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|MANETE|RABETA|MONOSHOCK|CAVALETE CENTRAL|CAVALETE LATERAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA|PEDALEIRA DIANT|PEDALEIRA TRAS|TAMPA DO MOTOR LATERAL|BOLHA DA MOTO|CARENAGEM DO FAROL)\b/i.test(name);
     const isTruckOnly = /\b(QUINTA RODA|CLIMATIZADOR DE TETO|PORTAS TRAS DO BAU|SUSPENSOR PNEUMATICO|CUICA DE FREIO)\b/i.test(name);
     if (isMotoOnly || isTruckOnly) return false;
     return true;
@@ -9316,13 +9642,13 @@ function vpPartMatchesVehicleType(partObjOrName, currentVehicleType) {
 
   if (vType === 'caminhao') {
     // Caminhão não tem peças exclusivas de moto
-    const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|RABETA|MONOSHOCK|CAVALETE CENTRAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA)\b/i.test(name);
+    const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|MANETE|RABETA|MONOSHOCK|CAVALETE CENTRAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA)\b/i.test(name);
     if (isMotoOnly) return false;
     return true;
   }
 
   if (vType === 'picape') {
-    const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|RABETA|MONOSHOCK|CAVALETE CENTRAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA)\b/i.test(name);
+    const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|MANETE|RABETA|MONOSHOCK|CAVALETE CENTRAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA)\b/i.test(name);
     const isTruckOnly = /\b(QUINTA RODA|PORTAS TRAS DO BAU|SUSPENSOR PNEUMATICO)\b/i.test(name);
     if (isMotoOnly || isTruckOnly) return false;
     return true;
@@ -10247,7 +10573,7 @@ function vpLoadAndSortVehicleParts() {
         const effective = vpGetEffectivePartName(p.name);
         const effLower = (effective || '').toLowerCase();
         if (effective && !vpIsPartDeleted(p.name, effective) && !seenNames.has(effLower)) {
-          const isCompatible = (!p.vehicleType || p.vehicleType === 'all') || vpPartMatchesVehicleType(effective, vpDetectedVehicleType);
+          const isCompatible = vpPartMatchesVehicleType(effective, vpDetectedVehicleType);
           if (isCompatible) {
             seenNames.add(effLower);
             allParts.push({
@@ -10265,11 +10591,16 @@ function vpLoadAndSortVehicleParts() {
 
   const scoreMap = vpPrecomputeUsageScores(allParts);
 
-  const orderKey = 'vp_custom_order_' + (vpDetectedVehicleType || 'carro');
-  let savedOrder = [];
-  try {
-    savedOrder = JSON.parse(localStorage.getItem(orderKey) || '[]');
-  } catch(e) {}
+  const vType = vpDetectedVehicleType || 'carro';
+  const orderKey = 'vp_custom_order_' + vType;
+  let savedOrder = vpConfigGuard?.customOrders?.[vType] || getSafeStorage(orderKey) || getSafeStorage(orderKey + '_backup') || getSafeStorage(orderKey + '_permanent') || [];
+  if (typeof savedOrder === 'string') {
+    try {
+      savedOrder = JSON.parse(savedOrder);
+    } catch(e) {
+      savedOrder = [];
+    }
+  }
 
   if (Array.isArray(savedOrder) && savedOrder.length > 0) {
     const orderMap = new Map();
@@ -10293,6 +10624,17 @@ function vpLoadAndSortVehicleParts() {
       if (scoreB !== scoreA) return scoreB - scoreA;
       return a.name.localeCompare(b.name, 'pt-BR');
     });
+  }
+
+  // GRAVAÇÃO BLINDADA: Garante que a ordem final permaneça salva em memória persistente e no vpConfigGuard
+  const finalOrderedNames = allParts.map(p => p.name);
+  if (finalOrderedNames.length > 0) {
+    try { localStorage.setItem(orderKey, JSON.stringify(finalOrderedNames)); } catch(e) {}
+    setSafeStorage(orderKey, finalOrderedNames);
+    setSafeStorage(orderKey + '_backup', finalOrderedNames);
+    setSafeStorage(orderKey + '_permanent', finalOrderedNames);
+    if (!vpConfigGuard.customOrders) vpConfigGuard.customOrders = {};
+    vpConfigGuard.customOrders[vType] = finalOrderedNames;
   }
 
   vpAllVehicleParts = allParts;
@@ -10409,10 +10751,18 @@ function vpMovePartByName(fromName, toName) {
   const [moved] = vpAllVehicleParts.splice(fromIndex, 1);
   vpAllVehicleParts.splice(toIndex, 0, moved);
 
-  const orderKey = 'vp_custom_order_' + (vpDetectedVehicleType || 'carro');
+  const vType = vpDetectedVehicleType || 'carro';
+  const orderKey = 'vp_custom_order_' + vType;
+  const currentNames = vpAllVehicleParts.map(p => p.name);
   try {
-    localStorage.setItem(orderKey, JSON.stringify(vpAllVehicleParts.map(p => p.name)));
+    localStorage.setItem(orderKey, JSON.stringify(currentNames));
   } catch(e) {}
+  setSafeStorage(orderKey, currentNames);
+  setSafeStorage(orderKey + '_backup', currentNames);
+  setSafeStorage(orderKey + '_permanent', currentNames);
+  if (!vpConfigGuard.customOrders) vpConfigGuard.customOrders = {};
+  vpConfigGuard.customOrders[vType] = currentNames;
+  vpSaveState(true);
 
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
 }
@@ -10481,10 +10831,18 @@ window.vpSaveReorderPosition = function(e) {
     const [moved] = vpAllVehicleParts.splice(currentIdx, 1);
     vpAllVehicleParts.splice(targetIdx, 0, moved);
 
-    const orderKey = 'vp_custom_order_' + (vpDetectedVehicleType || 'carro');
+    const vType = vpDetectedVehicleType || 'carro';
+    const orderKey = 'vp_custom_order_' + vType;
+    const currentNames = vpAllVehicleParts.map(p => p.name);
     try {
-      localStorage.setItem(orderKey, JSON.stringify(vpAllVehicleParts.map(p => p.name)));
+      localStorage.setItem(orderKey, JSON.stringify(currentNames));
     } catch(err) {}
+    setSafeStorage(orderKey, currentNames);
+    setSafeStorage(orderKey + '_backup', currentNames);
+    setSafeStorage(orderKey + '_permanent', currentNames);
+    if (!vpConfigGuard.customOrders) vpConfigGuard.customOrders = {};
+    vpConfigGuard.customOrders[vType] = currentNames;
+    vpSaveState(true);
   }
 
   vpCloseReorderPositionModal();
@@ -11611,6 +11969,7 @@ function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
           ${vpEscapeHtml(item.name)}
           ${(typeof vpNewlyAddedPartNames !== 'undefined' && vpNewlyAddedPartNames && (vpNewlyAddedPartNames.has((item.name || '').toLowerCase()) || vpNewlyAddedPartNames.has(vpCleanPartDashes(item.name || '').toLowerCase()))) ? '<span style="font-size: 0.58rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 3px; border-radius: 3px; margin-left: 2px;">✨ Nova</span>' : ''}
         </span>
+        <button type="button" class="vp-btn-transfer-quick" title="Transferir para outra aba" onclick="event.stopPropagation(); vpOpenQuickTransferModal('${vpEscapeHtml(item.name)}')" style="background: none; border: none; font-size: 0.85rem; cursor: pointer; padding: 0 3px; color: #475569;" onmouseover="this.style.color='#0284c7'" onmouseout="this.style.color='#475569'">🔁</button>
         ${vpActiveCustomTabId ? `
           <button type="button" class="vp-btn-delete-part" title="Remover desta aba personalizada" onclick="event.stopPropagation(); vpRemovePartFromCustomTab('${vpEscapeHtml(item.name)}', '${vpActiveCustomTabId}')" style="color: #0284c7;">✖</button>
         ` : `
@@ -11970,6 +12329,8 @@ window.vpOpenEditPartModal = function(rawName, currentDisplayName, currentZoneId
   const origInput = document.getElementById('vpEditOriginalName');
   const nameInput = document.getElementById('vpEditNameInput');
   const zoneSelect = document.getElementById('vpEditZoneSelect');
+  const customTabSelect = document.getElementById('vpEditCustomTabSelect');
+  const customTabSection = document.getElementById('vpEditCustomTabSection');
 
   const actualRaw = rawName || currentDisplayName || '';
   const actualDisplay = currentDisplayName || rawName || '';
@@ -11987,6 +12348,19 @@ window.vpOpenEditPartModal = function(rawName, currentDisplayName, currentZoneId
   // Detecta a categoria/seção atual da peça e seleciona o botão correspondente no modal
   let partCat = vpGetPartVehicleType(actualRaw) || vpGetPartVehicleType(actualDisplay) || vpDetectedVehicleType || 'carro';
   window.vpSelectEditCategory(partCat);
+
+  // Preenche opções de aba personalizada
+  if (customTabSelect && customTabSection) {
+    if (Array.isArray(vpCustomTabs) && vpCustomTabs.length > 0) {
+      customTabSection.style.display = 'block';
+      const containingTab = vpCustomTabs.find(t => Array.isArray(t.parts) && t.parts.some(p => (vpGetEffectivePartName(p) || '').toLowerCase() === actualDisplay.toLowerCase() || (p || '').toLowerCase() === actualRaw.toLowerCase()));
+      customTabSelect.innerHTML = '<option value="">-- Nenhuma (Manter apenas na categoria de veículo) --</option>' +
+        vpCustomTabs.map(t => `<option value="${t.id}" ${containingTab && containingTab.id === t.id ? 'selected' : ''}>${t.icon || '📑'} ${t.name}</option>`).join('');
+    } else {
+      customTabSection.style.display = 'none';
+      customTabSelect.innerHTML = '<option value="">Nenhuma aba criada</option>';
+    }
+  }
 
   if (modal) modal.style.display = 'flex';
   if (nameInput) setTimeout(() => {
@@ -12040,11 +12414,11 @@ window.vpDeletePart = function(rawName, displayName) {
     }
   }
 
-  // Remove também da ordem customizada salva no localStorage
+  // Remove também da ordem customizada salva no safeStorage
   ['carro', 'moto', 'picape', 'caminhao'].forEach(type => {
     const key = 'vp_custom_order_' + type;
     try {
-      const saved = JSON.parse(localStorage.getItem(key) || '[]');
+      let saved = getSafeStorage(key) || JSON.parse(localStorage.getItem(key) || '[]');
       if (Array.isArray(saved) && saved.length > 0) {
         const updated = saved.filter(item => {
           if (typeof item === 'string') {
@@ -12057,6 +12431,9 @@ window.vpDeletePart = function(rawName, displayName) {
           return true;
         });
         localStorage.setItem(key, JSON.stringify(updated));
+        setSafeStorage(key, updated);
+        setSafeStorage(key + '_backup', updated);
+        setSafeStorage(key + '_permanent', updated);
       }
     } catch(err) {}
   });
@@ -12097,10 +12474,12 @@ window.vpSaveEditPartName = function(e) {
   const origInput = document.getElementById('vpEditOriginalName');
   const nameInput = document.getElementById('vpEditNameInput');
   const catSelect = document.getElementById('vpEditTargetCategorySelect');
+  const customTabSelect = document.getElementById('vpEditCustomTabSelect');
 
   const rawName = origInput ? origInput.value.trim() : '';
   const rawEntered = nameInput ? nameInput.value.trim() : '';
   const targetCat = catSelect ? catSelect.value : (vpDetectedVehicleType || 'carro');
+  const selectedCustomTabId = customTabSelect ? customTabSelect.value : '';
   const newName = vpCleanPartDashes(rawEntered);
 
   if (!newName) {
@@ -12124,7 +12503,7 @@ window.vpSaveEditPartName = function(e) {
            dClean !== vpCleanPartDashes(newName).toLowerCase();
   });
 
-  // 2. Mapeamento de renomeação em todas as variações (com e sem traço, maiúsculas/minúsculas)
+  // 2. Mapeamento de renomeação em todas as variações
   const keysToMap = [
     sourceName,
     vpCleanPartDashes(sourceName),
@@ -12139,7 +12518,7 @@ window.vpSaveEditPartName = function(e) {
     if (k) vpCustomPartRenamesMap[k] = newName;
   });
 
-  // Redireciona renomeações encadeadas (qualquer chave que apontava para o nome antigo agora aponta para o novo)
+  // Redireciona renomeações encadeadas
   Object.keys(vpCustomPartRenamesMap).forEach(k => {
     const val = vpCustomPartRenamesMap[k];
     if (val && (
@@ -12161,7 +12540,21 @@ window.vpSaveEditPartName = function(e) {
   vpPartVehicleTypeMap[vpCleanPartDashes(newName)] = targetCat;
   vpPartVehicleTypeMap[vpCleanPartDashes(newName).toLowerCase()] = targetCat;
 
-  // 4. Se a peça já existia na lista de customizadas (criadas manualmente pelo usuário), atualiza
+  // 4. Grava no vpConfigGuard com TRAVA DO USUÁRIO (userLocked: true) para imunidade a atualizações
+  if (!vpConfigGuard.configuredParts) vpConfigGuard.configuredParts = {};
+  const guardRecord = {
+    vehicleType: targetCat,
+    displayName: newName,
+    userLocked: true,
+    customTabId: selectedCustomTabId || null,
+    updatedAt: Date.now()
+  };
+  vpConfigGuard.configuredParts[newName.toLowerCase()] = guardRecord;
+  vpConfigGuard.configuredParts[vpCleanPartDashes(newName).toLowerCase()] = guardRecord;
+  vpConfigGuard.configuredParts[sourceName.toLowerCase()] = guardRecord;
+  vpConfigGuard.configuredParts[oldEffectiveName.toLowerCase()] = guardRecord;
+
+  // 5. Se a peça já existia na lista de customizadas atualiza, senão ADICIONA
   if (Array.isArray(vpCustomPartsList)) {
     const customItem = vpCustomPartsList.find(p => 
       p && p.name && (
@@ -12175,10 +12568,32 @@ window.vpSaveEditPartName = function(e) {
     if (customItem) {
       customItem.name = newName;
       customItem.vehicleType = targetCat;
+    } else {
+      vpCustomPartsList.push({ name: newName, zoneId: 'geral', vehicleType: targetCat });
     }
   }
 
-  // 5. Atualiza seleção na vistoria atual se estiver marcada
+  // 6. Atualiza abas personalizadas se o usuário selecionou uma aba ou desvinculou
+  if (Array.isArray(vpCustomTabs)) {
+    vpCustomTabs.forEach(tab => {
+      if (Array.isArray(tab.parts)) {
+        tab.parts = tab.parts.map(p => {
+          const pLower = (p || '').toLowerCase();
+          if (pLower === sourceName.toLowerCase() || pLower === oldEffectiveName.toLowerCase() || vpCleanPartDashes(p).toLowerCase() === vpCleanPartDashes(sourceName).toLowerCase()) {
+            return newName;
+          }
+          return p;
+        });
+        if (selectedCustomTabId && tab.id === selectedCustomTabId) {
+          if (!tab.parts.some(p => (p || '').toLowerCase() === newName.toLowerCase())) {
+            tab.parts.push(newName);
+          }
+        }
+      }
+    });
+  }
+
+  // 7. Atualiza seleção na vistoria atual se estiver marcada
   if (vpSelectedPartsMap && vpSelectedPartsMap.size > 0) {
     for (const [key, val] of Array.from(vpSelectedPartsMap.entries())) {
       const kLower = (key || '').toLowerCase();
@@ -12195,35 +12610,51 @@ window.vpSaveEditPartName = function(e) {
     }
   }
 
-  // 6. Atualiza ordem customizada salva no localStorage mantendo a posição e número exatos
+  // 8. Atualiza ordem customizada salva no safeStorage e vpConfigGuard
   ['carro', 'moto', 'picape', 'caminhao'].forEach(type => {
-    const key = 'vp_custom_order_' + type;
-    try {
-      const saved = JSON.parse(localStorage.getItem(key) || '[]');
-      if (Array.isArray(saved) && saved.length > 0) {
-        let changed = false;
-        const updated = saved.map(item => {
-          if (typeof item === 'string') {
-            const itemLower = item.toLowerCase();
-            const itemClean = vpCleanPartDashes(item).toLowerCase();
-            if (itemLower === sourceName.toLowerCase() || 
-                itemLower === oldEffectiveName.toLowerCase() ||
-                itemClean === vpCleanPartDashes(sourceName).toLowerCase() ||
-                itemClean === vpCleanPartDashes(oldEffectiveName).toLowerCase()) {
-              changed = true;
-              return newName;
-            }
+    const orderKey = 'vp_custom_order_' + type;
+    let saved = getSafeStorage(orderKey) || [];
+    if (typeof saved === 'string') {
+      try { saved = JSON.parse(saved); } catch(e) { saved = []; }
+    }
+    if (Array.isArray(saved) && saved.length > 0) {
+      let changed = false;
+      const updated = saved.map(item => {
+        if (typeof item === 'string') {
+          const itemLower = item.toLowerCase();
+          const itemClean = vpCleanPartDashes(item).toLowerCase();
+          if (itemLower === sourceName.toLowerCase() || 
+              itemLower === oldEffectiveName.toLowerCase() ||
+              itemClean === vpCleanPartDashes(sourceName).toLowerCase() ||
+              itemClean === vpCleanPartDashes(oldEffectiveName).toLowerCase()) {
+            changed = true;
+            return newName;
           }
-          return item;
-        });
-        if (changed) {
-          localStorage.setItem(key, JSON.stringify(updated));
+        }
+        return item;
+      });
+      if (type === targetCat && !updated.some(item => typeof item === 'string' && item.toLowerCase() === newName.toLowerCase())) {
+        updated.push(newName);
+        changed = true;
+      }
+      if (type !== targetCat) {
+        const filtered = updated.filter(item => typeof item === 'string' && item.toLowerCase() !== newName.toLowerCase() && item.toLowerCase() !== sourceName.toLowerCase());
+        if (filtered.length !== updated.length) {
+          changed = true;
         }
       }
-    } catch(err) {}
+      if (changed) {
+        try { localStorage.setItem(orderKey, JSON.stringify(updated)); } catch(err) {}
+        setSafeStorage(orderKey, updated);
+        setSafeStorage(orderKey + '_backup', updated);
+        setSafeStorage(orderKey + '_permanent', updated);
+        if (!vpConfigGuard.customOrders) vpConfigGuard.customOrders = {};
+        vpConfigGuard.customOrders[type] = updated;
+      }
+    }
   });
 
-  // 7. Atualiza estatísticas de uso se houver
+  // 9. Atualiza estatísticas de uso se houver
   if (vpUsageStats) {
     const oldScore = vpUsageStats[sourceName.toLowerCase()] || vpUsageStats[oldEffectiveName.toLowerCase()] || 0;
     if (oldScore > 0) {
@@ -12231,18 +12662,19 @@ window.vpSaveEditPartName = function(e) {
     }
   }
 
-  // 8. Invalida cache e recarrega ordenação e catálogo em memória
+  // 10. Invalida cache e recarrega ordenação e catálogo em memória
   vpAllVehicleParts = null;
   vpLoadAndSortVehicleParts();
 
-  // 9. Salva estado persistente e re-renderiza interface
+  // 11. Salva estado persistente e re-renderiza interface
   vpSaveState(true);
   window.vpCloseEditPartModal();
   vpUpdateTriggerButton();
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  vpRenderTabsNavBar();
   vpUpdateDockAndSheet();
   if (typeof showToastNotification === 'function') {
-    showToastNotification(`Peça alterada para "${newName}" com sucesso!`, 2500);
+    showToastNotification(`Peça "${newName}" salva e configurada com sucesso!`, 2500);
   }
 };
 

@@ -1981,6 +1981,24 @@ html, body {
   background: #fee2e2;
 }
 
+.vp-btn-transfer-quick {
+  background: none;
+  border: none;
+  font-size: 0.80rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 1px 3px;
+  border-radius: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.vp-btn-transfer-quick:hover {
+  color: #0284c7;
+  background: #e0f2fe;
+}
+
 /* 2ª LINHA: [Trocar (34%)] [Reparar (34%)] [Obs. (18%)] [✏️ Editar (14%)] */
 .vp-card-actions {
   display: flex;
