@@ -1,7 +1,7 @@
 {
-  "version": "2.49.0",
-  "versionCode": 2490,
-  "updatedAt": "2026-10-26T17:30:00Z",
-  "buildDate": "2026-10-26T17:30:00.000Z",
-  "changelog": "Correcao na transferencia de pecas entre abas, varredura inteligente sem cruzamento de pecas de moto e carro, persistencia absoluta da ordem customizada e blindagem imutavel de configuracoes."
+  "version": "2.49.1",
+  "versionCode": 2491,
+  "updatedAt": "2026-10-27T18:30:00Z",
+  "buildDate": "2026-10-27T18:30:00.000Z",
+  "changelog": "Garantia absoluta de exibicao de todas as pecas marcadas no topo da aba de pecas do veiculo e criacao de resumo visual de pecas marcadas com badges e remocao direta."
 }

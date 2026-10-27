@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.49.0';
+let CURRENT_APP_VERSION = 'v2.49.1';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -11593,6 +11593,22 @@ window.vpAddAllPartsFromCurrentTab = function() {
   }
 };
 
+function vpGetSelectedPart(partName) {
+  if (!partName || typeof vpSelectedPartsMap === 'undefined' || !vpSelectedPartsMap || vpSelectedPartsMap.size === 0) return null;
+  if (vpSelectedPartsMap.has(partName)) return vpSelectedPartsMap.get(partName);
+  const norm = String(partName).trim().toLowerCase();
+  for (const [k, v] of vpSelectedPartsMap.entries()) {
+    if (String(k).trim().toLowerCase() === norm) return v;
+  }
+  return null;
+}
+window.vpGetSelectedPart = vpGetSelectedPart;
+
+function vpIsPartSelected(partName) {
+  return Boolean(vpGetSelectedPart(partName));
+}
+window.vpIsPartSelected = vpIsPartSelected;
+
 function vpRenderParts(filterQuery = '') {
   const listEl = document.getElementById('vpPartsScrollContainer');
   if (!listEl) return;
@@ -11670,14 +11686,29 @@ function vpRenderParts(filterQuery = '') {
       const unselectedParts = [];
       for (let i = 0; i < displayParts.length; i++) {
         const p = displayParts[i];
-        if (vpSelectedPartsMap.has(p.name)) {
+        if (vpIsPartSelected(p.name)) {
           selectedParts.push(p);
         } else {
           unselectedParts.push(p);
         }
       }
+      // Garante que todas as peças marcadas na vistoria apareçam no topo
+      const renderedNamesSet = new Set(selectedParts.map(p => (p.name || '').toLowerCase().trim()));
+      for (const [selName, selData] of vpSelectedPartsMap.entries()) {
+        const normKey = (selName || '').toLowerCase().trim();
+        if (!renderedNamesSet.has(normKey)) {
+          renderedNamesSet.add(normKey);
+          selectedParts.unshift({
+            rawName: selData.rawName || selName,
+            name: selData.name || selName,
+            zoneId: selData.zoneId || 'geral',
+            zoneName: selData.zoneName || 'Peças do veículo',
+            icon: selData.action === 'troca' ? '🔴' : (selData.action === 'reparo' ? '🔵' : '⚠️')
+          });
+        }
+      }
       const finalDisplayParts = selectedParts.concat(unselectedParts);
-      const tabSelectedCount = tabItems.filter(p => vpSelectedPartsMap.has(p.name)).length;
+      const tabSelectedCount = vpSelectedPartsMap.size;
 
       listEl.innerHTML = `
         <div class="vp-category-section-wrapper" style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
@@ -11736,6 +11767,38 @@ function vpRenderParts(filterQuery = '') {
               </button>
             </div>
           </div>
+
+          
+      ${todasSelCount > 0 ? `
+        <!-- RESUMO VISUAL DE TODAS AS PEÇAS MARCADAS NO TOPO DA ABA -->
+        <div class="vp-selected-summary-box" style="padding: 8px 10px; background: #fff7ed; border-radius: 10px; border: 1.5px solid #fdba74; box-shadow: 0 1px 3px rgba(234,88,12,0.1); width: 100%; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.95rem;">⚠️</span>
+              <strong style="font-size: 0.78rem; color: #9a3412; text-transform: uppercase;">Peças Marcadas nesta Vistoria (${todasSelCount}):</strong>
+            </div>
+            <button type="button" onclick="vpClearAllSelected()" style="background: none; border: none; color: #dc2626; font-size: 0.70rem; font-weight: 700; cursor: pointer; text-decoration: underline;">
+              Limpar todas
+            </button>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 5px; width: 100%; box-sizing: border-box;">
+            ${Array.from(vpSelectedPartsMap.values()).map(p => {
+              const isTroca = p.action === 'troca';
+              const isRessalva = p.action === 'ressalva';
+              const bg = isTroca ? '#fee2e2' : (isRessalva ? '#ffedd5' : '#e0f2fe');
+              const border = isTroca ? '#f87171' : (isRessalva ? '#fb923c' : '#7dd3fc');
+              const color = isTroca ? '#991b1b' : (isRessalva ? '#9a3412' : '#0369a1');
+              const label = isTroca ? 'Troca' : (isRessalva ? 'Ressalva' : 'Reparo');
+              return `
+                <span style="display: inline-flex; align-items: center; gap: 4px; background: ${bg}; border: 1px solid ${border}; color: ${color}; font-size: 0.72rem; font-weight: 700; padding: 3px 7px; border-radius: 6px;">
+                  <span>${isTroca ? '🔴' : (isRessalva ? '⚠️' : '🔵')} <strong>${vpEscapeHtml(p.name)}</strong> (${label}${p.obs ? `: ${vpEscapeHtml(p.obs)}` : ''})</span>
+                  <button type="button" onclick="vpRemoveSelected('${vpEscapeHtml(p.name)}')" title="Remover" style="background: none; border: none; color: ${color}; font-weight: 900; font-size: 0.75rem; cursor: pointer; padding: 0 2px; line-height: 1;">✕</button>
+                </span>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      ` : ''}
 
           ${finalDisplayParts.length === 0 && otherMatchingParts.length === 0 ? `
             <div style="width: 100%; padding: 35px 16px; text-align: center; color: #64748b; background: #ffffff; border: 1.5px dashed #cbd5e1; border-radius: 12px;">
@@ -11845,10 +11908,25 @@ function vpRenderParts(filterQuery = '') {
   const unselectedParts = [];
   for (let i = 0; i < displayParts.length; i++) {
     const p = displayParts[i];
-    if (vpSelectedPartsMap.has(p.name)) {
+    if (vpIsPartSelected(p.name)) {
       selectedParts.push(p);
     } else {
       unselectedParts.push(p);
+    }
+  }
+  // Garante que todas as peças marcadas na vistoria apareçam no topo da aba
+  const renderedNamesSetStd = new Set(selectedParts.map(p => (p.name || '').toLowerCase().trim()));
+  for (const [selName, selData] of vpSelectedPartsMap.entries()) {
+    const normKey = (selName || '').toLowerCase().trim();
+    if (!renderedNamesSetStd.has(normKey)) {
+      renderedNamesSetStd.add(normKey);
+      selectedParts.unshift({
+        rawName: selData.rawName || selName,
+        name: selData.name || selName,
+        zoneId: selData.zoneId || 'geral',
+        zoneName: selData.zoneName || 'Peças do veículo',
+        icon: selData.action === 'troca' ? '🔴' : (selData.action === 'reparo' ? '🔵' : '⚠️')
+      });
     }
   }
   const finalDisplayParts = selectedParts.concat(unselectedParts);
@@ -11881,6 +11959,38 @@ function vpRenderParts(filterQuery = '') {
         </div>
       </div>
 
+      
+      ${todasSelCount > 0 ? `
+        <!-- RESUMO VISUAL DE TODAS AS PEÇAS MARCADAS NO TOPO DA ABA -->
+        <div class="vp-selected-summary-box" style="padding: 8px 10px; background: #fff7ed; border-radius: 10px; border: 1.5px solid #fdba74; box-shadow: 0 1px 3px rgba(234,88,12,0.1); width: 100%; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.95rem;">⚠️</span>
+              <strong style="font-size: 0.78rem; color: #9a3412; text-transform: uppercase;">Peças Marcadas nesta Vistoria (${todasSelCount}):</strong>
+            </div>
+            <button type="button" onclick="vpClearAllSelected()" style="background: none; border: none; color: #dc2626; font-size: 0.70rem; font-weight: 700; cursor: pointer; text-decoration: underline;">
+              Limpar todas
+            </button>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 5px; width: 100%; box-sizing: border-box;">
+            ${Array.from(vpSelectedPartsMap.values()).map(p => {
+              const isTroca = p.action === 'troca';
+              const isRessalva = p.action === 'ressalva';
+              const bg = isTroca ? '#fee2e2' : (isRessalva ? '#ffedd5' : '#e0f2fe');
+              const border = isTroca ? '#f87171' : (isRessalva ? '#fb923c' : '#7dd3fc');
+              const color = isTroca ? '#991b1b' : (isRessalva ? '#9a3412' : '#0369a1');
+              const label = isTroca ? 'Troca' : (isRessalva ? 'Ressalva' : 'Reparo');
+              return `
+                <span style="display: inline-flex; align-items: center; gap: 4px; background: ${bg}; border: 1px solid ${border}; color: ${color}; font-size: 0.72rem; font-weight: 700; padding: 3px 7px; border-radius: 6px;">
+                  <span>${isTroca ? '🔴' : (isRessalva ? '⚠️' : '🔵')} <strong>${vpEscapeHtml(p.name)}</strong> (${label}${p.obs ? `: ${vpEscapeHtml(p.obs)}` : ''})</span>
+                  <button type="button" onclick="vpRemoveSelected('${vpEscapeHtml(p.name)}')" title="Remover" style="background: none; border: none; color: ${color}; font-weight: 900; font-size: 0.75rem; cursor: pointer; padding: 0 2px; line-height: 1;">✕</button>
+                </span>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      ` : ''}
+
       <!-- GRID DE PEÇAS REORDENÁVEIS (2 COLUNAS) -->
       <div class="vp-parts-grid" id="vpPartsGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; box-sizing: border-box;">
         ${finalDisplayParts.map((item, idx) => {
@@ -11893,7 +12003,7 @@ function vpRenderParts(filterQuery = '') {
 
 function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
   if (typeof vpIsRessalvaMode !== 'undefined' && vpIsRessalvaMode) {
-    const selected = vpSelectedPartsMap.get(item.name);
+    const selected = vpGetSelectedPart(item.name);
     const isRessalva = Boolean(selected && selected.action === 'ressalva');
     const catalogIdx = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts.findIndex(p => (p.name || '').toLowerCase() === (item.name || '').toLowerCase()) : -1;
     const orderNum = catalogIdx !== -1 ? (catalogIdx + 1) : (index + 1);
@@ -11926,7 +12036,7 @@ function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
     `;
   }
 
-  const selected = vpSelectedPartsMap.get(item.name);
+  const selected = vpGetSelectedPart(item.name);
   const isTroca = selected && selected.action === 'troca';
   const isReparo = selected && selected.action === 'reparo';
   const hasObs = Boolean(selected && selected.obs && selected.obs.trim().length > 0);
@@ -12058,9 +12168,11 @@ window.vpSetQuickObs = function(partName, quickText, zoneId, zoneName, rawName =
 
 // Seleção instantânea com peças selecionadas indo para o topo sem recriar lag
 window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '') {
-  const current = vpSelectedPartsMap.get(partName);
+  const current = vpGetSelectedPart(partName);
+  const actualKey = current ? current.name : partName;
 
   if (current && current.action === action) {
+    vpSelectedPartsMap.delete(actualKey);
     vpSelectedPartsMap.delete(partName);
   } else {
     vpSelectedPartsMap.set(partName, {
