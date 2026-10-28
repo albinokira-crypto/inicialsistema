@@ -1,7 +1,7 @@
 {
-  "version": "2.49.1",
-  "versionCode": 2491,
-  "updatedAt": "2026-10-27T18:30:00Z",
-  "buildDate": "2026-10-27T18:30:00.000Z",
-  "changelog": "Garantia absoluta de exibicao de todas as pecas marcadas no topo da aba de pecas do veiculo e criacao de resumo visual de pecas marcadas com badges e remocao direta."
+  "version": "2.50.0",
+  "versionCode": 2500,
+  "updatedAt": "2026-10-28T19:25:00Z",
+  "buildDate": "2026-10-28T19:25:00.000Z",
+  "changelog": "Transferir e copiar pecas entre abas com escolha de acao, modal suspenso de pesquisa em tempo real com multi-selecao permanente, e cadastro multiplo de pecas com LD e LE."
 }

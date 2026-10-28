@@ -546,7 +546,7 @@
               <span style="font-size: 1.4rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.49.1</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.50.0</div>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -931,12 +931,12 @@
       </div>
     </div>
 
-    <!-- MODAL RÁPIDO DE TRANSFERÊNCIA DE PEÇA ENTRE ABAS -->
+    <!-- MODAL RÁPIDO DE TRANSFERÊNCIA / CÓPIA DE PEÇA ENTRE ABAS -->
     <div id="vpQuickTransferModal" class="photo-modal-overlay" style="display: none; z-index: 10007;">
-      <div class="photo-modal" style="max-width: 380px; background: white; padding: 18px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);">
+      <div class="photo-modal" style="max-width: 410px; background: white; padding: 18px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
           <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 6px;">
-            <span>🔁</span> Transferir Peça
+            <span>🔁</span> Transferir ou Copiar Peça
           </h3>
           <button type="button" onclick="vpCloseQuickTransferModal()" style="background: none; border: none; font-size: 1.2rem; color: #64748b; cursor: pointer; padding: 4px;">✕</button>
         </div>
@@ -948,29 +948,101 @@
           <div id="vpQuickTransferPartTitle" style="font-size: 0.95rem; font-weight: 800; color: #1e3a8a; margin-top: 2px;"></div>
         </div>
 
+        <!-- ESCOLHA DA AÇÃO: TRANSFERIR OU COPIAR -->
         <label style="display: block; font-size: 0.78rem; font-weight: 800; color: #1e293b; margin-bottom: 6px;">
+          O que deseja fazer com esta peça?
+        </label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px;">
+          <button type="button" id="vpTransferModeBtn_move" onclick="vpSetQuickTransferMode('move')" style="padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.80rem; cursor: pointer; border: 2px solid #2563eb; background: #eff6ff; color: #1d4ed8; display: flex; align-items: center; justify-content: center; gap: 5px;">
+            <span>🔄</span> Transferir (Mover)
+          </button>
+          <button type="button" id="vpTransferModeBtn_copy" onclick="vpSetQuickTransferMode('copy')" style="padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.80rem; cursor: pointer; border: 1.5px solid #cbd5e1; background: #f8fafc; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 5px;">
+            <span>📋</span> Copiar (Duplicar)
+          </button>
+        </div>
+
+        <label id="vpQuickTransferDestLabel" style="display: block; font-size: 0.78rem; font-weight: 800; color: #1e293b; margin-bottom: 6px;">
           Transferir para qual Categoria de Veículo?
         </label>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px;">
-          <button type="button" class="vp-transfer-btn" onclick="vpApplyQuickTransfer('', 'carro')" id="vpQuickBtn_carro">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px;">
+          <button type="button" class="vp-transfer-btn" onclick="vpApplyQuickTransferTarget('carro')" id="vpQuickBtn_carro" style="padding: 10px; border-radius: 8px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #fff; cursor: pointer;">
             🚗 Carros
           </button>
-          <button type="button" class="vp-transfer-btn" onclick="vpApplyQuickTransfer('', 'moto')" id="vpQuickBtn_moto">
+          <button type="button" class="vp-transfer-btn" onclick="vpApplyQuickTransferTarget('moto')" id="vpQuickBtn_moto" style="padding: 10px; border-radius: 8px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #fff; cursor: pointer;">
             🏍️ Motos
           </button>
-          <button type="button" class="vp-transfer-btn" onclick="vpApplyQuickTransfer('', 'picape')" id="vpQuickBtn_picape">
+          <button type="button" class="vp-transfer-btn" onclick="vpApplyQuickTransferTarget('picape')" id="vpQuickBtn_picape" style="padding: 10px; border-radius: 8px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #fff; cursor: pointer;">
             🛻 Picapes
           </button>
-          <button type="button" class="vp-transfer-btn" onclick="vpApplyQuickTransfer('', 'caminhao')" id="vpQuickBtn_caminhao">
+          <button type="button" class="vp-transfer-btn" onclick="vpApplyQuickTransferTarget('caminhao')" id="vpQuickBtn_caminhao" style="padding: 10px; border-radius: 8px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #fff; cursor: pointer;">
             🚛 Caminhões
           </button>
         </div>
 
-        <div id="vpQuickTransferTabsList"></div>
+        <div id="vpQuickTransferTabsListSection" style="display: none; margin-bottom: 10px;">
+          <label style="display: block; font-size: 0.78rem; font-weight: 800; color: #1e293b; margin-bottom: 6px;">
+            Ou enviar para uma Aba Personalizada:
+          </label>
+          <div id="vpQuickTransferTabsList" style="display: flex; flex-direction: column; gap: 5px; max-height: 140px; overflow-y: auto;"></div>
+        </div>
 
         <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
           <button type="button" onclick="vpCloseQuickTransferModal()" style="padding: 8px 16px; background: #f1f5f9; border: none; border-radius: 8px; font-weight: 700; color: #475569; cursor: pointer;">Fechar</button>
         </div>
+      </div>
+    </div>
+
+    <!-- MODAL SUSPENSO DE PESQUISA EM TEMPO REAL DE PEÇAS (MULTI-SELEÇÃO) -->
+    <div id="vpSearchModal" class="photo-modal-overlay" style="display: none; z-index: 10008; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px);">
+      <div class="photo-modal" style="max-width: 520px; width: 95%; max-height: 88vh; background: #ffffff; padding: 16px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box;">
+        
+        <!-- Header do Modal de Pesquisa -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink: 0;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 34px; height: 34px; border-radius: 8px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.15rem;">🔍</div>
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a;">Pesquisar Peças</h3>
+              <div style="font-size: 0.72rem; color: #64748b;">Marque as peças desejadas. Só fechará quando clicar em Concluir.</div>
+            </div>
+          </div>
+          <button type="button" onclick="vpCloseSearchModal()" style="padding: 6px 14px; background: #eff6ff; border: 1.5px solid #2563eb; border-radius: 8px; font-size: 0.82rem; font-weight: 800; color: #1d4ed8; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            ✕ Concluir e Fechar
+          </button>
+        </div>
+
+        <!-- Input de Pesquisa em Tempo Real -->
+        <div style="position: relative; margin-bottom: 10px; flex-shrink: 0;">
+          <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #94a3b8; pointer-events: none;">🔍</span>
+          <input 
+            type="text" 
+            id="vpModalSearchInput" 
+            placeholder="Digite para ver peças em tempo real..." 
+            oninput="vpOnModalSearchInput(this.value)"
+            style="width: 100%; box-sizing: border-box; padding: 10px 36px 10px 36px; border-radius: 10px; border: 2px solid #2563eb; font-size: 0.92rem; font-weight: 700; color: #0f172a; outline: none; background: #f8fafc;"
+          />
+          <button type="button" id="vpModalClearBtn" onclick="vpClearModalSearch()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1rem; color: #94a3b8; cursor: pointer; display: none;">✕</button>
+        </div>
+
+        <!-- Contador e Resumo de Seleção Dentro do Modal -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.74rem; font-weight: 700; color: #64748b; flex-shrink: 0;">
+          <span id="vpModalResultsCount">Carregando catálogo...</span>
+          <span id="vpModalSelectedCount" style="color: #2563eb; background: #eff6ff; padding: 2px 8px; border-radius: 999px; border: 1px solid #bfdbfe;">0 marcadas</span>
+        </div>
+
+        <!-- Lista de Resultados de Peças (Scroll independente, NÃO fecha ao clicar em ações) -->
+        <div id="vpModalSearchResults" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 2px; -webkit-overflow-scrolling: touch;">
+        </div>
+
+        <!-- Footer do Modal com Botão Concluir -->
+        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+          <button type="button" onclick="vpOpenAddCustomModal(); document.getElementById('vpCustomNameInput').value=document.getElementById('vpModalSearchInput')?.value || '';" style="background: none; border: none; color: #2563eb; font-size: 0.78rem; font-weight: 700; cursor: pointer;">
+            + Cadastrar nova peça
+          </button>
+          <button type="button" onclick="vpCloseSearchModal()" style="padding: 8px 20px; background: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(37,99,235,0.25);">
+            Pronto / Concluir
+          </button>
+        </div>
+
       </div>
     </div>
 
@@ -1036,7 +1108,29 @@
           
           <div style="margin-bottom: 10px;">
             <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Nome da Peça:</label>
-            <input type="text" id="vpCustomNameInput" required placeholder="Ex: Defletor inferior do para choque" style="width: 100%; box-sizing: border-box; padding: 9px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600;" />
+            <input type="text" id="vpCustomNameInput" required placeholder="Ex: Defletor inferior do para choque" style="width: 100%; box-sizing: border-box; padding: 9px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 600;" oninput="vpUpdateCustomSideCheckboxes('')" />
+          </div>
+
+          <!-- SELEÇÃO DE LADO LD / LE (CADASTRAR 2 PEÇAS DE UMA VEZ) -->
+          <div style="margin-bottom: 10px;">
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">
+              Lado / Posição (Cadastrar 2 ou mais peças de uma vez):
+            </label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+              <label id="vpCustomSideLabel_none" style="display: flex; align-items: center; justify-content: center; gap: 4px; padding: 7px 4px; border: 1.5px solid #2563eb; background: #eff6ff; border-radius: 8px; font-size: 0.74rem; font-weight: 700; cursor: pointer; text-align: center;">
+                <input type="checkbox" id="vpCustomSide_none" checked onchange="vpUpdateCustomSideCheckboxes('none')" />
+                <span>Única (Sem Lado)</span>
+              </label>
+              <label id="vpCustomSideLabel_ld" style="display: flex; align-items: center; justify-content: center; gap: 4px; padding: 7px 4px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.74rem; font-weight: 700; cursor: pointer; text-align: center;">
+                <input type="checkbox" id="vpCustomSide_ld" onchange="vpUpdateCustomSideCheckboxes('ld')" />
+                <span>👉 LD (Direito)</span>
+              </label>
+              <label id="vpCustomSideLabel_le" style="display: flex; align-items: center; justify-content: center; gap: 4px; padding: 7px 4px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.74rem; font-weight: 700; cursor: pointer; text-align: center;">
+                <input type="checkbox" id="vpCustomSide_le" onchange="vpUpdateCustomSideCheckboxes('le')" />
+                <span>👈 LE (Esquerdo)</span>
+              </label>
+            </div>
+            <div id="vpCustomSidePreview" style="font-size: 0.70rem; color: #2563eb; font-weight: 700; margin-top: 4px; display: none;"></div>
           </div>
 
           <div style="margin-bottom: 10px;">
