@@ -1,7 +1,7 @@
 {
-  "version": "2.50.1",
-  "versionCode": 2501,
-  "updatedAt": "2026-10-28T19:38:47.264Z",
-  "buildDate": "2026-10-28T19:38:47.277Z",
-  "changelog": "Remocao da caixa de resumo de pecas marcadas no topo da aba de pecas a pedido do usuario."
+  "version": "2.50.2",
+  "versionCode": 2502,
+  "updatedAt": "2026-10-28T19:46:08.694Z",
+  "buildDate": "2026-10-28T19:46:08.705Z",
+  "changelog": "Remocao da exibicao da caixa de resumo de pecas marcadas no topo da aba de pecas."
 }
