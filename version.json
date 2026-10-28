@@ -1,7 +1,7 @@
 {
-  "version": "2.50.0",
-  "versionCode": 2500,
-  "updatedAt": "2026-10-28T19:25:00Z",
-  "buildDate": "2026-10-28T19:25:00.000Z",
-  "changelog": "Transferir e copiar pecas entre abas com escolha de acao, modal suspenso de pesquisa em tempo real com multi-selecao permanente, e cadastro multiplo de pecas com LD e LE."
+  "version": "2.50.1",
+  "versionCode": 2501,
+  "updatedAt": "2026-10-28T19:38:47.264Z",
+  "buildDate": "2026-10-28T19:38:47.277Z",
+  "changelog": "Remocao da caixa de resumo de pecas marcadas no topo da aba de pecas a pedido do usuario."
 }

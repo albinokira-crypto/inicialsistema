@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.50.0';
+let CURRENT_APP_VERSION = 'v2.50.1';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -11848,29 +11848,7 @@ function vpRenderParts(filterQuery = '') {
           </div>
 
           
-      ${todasSelCount > 0 ? `
-        <!-- RESUMO VISUAL DE TODAS AS PEÇAS MARCADAS NO TOPO DA ABA -->
-        <div class="vp-selected-summary-box" style="padding: 8px 10px; background: #fff7ed; border-radius: 10px; border: 1.5px solid #fdba74; box-shadow: 0 1px 3px rgba(234,88,12,0.1); width: 100%; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-size: 0.95rem;">⚠️</span>
-              <strong style="font-size: 0.78rem; color: #9a3412; text-transform: uppercase;">Peças Marcadas nesta Vistoria (${todasSelCount}):</strong>
-            </div>
-            <button type="button" onclick="vpClearAllSelected()" style="background: none; border: none; color: #dc2626; font-size: 0.70rem; font-weight: 700; cursor: pointer; text-decoration: underline;">
-              Limpar todas
-            </button>
-          </div>
-          <div style="display: flex; flex-wrap: wrap; gap: 5px; width: 100%; box-sizing: border-box;">
-            ${Array.from(vpSelectedPartsMap.values()).map(p => {
-              const isTroca = p.action === 'troca';
-              const isRessalva = p.action === 'ressalva';
-              const bg = isTroca ? '#fee2e2' : (isRessalva ? '#ffedd5' : '#e0f2fe');
-              const border = isTroca ? '#f87171' : (isRessalva ? '#fb923c' : '#7dd3fc');
-              const color = isTroca ? '#991b1b' : (isRessalva ? '#9a3412' : '#0369a1');
-              const label = isTroca ? 'Troca' : (isRessalva ? 'Ressalva' : 'Reparo');
-              return `
-                <span style="display: inline-flex; align-items: center; gap: 4px; background: ${bg}; border: 1px solid ${border}; color: ${color}; font-size: 0.72rem; font-weight: 700; padding: 3px 7px; border-radius: 6px;">
-                  <span>${isTroca ? '🔴' : (isRessalva ? '⚠️' : '🔵')} <strong>${vpEscapeHtml(p.name)}</strong> (${label}${p.obs ? `: ${vpEscapeHtml(p.obs)}` : ''})</span>
+      )</span>
                   <button type="button" onclick="vpRemoveSelected('${vpEscapeHtml(p.name)}')" title="Remover" style="background: none; border: none; color: ${color}; font-weight: 900; font-size: 0.75rem; cursor: pointer; padding: 0 2px; line-height: 1;">✕</button>
                 </span>
               `;
@@ -12014,29 +11992,7 @@ function vpRenderParts(filterQuery = '') {
       </div>
 
       
-      ${todasSelCount > 0 ? `
-        <!-- RESUMO VISUAL DE TODAS AS PEÇAS MARCADAS NO TOPO DA ABA -->
-        <div class="vp-selected-summary-box" style="padding: 8px 10px; background: #fff7ed; border-radius: 10px; border: 1.5px solid #fdba74; box-shadow: 0 1px 3px rgba(234,88,12,0.1); width: 100%; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-size: 0.95rem;">⚠️</span>
-              <strong style="font-size: 0.78rem; color: #9a3412; text-transform: uppercase;">Peças Marcadas nesta Vistoria (${todasSelCount}):</strong>
-            </div>
-            <button type="button" onclick="vpClearAllSelected()" style="background: none; border: none; color: #dc2626; font-size: 0.70rem; font-weight: 700; cursor: pointer; text-decoration: underline;">
-              Limpar todas
-            </button>
-          </div>
-          <div style="display: flex; flex-wrap: wrap; gap: 5px; width: 100%; box-sizing: border-box;">
-            ${Array.from(vpSelectedPartsMap.values()).map(p => {
-              const isTroca = p.action === 'troca';
-              const isRessalva = p.action === 'ressalva';
-              const bg = isTroca ? '#fee2e2' : (isRessalva ? '#ffedd5' : '#e0f2fe');
-              const border = isTroca ? '#f87171' : (isRessalva ? '#fb923c' : '#7dd3fc');
-              const color = isTroca ? '#991b1b' : (isRessalva ? '#9a3412' : '#0369a1');
-              const label = isTroca ? 'Troca' : (isRessalva ? 'Ressalva' : 'Reparo');
-              return `
-                <span style="display: inline-flex; align-items: center; gap: 4px; background: ${bg}; border: 1px solid ${border}; color: ${color}; font-size: 0.72rem; font-weight: 700; padding: 3px 7px; border-radius: 6px;">
-                  <span>${isTroca ? '🔴' : (isRessalva ? '⚠️' : '🔵')} <strong>${vpEscapeHtml(p.name)}</strong> (${label}${p.obs ? `: ${vpEscapeHtml(p.obs)}` : ''})</span>
+      )</span>
                   <button type="button" onclick="vpRemoveSelected('${vpEscapeHtml(p.name)}')" title="Remover" style="background: none; border: none; color: ${color}; font-weight: 900; font-size: 0.75rem; cursor: pointer; padding: 0 2px; line-height: 1;">✕</button>
                 </span>
               `;
