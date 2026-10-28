@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.50.2';
+let CURRENT_APP_VERSION = 'v2.50.3';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -11982,8 +11982,33 @@ function vpRenderParts(filterQuery = '') {
     }
   }
 
-  // O grid mantém a ordem natural do catálogo da categoria (as selecionadas destacam-se no resumo do topo)
-  const finalDisplayParts = displayParts;
+  // Peças selecionadas para troca ou reparo ficam sempre agrupadas no topo do grid
+  const selectedParts = [];
+  const unselectedParts = [];
+  for (let i = 0; i < displayParts.length; i++) {
+    const p = displayParts[i];
+    if (vpIsPartSelected(p.name)) {
+      selectedParts.push(p);
+    } else {
+      unselectedParts.push(p);
+    }
+  }
+  // Garante que todas as peças marcadas na vistoria apareçam no topo
+  const renderedNamesSet = new Set(selectedParts.map(p => (p.name || '').toLowerCase().trim()));
+  for (const [selName, selData] of vpSelectedPartsMap.entries()) {
+    const normKey = (selName || '').toLowerCase().trim();
+    if (!renderedNamesSet.has(normKey)) {
+      renderedNamesSet.add(normKey);
+      selectedParts.unshift({
+        rawName: selData.rawName || selName,
+        name: selData.name || selName,
+        zoneId: selData.zoneId || 'geral',
+        zoneName: selData.zoneName || 'Peças do veículo',
+        icon: selData.action === 'troca' ? '🔴' : (selData.action === 'reparo' ? '🔵' : '⚠️')
+      });
+    }
+  }
+  const finalDisplayParts = selectedParts.concat(unselectedParts);
 
   const vTypeLabels = {
     moto: { title: 'Peças da moto', icon: '🏍️' },
