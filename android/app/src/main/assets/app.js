@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.53.3';
+let CURRENT_APP_VERSION = 'v2.53.4';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -11603,51 +11603,139 @@ window.vpDeleteCustomTab = function(tabId) {
 };
 
 // --- COPIAR PEÇAS ENTRE SUB-ABAS PERSONALIZADAS ---
-window.vpOpenCopyPartsModal = function(sourceTabId) {
+let vpCurrentCopyPartsList = [];
+
+window.vpOpenCopyPartsModal = function(targetCustomTabId = null) {
   const modal = document.getElementById('vpCopyPartsModal');
   if (!modal) return;
-  const sourceTab = vpCustomTabs.find(t => t.id === sourceTabId);
-  if (!sourceTab) {
-    alert('Aba de origem não encontrada.');
-    return;
-  }
-  const sourceInput = document.getElementById('vpCopySourceTabId');
-  if (sourceInput) sourceInput.value = sourceTabId;
-
-  const titleEl = document.getElementById('vpCopyPartsModalTitle');
-  if (titleEl) {
-    titleEl.innerHTML = `<span>📋</span> Copiar Peças de: ${vpEscapeHtml(sourceTab.name)}`;
-  }
 
   const targetSelect = document.getElementById('vpCopyTargetTabSelect');
+  const sourceSelect = document.getElementById('vpCopySourceTabSelect');
+  const filterInput = document.getElementById('vpCopyPartsFilterInput');
+  if (filterInput) filterInput.value = '';
+
+  // 1. Preenche as Abas de Destino (para onde copiar)
   if (targetSelect) {
-    const otherTabs = vpCustomTabs.filter(t => t.id !== sourceTabId);
-    if (otherTabs.length === 0) {
-      alert('Você precisa ter pelo menos mais uma aba personalizada criada para copiar peças para ela.\nCrie outra aba tocando em "+ Nova Aba".');
+    if (Array.isArray(vpCustomTabs) && vpCustomTabs.length > 0) {
+      targetSelect.innerHTML = vpCustomTabs.map(t => {
+        const selectedAttr = (t.id === targetCustomTabId) ? 'selected' : '';
+        return `<option value="${t.id}" ${selectedAttr}>${t.icon || '📁'} ${vpEscapeHtml(t.name)} (${(t.parts || []).length} peças)</option>`;
+      }).join('');
+    } else {
+      alert('Nenhuma aba personalizada encontrada. Crie uma aba tocando em "+ Nova Aba" primeiro.');
       return;
     }
-    targetSelect.innerHTML = otherTabs.map(t => `<option value="${t.id}">${t.icon || '📁'} ${vpEscapeHtml(t.name)} (${(t.parts || []).length} peças)</option>`).join('');
   }
 
-  const listContainer = document.getElementById('vpCopyPartsListContainer');
-  if (listContainer) {
-    const parts = Array.isArray(sourceTab.parts) ? sourceTab.parts : [];
-    if (parts.length === 0) {
-      listContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #64748b; font-size: 0.8rem;">Esta aba de origem não possui nenhuma peça para copiar.</div>';
-    } else {
-      listContainer.innerHTML = parts.map((rawP) => {
-        const eff = vpGetEffectivePartName(rawP);
-        return `
-          <label style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: white; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.82rem; font-weight: 600; color: #1e293b; cursor: pointer;">
-            <input type="checkbox" class="vp-copy-part-check" value="${vpEscapeHtml(eff)}" checked style="width: 16px; height: 16px; accent-color: #2563eb;" />
-            <span>${vpEscapeHtml(eff)}</span>
-          </label>
-        `;
-      }).join('');
+  // 2. Preenche as Abas de Origem (de onde copiar)
+  if (sourceSelect) {
+    let sourceOptions = `
+      <optgroup label="Categorias Principais (Catálogo Geral)">
+        <option value="cat_carro">🚗 Carros (Catálogo Geral)</option>
+        <option value="cat_moto">🏍️ Motos (Catálogo Geral)</option>
+        <option value="cat_picape">🛻 Picapes (Catálogo Geral)</option>
+        <option value="cat_caminhao">🚛 Caminhões (Catálogo Geral)</option>
+      </optgroup>
+    `;
+
+    if (Array.isArray(vpCustomTabs) && vpCustomTabs.length > 0) {
+      sourceOptions += `
+        <optgroup label="Outras Abas Personalizadas">
+          ${vpCustomTabs.map(t => `<option value="tab_${t.id}">${t.icon || '📁'} ${vpEscapeHtml(t.name)} (${(t.parts || []).length} peças)</option>`).join('')}
+        </optgroup>
+      `;
     }
+    sourceSelect.innerHTML = sourceOptions;
+
+    // Seleciona por padrão a categoria ativa atual
+    const currentVType = vpDetectedVehicleType || 'carro';
+    sourceSelect.value = 'cat_' + currentVType;
   }
+
+  // 3. Atualiza a lista de peças da origem
+  window.vpOnCopySourceTabChange();
 
   modal.style.display = 'flex';
+};
+
+window.vpOnCopySourceTabChange = function() {
+  const sourceSelect = document.getElementById('vpCopySourceTabSelect');
+  const targetSelect = document.getElementById('vpCopyTargetTabSelect');
+  const listContainer = document.getElementById('vpCopyPartsListContainer');
+  if (!sourceSelect || !listContainer) return;
+
+  const srcVal = sourceSelect.value || '';
+  const targetId = targetSelect ? targetSelect.value : null;
+  const targetTab = Array.isArray(vpCustomTabs) ? vpCustomTabs.find(t => t.id === targetId) : null;
+  const targetPartsSet = new Set((targetTab?.parts || []).map(p => (vpGetEffectivePartName(p) || '').toLowerCase()));
+
+  let rawList = [];
+  if (srcVal.startsWith('cat_')) {
+    const vType = srcVal.replace('cat_', '');
+    const catalog = vpGetPartsForVehicleType(vType);
+    rawList = (catalog || []).map(p => ({
+      name: vpGetEffectivePartName(p.name),
+      rawName: p.rawName || p.name
+    }));
+  } else if (srcVal.startsWith('tab_')) {
+    const tabId = srcVal.replace('tab_', '');
+    const sTab = Array.isArray(vpCustomTabs) ? vpCustomTabs.find(t => t.id === tabId) : null;
+    rawList = (sTab?.parts || []).map(rawP => ({
+      name: vpGetEffectivePartName(rawP),
+      rawName: rawP
+    }));
+  }
+
+  // Desduplica
+  const uniqueMap = new Map();
+  rawList.forEach(item => {
+    if (item && item.name) {
+      const lower = item.name.toLowerCase();
+      if (!uniqueMap.has(lower) && !vpIsPartDeleted(item.rawName, item.name)) {
+        uniqueMap.set(lower, {
+          name: item.name,
+          rawName: item.rawName,
+          alreadyInTarget: targetPartsSet.has(lower)
+        });
+      }
+    }
+  });
+
+  vpCurrentCopyPartsList = Array.from(uniqueMap.values());
+  window.vpFilterCopyPartsList(document.getElementById('vpCopyPartsFilterInput')?.value || '');
+};
+
+window.vpFilterCopyPartsList = function(filterQuery = '') {
+  const listContainer = document.getElementById('vpCopyPartsListContainer');
+  const countLabel = document.getElementById('vpCopyPartsCountLabel');
+  if (!listContainer) return;
+
+  const q = (filterQuery || '').trim();
+  const filtered = !q ? vpCurrentCopyPartsList : vpCurrentCopyPartsList.filter(item => {
+    return window.vpPartMatchesQuery(item.name, item.rawName, q);
+  });
+
+  if (countLabel) {
+    countLabel.textContent = `Peças encontradas (${filtered.length}):`;
+  }
+
+  if (filtered.length === 0) {
+    listContainer.innerHTML = '<div style="padding: 14px; text-align: center; color: #64748b; font-size: 0.8rem;">Nenhuma peça disponível para copiar com esse filtro.</div>';
+    return;
+  }
+
+  listContainer.innerHTML = filtered.map(item => {
+    const isAlready = item.alreadyInTarget;
+    return `
+      <label style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; background: ${isAlready ? '#f1f5f9' : 'white'}; border-radius: 6px; border: 1px solid ${isAlready ? '#e2e8f0' : '#cbd5e1'}; font-size: 0.82rem; font-weight: 600; color: ${isAlready ? '#94a3b8' : '#1e293b'}; cursor: ${isAlready ? 'default' : 'pointer'};">
+        <span style="display: flex; align-items: center; gap: 8px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <input type="checkbox" class="vp-copy-part-check" value="${vpEscapeHtml(item.name)}" ${isAlready ? 'disabled' : 'checked'} style="width: 16px; height: 16px; accent-color: #2563eb; flex-shrink: 0;" />
+          <span title="${vpEscapeHtml(item.name)}">${vpEscapeHtml(item.name)}</span>
+        </span>
+        ${isAlready ? '<span style="font-size: 0.68rem; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;">Já na aba</span>' : ''}
+      </label>
+    `;
+  }).join('');
 };
 
 window.vpCloseCopyPartsModal = function() {
@@ -11656,32 +11744,30 @@ window.vpCloseCopyPartsModal = function() {
 };
 
 window.vpCopySelectAll = function(select) {
-  const checks = document.querySelectorAll('.vp-copy-part-check');
+  const checks = document.querySelectorAll('.vp-copy-part-check:not(:disabled)');
   checks.forEach(c => c.checked = Boolean(select));
 };
 
 window.vpConfirmCopyParts = function() {
-  const sourceId = document.getElementById('vpCopySourceTabId')?.value;
   const targetId = document.getElementById('vpCopyTargetTabSelect')?.value;
-  if (!sourceId || !targetId) {
+  if (!targetId) {
     alert('Selecione uma aba de destino válida.');
     return;
   }
-  const sourceTab = vpCustomTabs.find(t => t.id === sourceId);
-  const targetTab = vpCustomTabs.find(t => t.id === targetId);
-  if (!sourceTab || !targetTab) {
-    alert('Abas não encontradas.');
+  const targetTab = Array.isArray(vpCustomTabs) ? vpCustomTabs.find(t => t.id === targetId) : null;
+  if (!targetTab) {
+    alert('Aba de destino não encontrada.');
     return;
   }
 
-  const checkedEls = document.querySelectorAll('.vp-copy-part-check:checked');
+  const checkedEls = document.querySelectorAll('.vp-copy-part-check:checked:not(:disabled)');
   if (checkedEls.length === 0) {
     alert('Selecione pelo menos uma peça para copiar.');
     return;
   }
 
   if (!Array.isArray(targetTab.parts)) targetTab.parts = [];
-  const targetPartsSet = new Set(targetTab.parts.map(p => vpGetEffectivePartName(p).toLowerCase()));
+  const targetPartsSet = new Set(targetTab.parts.map(p => (vpGetEffectivePartName(p) || '').toLowerCase()));
   let copiedCount = 0;
 
   checkedEls.forEach(el => {
@@ -11693,6 +11779,7 @@ window.vpConfirmCopyParts = function() {
     }
   });
 
+  if (typeof vpSaveCustomTabs === 'function') vpSaveCustomTabs();
   vpSaveState(true);
   window.vpCloseCopyPartsModal();
   vpRenderTabsNavBar();

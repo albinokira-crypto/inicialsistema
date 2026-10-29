@@ -549,7 +549,7 @@
               <span style="font-size: 1.4rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.53.3</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.53.4</div>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -565,7 +565,7 @@
             <div style="display: flex; align-items: center; gap: 6px; color: #475569;">
               <span>🌐</span>
               <span>Servidor (version.json):</span>
-              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v2.53.3</strong>
+              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v2.53.4</strong>
             </div>
             <button type="button" onclick="checkForSystemUpdates(true)" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-weight: 700; font-size: 0.72rem; padding: 3px 8px; border-radius: 5px; cursor: pointer;">
               🔍 Checar
@@ -577,7 +577,7 @@
           </button>
 
           <button id="downloadApkBtn" type="button" onclick="baixarApkAtualizado(event)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #059669; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(5,150,105,0.25);">
-            📥 Baixar APK Atualizado (v2.53.3)
+            📥 Baixar APK Atualizado (v2.53.4)
           </button>
 
           <button id="downloadOpenCamera2Btn" type="button" onclick="baixarOpenCamera2Apk(event)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(124,58,237,0.25);">
@@ -1302,23 +1302,46 @@
       <div class="photo-modal" style="max-width: 440px; background: white; padding: 18px; border-radius: 16px; max-height: 90vh; display: flex; flex-direction: column;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
           <h3 id="vpCopyPartsModalTitle" style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 6px;">
-            <span>📋</span> Copiar Peças para Outra Aba
+            <span>📋</span> Copiar Peças para a Aba
           </h3>
           <button type="button" onclick="vpCloseCopyPartsModal()" style="background: none; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer;">✕</button>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1;">
-          <input type="hidden" id="vpCopySourceTabId" value="" />
-
+          
+          <!-- SELETOR DE ABA DE ORIGEM (DE ONDE COPIAR) -->
           <div>
-            <label style="display: block; font-size: 0.80rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Aba de Destino:</label>
-            <select id="vpCopyTargetTabSelect" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 700; color: #1e3a8a; background: white; outline: none;">
+            <label style="display: block; font-size: 0.80rem; font-weight: 700; color: #334155; margin-bottom: 4px;">
+              De qual aba você quer copiar? (Origem):
+            </label>
+            <select id="vpCopySourceTabSelect" onchange="vpOnCopySourceTabChange()" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 700; color: #1e3a8a; background: white; outline: none;">
             </select>
           </div>
 
+          <!-- SELETOR DE ABA DE DESTINO (PARA ONDE COPIAR) -->
+          <div>
+            <label style="display: block; font-size: 0.80rem; font-weight: 700; color: #334155; margin-bottom: 4px;">
+              Para qual aba deseja copiar? (Destino):
+            </label>
+            <select id="vpCopyTargetTabSelect" onchange="vpOnCopySourceTabChange()" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.88rem; font-weight: 700; color: #1e3a8a; background: white; outline: none;">
+            </select>
+          </div>
+
+          <!-- CAMPO DE FILTRO RÁPIDO DENTRO DO MODAL -->
+          <div>
+            <input 
+              type="text" 
+              id="vpCopyPartsFilterInput" 
+              placeholder="🔍 Filtrar peças da lista..." 
+              oninput="vpFilterCopyPartsList(this.value)"
+              style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.82rem; outline: none;"
+            />
+          </div>
+
+          <!-- LISTA DE PEÇAS COM CHECKBOXES -->
           <div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <label style="font-size: 0.80rem; font-weight: 700; color: #334155;">Selecione as peças para copiar:</label>
+              <label id="vpCopyPartsCountLabel" style="font-size: 0.80rem; font-weight: 700; color: #334155;">Selecione as peças para copiar:</label>
               <div style="display: flex; gap: 8px;">
                 <button type="button" onclick="vpCopySelectAll(true)" style="background: none; border: none; color: #2563eb; font-size: 0.75rem; font-weight: 700; cursor: pointer; padding: 0;">Todas</button>
                 <span style="color: #cbd5e1;">|</span>

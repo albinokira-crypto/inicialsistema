@@ -1,7 +1,7 @@
 {
-  "version": "2.53.3",
-  "versionCode": 2533,
-  "updatedAt": "2026-10-29T18:24:36.352Z",
-  "buildDate": "2026-10-29T18:24:36.364Z",
-  "changelog": "Busca inteligente tolerante a acentos e grafia no modal de pecas; opcao Copiar selecionada como padrao e correcao definitiva do fluxo de duplicar pecas entre abas."
+  "version": "2.53.4",
+  "versionCode": 2534,
+  "updatedAt": "2026-10-29T18:32:15.853Z",
+  "buildDate": "2026-10-29T18:32:15.864Z",
+  "changelog": "Modal Copiar Pecas aprimorado com seletor de aba de origem (Carros, Motos, Picapes, Caminhoes ou Abas personalizadas), filtro de busca rapida e deteccao de duplicadas."
 }
