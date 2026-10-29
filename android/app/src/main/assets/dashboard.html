@@ -46,9 +46,11 @@
         <div class="menu-grid">
           <button class="menu-btn" type="button" data-day="Vistorias" onclick="openMenuSection('Vistorias')" style="background: #2563eb; color: white; font-weight: 800;">Vistorias</button>
           <button class="menu-btn special-btn-supervisao" type="button" data-day="Supervisão" onclick="openMenuSection('Supervisão')">Supervisão</button>
-          <button class="menu-btn special-btn-seguradora" type="button" data-day="Seguradoras" onclick="openMenuSection('Seguradoras')">Seguradoras</button>
-          <button class="menu-btn special-btn-seguradora" type="button" data-day="Oficinas" onclick="openMenuSection('Oficinas')">Oficinas</button>
-          <button class="menu-btn special-btn-agendar" type="button" onclick="openAgendarModal()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; font-weight: 800; box-shadow: 0 3px 8px rgba(16,185,129,0.25);">📲 Agendar Vistoria</button>
+          <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; width: 100%; margin: 0; padding: 0;">
+            <button class="menu-btn special-btn-seguradora" type="button" data-day="Seguradoras" onclick="openMenuSection('Seguradoras')" style="margin: 0; width: 100%; box-sizing: border-box; font-size: clamp(0.68rem, 2.8vw, 0.85rem) !important; padding: 12px 2px !important;">Seguradoras</button>
+            <button class="menu-btn special-btn-seguradora" type="button" data-day="Oficinas" onclick="openMenuSection('Oficinas')" style="margin: 0; width: 100%; box-sizing: border-box; font-size: clamp(0.68rem, 2.8vw, 0.85rem) !important; padding: 12px 2px !important;">Oficinas</button>
+            <button class="menu-btn special-btn-agendar" type="button" onclick="openAgendarModal()" style="margin: 0; width: 100%; box-sizing: border-box; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; font-weight: 800; box-shadow: 0 3px 8px rgba(16,185,129,0.25); font-size: clamp(0.68rem, 2.8vw, 0.85rem) !important; padding: 12px 2px !important;">📲 Agendar</button>
+          </div>
           <button class="menu-btn special-btn-total" type="button" data-day="Total da semana" onclick="openMenuSection('Total da semana')">Total da Semana</button>
           <button class="menu-btn special-btn-total" type="button" data-day="Todas as vistorias" onclick="openMenuSection('Todas as vistorias')">Todas as Vistorias</button>
         </div>
@@ -547,7 +549,7 @@
               <span style="font-size: 1.4rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.52.1</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.52.2</div>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">

@@ -1,7 +1,7 @@
 {
-  "version": "2.52.1",
-  "versionCode": 2521,
-  "updatedAt": "2026-10-29T17:18:58.945Z",
-  "buildDate": "2026-10-29T17:18:58.959Z",
-  "changelog": "Ajuste na posicao do botao de agendamento (ao lado de oficinas), listagem completa de seguradoras cadastradas e perguntas de seguranca padronizadas."
+  "version": "2.52.2",
+  "versionCode": 2522,
+  "updatedAt": "2026-10-29T17:24:41.129Z",
+  "buildDate": "2026-10-29T17:24:41.140Z",
+  "changelog": "Botao de Agendar Vistoria alinhado na mesma linha e mesmo tamanho de Seguradoras e Oficinas (linha de 3 botoes)."
 }
