@@ -89,9 +89,21 @@ class MainActivity : ComponentActivity() {
         // Interface bridge to JS
         webView.addJavascriptInterface(AndroidInterface(this), "AndroidInterface")
 
+        webView.setDownloadListener { url, _, _, _, _ ->
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         webView.webViewClient = object : WebViewClient() {
-            private fun handleExternalWhatsAppUrl(url: String): Boolean {
-                if (url.startsWith("https://wa.me") || url.startsWith("https://api.whatsapp.com") || url.startsWith("whatsapp://")) {
+            private fun handleExternalUrl(url: String): Boolean {
+                if (url.startsWith("https://wa.me") || url.startsWith("https://api.whatsapp.com") || url.startsWith("whatsapp://")
+                    || url.contains("/releases/download/") || url.contains("/releases/latest/download/") || url.endsWith(".apk")) {
                     try {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -107,7 +119,7 @@ class MainActivity : ComponentActivity() {
 
             @Deprecated("Deprecated in Java")
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                if (url != null && handleExternalWhatsAppUrl(url)) return true
+                if (url != null && handleExternalUrl(url)) return true
                 return super.shouldOverrideUrlLoading(view, url)
             }
 
@@ -116,7 +128,7 @@ class MainActivity : ComponentActivity() {
                 request: android.webkit.WebResourceRequest?
             ): Boolean {
                 val url = request?.url?.toString() ?: return false
-                if (handleExternalWhatsAppUrl(url)) return true
+                if (handleExternalUrl(url)) return true
                 return super.shouldOverrideUrlLoading(view, request)
             }
             override fun shouldInterceptRequest(
@@ -1980,6 +1992,22 @@ class MainActivity : ComponentActivity() {
 }
 
 class AndroidInterface(private val activity: ComponentActivity) {
+    @JavascriptInterface
+    fun openExternalUrl(url: String) {
+        val mainAct = activity as MainActivity
+        mainAct.runOnUiThread {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                mainAct.startActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(mainAct, "Não foi possível abrir o link: " + e.message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     @JavascriptInterface
     fun openWhatsAppNumber(phone: String, message: String) {
         val mainAct = activity as MainActivity

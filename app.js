@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.53.1';
+let CURRENT_APP_VERSION = 'v2.53.2';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -107,6 +107,8 @@ async function checkForSystemUpdates(showFeedback = false) {
 
       if (isNewer) {
         if (serverJsonEl) serverJsonEl.textContent = serverVer;
+        const dlBtn = document.getElementById('downloadApkBtn');
+        if (dlBtn) dlBtn.innerHTML = '📥 Baixar APK Atualizado (' + serverVer + ')';
         if (statusBadge) {
           statusBadge.style.background = '#fef3c7';
           statusBadge.style.borderColor = '#fde68a';
@@ -6171,6 +6173,75 @@ function updateFolderLabelUI() {
   }
 }
 
+
+window.baixarApkAtualizado = function(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const currentVer = typeof CURRENT_APP_VERSION !== 'undefined' ? CURRENT_APP_VERSION : 'v2.53.2';
+  const targetUrl = 'https://github.com/albinokira-crypto/inicialsistema/releases/latest/download/VistoriaInicial.apk';
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(targetUrl).catch(() => {});
+    }
+  } catch(err) {}
+
+  // 1. Se a interface nativa tiver openExternalUrl (novo APK)
+  if (window.AndroidInterface && typeof window.AndroidInterface.openExternalUrl === 'function') {
+    try {
+      window.AndroidInterface.openExternalUrl(targetUrl);
+      return;
+    } catch(err) {
+      console.warn('Erro ao chamar openExternalUrl:', err);
+    }
+  }
+
+  // 2. Se estiver no APK atual instalado: dispara o chooser para o Chrome/navegador
+  if (window.AndroidInterface && typeof window.AndroidInterface.shareText === 'function') {
+    try {
+      if (typeof showToastNotification === 'function') {
+        showToastNotification('Escolha o Chrome para iniciar o download do APK', 3500);
+      }
+      window.AndroidInterface.shareText('Baixar APK Atualizado (' + currentVer + ')', targetUrl);
+      return;
+    } catch(err) {
+      console.warn('Erro ao chamar shareText:', err);
+    }
+  }
+
+  // 3. Fallback Web
+  window.open(targetUrl, '_blank');
+};
+
+window.baixarOpenCamera2Apk = function(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const targetUrl = 'https://github.com/albinokira-crypto/inicialsistema/releases/download/v2.42.3/OpenCamera2.apk';
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(targetUrl).catch(() => {});
+    }
+  } catch(err) {}
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.openExternalUrl === 'function') {
+    try {
+      window.AndroidInterface.openExternalUrl(targetUrl);
+      return;
+    } catch(err) {}
+  }
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.shareText === 'function') {
+    try {
+      if (typeof showToastNotification === 'function') {
+        showToastNotification('Escolha o Chrome para baixar o Open Camera 2', 3500);
+      }
+      window.AndroidInterface.shareText('Baixar Open Camera 2 APK', targetUrl);
+      return;
+    } catch(err) {}
+  }
+
+  window.open(targetUrl, '_blank');
+};
+
 function openSystemSettings() {
   try {
     const folderSection = document.getElementById('folderSettingsSection');
@@ -6182,6 +6253,8 @@ function openSystemSettings() {
     if (versionDisplay) versionDisplay.textContent = CURRENT_APP_VERSION;
     const serverJsonEl = document.getElementById('serverVersionJsonDisplay');
     if (serverJsonEl) serverJsonEl.textContent = CURRENT_APP_VERSION;
+    const dlBtnSettings = document.getElementById('downloadApkBtn');
+    if (dlBtnSettings) dlBtnSettings.innerHTML = '📥 Baixar APK Atualizado (' + CURRENT_APP_VERSION + ')';
 
     if (typeof updateFolderLabelUI === 'function') updateFolderLabelUI();
     if (typeof updatePreferredCameraUI === 'function') updatePreferredCameraUI();

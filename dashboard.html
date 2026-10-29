@@ -549,7 +549,7 @@
               <span style="font-size: 1.4rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.53.1</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.53.2</div>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -565,7 +565,7 @@
             <div style="display: flex; align-items: center; gap: 6px; color: #475569;">
               <span>🌐</span>
               <span>Servidor (version.json):</span>
-              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v2.43.0</strong>
+              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v2.53.2</strong>
             </div>
             <button type="button" onclick="checkForSystemUpdates(true)" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-weight: 700; font-size: 0.72rem; padding: 3px 8px; border-radius: 5px; cursor: pointer;">
               🔍 Checar
@@ -576,13 +576,13 @@
             🔄 Forçar Atualização (Recarregar App)
           </button>
 
-          <a href="https://github.com/albinokira-crypto/inicialsistema/releases/download/v2.43.0/VistoriaInicial.apk" target="_blank" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #059669; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(5,150,105,0.25);">
-            📥 Baixar APK Atualizado (v2.43.0)
-          </a>
+          <button id="downloadApkBtn" type="button" onclick="baixarApkAtualizado(event)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #059669; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(5,150,105,0.25);">
+            📥 Baixar APK Atualizado (v2.53.2)
+          </button>
 
-          <a href="https://github.com/albinokira-crypto/inicialsistema/releases/download/v2.42.3/OpenCamera2.apk" target="_blank" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(124,58,237,0.25);">
+          <button id="downloadOpenCamera2Btn" type="button" onclick="baixarOpenCamera2Apk(event)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(124,58,237,0.25);">
             📸 Baixar Open Camera 2 APK (2ª Empresa)
-          </a>
+          </button>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px; border-top: 1.5px dashed #e2e8f0; padding-top: 16px;">
@@ -1493,9 +1493,9 @@
             <div style="font-size: 0.76rem; color: #5b21b6; font-weight: 700; margin-bottom: 6px;">
               💡 Ainda não instalou o Open Camera 2 no celular?
             </div>
-            <a href="https://github.com/albinokira-crypto/inicialsistema/releases/download/v2.42.3/OpenCamera2.apk" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; background: #7c3aed; color: #ffffff; border-radius: 8px; font-weight: 700; font-size: 0.78rem;">
+            <button type="button" onclick="baixarOpenCamera2Apk(event)" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; background: #7c3aed; color: #ffffff; border: none; border-radius: 8px; font-weight: 700; font-size: 0.78rem; cursor: pointer;">
               📥 Baixar APK do Open Camera 2
-            </a>
+            </button>
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 {
-  "version": "2.53.1",
-  "versionCode": 2531,
-  "updatedAt": "2026-10-29T17:46:00.000Z",
-  "buildDate": "2026-10-29T17:46:00.000Z",
-  "changelog": "Correção para envio direto no WhatsApp compatível com OTA no APK atual e no novo APK."
+  "version": "2.53.2",
+  "versionCode": 2532,
+  "updatedAt": "2026-10-29T18:00:42.521Z",
+  "buildDate": "2026-10-29T18:00:42.533Z",
+  "changelog": "Botao de download do APK atualizado para v2.53.2 com abertura direta no navegador/DownloadManager."
 }
