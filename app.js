@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.53.2';
+let CURRENT_APP_VERSION = 'v2.53.3';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -9561,7 +9561,7 @@ window.vpOpenQuickTransferModal = function(partName) {
   if (nameInput) nameInput.value = eff;
   if (titleEl) titleEl.textContent = eff;
 
-  window.vpSetQuickTransferMode('move');
+  window.vpSetQuickTransferMode('copy');
 
   if (tabsListSection && tabsList) {
     if (Array.isArray(vpCustomTabs) && vpCustomTabs.length > 0) {
@@ -9592,27 +9592,41 @@ window.vpApplyQuickTransferTarget = function(targetCat) {
   if (!partName) return;
 
   const eff = vpGetEffectivePartName(partName);
+  const effLower = eff.toLowerCase();
   const isCopy = window.vpCurrentTransferMode === 'copy';
 
   if (isCopy) {
     if (!Array.isArray(vpCustomPartsList)) vpCustomPartsList = [];
-    const already = vpCustomPartsList.some(p => p && p.vehicleType === targetCat && (p.name || '').toLowerCase() === eff.toLowerCase());
+    const already = vpCustomPartsList.some(p => p && p.vehicleType === targetCat && (p.name || '').toLowerCase() === effLower);
     if (!already) {
-      vpCustomPartsList.push({ name: eff, zoneId: 'geral', vehicleType: targetCat });
+      vpCustomPartsList.push({ name: eff, zoneId: 'geral', vehicleType: targetCat, isCopied: true });
     }
+
+    if (!vpConfigGuard.multiCategories) vpConfigGuard.multiCategories = {};
+    if (!Array.isArray(vpConfigGuard.multiCategories[effLower])) {
+      const origCat = vpGetPartVehicleType(partName) || vpDetectedVehicleType || 'carro';
+      vpConfigGuard.multiCategories[effLower] = Array.from(new Set([origCat, targetCat]));
+    } else if (!vpConfigGuard.multiCategories[effLower].includes(targetCat)) {
+      vpConfigGuard.multiCategories[effLower].push(targetCat);
+    }
+
     const orderKey = 'vp_custom_order_' + targetCat;
     let list = getSafeStorage(orderKey) || [];
     if (typeof list === 'string') {
       try { list = JSON.parse(list); } catch(e) { list = []; }
     }
-    if (Array.isArray(list) && !list.some(item => typeof item === 'string' && item.toLowerCase() === eff.toLowerCase())) {
+    if (!Array.isArray(list)) list = [];
+    if (!list.some(item => typeof item === 'string' && item.toLowerCase() === effLower)) {
       list.push(eff);
       setSafeStorage(orderKey, list);
     }
+    if (!vpConfigGuard.customOrders) vpConfigGuard.customOrders = {};
+    vpConfigGuard.customOrders[targetCat] = list;
   } else {
     window.vpTransferPartVehicleType(partName, targetCat, null);
   }
 
+  if (typeof vpSaveCustomTabs === 'function') vpSaveCustomTabs();
   vpAllVehicleParts = null;
   vpLoadAndSortVehicleParts();
   vpSaveState(true);
@@ -9766,6 +9780,15 @@ function vpPartMatchesVehicleType(partObjOrName, currentVehicleType) {
   const clean = vpCleanPartDashes(raw);
   const eff = vpGetEffectivePartName(raw);
   const lower = eff.toLowerCase();
+
+  // Prioridade 0: Peça multi-categoria copiada pelo usuário
+  if (Array.isArray(vpConfigGuard?.multiCategories?.[lower])) {
+    if (vpConfigGuard.multiCategories[lower].includes(vType)) return true;
+  }
+  if (Array.isArray(vpCustomPartsList)) {
+    const hasCopied = vpCustomPartsList.some(p => p && p.vehicleType === vType && (p.name || '').toLowerCase() === lower);
+    if (hasCopied) return true;
+  }
 
   // Prioridade 1: Configuração travada pelo usuário (vpConfigGuard)
   if (vpConfigGuard?.configuredParts?.[lower]?.vehicleType) {
@@ -10731,7 +10754,10 @@ function vpLoadAndSortVehicleParts() {
         const effective = vpGetEffectivePartName(p.name);
         const effLower = (effective || '').toLowerCase();
         if (effective && !vpIsPartDeleted(p.name, effective) && !seenNames.has(effLower)) {
-          const isCompatible = vpPartMatchesVehicleType(effective, vpDetectedVehicleType);
+          const isCompatible = (p.vehicleType === vpDetectedVehicleType) || 
+                               (p.vehicleType === 'all') || 
+                               (Array.isArray(vpConfigGuard?.multiCategories?.[effLower]) && vpConfigGuard.multiCategories[effLower].includes(vpDetectedVehicleType)) ||
+                               vpPartMatchesVehicleType(p, vpDetectedVehicleType);
           if (isCompatible) {
             seenNames.add(effLower);
             allParts.push({
@@ -11304,9 +11330,7 @@ window.vpOnSearchCustomTabPartInput = function(query) {
 
   // Busca em todo o catálogo correspondente
   const matches = (activeCatalog || []).filter(p => {
-    const n = norm(p.name);
-    const r = norm(p.rawName);
-    return n.includes(qNorm) || r.includes(qNorm);
+    return window.vpPartMatchesQuery(p.name, p.rawName, q);
   });
 
   if (matches.length === 0) {
@@ -11814,32 +11838,11 @@ function vpRenderParts(filterQuery = '') {
 
       if (isSearching) {
         const rawQ = filterQuery.trim();
-        const normalizeSearch = (s) => (s || '')
-          .toLowerCase()
-          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-          .replace(/[-_\/]/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-
-        const qNormalized = normalizeSearch(rawQ);
-        const qTokens = qNormalized.split(' ').filter(Boolean);
-        const qCompact = qNormalized.replace(/\s+/g, '');
-
-        const matchesQuery = (p) => {
-          const nameNorm = normalizeSearch(p.name);
-          const rawNorm = normalizeSearch(p.rawName);
-          const nameCompact = nameNorm.replace(/\s+/g, '');
-          const rawCompact = rawNorm.replace(/\s+/g, '');
-          if (qCompact && (nameCompact.includes(qCompact) || rawCompact.includes(qCompact))) return true;
-          if (qTokens.length > 0 && qTokens.every(tok => nameNorm.includes(tok) || rawNorm.includes(tok))) return true;
-          return false;
-        };
-
-        displayParts = tabItems.filter(matchesQuery);
+        displayParts = tabItems.filter(p => window.vpPartMatchesQuery(p.name, p.rawName, rawQ));
 
         // Se o usuário estiver pesquisando, busca também no catálogo geral para que ele possa adicionar qualquer peça à vistoria
         const tabPartNamesSet = new Set(tabItems.map(p => (p.name || '').toLowerCase()));
-        otherMatchingParts = (vpAllVehicleParts || []).filter(p => !tabPartNamesSet.has((p.name || '').toLowerCase()) && matchesQuery(p));
+        otherMatchingParts = (vpAllVehicleParts || []).filter(p => !tabPartNamesSet.has((p.name || '').toLowerCase()) && window.vpPartMatchesQuery(p.name, p.rawName, rawQ));
       }
 
       // Peças selecionadas no topo
@@ -12631,10 +12634,7 @@ window.vpOnModalSearchInput = function(query = '') {
   const selCountEl = document.getElementById('vpModalSelectedCount');
   if (!container) return;
 
-  const q = (query || '').trim().toLowerCase();
-  const qNorm = typeof normalizeSearch === 'function' ? normalizeSearch(q) : q;
-  const qCompact = qNorm.replace(/\s+/g, '');
-  const qTokens = qNorm.split(/\s+/).filter(Boolean);
+  const rawQ = (query || '').trim();
 
   const allParts = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts : [];
   const candidateMap = new Map();
@@ -12670,12 +12670,8 @@ window.vpOnModalSearchInput = function(query = '') {
   }
 
   const allList = Array.from(candidateMap.values());
-  const filtered = qTokens.length === 0 ? allList.slice(0, 80) : allList.filter(p => {
-    const n = (p.name || '').toLowerCase();
-    const nNorm = typeof normalizeSearch === 'function' ? normalizeSearch(n) : n;
-    const nCompact = nNorm.replace(/\s+/g, '');
-    return (qCompact && nCompact.includes(qCompact)) ||
-           (qTokens.length > 0 && qTokens.every(tok => nNorm.includes(tok)));
+  const filtered = !rawQ ? allList.slice(0, 80) : allList.filter(p => {
+    return window.vpPartMatchesQuery(p.name, p.rawName, rawQ);
   });
 
   if (countEl) {
