@@ -1,7 +1,7 @@
 {
-  "version": "2.53.4",
-  "versionCode": 2534,
-  "updatedAt": "2026-10-29T18:32:15.853Z",
-  "buildDate": "2026-10-29T18:32:15.864Z",
-  "changelog": "Modal Copiar Pecas aprimorado com seletor de aba de origem (Carros, Motos, Picapes, Caminhoes ou Abas personalizadas), filtro de busca rapida e deteccao de duplicadas."
+  "version": "2.53.5",
+  "versionCode": 2535,
+  "updatedAt": "2026-10-29T18:50:00.000Z",
+  "buildDate": "2026-10-29T18:50:00.000Z",
+  "changelog": "Modal Copiar Peças com exibição nítida dos nomes e checkboxes desmarcados por padrão. Envio no WhatsApp com compatibilidade total OTA."
 }

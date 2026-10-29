@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.53.4';
+let CURRENT_APP_VERSION = 'v2.53.5';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -11667,34 +11667,47 @@ window.vpOnCopySourceTabChange = function() {
   const srcVal = sourceSelect.value || '';
   const targetId = targetSelect ? targetSelect.value : null;
   const targetTab = Array.isArray(vpCustomTabs) ? vpCustomTabs.find(t => t.id === targetId) : null;
-  const targetPartsSet = new Set((targetTab?.parts || []).map(p => (vpGetEffectivePartName(p) || '').toLowerCase()));
+  const targetPartsSet = new Set((targetTab?.parts || []).map(p => {
+    const raw = typeof p === 'string' ? p : (p?.name || p?.rawName || '');
+    return ((typeof vpGetEffectivePartName === 'function' ? vpGetEffectivePartName(raw) : '') || raw).toLowerCase();
+  }));
 
   let rawList = [];
   if (srcVal.startsWith('cat_')) {
     const vType = srcVal.replace('cat_', '');
     const catalog = vpGetPartsForVehicleType(vType);
-    rawList = (catalog || []).map(p => ({
-      name: vpGetEffectivePartName(p.name),
-      rawName: p.rawName || p.name
-    }));
+    rawList = (catalog || []).map(p => {
+      const pName = typeof p === 'string' ? p : (p?.name || p?.rawName || '');
+      const eff = (typeof vpGetEffectivePartName === 'function' ? vpGetEffectivePartName(pName) : '') || pName;
+      return {
+        name: eff || pName,
+        rawName: p?.rawName || pName
+      };
+    });
   } else if (srcVal.startsWith('tab_')) {
     const tabId = srcVal.replace('tab_', '');
     const sTab = Array.isArray(vpCustomTabs) ? vpCustomTabs.find(t => t.id === tabId) : null;
-    rawList = (sTab?.parts || []).map(rawP => ({
-      name: vpGetEffectivePartName(rawP),
-      rawName: rawP
-    }));
+    rawList = (sTab?.parts || []).map(rawP => {
+      const pName = typeof rawP === 'string' ? rawP : (rawP?.name || rawP?.rawName || '');
+      const eff = (typeof vpGetEffectivePartName === 'function' ? vpGetEffectivePartName(pName) : '') || pName;
+      return {
+        name: eff || pName,
+        rawName: pName
+      };
+    });
   }
 
   // Desduplica
   const uniqueMap = new Map();
   rawList.forEach(item => {
-    if (item && item.name) {
-      const lower = item.name.toLowerCase();
-      if (!uniqueMap.has(lower) && !vpIsPartDeleted(item.rawName, item.name)) {
+    if (item) {
+      const disp = (item.name || item.rawName || '').trim();
+      if (!disp) return;
+      const lower = disp.toLowerCase();
+      if (!uniqueMap.has(lower) && !vpIsPartDeleted(item.rawName || disp, disp)) {
         uniqueMap.set(lower, {
-          name: item.name,
-          rawName: item.rawName,
+          name: disp,
+          rawName: item.rawName || disp,
           alreadyInTarget: targetPartsSet.has(lower)
         });
       }
@@ -11725,14 +11738,15 @@ window.vpFilterCopyPartsList = function(filterQuery = '') {
   }
 
   listContainer.innerHTML = filtered.map(item => {
+    const displayName = item.name || item.rawName || '';
     const isAlready = item.alreadyInTarget;
     return `
-      <label style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; background: ${isAlready ? '#f1f5f9' : 'white'}; border-radius: 6px; border: 1px solid ${isAlready ? '#e2e8f0' : '#cbd5e1'}; font-size: 0.82rem; font-weight: 600; color: ${isAlready ? '#94a3b8' : '#1e293b'}; cursor: ${isAlready ? 'default' : 'pointer'};">
-        <span style="display: flex; align-items: center; gap: 8px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-          <input type="checkbox" class="vp-copy-part-check" value="${vpEscapeHtml(item.name)}" ${isAlready ? 'disabled' : 'checked'} style="width: 16px; height: 16px; accent-color: #2563eb; flex-shrink: 0;" />
-          <span title="${vpEscapeHtml(item.name)}">${vpEscapeHtml(item.name)}</span>
+      <label style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; background: ${isAlready ? '#f1f5f9' : '#ffffff'}; border-radius: 8px; border: 1.5px solid ${isAlready ? '#e2e8f0' : '#cbd5e1'}; font-size: 0.85rem; cursor: ${isAlready ? 'default' : 'pointer'}; user-select: none;">
+        <span style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+          <input type="checkbox" class="vp-copy-part-check" value="${vpEscapeHtml(displayName)}" ${isAlready ? 'disabled' : ''} style="width: 18px; height: 18px; accent-color: #2563eb; flex-shrink: 0; cursor: pointer;" />
+          <span style="color: ${isAlready ? '#94a3b8' : '#0f172a'} !important; font-weight: 700 !important; font-size: 0.85rem !important; white-space: normal !important; word-break: break-word !important; line-height: 1.25 !important; display: inline-block !important;">${vpEscapeHtml(displayName)}</span>
         </span>
-        ${isAlready ? '<span style="font-size: 0.68rem; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;">Já na aba</span>' : ''}
+        ${isAlready ? '<span style="font-size: 0.68rem; font-weight: 700; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;">Já na aba</span>' : ''}
       </label>
     `;
   }).join('');
@@ -13732,10 +13746,24 @@ window.enviarAgendarWhatsApp = function() {
     }
   }
 
-  // 2. Compatibilidade OTA com APK instalado atualmente (sem exigir reinstalação):
+  // 2. Se a interface nativa tiver openExternalUrl (abre link externo sem tela branca no WebView)
+  if (window.AndroidInterface && typeof window.AndroidInterface.openExternalUrl === 'function') {
+    try {
+      const waUrl = 'https://api.whatsapp.com/send?phone=' + fullPhone + '&text=' + encodeURIComponent(msg);
+      window.AndroidInterface.openExternalUrl(waUrl);
+      return;
+    } catch (e) {
+      console.warn('Erro ao chamar AndroidInterface.openExternalUrl:', e);
+    }
+  }
+
+  // 3. Compatibilidade OTA com APK instalado atualmente (sem exigir reinstalação):
   // Dispara o WhatsApp nativo através de shareVistoriaWhatsAppText já compilado no aparelho
   if (window.AndroidInterface && typeof window.AndroidInterface.shareVistoriaWhatsAppText === 'function') {
     try {
+      if (typeof showToastNotification === 'function') {
+        showToastNotification('Texto copiado! Escolha a conversa no WhatsApp para enviar.', 3500);
+      }
       window.AndroidInterface.shareVistoriaWhatsAppText('Agendamento', msg);
       return;
     } catch (e) {
