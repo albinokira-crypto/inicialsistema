@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.52.2';
+let CURRENT_APP_VERSION = 'v2.53.0';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -13416,11 +13416,11 @@ window.openAgendarModal = function() {
   const modal = document.getElementById('agendarVistoriaModal');
   if (!modal) return;
 
-  // Popula botões de seguradoras cadastradas
-  const btnsContainer = document.getElementById('agendarSeguradorasBtns');
-  if (btnsContainer) {
+  // Popula o select de seguradoras com a seta (Clube Auto sempre em primeiro)
+  const selectEl = document.getElementById('agendarSeguradoraSelect');
+  if (selectEl) {
     const list = [];
-    list.push('clube auto'); // Padrão selecionado em primeiro lugar
+    list.push('clube auto'); // Padrão em primeiro
 
     // Carrega da variável em memória 'insurers' ou de 'getSafeStorage'
     let rawInsurers = [];
@@ -13443,19 +13443,16 @@ window.openAgendarModal = function() {
       });
     }
 
-    btnsContainer.innerHTML = list.map((s, idx) => `
-      <button 
-        type="button" 
-        onclick="selectAgendarSeguradora('${vpEscapeHtml(s)}')" 
-        style="padding: 5px 12px; font-size: 0.78rem; font-weight: 800; border-radius: 8px; border: 1.5px solid ${idx === 0 ? '#10b981' : '#cbd5e1'}; background: ${idx === 0 ? '#ecfdf5' : '#ffffff'}; color: ${idx === 0 ? '#065f46' : '#334155'}; cursor: pointer; transition: all 0.15s ease;"
-      >
-        ${vpEscapeHtml(s)}
-      </button>
-    `).join('');
+    selectEl.innerHTML = list.map((s, idx) => `
+      <option value="${vpEscapeHtml(s)}" ${idx === 0 ? 'selected' : ''}>
+        ${idx === 0 ? '⭐ Clube Auto (Padrão)' : '🏢 ' + vpEscapeHtml(s)}
+      </option>
+    `).join('') + '<option value="__OUTRA__">✏️ Outra seguradora (digitar)...</option>';
 
-    const segInput = document.getElementById('agendarSeguradoraInput');
-    if (segInput) {
-      segInput.value = list[0] || 'clube auto';
+    const customInput = document.getElementById('agendarSeguradoraCustomInput');
+    if (customInput) {
+      customInput.value = '';
+      customInput.style.display = 'none';
     }
   }
 
@@ -13481,16 +13478,16 @@ window.closeAgendarModal = function() {
   if (modal) modal.style.display = 'none';
 };
 
-window.selectAgendarSeguradora = function(name) {
-  const segInput = document.getElementById('agendarSeguradoraInput');
-  if (segInput) segInput.value = name;
-  const btns = document.querySelectorAll('#agendarSeguradorasBtns button');
-  btns.forEach(b => {
-    const isThis = b.textContent.trim().toLowerCase() === name.toLowerCase();
-    b.style.borderColor = isThis ? '#10b981' : '#cbd5e1';
-    b.style.background = isThis ? '#ecfdf5' : '#ffffff';
-    b.style.color = isThis ? '#065f46' : '#334155';
-  });
+window.onAgendarSeguradoraSelectChange = function(val) {
+  const customInput = document.getElementById('agendarSeguradoraCustomInput');
+  if (val === '__OUTRA__') {
+    if (customInput) {
+      customInput.style.display = 'block';
+      setTimeout(() => customInput.focus(), 80);
+    }
+  } else {
+    if (customInput) customInput.style.display = 'none';
+  }
   window.updateAgendarPreview();
 };
 
@@ -13520,7 +13517,12 @@ window.onAgendarDateChange = function(dateVal) {
 
 window.generateAgendarMessage = function() {
   const cliente = (document.getElementById('agendarClienteNome')?.value || '').trim() || '[Nome do Segurado]';
-  const seguradora = (document.getElementById('agendarSeguradoraInput')?.value || '').trim() || 'clube auto';
+  const selectVal = document.getElementById('agendarSeguradoraSelect')?.value || 'clube auto';
+  let seguradora = selectVal;
+  if (selectVal === '__OUTRA__') {
+    seguradora = (document.getElementById('agendarSeguradoraCustomInput')?.value || '').trim() || 'clube auto';
+  }
+
   const veiculo = (document.getElementById('agendarVeiculo')?.value || '').trim() || '[Veículo - Cor]';
   const placa = (document.getElementById('agendarPlaca')?.value || '').trim().toUpperCase() || '[Placa]';
   const dataTexto = (document.getElementById('agendarDataTexto')?.value || '').trim() || '[Data]';
@@ -13529,7 +13531,6 @@ window.generateAgendarMessage = function() {
   const bairro = (document.getElementById('agendarBairro')?.value || '').trim() || '[Bairro]';
   const cidade = (document.getElementById('agendarCidade')?.value || '').trim() || '[Cidade]';
 
-  // Pergunta de segurança agora é SEMPRE padrão
   return `Bom dia senhor (a) ${cliente}, me chamo Diego, sou vistoriador da RL Vistorias que presta serviço para a ${seguradora} , tdb ? \n\n` +
     `Meu contato é referente a vistoria do veiculo :\n\n` +
     `Veículo: ${veiculo} \n` +
@@ -13559,9 +13560,34 @@ window.enviarAgendarWhatsApp = function() {
   }
   const fullPhone = digits.startsWith('55') ? digits : ('55' + digits);
   const msg = window.generateAgendarMessage();
+
+  // 1. Prioridade: Interface Nativa Android do aplicativo
+  if (window.AndroidInterface && typeof window.AndroidInterface.openWhatsAppNumber === 'function') {
+    try {
+      window.AndroidInterface.openWhatsAppNumber(fullPhone, msg);
+      return;
+    } catch (e) {
+      console.warn('Erro ao chamar AndroidInterface.openWhatsAppNumber:', e);
+    }
+  }
+
+  // 2. Dispara via api.whatsapp.com / wa.me
   const encoded = encodeURIComponent(msg);
-  const waUrl = `https://wa.me/${fullPhone}?text=${encoded}`;
-  window.open(waUrl, '_blank');
+  const waUrl = `https://api.whatsapp.com/send?phone=${fullPhone}&text=${encoded}`;
+  
+  // Link dinâmico com clique simulado
+  const a = document.createElement('a');
+  a.href = waUrl;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 400);
+
+  // Fallback para WebViews que interceptam redirecionamento
+  setTimeout(() => {
+    window.location.href = waUrl;
+  }, 200);
 };
 
 window.copiarAgendarMensagem = function() {

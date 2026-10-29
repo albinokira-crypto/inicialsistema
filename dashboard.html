@@ -549,7 +549,7 @@
               <span style="font-size: 1.4rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.52.2</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.53.0</div>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -1535,15 +1535,27 @@
           <!-- 1. Seguradora -->
           <div>
             <label style="display: block; font-size: 0.80rem; font-weight: 800; color: #1e293b; margin-bottom: 4px;">
-              🏢 Seguradora:
+              🏢 Escolha a Seguradora:
             </label>
-            <div id="agendarSeguradorasBtns" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px;"></div>
+            <div style="position: relative; width: 100%;">
+              <select 
+                id="agendarSeguradoraSelect" 
+                onchange="onAgendarSeguradoraSelectChange(this.value)" 
+                style="width: 100%; box-sizing: border-box; padding: 10px 36px 10px 12px; border-radius: 10px; border: 2px solid #2563eb; font-size: 0.90rem; font-weight: 800; color: #0f172a; background: #f8fafc; outline: none; appearance: none; -webkit-appearance: none; cursor: pointer; text-overflow: ellipsis;"
+              >
+                <!-- Preenchido dinamicamente via JS com Clube Auto sempre em primeiro -->
+              </select>
+              <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 0.90rem; color: #2563eb; font-weight: 900;">
+                ▼
+              </div>
+            </div>
+            <!-- Campo opcional caso escolha '+ Digitar outra...' -->
             <input 
               type="text" 
-              id="agendarSeguradoraInput" 
-              placeholder="Ou digite o nome da seguradora..." 
+              id="agendarSeguradoraCustomInput" 
+              placeholder="Digite o nome da outra seguradora..." 
               oninput="updateAgendarPreview()" 
-              style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.85rem; font-weight: 700; color: #0f172a; outline: none;"
+              style="display: none; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 8px 10px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.85rem; font-weight: 700; color: #0f172a; outline: none;"
             />
           </div>
 

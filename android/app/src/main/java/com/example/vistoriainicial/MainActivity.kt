@@ -90,6 +90,24 @@ class MainActivity : ComponentActivity() {
         webView.addJavascriptInterface(AndroidInterface(this), "AndroidInterface")
 
         webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: android.webkit.WebResourceRequest?
+            ): Boolean {
+                val url = request?.url?.toString() ?: return false
+                if (url.startsWith("https://wa.me") || url.startsWith("https://api.whatsapp.com") || url.startsWith("whatsapp://")) {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        this@MainActivity.startActivity(intent)
+                        return true
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                return super.shouldOverrideUrlLoading(view, request)
+            }
             override fun shouldInterceptRequest(
                 view: WebView?,
                 request: android.webkit.WebResourceRequest?
@@ -1951,6 +1969,36 @@ class MainActivity : ComponentActivity() {
 }
 
 class AndroidInterface(private val activity: ComponentActivity) {
+    @JavascriptInterface
+    fun openWhatsAppNumber(phone: String, message: String) {
+        val mainAct = activity as MainActivity
+        mainAct.runOnUiThread {
+            try {
+                val cleanDigits = phone.replace(Regex("[^0-9]"), "")
+                val finalPhone = if (cleanDigits.startsWith("55")) cleanDigits else "55$cleanDigits"
+                val encodedMsg = java.net.URLEncoder.encode(message, "UTF-8").replace("+", "%20")
+                val uri = Uri.parse("https://api.whatsapp.com/send?phone=$finalPhone&text=$encodedMsg")
+                val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                mainAct.startActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                try {
+                    val cleanDigits = phone.replace(Regex("[^0-9]"), "")
+                    val finalPhone = if (cleanDigits.startsWith("55")) cleanDigits else "55$cleanDigits"
+                    val encodedMsg = java.net.URLEncoder.encode(message, "UTF-8").replace("+", "%20")
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("whatsapp://send?phone=$finalPhone&text=$encodedMsg")).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    mainAct.startActivity(intent)
+                } catch (ex: Exception) {
+                    ex.printStackTrace()
+                    Toast.makeText(mainAct, "Não foi possível abrir o WhatsApp: " + ex.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
     private val tempShareFiles = ArrayList<java.io.File>()
 
     @JavascriptInterface

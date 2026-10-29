@@ -1,7 +1,7 @@
 {
-  "version": "2.52.2",
-  "versionCode": 2522,
-  "updatedAt": "2026-10-29T17:24:41.129Z",
-  "buildDate": "2026-10-29T17:24:41.140Z",
-  "changelog": "Botao de Agendar Vistoria alinhado na mesma linha e mesmo tamanho de Seguradoras e Oficinas (linha de 3 botoes)."
+  "version": "2.53.0",
+  "versionCode": 2530,
+  "updatedAt": "2026-10-29T17:33:11.018Z",
+  "buildDate": "2026-10-29T17:33:11.020Z",
+  "changelog": "Seletor de seguradora em dropdown com seta (Clube Auto em 1º) e integracao nativa para envio de agendamento diretamente no aplicativo do WhatsApp."
 }
