@@ -1,7 +1,7 @@
 {
-  "version": "2.53.5",
-  "versionCode": 2535,
-  "updatedAt": "2026-10-29T18:50:00.000Z",
-  "buildDate": "2026-10-29T18:50:00.000Z",
-  "changelog": "Modal Copiar Peças com exibição nítida dos nomes e checkboxes desmarcados por padrão. Envio no WhatsApp com compatibilidade total OTA."
+  "version": "2.53.6",
+  "versionCode": 2536,
+  "updatedAt": "2026-10-29T18:58:41.419Z",
+  "buildDate": "2026-10-29T18:58:41.432Z",
+  "changelog": "Modal Copiar Peças com exibição horizontal perfeita do nome das peças sem quebras verticais."
 }

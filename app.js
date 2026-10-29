@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.53.5';
+let CURRENT_APP_VERSION = 'v2.53.6';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -11741,12 +11741,12 @@ window.vpFilterCopyPartsList = function(filterQuery = '') {
     const displayName = item.name || item.rawName || '';
     const isAlready = item.alreadyInTarget;
     return `
-      <label style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; background: ${isAlready ? '#f1f5f9' : '#ffffff'}; border-radius: 8px; border: 1.5px solid ${isAlready ? '#e2e8f0' : '#cbd5e1'}; font-size: 0.85rem; cursor: ${isAlready ? 'default' : 'pointer'}; user-select: none;">
-        <span style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
-          <input type="checkbox" class="vp-copy-part-check" value="${vpEscapeHtml(displayName)}" ${isAlready ? 'disabled' : ''} style="width: 18px; height: 18px; accent-color: #2563eb; flex-shrink: 0; cursor: pointer;" />
-          <span style="color: ${isAlready ? '#94a3b8' : '#0f172a'} !important; font-weight: 700 !important; font-size: 0.85rem !important; white-space: normal !important; word-break: break-word !important; line-height: 1.25 !important; display: inline-block !important;">${vpEscapeHtml(displayName)}</span>
+      <label style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; width: 100%; box-sizing: border-box; padding: 9px 12px; background: ${isAlready ? '#f1f5f9' : '#ffffff'}; border-radius: 8px; border: 1.5px solid ${isAlready ? '#e2e8f0' : '#cbd5e1'}; cursor: ${isAlready ? 'default' : 'pointer'}; user-select: none;">
+        <span style="display: flex; flex-direction: row; align-items: center; gap: 10px; flex: 1; min-width: 0; overflow: hidden;">
+          <input type="checkbox" class="vp-copy-part-check" value="${vpEscapeHtml(displayName)}" ${isAlready ? 'disabled' : ''} style="width: 18px; height: 18px; min-width: 18px; accent-color: #2563eb; flex-shrink: 0; cursor: pointer; margin: 0;" />
+          <span style="color: ${isAlready ? '#94a3b8' : '#0f172a'} !important; font-weight: 700 !important; font-size: 0.86rem !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; text-align: left !important; display: inline-block !important;" title="${vpEscapeHtml(displayName)}">${vpEscapeHtml(displayName)}</span>
         </span>
-        ${isAlready ? '<span style="font-size: 0.68rem; font-weight: 700; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;">Já na aba</span>' : ''}
+        ${isAlready ? '<span style="font-size: 0.68rem; font-weight: 700; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; margin-left: 6px; white-space: nowrap;">Já na aba</span>' : ''}
       </label>
     `;
   }).join('');
