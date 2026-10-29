@@ -1,7 +1,7 @@
 {
-  "version": "2.52.0",
-  "versionCode": 2520,
-  "updatedAt": "2026-10-29T17:09:58.938Z",
-  "buildDate": "2026-10-29T17:09:58.950Z",
-  "changelog": "Adicionado botao na tela inicial e gerador de mensagem de agendamento de vistoria para segurados com envio direto para o WhatsApp."
+  "version": "2.52.1",
+  "versionCode": 2521,
+  "updatedAt": "2026-10-29T17:18:58.945Z",
+  "buildDate": "2026-10-29T17:18:58.959Z",
+  "changelog": "Ajuste na posicao do botao de agendamento (ao lado de oficinas), listagem completa de seguradoras cadastradas e perguntas de seguranca padronizadas."
 }

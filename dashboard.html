@@ -48,8 +48,8 @@
           <button class="menu-btn special-btn-supervisao" type="button" data-day="Supervisão" onclick="openMenuSection('Supervisão')">Supervisão</button>
           <button class="menu-btn special-btn-seguradora" type="button" data-day="Seguradoras" onclick="openMenuSection('Seguradoras')">Seguradoras</button>
           <button class="menu-btn special-btn-seguradora" type="button" data-day="Oficinas" onclick="openMenuSection('Oficinas')">Oficinas</button>
-          <button class="menu-btn special-btn-total" type="button" data-day="Total da semana" onclick="openMenuSection('Total da semana')">Total da Semana</button>
           <button class="menu-btn special-btn-agendar" type="button" onclick="openAgendarModal()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; font-weight: 800; box-shadow: 0 3px 8px rgba(16,185,129,0.25);">📲 Agendar Vistoria</button>
+          <button class="menu-btn special-btn-total" type="button" data-day="Total da semana" onclick="openMenuSection('Total da semana')">Total da Semana</button>
           <button class="menu-btn special-btn-total" type="button" data-day="Todas as vistorias" onclick="openMenuSection('Todas as vistorias')">Todas as Vistorias</button>
         </div>
         <div style="margin-top: 18px; display: flex; gap: 8px; width: 100%;">
@@ -547,7 +547,7 @@
               <span style="font-size: 1.4rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.52.0</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.52.1</div>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -1671,13 +1671,7 @@
             </div>
           </div>
 
-          <!-- 6. Opção de Área de Risco / Entrada de Moto -->
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px;">
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.82rem; font-weight: 700; color: #1e293b;">
-              <input type="checkbox" id="agendarCheckSeguranca" checked onchange="updateAgendarPreview()" style="width: 16px; height: 16px; accent-color: #2563eb;" />
-              Incluir perguntas de segurança (Área de risco / Entrada de moto)
-            </label>
-          </div>
+          
 
           <!-- 7. Prévia da Mensagem -->
           <div>

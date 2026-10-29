@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.52.0';
+let CURRENT_APP_VERSION = 'v2.52.1';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -13409,7 +13409,6 @@ window.vpImportCatalogJson = function() {
   input.click();
 };
 
-
 // ==========================================
 // MÓDULO: AGENDAR VISTORIA COM SEGURADO (WHATSAPP)
 // ==========================================
@@ -13417,31 +13416,46 @@ window.openAgendarModal = function() {
   const modal = document.getElementById('agendarVistoriaModal');
   if (!modal) return;
 
-  // Popula botões de seguradoras
+  // Popula botões de seguradoras cadastradas
   const btnsContainer = document.getElementById('agendarSeguradorasBtns');
   if (btnsContainer) {
-    const defaultList = ['clube auto'];
-    if (Array.isArray(window.insurers)) {
-      window.insurers.forEach(ins => {
-        const name = typeof ins === 'string' ? ins : (ins?.name || '');
-        if (name && !defaultList.some(d => d.toLowerCase() === name.toLowerCase())) {
-          defaultList.push(name);
+    const list = [];
+    list.push('clube auto'); // Padrão selecionado em primeiro lugar
+
+    // Carrega da variável em memória 'insurers' ou de 'getSafeStorage'
+    let rawInsurers = [];
+    try {
+      if (typeof insurers !== 'undefined' && Array.isArray(insurers)) {
+        rawInsurers = insurers;
+      } else if (typeof getSafeStorage === 'function') {
+        rawInsurers = getSafeStorage('web-system-insurers-v1', []);
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar seguradoras para agendamento:', e);
+    }
+
+    if (Array.isArray(rawInsurers)) {
+      rawInsurers.forEach(ins => {
+        const name = (typeof ins === 'string' ? ins : (ins?.name || '')).trim();
+        if (name && !list.some(d => d.toLowerCase() === name.toLowerCase())) {
+          list.push(name);
         }
       });
     }
-    btnsContainer.innerHTML = defaultList.map((s, idx) => `
+
+    btnsContainer.innerHTML = list.map((s, idx) => `
       <button 
         type="button" 
         onclick="selectAgendarSeguradora('${vpEscapeHtml(s)}')" 
-        style="padding: 4px 10px; font-size: 0.76rem; font-weight: 700; border-radius: 6px; border: 1.5px solid ${idx === 0 ? '#10b981' : '#cbd5e1'}; background: ${idx === 0 ? '#ecfdf5' : '#ffffff'}; color: ${idx === 0 ? '#065f46' : '#334155'}; cursor: pointer;"
+        style="padding: 5px 12px; font-size: 0.78rem; font-weight: 800; border-radius: 8px; border: 1.5px solid ${idx === 0 ? '#10b981' : '#cbd5e1'}; background: ${idx === 0 ? '#ecfdf5' : '#ffffff'}; color: ${idx === 0 ? '#065f46' : '#334155'}; cursor: pointer; transition: all 0.15s ease;"
       >
         ${vpEscapeHtml(s)}
       </button>
     `).join('');
 
     const segInput = document.getElementById('agendarSeguradoraInput');
-    if (segInput && !segInput.value) {
-      segInput.value = defaultList[0] || 'clube auto';
+    if (segInput) {
+      segInput.value = list[0] || 'clube auto';
     }
   }
 
@@ -13514,9 +13528,9 @@ window.generateAgendarMessage = function() {
   const endereco = (document.getElementById('agendarEndereco')?.value || '').trim() || '[Endereço]';
   const bairro = (document.getElementById('agendarBairro')?.value || '').trim() || '[Bairro]';
   const cidade = (document.getElementById('agendarCidade')?.value || '').trim() || '[Cidade]';
-  const checkSeguranca = document.getElementById('agendarCheckSeguranca')?.checked;
 
-  let msg = `Bom dia senhor (a) ${cliente}, me chamo Diego, sou vistoriador da RL Vistorias que presta serviço para a ${seguradora} , tdb ? \n\n` +
+  // Pergunta de segurança agora é SEMPRE padrão
+  return `Bom dia senhor (a) ${cliente}, me chamo Diego, sou vistoriador da RL Vistorias que presta serviço para a ${seguradora} , tdb ? \n\n` +
     `Meu contato é referente a vistoria do veiculo :\n\n` +
     `Veículo: ${veiculo} \n` +
     `Placa: ${placa}   \n\n\n` +
@@ -13524,13 +13538,8 @@ window.generateAgendarMessage = function() {
     `Confirma tambem se o endereço esta correto por favor: \n\n` +
     ` Endereço: ${endereco} \n` +
     `Bairro: ${bairro} \n` +
-    `Cidade: ${cidade} `;
-
-  if (checkSeguranca) {
-    msg += `\n\nAi é area de risco? \nO local eh tranquilo pra entrar de moto ?`;
-  }
-
-  return msg;
+    `Cidade: ${cidade} \n\n` +
+    `Ai é area de risco? \nO local eh tranquilo pra entrar de moto ?`;
 };
 
 window.updateAgendarPreview = function() {
