@@ -1,7 +1,7 @@
 {
-  "version": "2.51.0",
-  "versionCode": 2510,
-  "updatedAt": "2026-10-29T16:50:52.849Z",
-  "buildDate": "2026-10-29T16:50:52.872Z",
-  "changelog": "Modal de pesquisa com botao de camera, sobreposicao corrigida para cadastro/transferencia/ordem, e botoes de transferir/copiar e reordenar pecas direto na pesquisa."
+  "version": "2.52.0",
+  "versionCode": 2520,
+  "updatedAt": "2026-10-29T17:09:58.938Z",
+  "buildDate": "2026-10-29T17:09:58.950Z",
+  "changelog": "Adicionado botao na tela inicial e gerador de mensagem de agendamento de vistoria para segurados com envio direto para o WhatsApp."
 }
