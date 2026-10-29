@@ -1,7 +1,7 @@
 {
-  "version": "2.53.7",
-  "versionCode": 2537,
-  "updatedAt": "2026-10-29T19:11:29.208Z",
-  "buildDate": "2026-10-29T19:11:29.221Z",
-  "changelog": "Modal Copiar Peças isolado com estilo próprio: checkbox fixo à esquerda e nome da peça 100% visível ao lado."
+  "version": "2.53.8",
+  "versionCode": 2538,
+  "updatedAt": "2026-10-29T19:16:36.165Z",
+  "buildDate": "2026-10-29T19:16:36.176Z",
+  "changelog": "Filtro de busca rapida de pecas no modal de copiar funcionando perfeitamente sem exigir acentos."
 }

@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.53.7';
+let CURRENT_APP_VERSION = 'v2.53.8';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -11716,6 +11716,42 @@ window.vpOnCopySourceTabChange = function() {
 
   vpCurrentCopyPartsList = Array.from(uniqueMap.values());
   window.vpFilterCopyPartsList(document.getElementById('vpCopyPartsFilterInput')?.value || '');
+};
+
+window.vpNormalizeSearch = function(str) {
+  return String(str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[-_\/.]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+window.vpPartMatchesQuery = function(partName, rawPartName, query) {
+  if (!query) return true;
+  const qNorm = window.vpNormalizeSearch(query);
+  if (!qNorm) return true;
+
+  const nNorm = window.vpNormalizeSearch(partName);
+  const rNorm = window.vpNormalizeSearch(rawPartName);
+
+  // Match compacto (sem espaços)
+  const qCompact = qNorm.replace(/\s+/g, '');
+  const nCompact = nNorm.replace(/\s+/g, '');
+  const rCompact = rNorm.replace(/\s+/g, '');
+
+  if (qCompact && (nCompact.includes(qCompact) || rCompact.includes(qCompact))) {
+    return true;
+  }
+
+  // Match por todas as palavras/tokens (ex: 'farol le', 'parachoque tras')
+  const qTokens = qNorm.split(' ').filter(Boolean);
+  if (qTokens.length > 0 && qTokens.every(tok => nNorm.includes(tok) || rNorm.includes(tok))) {
+    return true;
+  }
+
+  return false;
 };
 
 window.vpToggleCopyPartCheck = function(cardEl, event) {
