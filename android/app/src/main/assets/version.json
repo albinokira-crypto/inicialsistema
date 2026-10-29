@@ -1,7 +1,7 @@
 {
-  "version": "2.53.0",
-  "versionCode": 2530,
-  "updatedAt": "2026-10-29T17:33:11.018Z",
-  "buildDate": "2026-10-29T17:33:11.020Z",
-  "changelog": "Seletor de seguradora em dropdown com seta (Clube Auto em 1º) e integracao nativa para envio de agendamento diretamente no aplicativo do WhatsApp."
+  "version": "2.53.1",
+  "versionCode": 2531,
+  "updatedAt": "2026-10-29T17:46:00.000Z",
+  "buildDate": "2026-10-29T17:46:00.000Z",
+  "changelog": "Correção para envio direto no WhatsApp compatível com OTA no APK atual e no novo APK."
 }

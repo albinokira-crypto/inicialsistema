@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.53.0';
+let CURRENT_APP_VERSION = 'v2.53.1';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -13561,7 +13561,12 @@ window.enviarAgendarWhatsApp = function() {
   const fullPhone = digits.startsWith('55') ? digits : ('55' + digits);
   const msg = window.generateAgendarMessage();
 
-  // 1. Prioridade: Interface Nativa Android do aplicativo
+  // Garante cópia do texto na área de transferência para colar facilmente
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(msg).catch(() => {});
+  }
+
+  // 1. Prioridade: Se estiver rodando no novo APK com método openWhatsAppNumber direto
   if (window.AndroidInterface && typeof window.AndroidInterface.openWhatsAppNumber === 'function') {
     try {
       window.AndroidInterface.openWhatsAppNumber(fullPhone, msg);
@@ -13571,23 +13576,31 @@ window.enviarAgendarWhatsApp = function() {
     }
   }
 
-  // 2. Dispara via api.whatsapp.com / wa.me
+  // 2. Compatibilidade OTA com APK instalado atualmente (sem exigir reinstalação):
+  // Dispara o WhatsApp nativo através de shareVistoriaWhatsAppText já compilado no aparelho
+  if (window.AndroidInterface && typeof window.AndroidInterface.shareVistoriaWhatsAppText === 'function') {
+    try {
+      window.AndroidInterface.shareVistoriaWhatsAppText('Agendamento', msg);
+      return;
+    } catch (e) {
+      console.warn('Erro ao chamar AndroidInterface.shareVistoriaWhatsAppText:', e);
+    }
+  }
+
+  // 3. Fallback genérico para AndroidInterface.shareText se disponível
+  if (window.AndroidInterface && typeof window.AndroidInterface.shareText === 'function') {
+    try {
+      window.AndroidInterface.shareText('Agendar Vistoria', msg);
+      return;
+    } catch (e) {
+      console.warn('Erro ao chamar AndroidInterface.shareText:', e);
+    }
+  }
+
+  // 4. Se estiver no navegador Web Desktop (Chrome/Edge/Firefox)
   const encoded = encodeURIComponent(msg);
   const waUrl = `https://api.whatsapp.com/send?phone=${fullPhone}&text=${encoded}`;
-  
-  // Link dinâmico com clique simulado
-  const a = document.createElement('a');
-  a.href = waUrl;
-  a.target = '_blank';
-  a.rel = 'noopener noreferrer';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => a.remove(), 400);
-
-  // Fallback para WebViews que interceptam redirecionamento
-  setTimeout(() => {
-    window.location.href = waUrl;
-  }, 200);
+  window.open(waUrl, '_blank');
 };
 
 window.copiarAgendarMensagem = function() {
