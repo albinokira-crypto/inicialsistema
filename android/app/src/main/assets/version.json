@@ -1,7 +1,7 @@
 {
-  "version": "2.53.6",
-  "versionCode": 2536,
-  "updatedAt": "2026-10-29T18:58:41.419Z",
-  "buildDate": "2026-10-29T18:58:41.432Z",
-  "changelog": "Modal Copiar Peças com exibição horizontal perfeita do nome das peças sem quebras verticais."
+  "version": "2.53.7",
+  "versionCode": 2537,
+  "updatedAt": "2026-10-29T19:11:29.208Z",
+  "buildDate": "2026-10-29T19:11:29.221Z",
+  "changelog": "Modal Copiar Peças isolado com estilo próprio: checkbox fixo à esquerda e nome da peça 100% visível ao lado."
 }

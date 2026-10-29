@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.53.6';
+let CURRENT_APP_VERSION = 'v2.53.7';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -11718,6 +11718,14 @@ window.vpOnCopySourceTabChange = function() {
   window.vpFilterCopyPartsList(document.getElementById('vpCopyPartsFilterInput')?.value || '');
 };
 
+window.vpToggleCopyPartCheck = function(cardEl, event) {
+  if (event && event.target && event.target.tagName === 'INPUT') return;
+  const chk = cardEl.querySelector('.vp-copy-part-check');
+  if (chk && !chk.disabled) {
+    chk.checked = !chk.checked;
+  }
+};
+
 window.vpFilterCopyPartsList = function(filterQuery = '') {
   const listContainer = document.getElementById('vpCopyPartsListContainer');
   const countLabel = document.getElementById('vpCopyPartsCountLabel');
@@ -11738,16 +11746,28 @@ window.vpFilterCopyPartsList = function(filterQuery = '') {
   }
 
   listContainer.innerHTML = filtered.map(item => {
-    const displayName = item.name || item.rawName || '';
-    const isAlready = item.alreadyInTarget;
+    const displayName = (item.name || item.rawName || '').trim();
+    const isAlready = Boolean(item.alreadyInTarget);
     return `
-      <label style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; width: 100%; box-sizing: border-box; padding: 9px 12px; background: ${isAlready ? '#f1f5f9' : '#ffffff'}; border-radius: 8px; border: 1.5px solid ${isAlready ? '#e2e8f0' : '#cbd5e1'}; cursor: ${isAlready ? 'default' : 'pointer'}; user-select: none;">
-        <span style="display: flex; flex-direction: row; align-items: center; gap: 10px; flex: 1; min-width: 0; overflow: hidden;">
-          <input type="checkbox" class="vp-copy-part-check" value="${vpEscapeHtml(displayName)}" ${isAlready ? 'disabled' : ''} style="width: 18px; height: 18px; min-width: 18px; accent-color: #2563eb; flex-shrink: 0; cursor: pointer; margin: 0;" />
-          <span style="color: ${isAlready ? '#94a3b8' : '#0f172a'} !important; font-weight: 700 !important; font-size: 0.86rem !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; text-align: left !important; display: inline-block !important;" title="${vpEscapeHtml(displayName)}">${vpEscapeHtml(displayName)}</span>
-        </span>
-        ${isAlready ? '<span style="font-size: 0.68rem; font-weight: 700; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; margin-left: 6px; white-space: nowrap;">Já na aba</span>' : ''}
-      </label>
+      <div 
+        class="vp-copy-part-card ${isAlready ? 'is-already' : ''}" 
+        onclick="vpToggleCopyPartCheck(this, event)"
+        style="display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; gap: 12px !important; width: 100% !important; box-sizing: border-box !important; padding: 10px 14px !important; background: ${isAlready ? '#f1f5f9' : '#ffffff'} !important; border-radius: 8px !important; border: 1.5px solid ${isAlready ? '#e2e8f0' : '#cbd5e1'} !important; cursor: ${isAlready ? 'default' : 'pointer'} !important; user-select: none !important; margin-bottom: 6px !important;"
+      >
+        <input 
+          type="checkbox" 
+          class="vp-copy-part-check" 
+          value="${vpEscapeHtml(displayName)}" 
+          ${isAlready ? 'disabled' : ''} 
+          onclick="event.stopPropagation()"
+          style="width: 20px !important; min-width: 20px !important; max-width: 20px !important; height: 20px !important; min-height: 20px !important; max-height: 20px !important; margin: 0 !important; padding: 0 !important; accent-color: #2563eb !important; flex-shrink: 0 !important; cursor: pointer !important; display: block !important;" 
+        />
+        <span 
+          class="vp-copy-part-name" 
+          style="flex: 1 1 auto !important; min-width: 0 !important; font-size: 0.90rem !important; font-weight: 700 !important; color: ${isAlready ? '#94a3b8' : '#0f172a'} !important; text-align: left !important; line-height: 1.3 !important; display: block !important; word-break: break-word !important; white-space: normal !important; margin: 0 !important; padding: 0 !important;"
+        >${vpEscapeHtml(displayName)}</span>
+        ${isAlready ? '<span class="vp-copy-part-badge" style="font-size: 0.70rem !important; font-weight: 700 !important; color: #64748b !important; background: #e2e8f0 !important; padding: 2px 8px !important; border-radius: 4px !important; flex-shrink: 0 !important; margin-left: auto !important; white-space: nowrap !important;">Já na aba</span>' : ''}
+      </div>
     `;
   }).join('');
 };

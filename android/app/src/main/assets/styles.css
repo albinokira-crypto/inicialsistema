@@ -2467,3 +2467,91 @@ html, body {
 
 
 
+
+
+/* --- MODAL DE COPIAR PEÇAS ENTRE ABAS (REGRAS ESTITAS) --- */
+.vp-copy-modal-card {
+  width: 100% !important;
+  max-width: 440px !important;
+  background: #ffffff !important;
+  padding: 18px !important;
+  border-radius: 16px !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25) !important;
+  box-sizing: border-box !important;
+}
+
+#vpCopyPartsListContainer .vp-copy-part-card {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 10px 14px !important;
+  background: #ffffff !important;
+  border-radius: 8px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  cursor: pointer !important;
+  margin-bottom: 6px !important;
+  user-select: none !important;
+}
+
+#vpCopyPartsListContainer .vp-copy-part-card.is-already {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  cursor: default !important;
+}
+
+#vpCopyPartsListContainer input[type="checkbox"].vp-copy-part-check {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1.5px solid #94a3b8 !important;
+  border-radius: 4px !important;
+  accent-color: #2563eb !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  display: block !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+#vpCopyPartsListContainer .vp-copy-part-name {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  font-size: 0.90rem !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  text-align: left !important;
+  line-height: 1.3 !important;
+  display: block !important;
+  word-break: break-word !important;
+  white-space: normal !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#vpCopyPartsListContainer .vp-copy-part-card.is-already .vp-copy-part-name {
+  color: #94a3b8 !important;
+}
+
+#vpCopyPartsListContainer .vp-copy-part-badge {
+  font-size: 0.70rem !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  background: #e2e8f0 !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+  white-space: nowrap !important;
+}
