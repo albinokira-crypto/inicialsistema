@@ -1,7 +1,7 @@
 {
-  "version": "2.50.3",
-  "versionCode": 2503,
-  "updatedAt": "2026-10-28T19:57:45.243Z",
-  "buildDate": "2026-10-28T19:57:45.255Z",
-  "changelog": "Priorizar exibicao de todas as pecas marcadas no topo da grade de pecas."
+  "version": "2.51.0",
+  "versionCode": 2510,
+  "updatedAt": "2026-10-29T16:50:52.849Z",
+  "buildDate": "2026-10-29T16:50:52.872Z",
+  "changelog": "Modal de pesquisa com botao de camera, sobreposicao corrigida para cadastro/transferencia/ordem, e botoes de transferir/copiar e reordenar pecas direto na pesquisa."
 }

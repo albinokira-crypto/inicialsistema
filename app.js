@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.50.3';
+let CURRENT_APP_VERSION = 'v2.51.0';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -9546,6 +9546,9 @@ window.vpApplyQuickTransferTarget = function(targetCat) {
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
   vpRenderTabsNavBar();
   window.vpCloseQuickTransferModal();
+  if (typeof window.vpOnModalSearchInput === 'function' && document.getElementById('vpSearchModal')?.style.display !== 'none') {
+    window.vpOnModalSearchInput(document.getElementById('vpModalSearchInput')?.value || '');
+  }
 
   if (typeof showToastNotification === 'function') {
     const catLabels = { carro: 'Carros', moto: 'Motos', picape: 'Picapes', caminhao: 'Caminhões' };
@@ -9584,6 +9587,9 @@ window.vpApplyQuickTransferCustomTab = function(targetTabId) {
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
   vpRenderTabsNavBar();
   window.vpCloseQuickTransferModal();
+  if (typeof window.vpOnModalSearchInput === 'function' && document.getElementById('vpSearchModal')?.style.display !== 'none') {
+    window.vpOnModalSearchInput(document.getElementById('vpModalSearchInput')?.value || '');
+  }
 
   if (typeof showToastNotification === 'function') {
     const actionWord = isCopy ? 'copiada para' : 'transferida para';
@@ -10926,6 +10932,9 @@ window.vpSaveReorderPosition = function(e) {
 
   vpCloseReorderPositionModal();
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  if (typeof window.vpOnModalSearchInput === 'function' && document.getElementById('vpSearchModal')?.style.display !== 'none') {
+    window.vpOnModalSearchInput(document.getElementById('vpModalSearchInput')?.value || '');
+  }
 };
 
 function vpFindCardEl(name) {
@@ -12626,22 +12635,51 @@ window.vpOnModalSearchInput = function(query = '') {
     const catIcons = { carro: '🚗', moto: '🏍️', picape: '🛻', caminhao: '🚛' };
     const catIcon = catIcons[item.vehicleType] || '🚗';
 
+    // Posição no catálogo original
+    const catalogIdx = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts.findIndex(p => (p.name || '').toLowerCase() === (item.name || '').toLowerCase()) : -1;
+    const orderNum = catalogIdx !== -1 ? (catalogIdx + 1) : '🔢';
+
     return `
-      <div style="padding: 8px 10px; border-radius: 10px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#e2e8f0')}; background: ${isTroca ? '#fff5f5' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-        <div style="flex: 1; min-width: 0;">
-          <div style="font-size: 0.86rem; font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-            <span>${catIcon}</span> ${vpEscapeHtml(item.name)}
+      <div style="padding: 7px 9px; border-radius: 10px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#e2e8f0')}; background: ${isTroca ? '#fff5f5' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <!-- Linha Superior: Posição, Categoria, Nome da Peça, Transferir/Copiar -->
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%;">
+          <div style="display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0;">
+            <button 
+              type="button" 
+              onclick="event.stopPropagation(); vpOpenReorderPositionModal('${vpEscapeHtml(item.name)}')" 
+              title="Toque para mudar a posição desta peça no catálogo"
+              style="padding: 2px 7px; min-width: 26px; height: 22px; font-size: 0.72rem; font-weight: 800; border-radius: 6px; border: 1.5px solid #94a3b8; background: #f8fafc; color: #1e293b; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;"
+            >
+              ${orderNum}
+            </button>
+            <span style="font-size: 0.85rem; line-height: 1;">${catIcon}</span>
+            <div style="font-size: 0.86rem; font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;" title="${vpEscapeHtml(item.name)}">
+              ${vpEscapeHtml(item.name)}
+            </div>
           </div>
-          ${hasObs ? `<div style="font-size: 0.72rem; color: #2563eb; font-weight: 600;">Obs: ${vpEscapeHtml(selected.obs)}</div>` : ''}
+
+          <!-- Botão Transferir ou Copiar Peça -->
+          <button 
+            type="button" 
+            onclick="event.stopPropagation(); vpOpenQuickTransferModal('${vpEscapeHtml(item.name)}')" 
+            title="Transferir ou Copiar esta peça para outra aba" 
+            style="padding: 3px 7px; height: 24px; font-size: 0.74rem; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); flex-shrink: 0;"
+          >
+            <span>🔁</span> <span style="font-size: 0.68rem; color: #475569;">Mover/Copiar</span>
+          </button>
         </div>
-        <div style="display: flex; gap: 4px; flex-shrink: 0;">
-          <button type="button" onclick="vpToggleModalAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'troca', '${vpEscapeHtml(item.rawName)}')" style="padding: 6px 10px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; border: 1.5px solid ${isTroca ? '#dc2626' : '#cbd5e1'}; background: ${isTroca ? '#dc2626' : '#fff'}; color: ${isTroca ? '#fff' : '#dc2626'};">
+
+        ${hasObs ? `<div style="font-size: 0.72rem; color: #2563eb; font-weight: 600; padding: 2px 6px; background: #eff6ff; border-radius: 4px;">Obs: ${vpEscapeHtml(selected.obs)}</div>` : ''}
+
+        <!-- Linha Inferior de Ações: Trocar, Reparar, Obs -->
+        <div style="display: flex; gap: 4px; width: 100%;">
+          <button type="button" onclick="vpToggleModalAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'troca', '${vpEscapeHtml(item.rawName)}')" style="flex: 1; padding: 6px 4px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; border: 1.5px solid ${isTroca ? '#dc2626' : '#cbd5e1'}; background: ${isTroca ? '#dc2626' : '#fff'}; color: ${isTroca ? '#fff' : '#dc2626'}; text-align: center;">
             ${isTroca ? '✓ Trocar' : 'Trocar'}
           </button>
-          <button type="button" onclick="vpToggleModalAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'reparo', '${vpEscapeHtml(item.rawName)}')" style="padding: 6px 10px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; border: 1.5px solid ${isReparo ? '#0284c7' : '#cbd5e1'}; background: ${isReparo ? '#0284c7' : '#fff'}; color: ${isReparo ? '#fff' : '#0284c7'};">
+          <button type="button" onclick="vpToggleModalAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'reparo', '${vpEscapeHtml(item.rawName)}')" style="flex: 1; padding: 6px 4px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; border: 1.5px solid ${isReparo ? '#0284c7' : '#cbd5e1'}; background: ${isReparo ? '#0284c7' : '#fff'}; color: ${isReparo ? '#fff' : '#0284c7'}; text-align: center;">
             ${isReparo ? '✓ Reparar' : 'Reparar'}
           </button>
-          <button type="button" onclick="vpModalEditObs('${vpEscapeHtml(item.name)}')" style="padding: 6px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; cursor: pointer; border: 1.5px solid ${hasObs ? '#2563eb' : '#cbd5e1'}; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'};" title="Adicionar ou editar observação">
+          <button type="button" onclick="vpModalEditObs('${vpEscapeHtml(item.name)}')" style="padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; cursor: pointer; border: 1.5px solid ${hasObs ? '#2563eb' : '#cbd5e1'}; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'}; flex-shrink: 0;" title="Adicionar ou editar observação">
             Obs
           </button>
         </div>
@@ -13197,6 +13235,9 @@ window.vpSaveCustomPart = function(e) {
   // 7. Salva estado persistente (localStorage + Android Native SQLite + Push to Cloud)
   vpSaveState(true);
   window.vpCloseAddCustomModal();
+  if (typeof window.vpOnModalSearchInput === 'function' && document.getElementById('vpSearchModal')?.style.display !== 'none') {
+    window.vpOnModalSearchInput(document.getElementById('vpModalSearchInput')?.value || '');
+  }
 
   if (vpActiveCategory !== 'FAVORITOS') {
     vpActiveCategory = 'PECAS';
