@@ -1,7 +1,7 @@
 {
-  "version": "2.54.5",
-  "versionCode": 2545,
-  "updatedAt": "2026-11-05T21:22:26.094Z",
-  "buildDate": "2026-11-05T21:22:26.095Z",
-  "changelog": "Fonte maior e mais grossa nas seguradoras, nova ordem dos pneus no relatorio e botao para copiar medida entre pneus."
+  "version": "2.54.6",
+  "versionCode": 2546,
+  "updatedAt": "2026-11-05T21:29:27.216Z",
+  "buildDate": "2026-11-05T21:29:27.217Z",
+  "changelog": "Cópia de marca e medida individual por pneu e cópia global para todos os pneus."
 }
