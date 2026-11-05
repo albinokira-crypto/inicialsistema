@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.54.3';
+let CURRENT_APP_VERSION = 'v2.54.4';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -12786,27 +12786,15 @@ window.vpOnModalSearchInput = function(query = '') {
             </div>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-            <!-- Botão Transferir ou Copiar Peça -->
-            <button 
-              type="button" 
-              onclick="event.stopPropagation(); vpOpenQuickTransferModal('${vpEscapeHtml(item.name)}')" 
-              title="Transferir ou Copiar esta peça para outra aba" 
-              style="padding: 3px 6px; height: 24px; font-size: 0.72rem; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); flex-shrink: 0;"
-            >
-              <span>🔁</span> <span style="font-size: 0.65rem; color: #475569;">Mover/Copiar</span>
-            </button>
-            <!-- Botão Editar Peça no Topo -->
-            <button 
-              type="button" 
-              class="vp-btn-action btn-edit-part" 
-              onclick="event.stopPropagation(); vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')" 
-              title="Editar nome e categoria/zona da peça" 
-              style="padding: 3px 7px; height: 24px; font-size: 0.75rem; font-weight: 800; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #1e3a8a; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.04); flex-shrink: 0;"
-            >
-              ✏️
-            </button>
-          </div>
+          <!-- Botão Transferir ou Copiar Peça -->
+          <button 
+            type="button" 
+            onclick="event.stopPropagation(); vpOpenQuickTransferModal('${vpEscapeHtml(item.name)}')" 
+            title="Transferir ou Copiar esta peça para outra aba" 
+            style="padding: 3px 7px; height: 24px; font-size: 0.74rem; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); flex-shrink: 0;"
+          >
+            <span>🔁</span> <span style="font-size: 0.68rem; color: #475569;">Mover/Copiar</span>
+          </button>
         </div>
 
         ${hasObs ? `<div style="font-size: 0.72rem; color: #2563eb; font-weight: 600; padding: 2px 6px; background: #eff6ff; border-radius: 4px;">Obs: ${vpEscapeHtml(selected.obs)}</div>` : ''}
