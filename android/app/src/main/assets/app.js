@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.54.4';
+let CURRENT_APP_VERSION = 'v2.54.5';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -2840,9 +2840,9 @@ function getSurveyText(id) {
     };
 
     checklist.push(formatPneuLine('PNEU D.D.', details.pneu_dd_marca, details.pneu_dd_medida, details.pneu_dd_estado || 'Bom'));
+    checklist.push(formatPneuLine('PNEU D.E.', details.pneu_de_marca, details.pneu_de_medida, details.pneu_de_estado || 'Bom'));
     checklist.push(formatPneuLine('PNEU T.D.', details.pneu_td_marca, details.pneu_td_medida, details.pneu_td_estado || 'Bom'));
     checklist.push(formatPneuLine('PNEU T.E.', details.pneu_te_marca, details.pneu_te_medida, details.pneu_te_estado || 'Bom'));
-    checklist.push(formatPneuLine('PNEU D.E.', details.pneu_de_marca, details.pneu_de_medida, details.pneu_de_estado || 'Bom'));
     checklist.push(formatPneuLine('ESTEPE', details.estepe_marca, details.estepe_medida, details.estepe_estado || 'Bom'));
 
     checklist.push(`MACACO?: ${getCheckmark(details.macaco || 'Não')}`);
@@ -3924,13 +3924,23 @@ function renderDynamicSurveyFields() {
     `;
 
     const renderTireRow = (label, prefix, isLast = false) => `
-      <div style="display: flex; align-items: center; gap: 5px; padding: 7px 0; ${isLast ? '' : 'border-bottom: 1px solid #f1f5f9;'} width: 100%; box-sizing: border-box;">
-        <span style="font-size: 0.76rem; font-weight: 800; color: #475569; width: 68px; min-width: 68px; flex: 0 0 68px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" title="${label}">${label}:</span>
-        <input type="text" name="${prefix}_marca" placeholder="Nome / Marca do pneu" style="flex: 2.4; min-width: 120px; padding: 7px 8px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.84rem;" />
-        <input type="text" inputmode="numeric" name="${prefix}_medida" class="tire-size-mask" placeholder="Medida" style="width: 70px; min-width: 70px; flex: 0 0 70px; padding: 7px 4px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.80rem; text-align: center;" />
+      <div style="display: flex; align-items: center; gap: 4px; padding: 6px 0; ${isLast ? '' : 'border-bottom: 1px solid #f1f5f9;'} width: 100%; box-sizing: border-box;">
+        <span style="font-size: 0.75rem; font-weight: 800; color: #334155; width: 68px; min-width: 68px; flex: 0 0 68px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" title="${label}">${label}:</span>
+        <input type="text" name="${prefix}_marca" placeholder="Marca" style="flex: 2; min-width: 85px; padding: 7px 6px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.82rem;" />
+        <input type="text" inputmode="numeric" name="${prefix}_medida" id="input_${prefix}_medida" class="tire-size-mask" placeholder="Medida" style="width: 68px; min-width: 68px; flex: 0 0 68px; padding: 7px 3px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.80rem; text-align: center; font-weight: 800; color: #0f172a;" />
+        <button 
+          type="button" 
+          onclick="vpCopyTireMeasure('${prefix}')" 
+          title="Copiar esta medida para os demais pneus" 
+          style="padding: 6px 7px; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #f8fafc; color: #2563eb; font-size: 0.78rem; font-weight: 800; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; touch-action: manipulation;"
+          onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#93c5fd';" 
+          onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#cbd5e1';"
+        >
+          📋
+        </button>
         <div class="type-buttons-container" data-input-id="input_${prefix}_estado" style="display: inline-flex; gap: 2px; flex: 0 0 auto;">
-          <button type="button" class="type-btn active" data-value="Bom" style="padding: 7px 8px; font-size: 0.72rem; min-width: 36px; line-height: 1;">Bom</button>
-          <button type="button" class="type-btn" data-value="Ruim" style="padding: 7px 8px; font-size: 0.72rem; min-width: 36px; line-height: 1;">Ruim</button>
+          <button type="button" class="type-btn active" data-value="Bom" style="padding: 7px 8px; font-size: 0.72rem; min-width: 35px; line-height: 1;">Bom</button>
+          <button type="button" class="type-btn" data-value="Ruim" style="padding: 7px 8px; font-size: 0.72rem; min-width: 35px; line-height: 1;">Ruim</button>
         </div>
         <input type="hidden" id="input_${prefix}_estado" name="${prefix}_estado" value="Bom" />
       </div>
@@ -3938,14 +3948,24 @@ function renderDynamicSurveyFields() {
 
     const detailedTiresHtml = `
       <div style="grid-column: 1 / -1; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-        <div style="font-size: 0.85rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-          <span>🛞</span> Condições e Medidas dos Pneus
+        <div style="font-size: 0.85rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span>🛞</span> Condições e Medidas dos Pneus
+          </div>
+          <button 
+            type="button" 
+            onclick="vpCopyTireMeasure('pneu_dd')" 
+            title="Copiar a medida do Pneu D.D. para todos os outros pneus"
+            style="background: #eff6ff; color: #1e40af; border: 1.5px solid #bfdbfe; border-radius: 6px; padding: 4px 8px; font-size: 0.74rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation;"
+          >
+            <span>📋</span> Copiar Medida p/ Todos
+          </button>
         </div>
         <div style="display: flex; flex-direction: column;">
           ${renderTireRow('PNEU D.D.', 'pneu_dd')}
+          ${renderTireRow('PNEU D.E.', 'pneu_de')}
           ${renderTireRow('PNEU T.D.', 'pneu_td')}
           ${renderTireRow('PNEU T.E.', 'pneu_te')}
-          ${renderTireRow('PNEU D.E.', 'pneu_de')}
           ${renderTireRow('ESTEPE', 'estepe', true)}
         </div>
       </div>
@@ -13868,5 +13888,51 @@ window.copiarAgendarMensagem = function() {
       document.execCommand('copy');
       alert('Mensagem copiada!');
     }
+  }
+};
+
+window.vpCopyTireMeasure = function(fromPrefix) {
+  let sourceInput = document.querySelector(`input[name="${fromPrefix}_medida"]`);
+  if (!sourceInput || !sourceInput.value || !sourceInput.value.trim()) {
+    const all = ['pneu_dd', 'pneu_de', 'pneu_td', 'pneu_te', 'estepe'];
+    for (const p of all) {
+      const inp = document.querySelector(`input[name="${p}_medida"]`);
+      if (inp && inp.value && inp.value.trim()) {
+        sourceInput = inp;
+        break;
+      }
+    }
+  }
+
+  const rawVal = sourceInput ? sourceInput.value.trim() : '';
+  if (!rawVal) {
+    if (typeof showToastNotification === 'function') {
+      showToastNotification('⚠️ Digite a medida primeiro para poder copiar.', 2500);
+    } else {
+      alert('Digite a medida primeiro para poder copiar.');
+    }
+    return;
+  }
+
+  const formattedVal = typeof formatTireSize === 'function' ? formatTireSize(rawVal) : rawVal;
+  const prefixes = ['pneu_dd', 'pneu_de', 'pneu_td', 'pneu_te', 'estepe'];
+  let countCopied = 0;
+
+  prefixes.forEach(p => {
+    const targetInput = document.querySelector(`input[name="${p}_medida"]`);
+    if (targetInput) {
+      targetInput.value = formattedVal;
+      countCopied++;
+      targetInput.style.borderColor = '#16a34a';
+      targetInput.style.background = '#f0fdf4';
+      setTimeout(() => {
+        targetInput.style.borderColor = '#cbd5e1';
+        targetInput.style.background = '#ffffff';
+      }, 700);
+    }
+  });
+
+  if (typeof showToastNotification === 'function') {
+    showToastNotification(`✓ Medida "${formattedVal}" copiada para todos os pneus!`, 2200);
   }
 };
