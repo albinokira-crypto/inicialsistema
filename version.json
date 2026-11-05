@@ -1,7 +1,7 @@
 {
-  "version": "2.54.1",
-  "versionCode": 2541,
-  "updatedAt": "2026-11-05T16:48:00.000Z",
-  "buildDate": "2026-11-05T16:48:00.000Z",
-  "changelog": "Ordem numerica em que as pecas sao colocadas nas sub-abas preservada e suporte a reordenacao numerica na aba."
+  "version": "2.54.2",
+  "versionCode": 2542,
+  "updatedAt": "2026-11-05T17:10:00.000Z",
+  "buildDate": "2026-11-05T17:10:00.000Z",
+  "changelog": "Abas Veiculos e Motos na mesma linha com 50% de largura cada e clique instantaneo sem delay para marcar troca e reparo."
 }

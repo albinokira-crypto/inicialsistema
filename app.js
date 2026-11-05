@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.54.0';
+let CURRENT_APP_VERSION = 'v2.54.2';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -10878,9 +10878,14 @@ window.vpSaveReorderPosition = function(e) {
 };
 
 function vpFindCardEl(name) {
+  if (!name) return null;
   const cards = document.querySelectorAll('.vp-part-card');
+  const target = String(name).trim().toLowerCase();
   for (let i = 0; i < cards.length; i++) {
-    if (cards[i].dataset.partName === name) return cards[i];
+    const cardName = cards[i].dataset.partName;
+    if (cardName === name || (cardName && cardName.trim().toLowerCase() === target)) {
+      return cards[i];
+    }
   }
   return null;
 }
@@ -12335,13 +12340,30 @@ window.vpSetQuickObs = function(partName, quickText, zoneId, zoneName, rawName =
 };
 
 // Seleção instantânea com peças selecionadas indo para o topo sem recriar lag
+let vpSaveSelectedPartsTimeout = null;
+function vpDebouncedSaveSelectedParts() {
+  if (vpSaveSelectedPartsTimeout) clearTimeout(vpSaveSelectedPartsTimeout);
+  vpSaveSelectedPartsTimeout = setTimeout(() => {
+    vpSaveState(true);
+    if (typeof window.vpSaveSelectedParts === 'function') {
+      try {
+        window.vpSaveSelectedParts();
+      } catch (err) {
+        console.warn('Erro ao atualizar partes na vistoria:', err);
+      }
+    }
+  }, 120);
+}
+
 window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '') {
   const current = vpGetSelectedPart(partName);
   const actualKey = current ? current.name : partName;
+  let newAction = action;
 
   if (current && current.action === action) {
     vpSelectedPartsMap.delete(actualKey);
     vpSelectedPartsMap.delete(partName);
+    newAction = null;
   } else {
     vpSelectedPartsMap.set(partName, {
       name: partName,
@@ -12353,29 +12375,56 @@ window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '
     });
   }
 
-  // Atualiza automaticamente o estado e a vistoria para que a troca para reparo ou desmarcação reflita na hora
-  vpSaveState(true);
-  if (typeof window.vpSaveSelectedParts === 'function') {
-    try {
-      window.vpSaveSelectedParts();
-    } catch (err) {
-      console.warn('Erro ao atualizar partes na vistoria:', err);
+  // ATUALIZAÇÃO VISUAL INSTANTÂNEA EM 0ms NO PRÓPRIO CARD (SEM LAG, SEM RE-RENDER TOTAL):
+  const card = vpFindCardEl(partName);
+  if (card) {
+    const btnTroca = card.querySelector('.btn-trocar');
+    const btnReparo = card.querySelector('.btn-reparar');
+
+    card.classList.remove('selected-troca', 'selected-reparo');
+    if (btnTroca) {
+      btnTroca.classList.remove('active');
+      btnTroca.style.background = '#ffffff';
+      btnTroca.style.color = '#dc2626';
     }
+    if (btnReparo) {
+      btnReparo.classList.remove('active');
+      btnReparo.style.background = '#ffffff';
+      btnReparo.style.color = '#0284c7';
+    }
+
+    if (newAction === 'troca') {
+      card.classList.add('selected-troca');
+      card.style.borderColor = '#dc2626';
+      card.style.background = '#fffafa';
+      if (btnTroca) {
+        btnTroca.classList.add('active');
+        btnTroca.style.background = '#dc2626';
+        btnTroca.style.color = '#ffffff';
+      }
+    } else if (newAction === 'reparo') {
+      card.classList.add('selected-reparo');
+      card.style.borderColor = '#0284c7';
+      card.style.background = '#f0f9ff';
+      if (btnReparo) {
+        btnReparo.classList.add('active');
+        btnReparo.style.background = '#0284c7';
+        btnReparo.style.color = '#ffffff';
+      }
+    } else {
+      card.style.borderColor = '#cbd5e1';
+      card.style.background = '#ffffff';
+    }
+  } else {
+    vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
   }
 
-  // Preserva posição do scroll para não causar salto visual brusco
-  const listEl = document.getElementById('vpPartsScrollContainer');
-  const savedScroll = listEl ? listEl.scrollTop : 0;
-
-  // Re-renderiza colocando as selecionadas no topo
-  vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
-
-  if (listEl) {
-    listEl.scrollTop = savedScroll;
-  }
-
+  // Atualiza indicadores numéricos instantaneamente (0ms)
   vpUpdateTriggerButton();
   vpUpdateDockAndSheet();
+
+  // Salva em background de forma assíncrona para não travar a tela
+  vpDebouncedSaveSelectedParts();
 };
 
 window.vpChangeObs = function(partName, obsText, zoneId, zoneName, rawName = '') {
@@ -12762,11 +12811,73 @@ window.vpOnModalSearchInput = function(query = '') {
 };
 
 window.vpToggleModalAction = function(name, zoneId, zoneName, action, rawName) {
-  vpToggleAction(name, zoneId, zoneName, action, rawName);
+  const current = vpGetSelectedPart(name);
+  let newAction = action;
+
+  if (current && current.action === action) {
+    vpSelectedPartsMap.delete(current.name);
+    vpSelectedPartsMap.delete(name);
+    newAction = null;
+  } else {
+    vpSelectedPartsMap.set(name, {
+      name: name,
+      rawName: rawName || name,
+      zoneId: zoneId,
+      zoneName: zoneName,
+      action: action,
+      obs: current ? (current.obs || '') : ''
+    });
+  }
+
+  // Atualiza card na tela de trás se existir
+  const card = vpFindCardEl(name);
+  if (card) {
+    const btnTroca = card.querySelector('.btn-trocar');
+    const btnReparo = card.querySelector('.btn-reparar');
+
+    card.classList.remove('selected-troca', 'selected-reparo');
+    if (btnTroca) {
+      btnTroca.classList.remove('active');
+      btnTroca.style.background = '#ffffff';
+      btnTroca.style.color = '#dc2626';
+    }
+    if (btnReparo) {
+      btnReparo.classList.remove('active');
+      btnReparo.style.background = '#ffffff';
+      btnReparo.style.color = '#0284c7';
+    }
+
+    if (newAction === 'troca') {
+      card.classList.add('selected-troca');
+      card.style.borderColor = '#dc2626';
+      card.style.background = '#fffafa';
+      if (btnTroca) {
+        btnTroca.classList.add('active');
+        btnTroca.style.background = '#dc2626';
+        btnTroca.style.color = '#ffffff';
+      }
+    } else if (newAction === 'reparo') {
+      card.classList.add('selected-reparo');
+      card.style.borderColor = '#0284c7';
+      card.style.background = '#f0f9ff';
+      if (btnReparo) {
+        btnReparo.classList.add('active');
+        btnReparo.style.background = '#0284c7';
+        btnReparo.style.color = '#ffffff';
+      }
+    } else {
+      card.style.borderColor = '#cbd5e1';
+      card.style.background = '#ffffff';
+    }
+  }
+
+  // Atualiza modal de busca
   const curQuery = document.getElementById('vpModalSearchInput')?.value || '';
   window.vpOnModalSearchInput(curQuery);
+
   vpUpdateTriggerButton();
   vpUpdateDockAndSheet();
+  vpDebouncedSaveSelectedParts();
 };
 
 window.vpModalEditObs = function(partName) {

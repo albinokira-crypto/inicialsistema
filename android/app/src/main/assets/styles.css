@@ -1794,27 +1794,33 @@ html, body {
    MÓDULO DE PARTES DE VEÍCULOS (ZONAS E PEÇAS) - 2 COLUNAS COMPACTAS
    ========================================================================== */
 .vp-type-tabs-container {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 6px !important;
   background: #f1f5f9;
-  padding: 3px;
-  border-radius: 8px;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .vp-type-tab-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 5px 4px;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: #64748b;
-  cursor: pointer;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 8px 6px !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  border: none !important;
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
   transition: all 0.15s ease;
   white-space: nowrap;
 }
@@ -2019,6 +2025,9 @@ html, body {
   border: 1px solid #cbd5e1;
   background: #ffffff;
   cursor: pointer;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
   transition: all 0.12s ease;
   min-height: 25px;
   box-sizing: border-box;
@@ -2205,28 +2214,33 @@ html, body {
 
 /* Abas de Tipo de Veículo */
 .vp-type-tabs-container {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 6px !important;
   background: #f1f5f9;
   padding: 4px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid #e2e8f0;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .vp-type-tab-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 8px 3px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 0.76rem;
-  font-weight: 700;
-  border-radius: 8px;
-  cursor: pointer;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 8px 6px !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  border: none !important;
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
   transition: all 0.15s ease;
   white-space: nowrap;
   user-select: none;
