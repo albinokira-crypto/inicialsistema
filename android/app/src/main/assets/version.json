@@ -1,7 +1,7 @@
 {
-  "version": "2.54.2",
-  "versionCode": 2542,
-  "updatedAt": "2026-11-05T17:10:00.000Z",
-  "buildDate": "2026-11-05T17:10:00.000Z",
-  "changelog": "Abas Veiculos e Motos na mesma linha com 50% de largura cada e clique instantaneo sem delay para marcar troca e reparo."
+  "version": "2.54.3",
+  "versionCode": 2543,
+  "updatedAt": "2026-11-05T20:52:28.299Z",
+  "buildDate": "2026-11-05T20:52:28.300Z",
+  "changelog": "Botão de editar peças no modal de pesquisa e 7 seguradoras alinhadas na mesma linha."
 }

@@ -516,13 +516,13 @@ input, select, textarea {
   box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
 }
 
-/* Insurer Selection Buttons - 6 em uma linha só, quebrando linha se não couber (sem rolagem horizontal) */
+/* Insurer Selection Buttons - 7 em uma linha só sem quebra */
 .insurer-buttons-container {
-  display: flex !important;
-  flex-wrap: wrap !important;
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
   width: 100% !important;
   max-width: 100% !important;
-  gap: 2.5px !important;
+  gap: 2px !important;
   box-sizing: border-box !important;
   margin-top: 3px !important;
   margin-bottom: 5px !important;
@@ -530,14 +530,13 @@ input, select, textarea {
 }
 
 .insurer-btn {
-  flex: 1 1 calc(16.666% - 3px) !important;
-  min-width: 44px !important;
-  width: auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
   max-width: 100% !important;
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 6px !important;
-  padding: 3px 1px !important;
+  padding: 3px 0.5px !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -551,6 +550,7 @@ input, select, textarea {
   -webkit-tap-highlight-color: transparent !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
+  touch-action: manipulation !important;
 }
 
 .insurer-btn:hover {
@@ -575,7 +575,7 @@ input, select, textarea {
 }
 
 .insurer-btn .insurer-btn-label {
-  font-size: 0.54rem !important;
+  font-size: clamp(0.46rem, 1.8vw, 0.52rem) !important;
   font-weight: 700 !important;
   color: #475569 !important;
   line-height: 1.05 !important;
@@ -1286,22 +1286,22 @@ html, body {
   }
 
   .insurer-buttons-container {
-    display: flex !important;
-    flex-wrap: wrap !important;
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
     width: 100% !important;
     max-width: 100% !important;
-    gap: 2px !important;
+    gap: 1.5px !important;
     box-sizing: border-box !important;
     overflow: visible !important;
   }
 
   .insurer-btn {
-    flex: 1 1 calc(16.666% - 2.5px) !important;
-    width: auto !important;
-    min-width: 42px !important;
+    width: 100% !important;
+    min-width: 0 !important;
     max-width: 100% !important;
-    padding: 3px 1px !important;
+    padding: 2.5px 0.5px !important;
     box-sizing: border-box !important;
+    touch-action: manipulation !important;
   }
 
   .type-buttons-container {

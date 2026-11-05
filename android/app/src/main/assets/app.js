@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.54.2';
+let CURRENT_APP_VERSION = 'v2.54.3';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -3479,6 +3479,12 @@ function populateProviderSelect() {
     else if (nameLower.includes('ben')) icon = '🛡️';
     else if (nameLower.includes('hdi')) icon = '🔰';
     else if (nameLower.includes('santander') || nameLower.includes('itau')) icon = '🏦';
+    else if (nameLower.includes('suhai')) icon = '🏍️';
+    else if (nameLower.includes('liberty') || nameLower.includes('yelum')) icon = '🗽';
+    else if (nameLower.includes('sompo')) icon = '🎌';
+    else if (nameLower.includes('zurich')) icon = '⛰️';
+    else if (nameLower.includes('aliro') || nameLower.includes('alfa')) icon = '⭐';
+    else if (nameLower.includes('clube')) icon = '⭐';
 
     btn.innerHTML = `
       <div class="insurer-btn-icon-box">${icon}</div>
@@ -12763,7 +12769,7 @@ window.vpOnModalSearchInput = function(query = '') {
 
     return `
       <div style="padding: 7px 9px; border-radius: 10px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#e2e8f0')}; background: ${isTroca ? '#fff5f5' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-        <!-- Linha Superior: Posição, Categoria, Nome da Peça, Transferir/Copiar -->
+        <!-- Linha Superior: Posição, Categoria, Nome da Peça, Mover/Copiar e EDITAR -->
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%;">
           <div style="display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0;">
             <button 
@@ -12780,29 +12786,44 @@ window.vpOnModalSearchInput = function(query = '') {
             </div>
           </div>
 
-          <!-- Botão Transferir ou Copiar Peça -->
-          <button 
-            type="button" 
-            onclick="event.stopPropagation(); vpOpenQuickTransferModal('${vpEscapeHtml(item.name)}')" 
-            title="Transferir ou Copiar esta peça para outra aba" 
-            style="padding: 3px 7px; height: 24px; font-size: 0.74rem; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); flex-shrink: 0;"
-          >
-            <span>🔁</span> <span style="font-size: 0.68rem; color: #475569;">Mover/Copiar</span>
-          </button>
+          <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+            <!-- Botão Transferir ou Copiar Peça -->
+            <button 
+              type="button" 
+              onclick="event.stopPropagation(); vpOpenQuickTransferModal('${vpEscapeHtml(item.name)}')" 
+              title="Transferir ou Copiar esta peça para outra aba" 
+              style="padding: 3px 6px; height: 24px; font-size: 0.72rem; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); flex-shrink: 0;"
+            >
+              <span>🔁</span> <span style="font-size: 0.65rem; color: #475569;">Mover/Copiar</span>
+            </button>
+            <!-- Botão Editar Peça no Topo -->
+            <button 
+              type="button" 
+              class="vp-btn-action btn-edit-part" 
+              onclick="event.stopPropagation(); vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')" 
+              title="Editar nome e categoria/zona da peça" 
+              style="padding: 3px 7px; height: 24px; font-size: 0.75rem; font-weight: 800; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #1e3a8a; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.04); flex-shrink: 0;"
+            >
+              ✏️
+            </button>
+          </div>
         </div>
 
         ${hasObs ? `<div style="font-size: 0.72rem; color: #2563eb; font-weight: 600; padding: 2px 6px; background: #eff6ff; border-radius: 4px;">Obs: ${vpEscapeHtml(selected.obs)}</div>` : ''}
 
-        <!-- Linha Inferior de Ações: Trocar, Reparar, Obs -->
+        <!-- Linha Inferior de Ações: Trocar, Reparar, Obs e Editar -->
         <div style="display: flex; gap: 4px; width: 100%;">
-          <button type="button" onclick="vpToggleModalAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'troca', '${vpEscapeHtml(item.rawName)}')" style="flex: 1; padding: 6px 4px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; border: 1.5px solid ${isTroca ? '#dc2626' : '#cbd5e1'}; background: ${isTroca ? '#dc2626' : '#fff'}; color: ${isTroca ? '#fff' : '#dc2626'}; text-align: center;">
+          <button type="button" onclick="vpToggleModalAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'troca', '${vpEscapeHtml(item.rawName)}')" style="flex: 1; padding: 6px 4px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; border: 1.5px solid ${isTroca ? '#dc2626' : '#cbd5e1'}; background: ${isTroca ? '#dc2626' : '#fff'}; color: ${isTroca ? '#fff' : '#dc2626'}; text-align: center; touch-action: manipulation;">
             ${isTroca ? '✓ Trocar' : 'Trocar'}
           </button>
-          <button type="button" onclick="vpToggleModalAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'reparo', '${vpEscapeHtml(item.rawName)}')" style="flex: 1; padding: 6px 4px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; border: 1.5px solid ${isReparo ? '#0284c7' : '#cbd5e1'}; background: ${isReparo ? '#0284c7' : '#fff'}; color: ${isReparo ? '#fff' : '#0284c7'}; text-align: center;">
+          <button type="button" onclick="vpToggleModalAction('${vpEscapeHtml(item.name)}', '${item.zoneId}', '${vpEscapeHtml(item.zoneName)}', 'reparo', '${vpEscapeHtml(item.rawName)}')" style="flex: 1; padding: 6px 4px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; border: 1.5px solid ${isReparo ? '#0284c7' : '#cbd5e1'}; background: ${isReparo ? '#0284c7' : '#fff'}; color: ${isReparo ? '#fff' : '#0284c7'}; text-align: center; touch-action: manipulation;">
             ${isReparo ? '✓ Reparar' : 'Reparar'}
           </button>
-          <button type="button" onclick="vpModalEditObs('${vpEscapeHtml(item.name)}')" style="padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; cursor: pointer; border: 1.5px solid ${hasObs ? '#2563eb' : '#cbd5e1'}; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'}; flex-shrink: 0;" title="Adicionar ou editar observação">
+          <button type="button" onclick="vpModalEditObs('${vpEscapeHtml(item.name)}')" style="padding: 6px 10px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; cursor: pointer; border: 1.5px solid ${hasObs ? '#2563eb' : '#cbd5e1'}; background: ${hasObs ? '#eff6ff' : '#f8fafc'}; color: ${hasObs ? '#2563eb' : '#64748b'}; flex-shrink: 0; touch-action: manipulation;" title="Adicionar ou editar observação">
             Obs
+          </button>
+          <button type="button" onclick="event.stopPropagation(); vpOpenEditPartModal('${vpEscapeHtml(item.rawName)}', '${vpEscapeHtml(item.name)}', '${item.zoneId}')" style="padding: 6px 10px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; border: 1.5px solid #cbd5e1; background: #f8fafc; color: #1e3a8a; flex-shrink: 0; touch-action: manipulation;" title="Editar nome e categoria da peça">
+            ✏️
           </button>
         </div>
       </div>
@@ -13058,6 +13079,9 @@ window.vpDeleteFromEditModal = function() {
   const displayName = nameInput ? nameInput.value.trim() : rawName;
   if (rawName || displayName) {
     window.vpDeletePart(rawName, displayName);
+    if (typeof window.vpOnModalSearchInput === 'function' && document.getElementById('vpSearchModal')?.style.display !== 'none') {
+      window.vpOnModalSearchInput(document.getElementById('vpModalSearchInput')?.value || '');
+    }
   }
 };
 
@@ -13263,6 +13287,9 @@ window.vpSaveEditPartName = function(e) {
   window.vpCloseEditPartModal();
   vpUpdateTriggerButton();
   vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+  if (typeof window.vpOnModalSearchInput === 'function' && document.getElementById('vpSearchModal')?.style.display !== 'none') {
+    window.vpOnModalSearchInput(document.getElementById('vpModalSearchInput')?.value || '');
+  }
   vpRenderTabsNavBar();
   vpUpdateDockAndSheet();
   if (typeof showToastNotification === 'function') {
