@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.54.6';
+let CURRENT_APP_VERSION = 'v2.54.7';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -13899,78 +13899,85 @@ const VP_TIRE_ORDER_MAP = [
   { prefix: 'estepe', label: 'Estepe' }
 ];
 
-window.vpCopyTireToSingle = function(targetPrefix) {
-  const targetItem = VP_TIRE_ORDER_MAP.find(t => t.prefix === targetPrefix);
-  const targetLabel = targetItem ? targetItem.label : 'este pneu';
-  const targetIdx = VP_TIRE_ORDER_MAP.findIndex(t => t.prefix === targetPrefix);
-
-  // Procura o pneu de origem: primeiro os anteriores na ordem
-  let sourcePrefix = null;
-  let sourceMarca = '';
-  let sourceMedida = '';
-
-  // 1. Procura de trás pra frente a partir do pneu anterior
-  for (let i = targetIdx - 1; i >= 0; i--) {
-    const p = VP_TIRE_ORDER_MAP[i].prefix;
-    const mInp = document.querySelector(`input[name="${p}_marca"]`);
-    const sInp = document.querySelector(`input[name="${p}_medida"]`);
+function vpGetFilledTires() {
+  const filled = [];
+  VP_TIRE_ORDER_MAP.forEach(t => {
+    const mInp = document.querySelector(`input[name="${t.prefix}_marca"]`);
+    const sInp = document.querySelector(`input[name="${t.prefix}_medida"]`);
     const mVal = mInp ? mInp.value.trim() : '';
     const sVal = sInp ? sInp.value.trim() : '';
     if (mVal || sVal) {
-      sourcePrefix = p;
-      sourceMarca = mVal;
-      sourceMedida = sVal;
-      break;
+      filled.push({
+        prefix: t.prefix,
+        label: t.label,
+        marca: mVal,
+        medida: sVal
+      });
     }
-  }
+  });
+  return filled;
+}
 
-  // 2. Se não achou nos anteriores, procura nos posteriores
-  if (!sourcePrefix) {
-    for (let i = targetIdx + 1; i < VP_TIRE_ORDER_MAP.length; i++) {
-      const p = VP_TIRE_ORDER_MAP[i].prefix;
-      const mInp = document.querySelector(`input[name="${p}_marca"]`);
-      const sInp = document.querySelector(`input[name="${p}_medida"]`);
-      const mVal = mInp ? mInp.value.trim() : '';
-      const sVal = sInp ? sInp.value.trim() : '';
-      if (mVal || sVal) {
-        sourcePrefix = p;
-        sourceMarca = mVal;
-        sourceMedida = sVal;
-        break;
+window.vpCloseTireCopyModal = function() {
+  const modal = document.getElementById('vpTireCopyModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.vpApplyTireCopy = function(sourcePrefix, targetPrefix) {
+  window.vpCloseTireCopyModal();
+
+  const sourceItem = VP_TIRE_ORDER_MAP.find(t => t.prefix === sourcePrefix);
+  const targetItem = VP_TIRE_ORDER_MAP.find(t => t.prefix === targetPrefix);
+
+  const srcMarcaInp = document.querySelector(`input[name="${sourcePrefix}_marca"]`);
+  const srcMedidaInp = document.querySelector(`input[name="${sourcePrefix}_medida"]`);
+  const sourceMarca = srcMarcaInp ? srcMarcaInp.value.trim() : '';
+  const sourceMedida = srcMedidaInp ? srcMedidaInp.value.trim() : '';
+
+  if (targetPrefix === 'ALL') {
+    const formatted = (sourceMedida && typeof formatTireSize === 'function') ? formatTireSize(sourceMedida) : sourceMedida;
+    VP_TIRE_ORDER_MAP.forEach(t => {
+      const mInp = document.querySelector(`input[name="${t.prefix}_marca"]`);
+      const sInp = document.querySelector(`input[name="${t.prefix}_medida"]`);
+      if (mInp && sourceMarca) {
+        mInp.value = sourceMarca;
+        mInp.style.borderColor = '#16a34a';
+        mInp.style.background = '#f0fdf4';
+        setTimeout(() => { mInp.style.borderColor = '#cbd5e1'; mInp.style.background = '#ffffff'; }, 700);
       }
-    }
-  }
+      if (sInp && formatted) {
+        sInp.value = formatted;
+        sInp.style.borderColor = '#16a34a';
+        sInp.style.background = '#f0fdf4';
+        setTimeout(() => { sInp.style.borderColor = '#cbd5e1'; sInp.style.background = '#ffffff'; }, 700);
+      }
+    });
 
-  if (!sourceMarca && !sourceMedida) {
+    const infoParts = [];
+    if (sourceMarca) infoParts.push(sourceMarca);
+    if (formatted) infoParts.push(formatted);
     if (typeof showToastNotification === 'function') {
-      showToastNotification('⚠️ Preencha a marca ou medida no pneu anterior primeiro.', 2500);
-    } else {
-      alert('Preencha a marca ou medida no pneu anterior primeiro.');
+      showToastNotification(`✓ Dados do ${sourceItem?.label || 'pneu'} (${infoParts.join(' ')}) copiados para TODOS!`, 2400);
     }
     return;
   }
 
-  const targetMarcaInp = document.querySelector(`input[name="${targetPrefix}_marca"]`);
-  const targetMedidaInp = document.querySelector(`input[name="${targetPrefix}_medida"]`);
+  const tgtMarcaInp = document.querySelector(`input[name="${targetPrefix}_marca"]`);
+  const tgtMedidaInp = document.querySelector(`input[name="${targetPrefix}_medida"]`);
 
-  if (targetMarcaInp && sourceMarca) {
-    targetMarcaInp.value = sourceMarca;
-    targetMarcaInp.style.borderColor = '#16a34a';
-    targetMarcaInp.style.background = '#f0fdf4';
-    setTimeout(() => {
-      targetMarcaInp.style.borderColor = '#cbd5e1';
-      targetMarcaInp.style.background = '#ffffff';
-    }, 700);
+  if (tgtMarcaInp && sourceMarca) {
+    tgtMarcaInp.value = sourceMarca;
+    tgtMarcaInp.style.borderColor = '#16a34a';
+    tgtMarcaInp.style.background = '#f0fdf4';
+    setTimeout(() => { tgtMarcaInp.style.borderColor = '#cbd5e1'; tgtMarcaInp.style.background = '#ffffff'; }, 700);
   }
 
-  if (targetMedidaInp && sourceMedida) {
-    targetMedidaInp.value = typeof formatTireSize === 'function' ? formatTireSize(sourceMedida) : sourceMedida;
-    targetMedidaInp.style.borderColor = '#16a34a';
-    targetMedidaInp.style.background = '#f0fdf4';
-    setTimeout(() => {
-      targetMedidaInp.style.borderColor = '#cbd5e1';
-      targetMedidaInp.style.background = '#ffffff';
-    }, 700);
+  if (tgtMedidaInp && sourceMedida) {
+    const formatted = typeof formatTireSize === 'function' ? formatTireSize(sourceMedida) : sourceMedida;
+    tgtMedidaInp.value = formatted;
+    tgtMedidaInp.style.borderColor = '#16a34a';
+    tgtMedidaInp.style.background = '#f0fdf4';
+    setTimeout(() => { tgtMedidaInp.style.borderColor = '#cbd5e1'; tgtMedidaInp.style.background = '#ffffff'; }, 700);
   }
 
   const infoParts = [];
@@ -13978,69 +13985,125 @@ window.vpCopyTireToSingle = function(targetPrefix) {
   if (sourceMedida) infoParts.push(sourceMedida);
 
   if (typeof showToastNotification === 'function') {
-    showToastNotification(`✓ Copiado para ${targetLabel}: ${infoParts.join(' ')}`, 2200);
+    showToastNotification(`✓ Copiado de ${sourceItem?.label} para ${targetItem?.label}: ${infoParts.join(' ')}`, 2200);
   }
 };
 
-window.vpCopyTireToAll = function() {
-  let sourceMarca = '';
-  let sourceMedida = '';
+window.vpCopyTireToSingle = function(targetPrefix) {
+  const targetItem = VP_TIRE_ORDER_MAP.find(t => t.prefix === targetPrefix);
+  const targetLabel = targetItem ? targetItem.label : 'este pneu';
 
-  for (const t of VP_TIRE_ORDER_MAP) {
-    const mInp = document.querySelector(`input[name="${t.prefix}_marca"]`);
-    const sInp = document.querySelector(`input[name="${t.prefix}_medida"]`);
-    const mVal = mInp ? mInp.value.trim() : '';
-    const sVal = sInp ? sInp.value.trim() : '';
-    if (mVal || sVal) {
-      sourceMarca = mVal;
-      sourceMedida = sVal;
-      break;
-    }
-  }
+  // Obtém todos os outros pneus que têm dados
+  const otherFilled = vpGetFilledTires().filter(t => t.prefix !== targetPrefix);
 
-  if (!sourceMarca && !sourceMedida) {
+  if (otherFilled.length === 0) {
     if (typeof showToastNotification === 'function') {
-      showToastNotification('⚠️ Digite a marca ou medida no primeiro pneu para copiar.', 2500);
+      showToastNotification('⚠️ Nenhum outro pneu possui marca ou medida preenchida ainda.', 2500);
     } else {
-      alert('Digite a marca ou medida no primeiro pneu para copiar.');
+      alert('Nenhum outro pneu possui marca ou medida preenchida ainda.');
     }
     return;
   }
 
-  const formattedMedida = (sourceMedida && typeof formatTireSize === 'function') ? formatTireSize(sourceMedida) : sourceMedida;
-
-  VP_TIRE_ORDER_MAP.forEach(t => {
-    const mInp = document.querySelector(`input[name="${t.prefix}_marca"]`);
-    const sInp = document.querySelector(`input[name="${t.prefix}_medida"]`);
-
-    if (mInp && sourceMarca) {
-      mInp.value = sourceMarca;
-      mInp.style.borderColor = '#16a34a';
-      mInp.style.background = '#f0fdf4';
-      setTimeout(() => {
-        mInp.style.borderColor = '#cbd5e1';
-        mInp.style.background = '#ffffff';
-      }, 700);
-    }
-
-    if (sInp && formattedMedida) {
-      sInp.value = formattedMedida;
-      sInp.style.borderColor = '#16a34a';
-      sInp.style.background = '#f0fdf4';
-      setTimeout(() => {
-        sInp.style.borderColor = '#cbd5e1';
-        sInp.style.background = '#ffffff';
-      }, 700);
-    }
-  });
-
-  const infoParts = [];
-  if (sourceMarca) infoParts.push(sourceMarca);
-  if (formattedMedida) infoParts.push(formattedMedida);
-
-  if (typeof showToastNotification === 'function') {
-    showToastNotification(`✓ Copiado para todos os 5 pneus: ${infoParts.join(' ')}`, 2400);
+  // Se tem apenas 1 outro pneu preenchido, copia dele DIRETO sem precisar de modal
+  if (otherFilled.length === 1) {
+    window.vpApplyTireCopy(otherFilled[0].prefix, targetPrefix);
+    return;
   }
+
+  // Se tem 2 ou mais outros pneus com dados (ex: DD com Pirelli e DE com Goodyear),
+  // abre o seletor rápido para o usuário escolher exatamente de qual pneu deseja copiar!
+  const modal = document.getElementById('vpTireCopyModal');
+  const titleEl = document.getElementById('vpTireCopyModalTitle');
+  const descEl = document.getElementById('vpTireCopyModalDesc');
+  const listEl = document.getElementById('vpTireCopyOptionsList');
+
+  if (!modal || !listEl) {
+    window.vpApplyTireCopy(otherFilled[0].prefix, targetPrefix);
+    return;
+  }
+
+  if (titleEl) titleEl.innerHTML = `<span>📋</span> Copiar para <b>${targetLabel}</b>`;
+  if (descEl) descEl.textContent = `De qual pneu deseja copiar a marca e medida para o ${targetLabel}?`;
+
+  listEl.innerHTML = otherFilled.map(t => {
+    const info = [t.marca, t.medida].filter(Boolean).join(' • ') || '(Sem dados)';
+    return `
+      <button 
+        type="button" 
+        onclick="vpApplyTireCopy('${t.prefix}', '${targetPrefix}')" 
+        style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; background: #ffffff; text-align: left; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; transition: all 0.15s; touch-action: manipulation; box-shadow: 0 1px 2px rgba(0,0,0,0.03);"
+        onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#2563eb';"
+        onmouseout="this.style.background='#ffffff'; this.style.borderColor='#cbd5e1';"
+      >
+        <div style="min-width: 0;">
+          <div style="font-size: 0.86rem; font-weight: 800; color: #1e3a8a;">🚗 ${t.label}</div>
+          <div style="font-size: 0.80rem; font-weight: 700; color: #475569; margin-top: 2px;">${escapeHtml(info)}</div>
+        </div>
+        <span style="font-size: 0.76rem; font-weight: 800; color: #2563eb; background: #eff6ff; padding: 4px 8px; border-radius: 6px; white-space: nowrap; flex-shrink: 0;">
+          Copiar ➔
+        </span>
+      </button>
+    `;
+  }).join('');
+
+  modal.style.display = 'flex';
+};
+
+window.vpCopyTireToAll = function() {
+  const allFilled = vpGetFilledTires();
+
+  if (allFilled.length === 0) {
+    if (typeof showToastNotification === 'function') {
+      showToastNotification('⚠️ Digite a marca ou medida em pelo menos um pneu primeiro.', 2500);
+    } else {
+      alert('Digite a marca ou medida em pelo menos um pneu primeiro.');
+    }
+    return;
+  }
+
+  // Se tem apenas 1 pneu preenchido, replica ele para todos direto
+  if (allFilled.length === 1) {
+    window.vpApplyTireCopy(allFilled[0].prefix, 'ALL');
+    return;
+  }
+
+  // Se tem 2 ou mais com dados diferentes, abre o modal perguntando qual deles quer usar como modelo
+  const modal = document.getElementById('vpTireCopyModal');
+  const titleEl = document.getElementById('vpTireCopyModalTitle');
+  const descEl = document.getElementById('vpTireCopyModalDesc');
+  const listEl = document.getElementById('vpTireCopyOptionsList');
+
+  if (!modal || !listEl) {
+    window.vpApplyTireCopy(allFilled[0].prefix, 'ALL');
+    return;
+  }
+
+  if (titleEl) titleEl.innerHTML = `<span>📋</span> Copiar para <b>TODOS os Pneus</b>`;
+  if (descEl) descEl.textContent = `Qual pneu você deseja usar como modelo para copiar para todos?`;
+
+  listEl.innerHTML = allFilled.map(t => {
+    const info = [t.marca, t.medida].filter(Boolean).join(' • ') || '(Sem dados)';
+    return `
+      <button 
+        type="button" 
+        onclick="vpApplyTireCopy('${t.prefix}', 'ALL')" 
+        style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; background: #ffffff; text-align: left; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; transition: all 0.15s; touch-action: manipulation; box-shadow: 0 1px 2px rgba(0,0,0,0.03);"
+        onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#2563eb';"
+        onmouseout="this.style.background='#ffffff'; this.style.borderColor='#cbd5e1';"
+      >
+        <div style="min-width: 0;">
+          <div style="font-size: 0.86rem; font-weight: 800; color: #1e3a8a;">🚗 Usar dados do ${t.label}</div>
+          <div style="font-size: 0.80rem; font-weight: 700; color: #475569; margin-top: 2px;">${escapeHtml(info)}</div>
+        </div>
+        <span style="font-size: 0.76rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 4px 8px; border-radius: 6px; white-space: nowrap; flex-shrink: 0;">
+          Aplicar a Todos ➔
+        </span>
+      </button>
+    `;
+  }).join('');
+
+  modal.style.display = 'flex';
 };
 
 window.vpCopyTireMeasure = function(fromPrefix) {

@@ -1,7 +1,7 @@
 {
-  "version": "2.54.6",
-  "versionCode": 2546,
-  "updatedAt": "2026-11-05T21:29:27.216Z",
-  "buildDate": "2026-11-05T21:29:27.217Z",
-  "changelog": "Cópia de marca e medida individual por pneu e cópia global para todos os pneus."
+  "version": "2.54.7",
+  "versionCode": 2547,
+  "updatedAt": "2026-11-05T21:35:53.859Z",
+  "buildDate": "2026-11-05T21:35:53.860Z",
+  "changelog": "Seletor inteligente de copia de marca e medida de pneus permitindo escolher de qual pneu copiar."
 }
