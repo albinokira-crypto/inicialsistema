@@ -1,7 +1,7 @@
 {
-  "version": "2.54.0",
-  "versionCode": 2540,
-  "updatedAt": "2026-11-05T16:40:00.000Z",
-  "buildDate": "2026-11-05T16:40:00.000Z",
-  "changelog": "Unificacao de tipos para Veiculos e Motos, preservacao de ordem customizada, ordem crescente nas sub-abas e persistencia definitiva de novas pecas."
+  "version": "2.54.1",
+  "versionCode": 2541,
+  "updatedAt": "2026-11-05T16:48:00.000Z",
+  "buildDate": "2026-11-05T16:48:00.000Z",
+  "changelog": "Ordem numerica em que as pecas sao colocadas nas sub-abas preservada e suporte a reordenacao numerica na aba."
 }

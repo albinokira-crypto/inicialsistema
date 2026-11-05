@@ -10721,12 +10721,7 @@ function vpMovePartByName(fromName, toName) {
 
 window.vpOpenReorderPositionModal = function(partName) {
   if (vpTouchMoved) return;
-  if (!partName || !Array.isArray(vpAllVehicleParts)) return;
-  const currentIdx = vpAllVehicleParts.findIndex(p => (p.name || '').toLowerCase() === (partName || '').toLowerCase());
-  if (currentIdx === -1) return;
-
-  const currentPos = currentIdx + 1;
-  const totalParts = vpAllVehicleParts.length;
+  if (!partName) return;
 
   const modal = document.getElementById('vpReorderPositionModal');
   const partNameInput = document.getElementById('vpReorderPartName');
@@ -10734,6 +10729,44 @@ window.vpOpenReorderPositionModal = function(partName) {
   const currentInfo = document.getElementById('vpReorderCurrentInfo');
   const posInput = document.getElementById('vpReorderPositionInput');
   const lastBtn = document.getElementById('vpReorderLastBtn');
+
+  // Se estiver dentro de uma sub-aba personalizada, reordena dentro da aba
+  if (vpActiveCustomTabId && Array.isArray(vpCustomTabs)) {
+    const activeTab = vpCustomTabs.find(t => t.id === vpActiveCustomTabId);
+    if (activeTab && Array.isArray(activeTab.parts)) {
+      const currentIdx = activeTab.parts.findIndex(p => {
+        const pName = typeof p === 'string' ? p : (p?.name || p?.rawName || '');
+        return (pName || '').toLowerCase().trim() === (partName || '').toLowerCase().trim();
+      });
+      if (currentIdx === -1) return;
+
+      const currentPos = currentIdx + 1;
+      const totalParts = activeTab.parts.length;
+
+      if (partNameInput) partNameInput.value = partName;
+      if (partTitle) partTitle.textContent = partName;
+      if (currentInfo) currentInfo.textContent = `Posição na aba "${activeTab.name}": #${currentPos} de ${totalParts} peças`;
+      if (posInput) {
+        posInput.max = totalParts;
+        posInput.value = currentPos;
+        setTimeout(() => {
+          posInput.focus();
+          posInput.select();
+        }, 100);
+      }
+      if (lastBtn) lastBtn.textContent = `${totalParts}º (Último)`;
+      if (modal) modal.style.display = 'flex';
+      return;
+    }
+  }
+
+  // Catálogo Geral
+  if (!Array.isArray(vpAllVehicleParts)) return;
+  const currentIdx = vpAllVehicleParts.findIndex(p => (p.name || '').toLowerCase() === (partName || '').toLowerCase());
+  if (currentIdx === -1) return;
+
+  const currentPos = currentIdx + 1;
+  const totalParts = vpAllVehicleParts.length;
 
   if (partNameInput) partNameInput.value = partName;
   if (partTitle) partTitle.textContent = partName;
@@ -10757,11 +10790,24 @@ window.vpCloseReorderPositionModal = function() {
 
 window.vpSetReorderQuickPosition = function(val) {
   const posInput = document.getElementById('vpReorderPositionInput');
-  if (!posInput || !Array.isArray(vpAllVehicleParts)) return;
+  if (!posInput) return;
+
+  let totalParts = 0;
+  if (vpActiveCustomTabId && Array.isArray(vpCustomTabs)) {
+    const activeTab = vpCustomTabs.find(t => t.id === vpActiveCustomTabId);
+    if (activeTab && Array.isArray(activeTab.parts)) {
+      totalParts = activeTab.parts.length;
+    }
+  } else if (Array.isArray(vpAllVehicleParts)) {
+    totalParts = vpAllVehicleParts.length;
+  }
+
+  if (totalParts === 0) return;
+
   if (val === 'last') {
-    posInput.value = vpAllVehicleParts.length;
+    posInput.value = totalParts;
   } else {
-    posInput.value = Math.min(Math.max(1, parseInt(val, 10)), vpAllVehicleParts.length);
+    posInput.value = Math.min(Math.max(1, parseInt(val, 10)), totalParts);
   }
 };
 
@@ -10769,10 +10815,37 @@ window.vpSaveReorderPosition = function(e) {
   if (e) e.preventDefault();
   const partName = document.getElementById('vpReorderPartName')?.value;
   const posInput = document.getElementById('vpReorderPositionInput');
-  if (!partName || !posInput || !Array.isArray(vpAllVehicleParts)) return;
+  if (!partName || !posInput) return;
 
   let newPos = parseInt(posInput.value, 10);
   if (isNaN(newPos) || newPos < 1) newPos = 1;
+
+  // 1. Se estiver dentro de uma sub-aba personalizada, reordena a posição numérica dentro da aba!
+  if (vpActiveCustomTabId && Array.isArray(vpCustomTabs)) {
+    const activeTab = vpCustomTabs.find(t => t.id === vpActiveCustomTabId);
+    if (activeTab && Array.isArray(activeTab.parts)) {
+      if (newPos > activeTab.parts.length) newPos = activeTab.parts.length;
+      const currentIdx = activeTab.parts.findIndex(p => {
+        const pName = typeof p === 'string' ? p : (p?.name || p?.rawName || '');
+        return (pName || '').toLowerCase().trim() === (partName || '').toLowerCase().trim();
+      });
+      if (currentIdx !== -1) {
+        const targetIdx = newPos - 1;
+        if (currentIdx !== targetIdx) {
+          const [moved] = activeTab.parts.splice(currentIdx, 1);
+          activeTab.parts.splice(targetIdx, 0, moved);
+          if (typeof window.vpSaveCustomTabs === 'function') window.vpSaveCustomTabs();
+          vpSaveState(true);
+        }
+      }
+      vpCloseReorderPositionModal();
+      vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+      return;
+    }
+  }
+
+  // 2. Modo Catálogo Geral
+  if (!Array.isArray(vpAllVehicleParts)) return;
   if (newPos > vpAllVehicleParts.length) newPos = vpAllVehicleParts.length;
 
   const currentIdx = vpAllVehicleParts.findIndex(p => (p.name || '').toLowerCase() === (partName || '').toLowerCase());
@@ -10783,7 +10856,7 @@ window.vpSaveReorderPosition = function(e) {
     const [moved] = vpAllVehicleParts.splice(currentIdx, 1);
     vpAllVehicleParts.splice(targetIdx, 0, moved);
 
-    const vType = vpDetectedVehicleType || 'carro';
+    const vType = (vpDetectedVehicleType === 'moto') ? 'moto' : 'carro';
     const orderKey = 'vp_custom_order_' + vType;
     const currentNames = vpAllVehicleParts.map(p => p.name);
     try {
@@ -11733,11 +11806,14 @@ function vpRenderParts(filterQuery = '') {
       const tabPartNames = Array.isArray(activeTab.parts) ? activeTab.parts : [];
       const tabItems = [];
 
-      tabPartNames.forEach(rawName => {
+      tabPartNames.forEach((rawName, tIdx) => {
         const effective = vpGetEffectivePartName(rawName);
         let found = (vpAllVehicleParts || []).find(p => (p.name || '').toLowerCase() === effective.toLowerCase() || (p.rawName || '').toLowerCase() === rawName.toLowerCase());
         if (found) {
-          tabItems.push(found);
+          tabItems.push({
+            ...found,
+            tabOrderIdx: tIdx // Posição numérica exata em que o usuário colocou a peça na aba (0 = 1º, 1 = 2º...)
+          });
         } else {
           tabItems.push({
             name: effective,
@@ -11745,18 +11821,13 @@ function vpRenderParts(filterQuery = '') {
             zoneId: 'geral',
             zoneName: activeTab.name,
             vehicleType: 'all',
-            isCustom: true
+            isCustom: true,
+            tabOrderIdx: tIdx
           });
         }
       });
 
-      // ORDENAÇÃO CRESCENTE (ALFABÉTICA A-Z) OBRIGATÓRIA NAS SUB-ABAS
-      tabItems.sort((a, b) => {
-        const nameA = (a.name || a.rawName || '').trim();
-        const nameB = (b.name || b.rawName || '').trim();
-        return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
-      });
-
+      // MANTÉM A ORDEM NUMÉRICA EM QUE O USUÁRIO COLOCOU AS PEÇAS NA ABA (SEM SORT ALFABÉTICO)
       let displayParts = tabItems;
       let otherMatchingParts = [];
       const isSearching = Boolean(filterQuery && filterQuery.trim());
@@ -11768,14 +11839,9 @@ function vpRenderParts(filterQuery = '') {
         // Se o usuário estiver pesquisando, busca também no catálogo geral para que ele possa adicionar qualquer peça à vistoria
         const tabPartNamesSet = new Set(tabItems.map(p => (p.name || '').toLowerCase()));
         otherMatchingParts = (vpAllVehicleParts || []).filter(p => !tabPartNamesSet.has((p.name || '').toLowerCase()) && window.vpPartMatchesQuery(p.name, p.rawName, rawQ));
-        otherMatchingParts.sort((a, b) => {
-          const nameA = (a.name || a.rawName || '').trim();
-          const nameB = (b.name || b.rawName || '').trim();
-          return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
-        });
       }
 
-      // Peças selecionadas no topo
+      // Peças selecionadas no topo preservando ordem numérica
       const selectedParts = [];
       const unselectedParts = [];
       for (let i = 0; i < displayParts.length; i++) {
@@ -11786,11 +11852,6 @@ function vpRenderParts(filterQuery = '') {
           unselectedParts.push(p);
         }
       }
-      unselectedParts.sort((a, b) => {
-        const nameA = (a.name || a.rawName || '').trim();
-        const nameB = (b.name || b.rawName || '').trim();
-        return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
-      });
       // Garante que todas as peças marcadas na vistoria apareçam no topo
       const renderedNamesSet = new Set(selectedParts.map(p => (p.name || '').toLowerCase().trim()));
       for (const [selName, selData] of vpSelectedPartsMap.entries()) {
@@ -12102,8 +12163,13 @@ function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
   if (typeof vpIsRessalvaMode !== 'undefined' && vpIsRessalvaMode) {
     const selected = vpGetSelectedPart(item.name);
     const isRessalva = Boolean(selected && selected.action === 'ressalva');
-    const catalogIdx = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts.findIndex(p => (p.name || '').toLowerCase() === (item.name || '').toLowerCase()) : -1;
-    const orderNum = catalogIdx !== -1 ? (catalogIdx + 1) : (index + 1);
+    let orderNum;
+    if (item.tabOrderIdx !== undefined && item.tabOrderIdx !== null) {
+      orderNum = item.tabOrderIdx + 1;
+    } else {
+      const catalogIdx = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts.findIndex(p => (p.name || '').toLowerCase() === (item.name || '').toLowerCase()) : -1;
+      orderNum = catalogIdx !== -1 ? (catalogIdx + 1) : (index + 1);
+    }
 
     return `
       <div 
@@ -12140,9 +12206,14 @@ function vpRenderPartCardHtml(item, index = 0, isSearching = false) {
   const isObsOpen = vpOpenObsPartNames.has(item.name) || hasObs;
   const cardClass = isTroca ? 'selected-troca' : (isReparo ? 'selected-reparo' : '');
 
-  // O número é SEMPRE a posição prévia da peça em seu catálogo original (não muda ao selecionar)
-  const catalogIdx = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts.findIndex(p => (p.name || '').toLowerCase() === (item.name || '').toLowerCase()) : -1;
-  const orderNum = catalogIdx !== -1 ? (catalogIdx + 1) : (index + 1);
+  // O número é a posição numérica da peça (na sub-aba ou no catálogo original)
+  let orderNum;
+  if (item.tabOrderIdx !== undefined && item.tabOrderIdx !== null) {
+    orderNum = item.tabOrderIdx + 1;
+  } else {
+    const catalogIdx = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts.findIndex(p => (p.name || '').toLowerCase() === (item.name || '').toLowerCase()) : -1;
+    orderNum = catalogIdx !== -1 ? (catalogIdx + 1) : (index + 1);
+  }
 
   return `
     <div 
