@@ -549,7 +549,7 @@
               <span style="font-size: 1.4rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.53.8</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.54.0</div>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -565,7 +565,7 @@
             <div style="display: flex; align-items: center; gap: 6px; color: #475569;">
               <span>🌐</span>
               <span>Servidor (version.json):</span>
-              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v2.53.8</strong>
+              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v2.54.0</strong>
             </div>
             <button type="button" onclick="checkForSystemUpdates(true)" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-weight: 700; font-size: 0.72rem; padding: 3px 8px; border-radius: 5px; cursor: pointer;">
               🔍 Checar
@@ -577,7 +577,7 @@
           </button>
 
           <button id="downloadApkBtn" type="button" onclick="baixarApkAtualizado(event)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #059669; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(5,150,105,0.25);">
-            📥 Baixar APK Atualizado (v2.53.8)
+            📥 Baixar APK Atualizado (v2.54.0)
           </button>
 
           <button id="downloadOpenCamera2Btn" type="button" onclick="baixarOpenCamera2Apk(event)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(124,58,237,0.25);">
@@ -729,16 +729,10 @@
           <!-- ABAS DE TIPO DE VEÍCULO (ACIMA DO TÍTULO) -->
           <div class="vp-type-tabs-container" id="vpTypeTabsContainer">
             <button type="button" class="vp-type-tab-btn active" id="vpTypeBtn_carro" onclick="vpSetVehicleType('carro')">
-              <span>🚗</span> Carro
+              <span>🚗</span> Veículos
             </button>
             <button type="button" class="vp-type-tab-btn" id="vpTypeBtn_moto" onclick="vpSetVehicleType('moto')">
-              <span>🏍️</span> Moto
-            </button>
-            <button type="button" class="vp-type-tab-btn" id="vpTypeBtn_picape" onclick="vpSetVehicleType('picape')">
-              <span>🛻</span> Picape
-            </button>
-            <button type="button" class="vp-type-tab-btn" id="vpTypeBtn_caminhao" onclick="vpSetVehicleType('caminhao')">
-              <span>🚛</span> Caminhão
+              <span>🏍️</span> Motos
             </button>
           </div>
 
@@ -893,20 +887,14 @@
               🔁 Transferir para Categoria de Veículo:
             </label>
             <p style="font-size: 0.72rem; color: #64748b; margin: 0 0 8px 0;">
-              Selecione para qual aba esta peça deve pertencer (Carros, Motos, Picapes ou Caminhões):
+              Selecione para qual aba esta peça deve pertencer (Veículos ou Motos):
             </p>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;" id="vpEditCategoryGrid">
               <button type="button" class="vp-transfer-btn" onclick="vpSelectEditCategory('carro')" id="vpTransferBtn_carro">
-                🚗 Carros
+                🚗 Veículos
               </button>
               <button type="button" class="vp-transfer-btn" onclick="vpSelectEditCategory('moto')" id="vpTransferBtn_moto">
                 🏍️ Motos
-              </button>
-              <button type="button" class="vp-transfer-btn" onclick="vpSelectEditCategory('picape')" id="vpTransferBtn_picape">
-                🛻 Picapes
-              </button>
-              <button type="button" class="vp-transfer-btn" onclick="vpSelectEditCategory('caminhao')" id="vpTransferBtn_caminhao">
-                🚛 Caminhões
               </button>
             </div>
 
@@ -969,16 +957,10 @@
         </label>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px;">
           <button type="button" class="vp-transfer-btn" onclick="vpApplyQuickTransferTarget('carro')" id="vpQuickBtn_carro" style="padding: 10px; border-radius: 8px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #fff; cursor: pointer;">
-            🚗 Carros
+            🚗 Veículos
           </button>
           <button type="button" class="vp-transfer-btn" onclick="vpApplyQuickTransferTarget('moto')" id="vpQuickBtn_moto" style="padding: 10px; border-radius: 8px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #fff; cursor: pointer;">
             🏍️ Motos
-          </button>
-          <button type="button" class="vp-transfer-btn" onclick="vpApplyQuickTransferTarget('picape')" id="vpQuickBtn_picape" style="padding: 10px; border-radius: 8px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #fff; cursor: pointer;">
-            🛻 Picapes
-          </button>
-          <button type="button" class="vp-transfer-btn" onclick="vpApplyQuickTransferTarget('caminhao')" id="vpQuickBtn_caminhao" style="padding: 10px; border-radius: 8px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #fff; cursor: pointer;">
-            🚛 Caminhões
           </button>
         </div>
 
@@ -1143,22 +1125,14 @@
 
           <div style="margin-bottom: 10px;">
             <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Seção / Categoria do Veículo:</label>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
               <label class="vp-custom-category-label" id="vpCustomCatLabel_carro">
                 <input type="radio" name="vpCustomCategory" value="carro" id="vpCustomCat_carro" checked style="display: none;" onchange="vpUpdateCustomCatRadioUI()" />
-                <span>🚗 Carro</span>
+                <span>🚗 Veículos</span>
               </label>
               <label class="vp-custom-category-label" id="vpCustomCatLabel_moto">
                 <input type="radio" name="vpCustomCategory" value="moto" id="vpCustomCat_moto" style="display: none;" onchange="vpUpdateCustomCatRadioUI()" />
-                <span>🏍️ Moto</span>
-              </label>
-              <label class="vp-custom-category-label" id="vpCustomCatLabel_picape">
-                <input type="radio" name="vpCustomCategory" value="picape" id="vpCustomCat_picape" style="display: none;" onchange="vpUpdateCustomCatRadioUI()" />
-                <span>🛻 Picape</span>
-              </label>
-              <label class="vp-custom-category-label" id="vpCustomCatLabel_caminhao">
-                <input type="radio" name="vpCustomCategory" value="caminhao" id="vpCustomCat_caminhao" style="display: none;" onchange="vpUpdateCustomCatRadioUI()" />
-                <span>🚛 Caminhão</span>
+                <span>🏍️ Motos</span>
               </label>
             </div>
           </div>
@@ -1210,16 +1184,10 @@
             <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Tipo de Veículo:</label>
             <div class="vp-type-tabs-container" id="vpCustomTabTypeContainer" style="display: flex; gap: 4px; background: #f1f5f9; padding: 3px; border-radius: 8px;">
               <button type="button" class="vp-type-tab-btn active" id="vpCustomTabTypeBtn_carro" onclick="vpSetCustomTabVehicleType('carro')" style="flex: 1; padding: 6px 2px; font-size: 0.75rem; font-weight: 700; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-                <span>🚗</span> Carro
+                <span>🚗</span> Veículos
               </button>
               <button type="button" class="vp-type-tab-btn" id="vpCustomTabTypeBtn_moto" onclick="vpSetCustomTabVehicleType('moto')" style="flex: 1; padding: 6px 2px; font-size: 0.75rem; font-weight: 700; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-                <span>🏍️</span> Moto
-              </button>
-              <button type="button" class="vp-type-tab-btn" id="vpCustomTabTypeBtn_picape" onclick="vpSetCustomTabVehicleType('picape')" style="flex: 1; padding: 6px 2px; font-size: 0.75rem; font-weight: 700; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-                <span>🛻</span> Picape
-              </button>
-              <button type="button" class="vp-type-tab-btn" id="vpCustomTabTypeBtn_caminhao" onclick="vpSetCustomTabVehicleType('caminhao')" style="flex: 1; padding: 6px 2px; font-size: 0.75rem; font-weight: 700; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-                <span>🚛</span> Caminhão
+                <span>🏍️</span> Motos
               </button>
             </div>
             <input type="hidden" id="vpCustomTabVehicleTypeInput" value="carro" />

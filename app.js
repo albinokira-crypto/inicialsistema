@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.53.8';
+let CURRENT_APP_VERSION = 'v2.54.0';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -330,27 +330,43 @@ function getSafeStorage(key, defaultVal) {
       return merged;
     }
 
+    const getItemKey = (item) => {
+      if (!item) return null;
+      if (item.id !== undefined && item.id !== null) return String(item.id);
+      if (item.name) return 'name_' + String(item.name).toLowerCase().trim();
+      if (item.key) return 'key_' + String(item.key).toLowerCase().trim();
+      try {
+        return 'obj_' + JSON.stringify(item);
+      } catch(e) {
+        return null;
+      }
+    };
+
     const mergedMap = new Map();
     // 1. Insere itens nativos primeiro
     nativeData.forEach(item => {
-      if (item && item.id) mergedMap.set(String(item.id), item);
+      const k = getItemKey(item);
+      if (k) mergedMap.set(k, item);
     });
     // 2. Mescla itens do localStorage (mantém o que tiver dados mais completos ou timestamp mais recente)
     localData.forEach(item => {
-      if (!item || !item.id) return;
-      const strId = String(item.id);
-      if (!mergedMap.has(strId)) {
-        mergedMap.set(strId, item);
+      const k = getItemKey(item);
+      if (!k) return;
+      if (!mergedMap.has(k)) {
+        mergedMap.set(k, item);
       } else {
-        const existing = mergedMap.get(strId);
-        const existingTime = existing.updatedAtTime || 0;
-        const itemTime = item.updatedAtTime || 0;
+        const existing = mergedMap.get(k);
+        const existingTime = existing.updatedAtTime || existing.updatedAt || 0;
+        const itemTime = item.updatedAtTime || item.updatedAt || 0;
         if (itemTime >= existingTime) {
-          mergedMap.set(strId, { ...existing, ...item });
+          mergedMap.set(k, { ...existing, ...item });
         }
       }
     });
     const merged = Array.from(mergedMap.values());
+    if (merged.length === 0 && Array.isArray(defaultVal)) {
+      return [...defaultVal];
+    }
     // Sincroniza em ambas as pontas para ficarem 100% íntegras
     try {
       const jsonStr = JSON.stringify(merged);
@@ -7934,8 +7950,14 @@ const VP_BASE_ZONES_CAR = [
     icon: '🚗',
     parts: [
       'Capô do motor',
+      'Capô frontal / tampa basculante',
       'Para choque Diant.',
+      'Para choque Diant. central',
+      'Ponteira do para choque Diant. LD',
+      'Ponteira do para choque Diant. LE',
       'Grade Diant.',
+      'Grade frontal superior',
+      'Grade frontal inferior',
       'Grade inferior do para choque',
       'Alma do para choque Diant.',
       'Farol Diant. LD',
@@ -7944,153 +7966,191 @@ const VP_BASE_ZONES_CAR = [
       'Farol de milha LE',
       'Farol auxiliar / DRL LD',
       'Farol auxiliar / DRL LE',
+      'Lanterna de seta Diant. LD',
+      'Lanterna de seta Diant. LE',
       'Para lama Diant. LD',
       'Para lama Diant. LE',
+      'Extensão do para lama LD',
+      'Extensão do para lama LE',
       'Para barro Diant. LD',
       'Para barro Diant. LE',
       'Painel frontal / mini frente',
       'Suporte do radiador',
       'Defletor do radiador',
       'Radiador de água',
+      'Radiador Intercooler',
       'Condensador do ar condicionado',
       'Eletroventilador / ventoinha',
       'Guia do para choque Diant. LD',
       'Guia do para choque Diant. LE',
       'Emblema frontal da montadora',
       'Trava / fecho do capô',
+      'Trava do capô',
       'Vareta / amortecedor do capô',
-      'Manta acústica do capô',
-      'Protetor de cárter / peito de aço',
-      'Reservatório de água do limpador',
-      'Reservatório de expansão (radiador)',
-      'Buzina Diant.',
-      'Braço do limpador Diant. LD',
-      'Braço do limpador Diant. LE',
-      'Palheta do limpador Diant. LD',
-      'Palheta do limpador Diant. LE'
+      'Buzina / suporte da buzina',
+      'Reservatório do limpador do para brisa',
+      'Reservatório de expansão do radiador',
+      'Motor do limpador de para brisa',
+      'Braço e palheta do limpador Diant. LD',
+      'Braço e palheta do limpador Diant. LE',
+      'Quebra sol externo (tapa sol teto)'
     ]
   },
   {
     id: 'traseira',
     name: 'Tras.',
-    icon: '🚘',
+    icon: '🚗',
     parts: [
-      'Tampa do porta malas / Tras.',
+      'Tampa do porta malas',
       'Para choque Tras.',
-      'Saia / spoiler do para choque Tras.',
+      'Para choque Tras. homologado',
+      'Faixas refletivas de segurança',
       'Alma do para choque Tras.',
-      'Lanterna Tras. LD',
-      'Lanterna Tras. LE',
-      'Lanterna tampa Tras. LD',
-      'Lanterna tampa Tras. LE',
-      'Painel Tras.',
-      'Assoalho do porta malas',
       'Guia do para choque Tras. LD',
       'Guia do para choque Tras. LE',
-      'Refletor Tras. LD',
-      'Refletor Tras. LE',
-      'Emblema Tras. da montadora',
+      'Lanterna Tras. LD',
+      'Lanterna Tras. LE',
+      'Lanterna Tras. canto LD',
+      'Lanterna Tras. canto LE',
+      'Lanterna Tras. tampa LD',
+      'Lanterna Tras. tampa LE',
+      'Lanterna de neblina Tras.',
+      'Luz de freio elevada (Brake light)',
+      'Luz de placa Tras.',
+      'Para barro Tras. LD',
+      'Para barro Tras. LE',
+      'Para barro de borracha Tras. LD',
+      'Para barro de borracha Tras. LE',
+      'Painel Tras. (saia traseira)',
+      'Assoalho do porta malas',
+      'Bacia do estepe',
+      'Fechadura da tampa Tras.',
+      'Amortecedor / mola da tampa Tras.',
+      'Emblema traseiro / letreiro do modelo',
+      'Engate de reboque Tras.',
       'Sensor de estacionamento Tras.',
-      'Câmera de ré',
-      'Luz de placa Tras. LD',
-      'Luz de placa Tras. LE',
-      'Fechadura da tampa do porta malas',
-      'Amortecedor da tampa Tras. LD',
-      'Amortecedor da tampa Tras. LE',
-      'Borracha de vedação do porta malas',
-      'Forro da tampa do porta malas',
-      'Aerofólio / brake light Tras.',
-      'Palheta / braço do limpador Tras.'
+      'Câmera de ré traseira',
+      'Difusor / saia do para choque Tras.',
+      'Ponteira do escapamento'
     ]
   },
   {
     id: 'lateral_dir',
-    name: 'Lateral LD',
-    icon: '➡️',
+    name: 'Lat. Dir.',
+    icon: '🚗',
     parts: [
       'Porta Diant. LD',
       'Porta Tras. LD',
-      'Retrovisor LD completo',
+      'Lateral externa Tras. LD',
+      'Estribo lateral LD',
+      'Degraus / estribo de acesso LD',
+      'Moldura / alargador de para lama LD',
+      'Retrovisor externo LD',
+      'Retrovisor de rampa LD',
+      'Braço do retrovisor LD',
       'Capa do retrovisor LD',
+      'Pisca / seta do retrovisor LD',
       'Espelho do retrovisor LD',
-      'Pisca do retrovisor LD',
-      'Caixa de ar / soleira LD',
-      'Coluna A Diant. LD',
-      'Coluna B central LD',
-      'Coluna C Tras. LD',
-      'Lateral Tras. LD (painel)',
-      'Friso da porta Diant. LD',
-      'Friso da porta Tras. LD',
-      'Maçaneta Diant. LD',
-      'Maçaneta Tras. LD',
-      'Fechadura da porta Diant. LD',
-      'Fechadura da porta Tras. LD',
+      'Maçaneta externa Diant. LD',
+      'Maçaneta externa Tras. LD',
+      'Vidro da porta Diant. LD',
+      'Vidro da porta Tras. LD',
+      'Vidro vigia lateral Tras. LD',
+      'Canaleta / borracha da porta Diant. LD',
+      'Canaleta / borracha da porta Tras. LD',
+      'Pestana externa Diant. LD',
+      'Pestana externa Tras. LD',
       'Limitador da porta Diant. LD',
       'Limitador da porta Tras. LD',
-      'Borracha da porta Diant. LD',
-      'Borracha da porta Tras. LD',
-      'Pestana de vidro LD',
-      'Moldura do para lama LD',
-      'Tampa do bocal de combustível'
+      'Dobradiça da porta Diant. LD',
+      'Dobradiça da porta Tras. LD',
+      'Friso lateral da porta Diant. LD',
+      'Friso lateral da porta Tras. LD',
+      'Caixa de ar / soleira externa LD',
+      'Coluna A (dianteira) LD',
+      'Coluna B (central) LD',
+      'Coluna C (traseira) LD',
+      'Arco do teto LD',
+      'Spoiler / saia lateral LD',
+      'Protetor lateral ciclista LD',
+      'Portinhola do tanque de combustível'
     ]
   },
   {
     id: 'lateral_esq',
-    name: 'Lateral LE',
-    icon: '⬅️',
+    name: 'Lat. Esq.',
+    icon: '🚗',
     parts: [
       'Porta Diant. LE (motorista)',
       'Porta Tras. LE',
-      'Retrovisor LE completo',
+      'Lateral externa Tras. LE',
+      'Estribo lateral LE',
+      'Degraus / estribo de acesso LE',
+      'Moldura / alargador de para lama LE',
+      'Retrovisor externo LE',
+      'Braço do retrovisor LE',
       'Capa do retrovisor LE',
+      'Pisca / seta do retrovisor LE',
       'Espelho do retrovisor LE',
-      'Pisca do retrovisor LE',
-      'Caixa de ar / soleira LE',
-      'Coluna A Diant. LE',
-      'Coluna B central LE',
-      'Coluna C Tras. LE',
-      'Lateral Tras. LE (painel)',
-      'Friso da porta Diant. LE',
-      'Friso da porta Tras. LE',
-      'Maçaneta Diant. LE',
-      'Maçaneta Tras. LE',
-      'Fechadura da porta Diant. LE',
-      'Fechadura da porta Tras. LE',
+      'Maçaneta externa Diant. LE',
+      'Maçaneta externa Tras. LE',
+      'Vidro da porta Diant. LE',
+      'Vidro da porta Tras. LE',
+      'Vidro vigia lateral Tras. LE',
+      'Canaleta / borracha da porta Diant. LE',
+      'Canaleta / borracha da porta Tras. LE',
+      'Pestana externa Diant. LE',
+      'Pestana externa Tras. LE',
       'Limitador da porta Diant. LE',
       'Limitador da porta Tras. LE',
-      'Borracha da porta Diant. LE',
-      'Borracha da porta Tras. LE',
-      'Pestana de vidro LE',
-      'Moldura do para lama LE'
+      'Dobradiça da porta Diant. LE',
+      'Dobradiça da porta Tras. LE',
+      'Friso lateral da porta Diant. LE',
+      'Friso lateral da porta Tras. LE',
+      'Caixa de ar / soleira externa LE',
+      'Coluna A (dianteira) LE',
+      'Coluna B (central) LE',
+      'Coluna C (traseira) LE',
+      'Arco do teto LE',
+      'Spoiler / saia lateral LE',
+      'Protetor lateral ciclista LE'
     ]
   },
   {
     id: 'estrutura_teto',
     name: 'Teto & Estrutura',
-    icon: '🛡️',
+    icon: '🚗',
     parts: [
       'Painel do teto',
-      'Travessa superior do teto',
+      'Painel do teto da cabine',
+      'Painel Tras. da cabine / leito',
+      'Defletor de ar do teto (aerofólio)',
+      'Defletor de ar lateral da cabine LD',
+      'Defletor de ar lateral da cabine LE',
+      'Teto solar panorâmico',
+      'Vidro do teto solar',
+      'Cortina retrátil do teto solar',
+      'Rack de teto / longarina LD',
+      'Rack de teto / longarina LE',
+      'Travessa de teto',
+      'Friso do teto LD',
+      'Friso do teto LE',
+      'Antena do teto',
+      'Aerofólio / spoiler traseiro',
       'Longarina Diant. LD',
       'Longarina Diant. LE',
-      'Ponta de longarina Diant. LD',
-      'Ponta de longarina Diant. LE',
       'Longarina Tras. LD',
       'Longarina Tras. LE',
-      'Ponta de longarina Tras. LD',
-      'Ponta de longarina Tras. LE',
+      'Longarina do chassi LD',
+      'Longarina do chassi LE',
+      'Travessa do chassi',
+      'Torre do amortecedor Diant. LD',
+      'Torre do amortecedor Diant. LE',
+      'Painel corta fogo',
       'Caixa de roda Diant. LD',
       'Caixa de roda Diant. LE',
       'Caixa de roda Tras. LD',
-      'Caixa de roda Tras. LE',
-      'Painel corta fogo',
-      'Teto solar completo',
-      'Vidro do teto solar',
-      'Rack de teto / barras longitudinais LD',
-      'Rack de teto / barras longitudinais LE',
-      'Friso do teto LD',
-      'Friso do teto LE',
-      'Antena do teto'
+      'Caixa de roda Tras. LE'
     ]
   },
   {
@@ -8102,53 +8162,82 @@ const VP_BASE_ZONES_CAR = [
       'Amortecedor Diant. LE',
       'Amortecedor Tras. LD',
       'Amortecedor Tras. LE',
-      'Coxim do amortecedor Diant. LD',
-      'Coxim do amortecedor Diant. LE',
       'Mola helicoidal Diant. LD',
       'Mola helicoidal Diant. LE',
       'Mola helicoidal Tras. LD',
       'Mola helicoidal Tras. LE',
+      'Feixe de molas Diant. LD',
+      'Feixe de molas Diant. LE',
+      'Feixe de molas Tras. LD',
+      'Feixe de molas Tras. LE',
+      'Bolsa de ar da suspensão',
+      'Coxim do amortecedor Diant. LD',
+      'Coxim do amortecedor Diant. LE',
       'Bandeja de suspensão Diant. LD',
       'Bandeja de suspensão Diant. LE',
-      'Pivô de suspensão Diant. LD',
-      'Pivô de suspensão Diant. LE',
+      'Bandeja superior Diant. LD',
+      'Bandeja superior Diant. LE',
+      'Bandeja inferior Diant. LD',
+      'Bandeja inferior Diant. LE',
+      'Pivô da bandeja LD',
+      'Pivô da bandeja LE',
       'Bieleta da barra estabilizadora LD',
       'Bieleta da barra estabilizadora LE',
       'Barra estabilizadora Diant.',
-      'Quadro / agregado da suspensão',
-      'Eixo Tras. completo',
-      'Caixa de direção hidráulica/elétrica',
+      'Barra estabilizadora Tras.',
       'Terminal de direção LD',
       'Terminal de direção LE',
       'Barra axial de direção LD',
       'Barra axial de direção LE',
+      'Caixa de direção hidráulica / elétrica',
+      'Eixo Diant. direcional',
+      'Eixo Tras. de suspensão',
+      'Eixo de tração (diferencial)',
+      'Diferencial Tras. / cardan',
+      'Terceiro eixo / Truck',
       'Manga de eixo Diant. LD',
       'Manga de eixo Diant. LE',
-      'Semi eixo Diant. LD',
-      'Semi eixo Diant. LE',
-      'Cárter de óleo do motor',
-      'Coxim do motor LD',
-      'Coxim do motor LE',
-      'Coxim do câmbio',
-      'Cubo de roda com rolamento Diant. LD',
-      'Cubo de roda com rolamento Diant. LE',
+      'Cubo de roda Diant. LD com rolamento',
+      'Cubo de roda Diant. LE com rolamento',
+      'Cubo de roda Tras. LD com rolamento',
+      'Cubo de roda Tras. LE com rolamento',
+      'Semieixo homocinético Diant. LD',
+      'Semieixo homocinético Diant. LE',
       'Disco de freio Diant. LD',
       'Disco de freio Diant. LE',
-      'Pastilha de freio Diant.',
+      'Disco/Tambor de freio Tras. LD',
+      'Disco/Tambor de freio Tras. LE',
       'Pinça de freio Diant. LD',
       'Pinça de freio Diant. LE',
-      'Tambor / disco de freio Tras. LD',
-      'Tambor / disco de freio Tras. LE',
-      'Escapamento completo / silencioso',
+      'Pinça de freio Tras. LD',
+      'Pinça de freio Tras. LE',
+      'Protetor de cárter (peito de aço)',
       'Roda Diant. LD',
       'Roda Diant. LE',
       'Roda Tras. LD',
       'Roda Tras. LE',
+      'Roda tração externa LD',
+      'Roda tração interna LD',
+      'Roda tração externa LE',
+      'Roda tração interna LE',
+      'Roda truck externa LD',
+      'Roda truck interna LD',
+      'Roda truck externa LE',
+      'Roda truck interna LE',
       'Pneu Diant. LD',
       'Pneu Diant. LE',
       'Pneu Tras. LD',
       'Pneu Tras. LE',
-      'Pneu de estepe / sobressalente'
+      'Pneu tração externo LD',
+      'Pneu tração interno LD',
+      'Pneu tração externo LE',
+      'Pneu tração interno LE',
+      'Pneu truck externo LD',
+      'Pneu truck interno LD',
+      'Pneu truck externo LE',
+      'Pneu truck interno LE',
+      'Pneu de estepe',
+      'Roda de estepe'
     ]
   },
   {
@@ -8156,38 +8245,79 @@ const VP_BASE_ZONES_CAR = [
     name: 'Vidros & Interior',
     icon: '🪟',
     parts: [
-      'Vidro para brisa Diant.',
-      'Vidro Tras. / vigia',
-      'Vidro porta Diant. LD',
-      'Vidro porta Diant. LE',
-      'Vidro porta Tras. LD',
-      'Vidro porta Tras. LE',
-      'Vidro lateral vigia Tras. LD',
-      'Vidro lateral vigia Tras. LE',
+      'Vidro para brisa',
+      'Vidro traseiro (vigia)',
+      'Vidro Tras. da cabine / vigia',
+      'Borracha / guarnição do para brisa',
+      'Borracha / guarnição do vidro vigia',
+      'Painel de instrumentos / tabelier',
+      'Quadro de instrumentos digital/analógico',
+      'Central multimídia / rádio original',
+      'Volante de direção',
       'Bolsa do Airbag motorista (volante)',
       'Bolsa do Airbag passageiro (painel)',
+      'Airbag lateral / cortina LD',
+      'Airbag lateral / cortina LE',
       'Cinto de segurança Diant. LD',
       'Cinto de segurança Diant. LE',
       'Cinto de segurança Tras. LD',
       'Cinto de segurança Tras. LE',
-      'Cinto de segurança Tras. Central',
-      'Painel de instrumentos / tabelier',
-      'Forro de porta Diant. LD',
-      'Forro de porta Diant. LE',
-      'Forro de porta Tras. LD',
-      'Forro de porta Tras. LE',
-      'Forro do teto',
-      'Quebra sol LD',
-      'Quebra sol LE',
-      'Retrovisor interno',
-      'Central multimídia / rádio',
-      'Console central com apoio de braço',
-      'Banco dianteiro do motorista',
-      'Banco dianteiro do passageiro',
-      'Banco traseiro completo'
+      'Banco Diant. LD (passageiro)',
+      'Banco Diant. LE (motorista)',
+      'Banco traseiro completo',
+      'Encosto de cabeça',
+      'Console central com descansa braço',
+      'Alavanca de câmbio / manopla',
+      'Alavanca do freio de mão',
+      'Forro da porta Diant. LD',
+      'Forro da porta Diant. LE',
+      'Forro da porta Tras. LD',
+      'Forro da porta Tras. LE',
+      'Forro de teto interno',
+      'Quebra sol interno LD',
+      'Quebra sol interno LE',
+      'Retrovisor interno eletrocrômico/comum',
+      'Climatizador de teto'
+    ]
+  },
+  {
+    id: 'cacamba_implemento',
+    name: 'Caçamba & Implementos',
+    icon: '🚛',
+    parts: [
+      'Tampa da caçamba Tras.',
+      'Maçaneta da tampa Tras.',
+      'Protetor de caçamba plástico',
+      'Santo Antônio (barra de caçamba)',
+      'Capota marítima / rígida',
+      'Painel Tras. da cabine',
+      'Assoalho da caçamba',
+      'Estribo Tras. de acesso',
+      'Fechadura da tampa da caçamba',
+      'Limitador da tampa da caçamba LD',
+      'Limitador da tampa da caçamba LE',
+      'Lateral externa da caçamba LD',
+      'Lateral externa da caçamba LE',
+      'Assoalho da caçamba / baú / carroceria',
+      'Tampa Tras. da caçamba / carroceria',
+      'Portas Tras. do baú',
+      'Lateral do baú / furgão LD',
+      'Lateral do baú / furgão LE',
+      'Mesa da quinta roda',
+      'Quinta roda / engate cavalo mecânico',
+      'Tanque de combustível principal',
+      'Tanque de combustível suplementar',
+      'Tanque de Arla 32',
+      'Cinta / suporte do tanque de combustível',
+      'Caixa de bateria com tampa',
+      'Suporte do pneu de estepe',
+      'Caixa de ferramentas / mantimentos'
     ]
   }
 ];
+
+const VP_BASE_ZONES_PICAPE = VP_BASE_ZONES_CAR;
+const VP_BASE_ZONES_CAMINHAO = VP_BASE_ZONES_CAR;
 
 const VP_BASE_ZONES_MOTO = [
   {
@@ -8279,354 +8409,6 @@ const VP_BASE_ZONES_MOTO = [
   }
 ];
 
-const VP_BASE_ZONES_PICAPE = [
-  {
-    id: 'dianteira',
-    name: 'Diant.',
-    icon: '🚗',
-    parts: [
-      'Capô do motor',
-      'Para choque Diant.',
-      'Grade Diant.',
-      'Grade inferior do para choque',
-      'Alma do para choque Diant.',
-      'Farol Diant. LD',
-      'Farol Diant. LE',
-      'Farol de milha LD',
-      'Farol de milha LE',
-      'Farol auxiliar / DRL LD',
-      'Farol auxiliar / DRL LE',
-      'Para lama Diant. LD',
-      'Para lama Diant. LE',
-      'Para barro Diant. LD',
-      'Para barro Diant. LE',
-      'Painel frontal / mini frente',
-      'Suporte do radiador',
-      'Defletor do radiador',
-      'Radiador de água',
-      'Condensador do ar condicionado',
-      'Eletroventilador / ventoinha',
-      'Guia do para choque Diant. LD',
-      'Guia do para choque Diant. LE',
-      'Emblema frontal da montadora',
-      'Trava do capô',
-      'Protetor de cárter / peito de aço',
-      'Buzina Diant.'
-    ]
-  },
-  {
-    id: 'traseira_cacamba',
-    name: 'Tras. & Caçamba',
-    icon: '🛻',
-    parts: [
-      'Tampa da caçamba Tras.',
-      'Maçaneta da tampa Tras.',
-      'Para choque Tras.',
-      'Alma do para choque Tras.',
-      'Lanterna Tras. LD',
-      'Lanterna Tras. LE',
-      'Protetor de caçamba plástico',
-      'Santo Antônio (barra de caçamba)',
-      'Capota marítima / rígida',
-      'Painel Tras. da cabine',
-      'Assoalho da caçamba',
-      'Emblema Tras. da montadora',
-      'Estribo Tras. de acesso',
-      'Sensor de estacionamento Tras.',
-      'Câmera de ré',
-      'Luz de placa Tras. LD',
-      'Luz de placa Tras. LE',
-      'Fechadura da tampa da caçamba',
-      'Limitador da tampa da caçamba LD',
-      'Limitador da tampa da caçamba LE',
-      'Engate de reboque Tras.'
-    ]
-  },
-  {
-    id: 'lateral_dir',
-    name: 'Lateral LD',
-    icon: '➡️',
-    parts: [
-      'Porta Diant. LD',
-      'Porta Tras. LD',
-      'Retrovisor LD completo',
-      'Capa do retrovisor LD',
-      'Espelho do retrovisor LD',
-      'Estribo lateral LD',
-      'Caixa de ar / soleira LD',
-      'Coluna A Diant. LD',
-      'Coluna B central LD',
-      'Coluna C Tras. LD',
-      'Lateral externa da caçamba LD',
-      'Moldura / alargador de para lama LD',
-      'Friso da porta Diant. LD',
-      'Maçaneta Diant. LD',
-      'Maçaneta Tras. LD',
-      'Fechadura da porta Diant. LD',
-      'Fechadura da porta Tras. LD',
-      'Borracha da porta Diant. LD',
-      'Borracha da porta Tras. LD'
-    ]
-  },
-  {
-    id: 'lateral_esq',
-    name: 'Lateral LE',
-    icon: '⬅️',
-    parts: [
-      'Porta Diant. LE (motorista)',
-      'Porta Tras. LE',
-      'Retrovisor LE completo',
-      'Capa do retrovisor LE',
-      'Espelho do retrovisor LE',
-      'Estribo lateral LE',
-      'Caixa de ar / soleira LE',
-      'Coluna A Diant. LE',
-      'Coluna B central LE',
-      'Coluna C Tras. LE',
-      'Lateral externa da caçamba LE',
-      'Moldura / alargador de para lama LE',
-      'Friso da porta Diant. LE',
-      'Maçaneta Diant. LE',
-      'Maçaneta Tras. LE',
-      'Fechadura da porta Diant. LE',
-      'Fechadura da porta Tras. LE',
-      'Borracha da porta Diant. LE',
-      'Borracha da porta Tras. LE'
-    ]
-  },
-  {
-    id: 'estrutura_cabine',
-    name: 'Teto & Estrutura',
-    icon: '🛡️',
-    parts: [
-      'Painel do teto da cabine',
-      'Rack de teto / longarina LD',
-      'Rack de teto / longarina LE',
-      'Longarina Diant. do chassi LD',
-      'Longarina Diant. do chassi LE',
-      'Longarina Tras. do chassi LD',
-      'Longarina Tras. do chassi LE',
-      'Caixa de roda Diant. LD',
-      'Caixa de roda Diant. LE',
-      'Caixa de roda Tras. LD',
-      'Caixa de roda Tras. LE',
-      'Protetor de cárter / peito de aço',
-      'Engate de reboque Tras.'
-    ]
-  },
-  {
-    id: 'mecanica_susp',
-    name: 'Mecânica & Suspensão',
-    icon: '⚙️',
-    parts: [
-      'Amortecedor Diant. LD',
-      'Amortecedor Diant. LE',
-      'Amortecedor Tras. LD',
-      'Amortecedor Tras. LE',
-      'Coxim do amortecedor Diant. LD',
-      'Coxim do amortecedor Diant. LE',
-      'Feixe de molas Tras. LD',
-      'Feixe de molas Tras. LE',
-      'Bandeja superior Diant. LD',
-      'Bandeja superior Diant. LE',
-      'Bandeja inferior Diant. LD',
-      'Bandeja inferior Diant. LE',
-      'Bieleta da barra estabilizadora LD',
-      'Bieleta da barra estabilizadora LE',
-      'Terminal de direção LD',
-      'Terminal de direção LE',
-      'Diferencial Tras. / cardan',
-      'Caixa de direção hidráulica/elétrica',
-      'Manga de eixo Diant. LD',
-      'Manga de eixo Diant. LE',
-      'Disco de freio Diant. LD',
-      'Disco de freio Diant. LE',
-      'Pastilha de freio Diant.',
-      'Roda Diant. LD',
-      'Roda Diant. LE',
-      'Roda Tras. LD',
-      'Roda Tras. LE',
-      'Pneu Diant. LD',
-      'Pneu Diant. LE',
-      'Pneu Tras. LD',
-      'Pneu Tras. LE',
-      'Pneu de estepe'
-    ]
-  },
-  {
-    id: 'vidros_interior',
-    name: 'Vidros & Interior',
-    icon: '🪟',
-    parts: [
-      'Vidro para brisa Diant.',
-      'Vidro Tras. da cabine / vigia',
-      'Vidro porta Diant. LD',
-      'Vidro porta Diant. LE',
-      'Vidro porta Tras. LD',
-      'Vidro porta Tras. LE',
-      'Bolsa do Airbag motorista (volante)',
-      'Bolsa do Airbag passageiro (painel)',
-      'Cinto de segurança Diant. LD',
-      'Cinto de segurança Diant. LE',
-      'Painel de instrumentos / tabelier',
-      'Forro de porta Diant. LD',
-      'Forro de porta Diant. LE'
-    ]
-  }
-];
-
-const VP_BASE_ZONES_CAMINHAO = [
-  {
-    id: 'cabine_dianteira',
-    name: 'Cabine & Diant.',
-    icon: '🚛',
-    parts: [
-      'Capô frontal / tampa basculante',
-      'Grade frontal superior',
-      'Grade frontal inferior',
-      'Para choque Diant. central',
-      'Ponteira do para choque Diant. LD',
-      'Ponteira do para choque Diant. LE',
-      'Alma / travessa do para choque',
-      'Farol Diant. principal LD',
-      'Farol Diant. principal LE',
-      'Farol de milha / auxiliar LD',
-      'Farol de milha / auxiliar LE',
-      'Lanterna de seta Diant. LD',
-      'Lanterna de seta Diant. LE',
-      'Para brisa Diant.',
-      'Quebra sol externo (tapa sol teto)',
-      'Lanterna três marias / luz de teto',
-      'Defletor de ar do teto (aerofólio)',
-      'Defletor de ar lateral da cabine LD',
-      'Defletor de ar lateral da cabine LE',
-      'Emblema frontal da montadora'
-    ]
-  },
-  {
-    id: 'portas_cabine',
-    name: 'Portas & Cabine',
-    icon: '🚪',
-    parts: [
-      'Porta LD da cabine',
-      'Porta LE da cabine (motorista)',
-      'Retrovisor principal LD',
-      'Retrovisor principal LE',
-      'Retrovisor auxiliar / de rampa LD',
-      'Retrovisor frontal / de aproximação',
-      'Braço do retrovisor LD',
-      'Braço do retrovisor LE',
-      'Degraus / estribo de acesso LD',
-      'Degraus / estribo de acesso LE',
-      'Para lama Diant. da cabine LD',
-      'Para lama Diant. da cabine LE',
-      'Extensão do para lama LD',
-      'Extensão do para lama LE',
-      'Vidro da porta LD',
-      'Vidro da porta LE',
-      'Maçaneta da porta LD',
-      'Maçaneta da porta LE',
-      'Spoiler / saia lateral inferior LD',
-      'Spoiler / saia lateral inferior LE',
-      'Painel Tras. da cabine / leito'
-    ]
-  },
-  {
-    id: 'chassi_tanques',
-    name: 'Chassi & Tanques',
-    icon: '🛡️',
-    parts: [
-      'Longarina do chassi LD',
-      'Longarina do chassi LE',
-      'Travessa do chassi',
-      'Tanque de combustível principal',
-      'Tanque de combustível suplementar',
-      'Tanque de Arla 32',
-      'Cinta / suporte do tanque de combustível',
-      'Protetor lateral ciclista LD',
-      'Protetor lateral ciclista LE',
-      'Caixa de bateria com tampa',
-      'Suporte do pneu de estepe',
-      'Pneu de estepe',
-      'Caixa de ferramentas / mantimentos'
-    ]
-  },
-  {
-    id: 'mecanica_susp_caminhao',
-    name: 'Mecânica & Suspensão',
-    icon: '⚙️',
-    parts: [
-      'Feixe de molas Diant. LD',
-      'Feixe de molas Diant. LE',
-      'Feixe de molas Tras. LD',
-      'Feixe de molas Tras. LE',
-      'Bolsa de ar da suspensão',
-      'Amortecedor Diant. LD',
-      'Amortecedor Diant. LE',
-      'Amortecedor Tras. LD',
-      'Amortecedor Tras. LE',
-      'Barra estabilizadora Diant.',
-      'Barra estabilizadora Tras.',
-      'Eixo Diant. direcional',
-      'Eixo de tração (diferencial)',
-      'Terceiro eixo / Truck',
-      'Caixa de direção hidráulica',
-      'Radiador de água',
-      'Radiador Intercooler',
-      'Cárter de óleo do motor'
-    ]
-  },
-  {
-    id: 'traseira_implemento',
-    name: 'Tras. & Implemento',
-    icon: '📦',
-    parts: [
-      'Para choque Tras. homologado',
-      'Faixas refletivas de segurança',
-      'Lanterna Tras. LD completa',
-      'Lanterna Tras. LE completa',
-      'Suporte da placa Tras. com luz',
-      'Para barro de borracha Tras. LD',
-      'Para barro de borracha Tras. LE',
-      'Para lama Tras. envolvente LD',
-      'Para lama Tras. envolvente LE',
-      'Mesa da quinta roda',
-      'Quinta roda / engate cavalo mecânico',
-      'Assoalho da caçamba / baú / carroceria',
-      'Tampa Tras. da caçamba / carroceria',
-      'Portas Tras. do baú',
-      'Lateral do baú / furgão LD',
-      'Lateral do baú / furgão LE'
-    ]
-  },
-  {
-    id: 'rodas_pneus_caminhao',
-    name: 'Rodas & Pneus',
-    icon: '🛞',
-    parts: [
-      'Roda Diant. LD',
-      'Roda Diant. LE',
-      'Roda tração externa LD',
-      'Roda tração interna LD',
-      'Roda tração externa LE',
-      'Roda tração interna LE',
-      'Roda truck externa LD',
-      'Roda truck interna LD',
-      'Roda truck externa LE',
-      'Roda truck interna LE',
-      'Pneu Diant. LD',
-      'Pneu Diant. LE',
-      'Pneu tração externo LD',
-      'Pneu tração interno LD',
-      'Pneu tração externo LE',
-      'Pneu tração interno LE',
-      'Pneu truck externo LD',
-      'Pneu truck interno LD',
-      'Pneu truck externo LE',
-      'Pneu truck interno LE'
-    ]
-  }
-];
 
 let vpActiveZones = VP_BASE_ZONES_CAR;
 let vpActiveZoneId = 'dianteira';
@@ -8673,18 +8455,7 @@ function vpInferPartVehicleType(name) {
   const isMotoStrict = /\b(GUIDAO|GUIDÃO|MESA SUPERIOR|MESA INFERIOR|BENGALA|BENGALAS|GARFO DIANT|TUBO DO GARFO|MANETE|MANETES|MANOPLA|MANOPLAS|CARENAGEM DO FAROL|BOLHA|RABETA|MONOSHOCK|AMORTECEDOR CENTRAL|CAVALETE CENTRAL|CAVALETE LATERAL|DESCANSO LATERAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA|ALÇA DO GARUPA|ALCA DO GARUPA|PEDALEIRA|PEDALEIRAS|PEDAL DE CAMBIO|PEDAL DE CÂMBIO|CORRENTE DE TRANSMISSAO|RELAÇÃO|RELACAO|TAMPA DO ESTATOR|TAMPA DA EMBREAGEM|PROTETOR DE CARENAGEM|BANCO DA MOTO|TAMPA DO MOTOR LATERAL|GUIA DE CORRENTE|CAPA DE CORRENTE)\b/i.test(upper);
   if (isMotoStrict) return 'moto';
 
-  // 2. PICAPE EXCLUSIVO
-  const isPicapeStrict = /\b(CACAMBA|CAÇAMBA|TAMPA DA CACAMBA|TAMPA DA CAÇAMBA|PROTETOR DE CACAMBA|PROTETOR DE CAÇAMBA|SANTO ANTONIO|SANTO ANTÔNIO|CAPOTA MARITIMA|CAPOTA MARÍTIMA|ASSOALHO DA CACAMBA|ASSOALHO DA CAÇAMBA)\b/i.test(upper);
-  if (isPicapeStrict) return 'picape';
-
-  // 3. CAMINHÃO EXCLUSIVO
-  const isCaminhaoStrict = /\b(CABINE DIANTEIRA|CLIMATIZADOR DE TETO|QUINTA RODA|PORTAS TRAS DO BAU|PORTAS TRAS DO BAÚ|CUICA DE FREIO|CUÍCA DE FREIO|SUSPENSOR PNEUMATICO|FAIXAS REFLETIVAS|SEMI REBOQUE|SEMIRREBOQUE|CARRETA|CHASSI PESADO)\b/i.test(upper);
-  if (isCaminhaoStrict) return 'caminhao';
-
-  // 4. CARRO EXCLUSIVO (NUNCA EXISTE EM MOTOS: portas, capô, parachoque, porta-malas, parabarro, parabrisa, bandeja, etc.)
-  const isCarStrict = /\b(PORTA DIANT|PORTA TRAS|PORTAS|FORRO DE PORTA|FORRO DA PORTA|FECHADURA DA PORTA|FECHADURA DE PORTA|MACANETA DA PORTA|MAÇANETA DA PORTA|VIDRO DA PORTA|LIMITADOR DE PORTA|BORRACHA DA PORTA|FRISO DA PORTA|CAPO DO MOTOR|CAPÔ DO MOTOR|CAPO|CAPÔ|TRAVA DO CAPO|TRAVA DO CAPÔ|PORTA-MALAS|PORTA MALAS|TAMPA DO PORTA MALAS|FECHADURA DA TAMPA DO PORTA MALAS|AMORTECEDOR DA TAMPA TRAS|ASSOALHO DO PORTA MALAS|PARA CHOQUE|PARACHOQUE|ALMA DO PARA|ALMA DO PARACHOQUE|GRADE DIANT|GRADE DO RADIADOR|GRADE INFERIOR|PARA BARRO|PARABARRO|PARA-BRISA|PARABRISA|VIDRO PARA BRISA|VIDRO TRAS|VIDRO VIGIA|TETO SOLAR|FORRO DO TETO|AIRBAG MOTORISTA|AIRBAG PASSAGEIRO|AIRBAG|BANDEJA DE SUSPENSAO|BANDEJA|PIVO DA BANDEJA|PIVÔ DA BANDEJA|PIVO|PIVÔ|BIELETA|BARRA AXIAL|TERMINAL DE DIRECAO|TERMINAL DE DIREÇÃO|BARRA ESTABILIZADORA|COXIM DO AMORTECEDOR|BATENTE DO AMORTECEDOR|HOMOCINETICA|SEMIEIXO|PROTETOR DE CARTER|PROTETOR DE CÁRTER|PEITO DE ACO|PEITO DE AÇO|SENSOR DE ESTACIONAMENTO|CAMERA DE RE|CÂMERA DE RÉ|CAIXA DE AR|SOLEIRA|COLUNA A|COLUNA B|COLUNA C)\b/i.test(upper);
-  if (isCarStrict) return 'carro';
-
+  // 2. TODOS OS DEMAIS PERTENCEM A "VEÍCULOS" (Carros, Picapes, Caminhões, Vans, etc.)
   return 'carro';
 }
 window.vpInferPartVehicleType = vpInferPartVehicleType;
@@ -8856,6 +8627,30 @@ function vpLoadState() {
       // Salva redundância imediatamente
       setSafeStorage('mobile_custom_parts_tabs_backup', vpCustomTabs);
       setSafeStorage('mobile_custom_parts_tabs_emergency', vpCustomTabs);
+    }
+
+    // 1b. Migração automática de tipos legados ('picape', 'caminhao') para 'carro' (Veículos)
+    if (vpConfigGuard && vpConfigGuard.configuredParts) {
+      Object.keys(vpConfigGuard.configuredParts).forEach(k => {
+        const ent = vpConfigGuard.configuredParts[k];
+        if (ent && (ent.vehicleType === 'picape' || ent.vehicleType === 'caminhao')) {
+          ent.vehicleType = 'carro';
+        }
+      });
+    }
+    if (vpPartVehicleTypeMap && typeof vpPartVehicleTypeMap === 'object') {
+      Object.keys(vpPartVehicleTypeMap).forEach(k => {
+        if (vpPartVehicleTypeMap[k] === 'picape' || vpPartVehicleTypeMap[k] === 'caminhao') {
+          vpPartVehicleTypeMap[k] = 'carro';
+        }
+      });
+    }
+    if (Array.isArray(vpCustomPartsList)) {
+      vpCustomPartsList.forEach(p => {
+        if (p && (p.vehicleType === 'picape' || p.vehicleType === 'caminhao')) {
+          p.vehicleType = 'carro';
+        }
+      });
     }
 
     // 2. Executa varredura e sanitização imediata das peças para garantir cada peça na sua aba
@@ -9333,7 +9128,8 @@ function vpIsPartDeleted(rawName, effectiveName) {
 }
 
 window.vpSetVehicleType = function(type, forceRender = true, keepAllZonesMode = false) {
-  vpDetectedVehicleType = type;
+  const finalType = (type === 'moto') ? 'moto' : 'carro';
+  vpDetectedVehicleType = finalType;
 
   const btnCarro = document.getElementById('vpTypeBtn_carro');
   const btnMoto = document.getElementById('vpTypeBtn_moto');
@@ -9344,33 +9140,22 @@ window.vpSetVehicleType = function(type, forceRender = true, keepAllZonesMode = 
     if (btn) btn.classList.remove('active');
   });
 
-  const activeBtn = document.getElementById(`vpTypeBtn_${type}`);
+  const activeBtn = (finalType === 'moto') ? btnMoto : btnCarro;
   if (activeBtn) activeBtn.classList.add('active');
 
   const headerIcon = document.getElementById('vpVehicleHeaderIcon');
   const typeBadge = document.getElementById('vpVehicleBadge');
 
-  if (type === 'moto') {
+  if (finalType === 'moto') {
     vpActiveZones = VP_BASE_ZONES_MOTO;
     vpActiveZoneId = 'dianteira_moto';
     if (headerIcon) headerIcon.textContent = '🏍️';
-    if (typeBadge) typeBadge.textContent = '🏍️ Motocicleta';
-  } else if (type === 'picape') {
-    vpActiveZones = VP_BASE_ZONES_PICAPE;
-    vpActiveZoneId = 'dianteira';
-    if (headerIcon) headerIcon.textContent = '🛻';
-    if (typeBadge) typeBadge.textContent = '🛻 Picape / Caminhonete';
-  } else if (type === 'caminhao') {
-    vpActiveZones = VP_BASE_ZONES_CAMINHAO;
-    vpActiveZoneId = 'cabine_dianteira';
-    if (headerIcon) headerIcon.textContent = '🚛';
-    if (typeBadge) typeBadge.textContent = '🚛 Caminhão / Pesado';
+    if (typeBadge) typeBadge.textContent = '🏍️ Motos';
   } else {
-    vpDetectedVehicleType = 'carro';
     vpActiveZones = VP_BASE_ZONES_CAR;
     vpActiveZoneId = 'dianteira';
     if (headerIcon) headerIcon.textContent = '🚗';
-    if (typeBadge) typeBadge.textContent = '🚗 Automóvel / SUV';
+    if (typeBadge) typeBadge.textContent = '🚗 Veículos';
   }
 
   // RECONSTRÓI IMEDIATAMENTE O CATÁLOGO DE PEÇAS ESPECÍFICO DO TIPO DE VEÍCULO!
@@ -9431,33 +9216,7 @@ function vpDetectVehicleTypeFromText(rawText) {
     return fullText.includes(clean);
   };
 
-  // 1. PICAPES E UTILITÁRIOS (Verificação prioritária)
-  const picapeStrictTokens = [
-    'HILUX', 'S10', 'S 10', 'MONTANA', 'SILVERADO', 'D20', 'D 20', 'D10', 'C10', 'C20', 'COLORADO',
-    'RANGER', 'MAVERICK', 'F 150', 'F150', 'F 250', 'F250', 'COURIER',
-    'STRADA', 'TORO', 'TITANO', 'FIORINO',
-    'SAVEIRO', 'AMAROK', 'FRONTIER', 'L200', 'TRITON',
-    'RAMPAGE', 'RAM 1500', 'RAM 2500', 'RAM 3500', 'OROCH', 'DUSTER OROCH',
-    'LANDTREK', 'HOGGAR', 'JAC HUNTER', 'BYD SHARK', 'GWM POER',
-    'CABINE DUPLA', 'CABINE SIMPLES', 'CABINE ESTENDIDA', 'CD 4X4', 'CS 4X4', 'PICKUP', 'PICK UP', 'PICAPE'
-  ];
-  if (picapeStrictTokens.some(t => hasWord(t))) return 'picape';
-
-  // 2. CAMINHÕES E PESADOS
-  const caminhaoStrictTokens = [
-    'CAMINHAO', 'CAVALO MECANICO',
-    'BITREM', 'RODOTREM', 'CARRETA', 'SEMI REBOQUE', 'SEMIRREBOQUE', 'BASCULANTE',
-    'BITRUCK', 'TRUCK', 'CHASSI', 'CACAMBA', 'GRANELEIRO', 'SIDER',
-    'SCANIA', 'R440', 'R450', 'R480', 'R500', 'R540', 'P310', 'P360', 'P250', 'P270', 'P280', 'G440', '113H', '124G',
-    'VOLVO FH', 'VOLVO FM', 'VOLVO FMX', 'VOLVO VM', 'FH 460', 'FH 500', 'FH 540', 'FH 420', 'FH 440', 'FH 520', 'FM 370', 'FM 380', 'VM 260', 'VM 270', 'VM 330', 'VOLVO',
-    'ACTROS', 'ATEGO', 'ACCELO', 'AXOR', 'ATRON', 'AROCS', 'MB 1620', 'MB 1938', 'MB 1113', 'MB 710', '1620', '1938', '1113', '710', '2544', '2546', '2646', '2651', '2548', '2426', '2428', '1719', '815', '1016',
-    'CONSTELLATION', 'DELIVERY', 'METEOR', 'WORKER', '24 250', '24 280', '25 440', '26 460', '19 320', '19 360', '17 190', '15 180', '13 180', '11 180', '9 170', '6 160',
-    'STRALIS', 'HI WAY', 'HI ROAD', 'TECTOR', 'S WAY', 'VERTIS', 'EUROCARGO', 'DAILY 70C', 'DAILY 35S', 'IVECO',
-    'DAF XF', 'DAF CF', 'DAF LF', 'XF105', 'XF 105', 'XF 480', 'XF 530', 'CF 85', 'DAF',
-    'FORD CARGO', 'CARGO 815', 'CARGO 2428', 'CARGO 2422', 'CARGO 2429', 'CARGO 1722', 'CARGO 1719', 'CARGO 1932', 'F 4000', 'F4000',
-    'MAN TGX', 'TGX 28 440'
-  ];
-  if (caminhaoStrictTokens.some(t => hasWord(t))) return 'caminhao';
+  // 1. MOTOCICLETAS (Verificação de tokens e marcas)
 
   // 3. MOTOCICLETAS (Com termos precisos)
   const motoStrictTokens = [
@@ -9776,7 +9535,9 @@ window.vpApplyQuickTransfer = function() {
 // Filtro rigoroso por categoria de veículo para garantir que a busca e listagem mostrem apenas peças compatíveis
 function vpPartMatchesVehicleType(partObjOrName, currentVehicleType) {
   const raw = typeof partObjOrName === 'string' ? partObjOrName : (partObjOrName?.name || partObjOrName?.rawName || '');
-  const vType = currentVehicleType || vpDetectedVehicleType || 'carro';
+  let vType = currentVehicleType || vpDetectedVehicleType || 'carro';
+  if (vType === 'picape' || vType === 'caminhao') vType = 'carro';
+
   const clean = vpCleanPartDashes(raw);
   const eff = vpGetEffectivePartName(raw);
   const lower = eff.toLowerCase();
@@ -9786,52 +9547,36 @@ function vpPartMatchesVehicleType(partObjOrName, currentVehicleType) {
     if (vpConfigGuard.multiCategories[lower].includes(vType)) return true;
   }
   if (Array.isArray(vpCustomPartsList)) {
-    const hasCopied = vpCustomPartsList.some(p => p && p.vehicleType === vType && (p.name || '').toLowerCase() === lower);
+    const hasCopied = vpCustomPartsList.some(p => p && (p.vehicleType === vType || (vType === 'carro' && (p.vehicleType === 'picape' || p.vehicleType === 'caminhao'))) && (p.name || '').toLowerCase() === lower);
     if (hasCopied) return true;
   }
 
   // Prioridade 1: Configuração travada pelo usuário (vpConfigGuard)
-  if (vpConfigGuard?.configuredParts?.[lower]?.vehicleType) {
-    return vpConfigGuard.configuredParts[lower].vehicleType === vType;
-  }
-  if (vpConfigGuard?.configuredParts?.[clean.toLowerCase()]?.vehicleType) {
-    return vpConfigGuard.configuredParts[clean.toLowerCase()].vehicleType === vType;
+  let lockedType = vpConfigGuard?.configuredParts?.[lower]?.vehicleType || vpConfigGuard?.configuredParts?.[clean.toLowerCase()]?.vehicleType;
+  if (lockedType) {
+    if (lockedType === 'picape' || lockedType === 'caminhao') lockedType = 'carro';
+    return lockedType === vType;
   }
 
   // Prioridade 2: Atribuição manual/explícita feita pelo usuário
-  const explicitType = vpGetPartVehicleType(raw) || (typeof partObjOrName === 'object' && partObjOrName?.vehicleType);
+  let explicitType = vpGetPartVehicleType(raw) || (typeof partObjOrName === 'object' && partObjOrName?.vehicleType);
   if (explicitType && explicitType !== 'all') {
+    if (explicitType === 'picape' || explicitType === 'caminhao') explicitType = 'carro';
     return explicitType === vType;
   }
 
   const name = (raw || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   if (vType === 'moto') {
-    // Moto NUNCA tem portas, capô de carro, porta-malas, para-choques de carro, caçamba, airbag de volante, ar condicionado, etc.
     const isCarOnly = /\b(PORTA DIANT|PORTA TRAS|PORTAS|CAPO DO MOTOR|CAPO|PORTA MALAS|PORTA-MALAS|PARA CHOQUE|PARACHOQUE|ALMA DO PARA|ALMA DO PARA-CHOQUE|GRADE DIANT|GRADE INFERIOR|CACAMBA|CAÇAMBA|PROTETOR DE CACAMBA|SANTO ANTONIO|CAPOTA MARITIMA|QUINTA RODA|TETO SOLAR|FORRO DO TETO|AIRBAG MOTORISTA|AIRBAG PASSAGEIRO|VIDRO PARA BRISA|VIDRO TRAS|VIDRO VIGIA|ESTRIBO LATERAL|CABINE|BANDEJA|PARABARRO|SOLEIRA)\b/i.test(name);
     if (isCarOnly) return false;
     return true;
   }
 
   if (vType === 'carro') {
-    // Carro não tem guidão, bengala, manete, rabeta, monoshock, quinta roda de caminhão, etc.
+    // Veículos (Carros, Picapes, Caminhões) apenas não tem peças exclusivas de Moto
     const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|MANETE|RABETA|MONOSHOCK|CAVALETE CENTRAL|CAVALETE LATERAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA|PEDALEIRA DIANT|PEDALEIRA TRAS|TAMPA DO MOTOR LATERAL|BOLHA DA MOTO|CARENAGEM DO FAROL)\b/i.test(name);
-    const isTruckOnly = /\b(QUINTA RODA|CLIMATIZADOR DE TETO|PORTAS TRAS DO BAU|SUSPENSOR PNEUMATICO|CUICA DE FREIO)\b/i.test(name);
-    if (isMotoOnly || isTruckOnly) return false;
-    return true;
-  }
-
-  if (vType === 'caminhao') {
-    // Caminhão não tem peças exclusivas de moto
-    const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|MANETE|RABETA|MONOSHOCK|CAVALETE CENTRAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA)\b/i.test(name);
     if (isMotoOnly) return false;
-    return true;
-  }
-
-  if (vType === 'picape') {
-    const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|MANETE|RABETA|MONOSHOCK|CAVALETE CENTRAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA)\b/i.test(name);
-    const isTruckOnly = /\b(QUINTA RODA|PORTAS TRAS DO BAU|SUSPENSOR PNEUMATICO)\b/i.test(name);
-    if (isMotoOnly || isTruckOnly) return false;
     return true;
   }
 
@@ -10775,7 +10520,7 @@ function vpLoadAndSortVehicleParts() {
 
   const scoreMap = vpPrecomputeUsageScores(allParts);
 
-  const vType = vpDetectedVehicleType || 'carro';
+  const vType = (vpDetectedVehicleType === 'moto') ? 'moto' : 'carro';
   const orderKey = 'vp_custom_order_' + vType;
   let savedOrder = vpConfigGuard?.customOrders?.[vType] || getSafeStorage(orderKey) || getSafeStorage(orderKey + '_backup') || getSafeStorage(orderKey + '_permanent') || [];
   if (typeof savedOrder === 'string') {
@@ -10788,37 +10533,60 @@ function vpLoadAndSortVehicleParts() {
 
   if (Array.isArray(savedOrder) && savedOrder.length > 0) {
     const orderMap = new Map();
-    savedOrder.forEach((name, idx) => orderMap.set((name || '').toLowerCase(), idx));
+    const orderMapCompact = new Map();
+    savedOrder.forEach((name, idx) => {
+      if (!name) return;
+      const lower = String(name).toLowerCase().trim();
+      orderMap.set(lower, idx);
+      const clean = (typeof vpCleanPartDashes === 'function' ? vpCleanPartDashes(name) : name).toLowerCase().trim();
+      orderMap.set(clean, idx);
+      const eff = (typeof vpGetEffectivePartName === 'function' ? vpGetEffectivePartName(name) : name).toLowerCase().trim();
+      orderMap.set(eff, idx);
+      orderMapCompact.set(clean.replace(/[\s\-_]/g, ''), idx);
+    });
+
+    const getOrderIdx = (name) => {
+      if (!name) return 999999;
+      const lower = String(name).toLowerCase().trim();
+      if (orderMap.has(lower)) return orderMap.get(lower);
+      const clean = (typeof vpCleanPartDashes === 'function' ? vpCleanPartDashes(name) : name).toLowerCase().trim();
+      if (orderMap.has(clean)) return orderMap.get(clean);
+      const eff = (typeof vpGetEffectivePartName === 'function' ? vpGetEffectivePartName(name) : name).toLowerCase().trim();
+      if (orderMap.has(eff)) return orderMap.get(eff);
+      const compact = clean.replace(/[\s\-_]/g, '');
+      if (orderMapCompact.has(compact)) return orderMapCompact.get(compact);
+      return 999999;
+    };
 
     allParts.sort((a, b) => {
-      const idxA = orderMap.has(a.name.toLowerCase()) ? orderMap.get(a.name.toLowerCase()) : 999999;
-      const idxB = orderMap.has(b.name.toLowerCase()) ? orderMap.get(b.name.toLowerCase()) : 999999;
+      const idxA = getOrderIdx(a.name);
+      const idxB = getOrderIdx(b.name);
       if (idxA !== idxB) return idxA - idxB;
 
       const scoreA = scoreMap.get(a.name) || 0;
       const scoreB = scoreMap.get(b.name) || 0;
       if (scoreB !== scoreA) return scoreB - scoreA;
 
-      return a.name.localeCompare(b.name, 'pt-BR');
+      return (a.name || '').localeCompare(b.name || '', 'pt-BR');
     });
   } else {
     allParts.sort((a, b) => {
       const scoreA = scoreMap.get(a.name) || 0;
       const scoreB = scoreMap.get(b.name) || 0;
       if (scoreB !== scoreA) return scoreB - scoreA;
-      return a.name.localeCompare(b.name, 'pt-BR');
+      return (a.name || '').localeCompare(b.name || '', 'pt-BR');
     });
-  }
 
-  // GRAVAÇÃO BLINDADA: Garante que a ordem final permaneça salva em memória persistente e no vpConfigGuard
-  const finalOrderedNames = allParts.map(p => p.name);
-  if (finalOrderedNames.length > 0) {
-    try { localStorage.setItem(orderKey, JSON.stringify(finalOrderedNames)); } catch(e) {}
-    setSafeStorage(orderKey, finalOrderedNames);
-    setSafeStorage(orderKey + '_backup', finalOrderedNames);
-    setSafeStorage(orderKey + '_permanent', finalOrderedNames);
-    if (!vpConfigGuard.customOrders) vpConfigGuard.customOrders = {};
-    vpConfigGuard.customOrders[vType] = finalOrderedNames;
+    // Se NÃO havia ordem customizada salva ainda, grava a inicial
+    const finalOrderedNames = allParts.map(p => p.name);
+    if (finalOrderedNames.length > 0) {
+      try { localStorage.setItem(orderKey, JSON.stringify(finalOrderedNames)); } catch(e) {}
+      setSafeStorage(orderKey, finalOrderedNames);
+      setSafeStorage(orderKey + '_backup', finalOrderedNames);
+      setSafeStorage(orderKey + '_permanent', finalOrderedNames);
+      if (!vpConfigGuard.customOrders) vpConfigGuard.customOrders = {};
+      vpConfigGuard.customOrders[vType] = finalOrderedNames;
+    }
   }
 
   vpAllVehicleParts = allParts;
@@ -11118,8 +10886,6 @@ function vpRenderTabsNavBar() {
 
   const vTypeLabels = {
     moto: { title: 'Peças da moto', icon: '🏍️' },
-    caminhao: { title: 'Peças do caminhão', icon: '🚛' },
-    picape: { title: 'Peças da picape', icon: '🛻' },
     carro: { title: 'Peças do veículo', icon: '🚗' }
   };
   const mainTypeInfo = vTypeLabels[vpDetectedVehicleType] || vTypeLabels.carro;
@@ -11140,17 +10906,14 @@ function vpRenderTabsNavBar() {
   if (Array.isArray(vpCustomTabs) && vpCustomTabs.length > 0) {
     const currentVType = vpDetectedVehicleType || 'carro';
     vpCustomTabs.forEach(tab => {
-      // Infere vehicleType caso não tenha sido salvo anteriormente
-      if (!tab.vehicleType) {
-        const nameLower = (tab.name || '').toLowerCase();
-        if (nameLower.includes('moto')) tab.vehicleType = 'moto';
-        else if (nameLower.includes('picape')) tab.vehicleType = 'picape';
-        else if (nameLower.includes('caminhao') || nameLower.includes('caminhão')) tab.vehicleType = 'caminhao';
-        else tab.vehicleType = 'carro';
-      }
+      // Mapeia tipos legados ('picape', 'caminhao') para 'carro' (Veículos)
+      let tabType = tab.vehicleType || 'carro';
+      if (tabType === 'picape' || tabType === 'caminhao') tabType = 'carro';
+      const nameLower = (tab.name || '').toLowerCase();
+      if (nameLower.includes('scooter') || nameLower.includes('moto')) tabType = 'moto';
 
-      // Deixa aparecendo a aba personalizada se for do tipo atual, 'all' ou sem restrição
-      if (tab.vehicleType && tab.vehicleType !== 'all' && tab.vehicleType !== currentVType) {
+      // Deixa aparecendo a aba personalizada se for do tipo atual, 'all' ou compatível
+      if (tabType !== 'all' && tabType !== currentVType) {
         return;
       }
 
@@ -11194,7 +10957,7 @@ window.vpSetCustomTabVehicleType = function(type) {
   const hiddenInput = document.getElementById('vpCustomTabVehicleTypeInput');
   if (hiddenInput) hiddenInput.value = vType;
 
-  ['carro', 'moto', 'picape', 'caminhao'].forEach(t => {
+  ['carro', 'moto'].forEach(t => {
     const btn = document.getElementById(`vpCustomTabTypeBtn_${t}`);
     if (btn) {
       if (t === vType) {
@@ -11631,10 +11394,8 @@ window.vpOpenCopyPartsModal = function(targetCustomTabId = null) {
   if (sourceSelect) {
     let sourceOptions = `
       <optgroup label="Categorias Principais (Catálogo Geral)">
-        <option value="cat_carro">🚗 Carros (Catálogo Geral)</option>
+        <option value="cat_carro">🚗 Veículos (Catálogo Geral)</option>
         <option value="cat_moto">🏍️ Motos (Catálogo Geral)</option>
-        <option value="cat_picape">🛻 Picapes (Catálogo Geral)</option>
-        <option value="cat_caminhao">🚛 Caminhões (Catálogo Geral)</option>
       </optgroup>
     `;
 
@@ -11989,6 +11750,13 @@ function vpRenderParts(filterQuery = '') {
         }
       });
 
+      // ORDENAÇÃO CRESCENTE (ALFABÉTICA A-Z) OBRIGATÓRIA NAS SUB-ABAS
+      tabItems.sort((a, b) => {
+        const nameA = (a.name || a.rawName || '').trim();
+        const nameB = (b.name || b.rawName || '').trim();
+        return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
+      });
+
       let displayParts = tabItems;
       let otherMatchingParts = [];
       const isSearching = Boolean(filterQuery && filterQuery.trim());
@@ -12000,6 +11768,11 @@ function vpRenderParts(filterQuery = '') {
         // Se o usuário estiver pesquisando, busca também no catálogo geral para que ele possa adicionar qualquer peça à vistoria
         const tabPartNamesSet = new Set(tabItems.map(p => (p.name || '').toLowerCase()));
         otherMatchingParts = (vpAllVehicleParts || []).filter(p => !tabPartNamesSet.has((p.name || '').toLowerCase()) && window.vpPartMatchesQuery(p.name, p.rawName, rawQ));
+        otherMatchingParts.sort((a, b) => {
+          const nameA = (a.name || a.rawName || '').trim();
+          const nameB = (b.name || b.rawName || '').trim();
+          return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
+        });
       }
 
       // Peças selecionadas no topo
@@ -12013,6 +11786,11 @@ function vpRenderParts(filterQuery = '') {
           unselectedParts.push(p);
         }
       }
+      unselectedParts.sort((a, b) => {
+        const nameA = (a.name || a.rawName || '').trim();
+        const nameB = (b.name || b.rawName || '').trim();
+        return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
+      });
       // Garante que todas as peças marcadas na vistoria apareçam no topo
       const renderedNamesSet = new Set(selectedParts.map(p => (p.name || '').toLowerCase().trim()));
       for (const [selName, selData] of vpSelectedPartsMap.entries()) {
@@ -12254,8 +12032,6 @@ function vpRenderParts(filterQuery = '') {
 
   const vTypeLabels = {
     moto: { title: 'Peças da moto', icon: '🏍️' },
-    caminhao: { title: 'Peças do caminhão', icon: '🚛' },
-    picape: { title: 'Peças da picape', icon: '🛻' },
     carro: { title: 'Peças do veículo', icon: '🚗' }
   };
   const currentVTypeInfo = vTypeLabels[vpDetectedVehicleType] || vTypeLabels.carro;
@@ -12952,7 +12728,7 @@ window.vpClearSearch = function() {
 window.vpSelectEditCategory = function(targetType) {
   const select = document.getElementById('vpEditTargetCategorySelect');
   if (select) select.value = targetType;
-  ['carro', 'moto', 'picape', 'caminhao'].forEach(t => {
+  ['carro', 'moto'].forEach(t => {
     const btn = document.getElementById(`vpTransferBtn_${t}`);
     if (btn) btn.classList.toggle('active', t === targetType);
   });
@@ -13314,7 +13090,7 @@ window.vpSaveEditPartName = function(e) {
 
 window.vpUpdateCustomCatRadioUI = function() {
   const checked = document.querySelector('input[name="vpCustomCategory"]:checked')?.value || 'carro';
-  ['carro', 'moto', 'picape', 'caminhao'].forEach(t => {
+  ['carro', 'moto'].forEach(t => {
     const label = document.getElementById(`vpCustomCatLabel_${t}`);
     if (label) label.classList.toggle('active', t === checked);
   });
@@ -13422,17 +13198,45 @@ window.vpSaveCustomPart = function(e) {
     // 1. Remove de vpDeletedPartsList caso tenha sido excluída anteriormente
     vpDeletedPartsList = vpDeletedPartsList.filter(d => (d || '').toLowerCase() !== name.toLowerCase());
 
-    // 2. Registra o mapeamento de categoria de veículo
-    vpPartVehicleTypeMap[name] = vehicleCategory;
+    // 2. Registra o mapeamento de categoria de veículo (sempre 'carro' ou 'moto')
+    const finalCat = (vehicleCategory === 'moto') ? 'moto' : 'carro';
+    vpPartVehicleTypeMap[name] = finalCat;
+    vpPartVehicleTypeMap[name.toLowerCase()] = finalCat;
 
-    // 3. Salva permanentemente no catálogo customizado
+    // 3. Salva permanentemente no catálogo customizado com ID e timestamp
+    const nowTime = Date.now();
     const existingIdx = vpCustomPartsList.findIndex(p => (p.name || '').toLowerCase() === name.toLowerCase());
     if (existingIdx >= 0) {
       vpCustomPartsList[existingIdx].name = name;
       vpCustomPartsList[existingIdx].zoneId = 'geral';
-      vpCustomPartsList[existingIdx].vehicleType = vehicleCategory;
+      vpCustomPartsList[existingIdx].vehicleType = finalCat;
+      vpCustomPartsList[existingIdx].updatedAtTime = nowTime;
+      if (!vpCustomPartsList[existingIdx].id) {
+        vpCustomPartsList[existingIdx].id = 'cp_' + nowTime + '_' + Math.random().toString(36).substr(2, 6);
+      }
     } else {
-      vpCustomPartsList.push({ name, zoneId: 'geral', vehicleType: vehicleCategory });
+      vpCustomPartsList.push({
+        id: 'cp_' + nowTime + '_' + Math.random().toString(36).substr(2, 6),
+        name: name,
+        zoneId: 'geral',
+        vehicleType: finalCat,
+        updatedAtTime: nowTime
+      });
+    }
+
+    // 3b. Se o usuário estiver dentro de uma sub-aba personalizada, adiciona também nela!
+    if (vpActiveCustomTabId && Array.isArray(vpCustomTabs)) {
+      const activeTab = vpCustomTabs.find(t => t.id === vpActiveCustomTabId);
+      if (activeTab) {
+        if (!Array.isArray(activeTab.parts)) activeTab.parts = [];
+        const hasIt = activeTab.parts.some(p => {
+          const pName = typeof p === 'string' ? p : (p?.name || p?.rawName || '');
+          return (pName || '').toLowerCase().trim() === name.toLowerCase().trim();
+        });
+        if (!hasIt) {
+          activeTab.parts.push(name);
+        }
+      }
     }
 
     // 4. Se a ação for troca ou reparo, adiciona também à seleção da vistoria atual
