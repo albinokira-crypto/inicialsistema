@@ -1,7 +1,7 @@
 {
-  "version": "2.54.7",
-  "versionCode": 2547,
-  "updatedAt": "2026-11-05T21:35:53.859Z",
-  "buildDate": "2026-11-05T21:35:53.860Z",
-  "changelog": "Seletor inteligente de copia de marca e medida de pneus permitindo escolher de qual pneu copiar."
+  "version": "2.54.8",
+  "versionCode": 2548,
+  "updatedAt": "2026-11-13T15:55:00.000Z",
+  "buildDate": "2026-11-13T15:55:00.000Z",
+  "changelog": "Catálogo completo em veículos, peças selecionadas no topo na aba personalizada e correção de lentidão ao apagar título da vistoria."
 }

@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.54.7';
+let CURRENT_APP_VERSION = 'v2.54.8';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -9558,7 +9558,7 @@ window.vpApplyQuickTransfer = function() {
   window.vpApplyQuickTransferTarget('carro');
 };
 
-// Filtro rigoroso por categoria de veículo para garantir que a busca e listagem mostrem apenas peças compatíveis
+// Filtro por categoria de veículo: qualquer veículo que não seja moto carrega todas as peças cadastradas
 function vpPartMatchesVehicleType(partObjOrName, currentVehicleType) {
   const raw = typeof partObjOrName === 'string' ? partObjOrName : (partObjOrName?.name || partObjOrName?.rawName || '');
   let vType = currentVehicleType || vpDetectedVehicleType || 'carro';
@@ -9567,42 +9567,21 @@ function vpPartMatchesVehicleType(partObjOrName, currentVehicleType) {
   const clean = vpCleanPartDashes(raw);
   const eff = vpGetEffectivePartName(raw);
   const lower = eff.toLowerCase();
-
-  // Prioridade 0: Peça multi-categoria copiada pelo usuário
-  if (Array.isArray(vpConfigGuard?.multiCategories?.[lower])) {
-    if (vpConfigGuard.multiCategories[lower].includes(vType)) return true;
-  }
-  if (Array.isArray(vpCustomPartsList)) {
-    const hasCopied = vpCustomPartsList.some(p => p && (p.vehicleType === vType || (vType === 'carro' && (p.vehicleType === 'picape' || p.vehicleType === 'caminhao'))) && (p.name || '').toLowerCase() === lower);
-    if (hasCopied) return true;
-  }
-
-  // Prioridade 1: Configuração travada pelo usuário (vpConfigGuard)
-  let lockedType = vpConfigGuard?.configuredParts?.[lower]?.vehicleType || vpConfigGuard?.configuredParts?.[clean.toLowerCase()]?.vehicleType;
-  if (lockedType) {
-    if (lockedType === 'picape' || lockedType === 'caminhao') lockedType = 'carro';
-    return lockedType === vType;
-  }
-
-  // Prioridade 2: Atribuição manual/explícita feita pelo usuário
-  let explicitType = vpGetPartVehicleType(raw) || (typeof partObjOrName === 'object' && partObjOrName?.vehicleType);
-  if (explicitType && explicitType !== 'all') {
-    if (explicitType === 'picape' || explicitType === 'caminhao') explicitType = 'carro';
-    return explicitType === vType;
-  }
-
   const name = (raw || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-  if (vType === 'moto') {
-    const isCarOnly = /\b(PORTA DIANT|PORTA TRAS|PORTAS|CAPO DO MOTOR|CAPO|PORTA MALAS|PORTA-MALAS|PARA CHOQUE|PARACHOQUE|ALMA DO PARA|ALMA DO PARA-CHOQUE|GRADE DIANT|GRADE INFERIOR|CACAMBA|CAÇAMBA|PROTETOR DE CACAMBA|SANTO ANTONIO|CAPOTA MARITIMA|QUINTA RODA|TETO SOLAR|FORRO DO TETO|AIRBAG MOTORISTA|AIRBAG PASSAGEIRO|VIDRO PARA BRISA|VIDRO TRAS|VIDRO VIGIA|ESTRIBO LATERAL|CABINE|BANDEJA|PARABARRO|SOLEIRA)\b/i.test(name);
-    if (isCarOnly) return false;
+  // 1. QUALQUER VEÍCULO QUE NÃO SEJA MOTO: puxa todas as peças cadastradas (exceto exclusivas de moto)
+  if (vType !== 'moto') {
+    const isMotoOnly = /\b(GUIDAO|GUIDÃO|BENGALA|BENGALAS|GARFO DIANT|MANETE DE|MANETE|MANETES|RABETA|MONOSHOCK|CAVALETE CENTRAL|CAVALETE LATERAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA|PEDALEIRA DIANT|PEDALEIRA TRAS|TAMPA DO MOTOR LATERAL|BOLHA DA MOTO|CARENAGEM DO FAROL)\b/i.test(name);
+    if (isMotoOnly) return false;
     return true;
   }
 
-  if (vType === 'carro') {
-    // Veículos (Carros, Picapes, Caminhões) apenas não tem peças exclusivas de Moto
-    const isMotoOnly = /\b(GUIDAO|BENGALA|GARFO DIANT|MANETE DE|MANETE|RABETA|MONOSHOCK|CAVALETE CENTRAL|CAVALETE LATERAL|ALCA TRAS DO GARUPA|ALÇA TRAS DO GARUPA|PEDALEIRA DIANT|PEDALEIRA TRAS|TAMPA DO MOTOR LATERAL|BOLHA DA MOTO|CARENAGEM DO FAROL)\b/i.test(name);
-    if (isMotoOnly) return false;
+  // 2. MOTOS: filtra peças exclusivas de veículos de 4 rodas / cabine
+  if (vType === 'moto') {
+    // Permite peças multi-categoria explicitamente liberadas
+    if (Array.isArray(vpConfigGuard?.multiCategories?.[lower]) && vpConfigGuard.multiCategories[lower].includes('moto')) return true;
+    const isCarOnly = /\b(PORTA DIANT|PORTA TRAS|PORTAS|CAPO DO MOTOR|CAPO|PORTA MALAS|PORTA-MALAS|PARA CHOQUE|PARACHOQUE|ALMA DO PARA|ALMA DO PARA-CHOQUE|GRADE DIANT|GRADE INFERIOR|CACAMBA|CAÇAMBA|PROTETOR DE CACAMBA|SANTO ANTONIO|CAPOTA MARITIMA|QUINTA RODA|TETO SOLAR|FORRO DO TETO|AIRBAG MOTORISTA|AIRBAG PASSAGEIRO|VIDRO PARA BRISA|VIDRO TRAS|VIDRO VIGIA|ESTRIBO LATERAL|CABINE|BANDEJA|PARABARRO|SOLEIRA)\b/i.test(name);
+    if (isCarOnly) return false;
     return true;
   }
 
@@ -10525,10 +10504,9 @@ function vpLoadAndSortVehicleParts() {
         const effective = vpGetEffectivePartName(p.name);
         const effLower = (effective || '').toLowerCase();
         if (effective && !vpIsPartDeleted(p.name, effective) && !seenNames.has(effLower)) {
-          const isCompatible = (p.vehicleType === vpDetectedVehicleType) || 
-                               (p.vehicleType === 'all') || 
-                               (Array.isArray(vpConfigGuard?.multiCategories?.[effLower]) && vpConfigGuard.multiCategories[effLower].includes(vpDetectedVehicleType)) ||
-                               vpPartMatchesVehicleType(p, vpDetectedVehicleType);
+          const isCompatible = (vpDetectedVehicleType === 'moto') 
+            ? (p.vehicleType === 'moto' || vpPartMatchesVehicleType(p, 'moto')) 
+            : vpPartMatchesVehicleType(p, 'carro');
           if (isCompatible) {
             seenNames.add(effLower);
             allParts.push({
@@ -11877,7 +11855,7 @@ function vpRenderParts(filterQuery = '') {
       const unselectedParts = [];
       for (let i = 0; i < displayParts.length; i++) {
         const p = displayParts[i];
-        if (vpIsPartSelected(p.name)) {
+        if (vpIsPartSelected(p.name) || (p.rawName && vpIsPartSelected(p.rawName))) {
           selectedParts.push(p);
         } else {
           unselectedParts.push(p);
@@ -12441,6 +12419,21 @@ window.vpToggleAction = function(partName, zoneId, zoneName, action, rawName = '
       card.style.borderColor = '#cbd5e1';
       card.style.background = '#ffffff';
     }
+
+    // Se selecionou (troca ou reparo), move o card para o topo do grid imediatamente (0ms sem lag)
+    const grid = card.parentElement;
+    if (grid) {
+      if (newAction) {
+        const firstUnselected = grid.querySelector('.vp-part-card:not(.selected-troca):not(.selected-reparo):not(.selected-ressalva)');
+        if (firstUnselected && firstUnselected !== card) {
+          grid.insertBefore(card, firstUnselected);
+        } else if (grid.firstElementChild !== card) {
+          grid.insertBefore(card, grid.firstElementChild);
+        }
+      } else {
+        vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
+      }
+    }
   } else {
     vpRenderParts(document.getElementById('vpSearchInput')?.value || '');
   }
@@ -12897,6 +12890,18 @@ window.vpToggleModalAction = function(name, zoneId, zoneName, action, rawName) {
     } else {
       card.style.borderColor = '#cbd5e1';
       card.style.background = '#ffffff';
+    }
+
+    const grid = card.parentElement;
+    if (grid) {
+      if (newAction) {
+        const firstUnselected = grid.querySelector('.vp-part-card:not(.selected-troca):not(.selected-reparo):not(.selected-ressalva)');
+        if (firstUnselected && firstUnselected !== card) {
+          grid.insertBefore(card, firstUnselected);
+        } else if (grid.firstElementChild !== card) {
+          grid.insertBefore(card, grid.firstElementChild);
+        }
+      }
     }
   }
 
@@ -13509,50 +13514,70 @@ function vpEscapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-// Sincronização em tempo real da digitação da placa / modelo com o detector de veículo
+// Sincronização em tempo real da digitação da placa / modelo com o detector de veículo (com debounce para digitação e deleção fluida em 60fps)
 if (typeof plateInput !== 'undefined' && plateInput) {
+  let plateInputDebounceTimer = null;
+  let lastProcessedPlateText = '';
+
   plateInput.addEventListener('input', () => {
     const text = plateInput.value.trim();
-    if (!text) return;
-    const isCurrentlyMoto = typeof selectedType !== 'undefined' && selectedType === 'Moto';
-    let type = vpDetectVehicleTypeFromText(text);
 
-    // Se o usuário já selecionou a aba Moto no formulário, mantém o tipo como moto mesmo digitando apenas a placa
-    if (isCurrentlyMoto && type === 'carro') {
-      type = 'moto';
+    // Atualiza imediatamente o título se o modal estiver aberto, sem rodar recálculo pesado
+    const titleDisplay = document.getElementById('vpVehicleTitle');
+    if (titleDisplay && document.getElementById('vehiclePartsModal')?.style.display !== 'none') {
+      titleDisplay.textContent = text || 'Partes do Veículo';
     }
 
-    // Sincroniza o tipo de veículo ativo para o seletor de partes e catálogo
-    if (typeof window.vpSetVehicleType === 'function') {
-      window.vpSetVehicleType(type, false, true);
+    if (plateInputDebounceTimer) {
+      clearTimeout(plateInputDebounceTimer);
     }
 
-    // 1. Atualiza rótulo do botão de partes se existir
-    const btnSpan = document.querySelector('.btn-open-parts-selector span');
-    if (btnSpan) {
-      if (type === 'moto') {
-        btnSpan.textContent = '🏍️ Selecionar Partes da Moto (Zonas)';
-      } else if (type === 'caminhao') {
-        btnSpan.textContent = '🚛 Selecionar Partes do Caminhão (Zonas)';
-      } else if (type === 'picape') {
-        btnSpan.textContent = '🛻 Selecionar Partes da Picape (Zonas)';
-      } else {
-        btnSpan.textContent = '🚗 Selecionar Partes do Veículo (Zonas)';
+    plateInputDebounceTimer = setTimeout(() => {
+      if (text === lastProcessedPlateText) return;
+      lastProcessedPlateText = text;
+      if (!text) return;
+      const isCurrentlyMoto = typeof selectedType !== 'undefined' && selectedType === 'Moto';
+      let type = vpDetectVehicleTypeFromText(text);
+
+      // Se o usuário já selecionou a aba Moto no formulário, mantém o tipo como moto mesmo digitando apenas a placa
+      if (isCurrentlyMoto && type === 'carro') {
+        type = 'moto';
       }
-    }
 
-    // 2. Sincroniza aba principal do formulário (detecta Moto se digitar explicitamente modelo de moto)
-    if (typeof vistoriaTypeTabs !== 'undefined' && vistoriaTypeTabs) {
-      if (type === 'moto' && !isCurrentlyMoto && (selectedType === 'Inicial' || !selectedType)) {
-        selectedType = 'Moto';
-        vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach(b => {
-          b.classList.toggle('active', b.dataset.type === 'Moto');
-        });
-        if (typeof typeInput !== 'undefined' && typeInput) typeInput.value = 'Moto';
-        if (typeof updateVistoriaFormTitle === 'function') updateVistoriaFormTitle();
-        if (typeof renderDynamicSurveyFields === 'function') renderDynamicSurveyFields();
+      // Sincroniza o tipo de veículo ativo para o seletor APENAS se o tipo realmente mudou
+      if (typeof vpDetectedVehicleType !== 'undefined' && type !== vpDetectedVehicleType) {
+        if (typeof window.vpSetVehicleType === 'function') {
+          window.vpSetVehicleType(type, false, true);
+        }
       }
-    }
+
+      // 1. Atualiza rótulo do botão de partes se existir
+      const btnSpan = document.querySelector('.btn-open-parts-selector span');
+      if (btnSpan) {
+        if (type === 'moto') {
+          btnSpan.textContent = '🏍️ Selecionar Partes da Moto (Zonas)';
+        } else if (type === 'caminhao') {
+          btnSpan.textContent = '🚛 Selecionar Partes do Caminhão (Zonas)';
+        } else if (type === 'picape') {
+          btnSpan.textContent = '🛻 Selecionar Partes da Picape (Zonas)';
+        } else {
+          btnSpan.textContent = '🚗 Selecionar Partes do Veículo (Zonas)';
+        }
+      }
+
+      // 2. Sincroniza aba principal do formulário (detecta Moto se digitar explicitamente modelo de moto)
+      if (typeof vistoriaTypeTabs !== 'undefined' && vistoriaTypeTabs) {
+        if (type === 'moto' && !isCurrentlyMoto && (selectedType === 'Inicial' || !selectedType)) {
+          selectedType = 'Moto';
+          vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.type === 'Moto');
+          });
+          if (typeof typeInput !== 'undefined' && typeInput) typeInput.value = 'Moto';
+          if (typeof updateVistoriaFormTitle === 'function') updateVistoriaFormTitle();
+          if (typeof renderDynamicSurveyFields === 'function') renderDynamicSurveyFields();
+        }
+      }
+    }, 250);
   });
 }
 
