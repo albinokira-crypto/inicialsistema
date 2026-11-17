@@ -1,7 +1,7 @@
 {
-  "version": "2.54.8",
-  "versionCode": 2548,
-  "updatedAt": "2026-11-13T15:55:00.000Z",
-  "buildDate": "2026-11-13T15:55:00.000Z",
-  "changelog": "Catálogo completo em veículos, peças selecionadas no topo na aba personalizada e correção de lentidão ao apagar título da vistoria."
+  "version": "2.55.0",
+  "versionCode": 2550,
+  "updatedAt": "2026-11-16T22:00:00.000Z",
+  "buildDate": "2026-11-16T22:00:00.000Z",
+  "changelog": "Otimizacao e fluidez imediata na digitacao da busca de pecas e adicao das opcoes Sem e N/I no campo de bateria nos relatorios."
 }

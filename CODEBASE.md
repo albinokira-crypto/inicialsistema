@@ -55,3 +55,4 @@ Toda e qualquer alteração realizada neste projeto **deve seguir os 5 passos**:
 3. **Deploy Remoto:** `git add .` ; `git commit -m "..."` ; `git push origin master` ; `git push origin master:main` (aciona Cloudflare Pages OTA).
 4. **Build APK Local:** Executar `.\gradlew.bat assembleDebug` em `android/`.
 5. **Cópia & Release:** Copiar `app-debug.apk` para `Desktop\VistoriaInicial.apk` e `OneDrive\Desktop\vistoria\VistoriaInicial.apk`, e criar release via `gh release create vX.X.X`.
+

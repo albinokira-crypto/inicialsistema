@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.54.8';
+let CURRENT_APP_VERSION = 'v2.55.0';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -2814,6 +2814,13 @@ function getSurveyText(id) {
 
   const radioVal = details.radio === 'Original' ? 'original' : (details.radioBrand || 'Outra');
 
+  const formatBateriaReportVal = (val, defaultVal = '') => {
+    if (!val || !String(val).trim()) return defaultVal;
+    const v = String(val).trim();
+    if (v.toLowerCase() === 'ausente') return 'Sem';
+    return v;
+  };
+
   let sections = [];
 
   const isDetailed = isDetailedVistoriaEligible(item.type) && (getCompanyReportTemplate(item.companyId || activeCompanyId) === 'detalhado');
@@ -2850,7 +2857,7 @@ function getSurveyText(id) {
     checklist.push(`CHAVE DE RODA?: ${getCheckmark(details.chaveRoda || 'Não')}`);
     checklist.push(`RÁDIO / MARCA: ${radioVal}`);
     checklist.push(`PARABRISA: ${details.parabrisa || 'Bom'}`);
-    checklist.push(`BATERIA / MARCA: ${details.bateria || 'Ausente'}`);
+    checklist.push(`BATERIA / MARCA: ${formatBateriaReportVal(details.bateria, 'Sem')}`);
 
     const altImpacto = details.alturaImpacto ? (String(details.alturaImpacto).toLowerCase().includes('cm') ? details.alturaImpacto : `${details.alturaImpacto} cm`) : '';
     checklist.push(`ALTURA DO PONTO DE IMPACTO: ${altImpacto}`);
@@ -2893,7 +2900,7 @@ function getSurveyText(id) {
     checklist.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}`);
     checklist.push(`RÁDIO / MARCA:${radioVal}`);
     checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
-    checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
+    checklist.push(`BATERIA / MARCA: ${formatBateriaReportVal(details.bateria, '')}`);
     checklist.push(`NÚMERO DO MOTOR?: ${getCheckmark(details.numeroMotor || 'Sim', 'numeroMotor')}`);
     sections.push(checklist.join('\n'));
 
@@ -3030,7 +3037,7 @@ function getSurveyText(id) {
       checklist.push(`CHAVE DE RODA ?: ${getCheckmark(details.chaveRoda || 'Não', 'chaveRoda')}`);
       checklist.push(`RÁDIO / MARCA:${radioVal}`);
       checklist.push(`PARABRISA.: ${(details.parabrisa || 'Bom').toLowerCase()}`);
-      checklist.push(`BATERIA / MARCA: ${details.bateria || ''}`);
+      checklist.push(`BATERIA / MARCA: ${formatBateriaReportVal(details.bateria, '')}`);
       checklist.push(`NÚMERO DO MOTOR?: ${getCheckmark(details.numeroMotor || 'Sim', 'numeroMotor')}`);
     }
 
@@ -3292,12 +3299,16 @@ function handleAction(action, id) {
         }
 
         if (key === 'bateria') {
+          const batContainer = input ? input.closest('.form-toggle-field') : null;
+          if (typeof updateBateriaButtonsUI === 'function') {
+            updateBateriaButtonsUI(batContainer, item.details[key]);
+          }
           const btnBat = document.getElementById('btnToggleBateriaAusente');
           if (btnBat) {
-            const isAus = item.details[key] === 'Ausente';
+            const isAus = item.details[key] === 'Ausente' || item.details[key] === 'Sem';
             btnBat.style.background = isAus ? '#fee2e2' : '#f1f5f9';
             btnBat.style.color = isAus ? '#dc2626' : '#475569';
-            btnBat.textContent = isAus ? '✓ Ausente' : '❌ Ausente';
+            btnBat.textContent = isAus ? '✓ Sem' : '❌ Sem';
           }
         }
 
@@ -3874,10 +3885,20 @@ function renderDynamicSurveyFields() {
       <input type="hidden" id="input_parabrisa" name="parabrisa" value="Bom" />
     </div>
 
-    <label>
-      Bateria / Marca
-      <input type="text" name="bateria" placeholder="Marca da bateria" />
-    </label>
+    <div class="form-toggle-field" style="grid-column: 1 / -1;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 4px;">
+        <span class="status-label" style="margin: 0;">Bateria / Marca</span>
+        <div class="bateria-quick-options" style="display: inline-flex; gap: 4px;">
+          <button type="button" class="btn-bat-opt btn-bat-sem" onclick="setBateriaOption(this, 'Sem')" style="background: #f1f5f9; border: 1.5px solid #cbd5e1; color: #475569; font-size: 0.74rem; font-weight: 700; padding: 3px 10px; border-radius: 6px; cursor: pointer; transition: all 0.15s ease;">
+            Sem
+          </button>
+          <button type="button" class="btn-bat-opt btn-bat-ni" onclick="setBateriaOption(this, 'N/I')" style="background: #f1f5f9; border: 1.5px solid #cbd5e1; color: #475569; font-size: 0.74rem; font-weight: 700; padding: 3px 10px; border-radius: 6px; cursor: pointer; transition: all 0.15s ease;">
+            N/I
+          </button>
+        </div>
+      </div>
+      <input type="text" name="bateria" oninput="onBateriaInputChanged(this)" placeholder="Marca da bateria (ou selecione Sem / N/I)" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.85rem;" />
+    </div>
 
     <div class="form-toggle-field" style="grid-column: 1 / -1;">
       <span class="status-label">Número do Motor?</span>
@@ -4037,13 +4058,18 @@ function renderDynamicSurveyFields() {
       </div>
 
       <div class="form-toggle-field">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 4px;">
           <span class="status-label" style="margin: 0;">Bateria / Marca</span>
-          <button type="button" id="btnToggleBateriaAusente" onclick="toggleBateriaAusente()" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; font-size: 0.74rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; cursor: pointer;">
-            ❌ Ausente
-          </button>
+          <div class="bateria-quick-options" style="display: inline-flex; gap: 4px;">
+            <button type="button" class="btn-bat-opt btn-bat-sem" onclick="setBateriaOption(this, 'Sem')" style="background: #f1f5f9; border: 1.5px solid #cbd5e1; color: #475569; font-size: 0.74rem; font-weight: 700; padding: 3px 10px; border-radius: 6px; cursor: pointer; transition: all 0.15s ease;">
+              Sem
+            </button>
+            <button type="button" class="btn-bat-opt btn-bat-ni" onclick="setBateriaOption(this, 'N/I')" style="background: #f1f5f9; border: 1.5px solid #cbd5e1; color: #475569; font-size: 0.74rem; font-weight: 700; padding: 3px 10px; border-radius: 6px; cursor: pointer; transition: all 0.15s ease;">
+              N/I
+            </button>
+          </div>
         </div>
-        <input type="text" id="input_bateria" name="bateria" placeholder="Marca da bateria" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.85rem;" />
+        <input type="text" id="input_bateria" name="bateria" oninput="onBateriaInputChanged(this)" placeholder="Marca da bateria (ou selecione Sem / N/I)" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.85rem;" />
       </div>
     `;
 
@@ -4587,26 +4613,79 @@ window.limparPecasRessalva = function(silent = false) {
   renderPecasRessalvaBadges();
 };
 
-function toggleBateriaAusente() {
-  const batInput = document.getElementById('input_bateria');
-  const btn = document.getElementById('btnToggleBateriaAusente');
-  if (!batInput) return;
-  if (batInput.value === 'Ausente') {
-    batInput.value = '';
-    batInput.placeholder = 'Marca da bateria';
-    if (btn) {
-      btn.style.background = '#f1f5f9';
-      btn.style.color = '#475569';
-      btn.textContent = '❌ Ausente';
-    }
-    batInput.focus();
+function setBateriaOption(btn, optValue) {
+  const container = btn ? btn.closest('.form-toggle-field') : null;
+  const input = container ? container.querySelector('input[name="bateria"]') : (document.getElementById('input_bateria') || document.querySelector('input[name="bateria"]'));
+  if (!input) return;
+
+  const currentVal = (input.value || '').trim();
+  const isCurrentlySelected = currentVal.toLowerCase() === optValue.toLowerCase() || (optValue === 'Sem' && currentVal.toLowerCase() === 'ausente');
+
+  if (isCurrentlySelected) {
+    // Desmarcar se clicado novamente
+    input.value = '';
+    updateBateriaButtonsUI(container, '');
+    input.focus();
   } else {
-    batInput.value = 'Ausente';
-    if (btn) {
-      btn.style.background = '#fee2e2';
-      btn.style.color = '#dc2626';
-      btn.textContent = '✓ Ausente';
+    input.value = optValue;
+    updateBateriaButtonsUI(container, optValue);
+  }
+}
+window.setBateriaOption = setBateriaOption;
+
+function onBateriaInputChanged(input) {
+  const container = input ? input.closest('.form-toggle-field') : null;
+  updateBateriaButtonsUI(container, input.value);
+}
+window.onBateriaInputChanged = onBateriaInputChanged;
+
+function updateBateriaButtonsUI(container, val) {
+  const target = container || document;
+  const semBtn = target.querySelector('.btn-bat-sem') || document.querySelector('.btn-bat-sem');
+  const niBtn = target.querySelector('.btn-bat-ni') || document.querySelector('.btn-bat-ni');
+  const v = (val || '').trim().toLowerCase();
+
+  const isSem = v === 'sem' || v === 'ausente';
+  const isNi = v === 'n/i' || v === 'ni' || v === 'não informado' || v === 'nao informado';
+
+  if (semBtn) {
+    if (isSem) {
+      semBtn.style.background = '#fee2e2';
+      semBtn.style.borderColor = '#ef4444';
+      semBtn.style.color = '#dc2626';
+      semBtn.style.fontWeight = '800';
+      semBtn.textContent = '✓ Sem';
+    } else {
+      semBtn.style.background = '#f1f5f9';
+      semBtn.style.borderColor = '#cbd5e1';
+      semBtn.style.color = '#475569';
+      semBtn.style.fontWeight = '700';
+      semBtn.textContent = 'Sem';
     }
+  }
+
+  if (niBtn) {
+    if (isNi) {
+      niBtn.style.background = '#e0f2fe';
+      niBtn.style.borderColor = '#0284c7';
+      niBtn.style.color = '#0284c7';
+      niBtn.style.fontWeight = '800';
+      niBtn.textContent = '✓ N/I';
+    } else {
+      niBtn.style.background = '#f1f5f9';
+      niBtn.style.borderColor = '#cbd5e1';
+      niBtn.style.color = '#475569';
+      niBtn.style.fontWeight = '700';
+      niBtn.textContent = 'N/I';
+    }
+  }
+}
+window.updateBateriaButtonsUI = updateBateriaButtonsUI;
+
+function toggleBateriaAusente() {
+  const btn = document.querySelector('.btn-bat-sem') || document.getElementById('btnToggleBateriaAusente');
+  if (btn) {
+    setBateriaOption(btn, 'Sem');
   }
 }
 window.toggleBateriaAusente = toggleBateriaAusente;
@@ -10595,6 +10674,9 @@ function vpLoadAndSortVehicleParts() {
 
   vpAllVehicleParts = allParts;
   vpAllVehiclePartsType = vpDetectedVehicleType || 'carro';
+  if (typeof vpInvalidateSearchCandidatesCache === 'function') {
+    vpInvalidateSearchCandidatesCache();
+  }
   return allParts;
 }
 
@@ -12662,8 +12744,77 @@ function vpSetupSearch() {
 }
 
 // =========================================================================
-// MODAL SUSPENSO DE PESQUISA EM TEMPO REAL COM MULTI-SELEÇÃO
+// MODAL SUSPENSO DE PESQUISA EM TEMPO REAL COM MULTI-SELEÇÃO (OTIMIZADO)
 // =========================================================================
+let vpSearchCandidatesCache = null;
+let vpSearchCandidatesCacheKey = '';
+
+function vpInvalidateSearchCandidatesCache() {
+  vpSearchCandidatesCache = null;
+  vpSearchCandidatesCacheKey = '';
+}
+window.vpInvalidateSearchCandidatesCache = vpInvalidateSearchCandidatesCache;
+
+function vpGetSearchCandidates() {
+  const currentVehicleType = vpDetectedVehicleType || 'carro';
+  const customPartsLen = Array.isArray(vpCustomPartsList) ? vpCustomPartsList.length : 0;
+  const allPartsLen = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts.length : 0;
+  const cacheKey = `${currentVehicleType}_${allPartsLen}_${customPartsLen}`;
+
+  if (vpSearchCandidatesCache && vpSearchCandidatesCacheKey === cacheKey) {
+    return vpSearchCandidatesCache;
+  }
+
+  const allParts = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts : [];
+  const candidateMap = new Map();
+  const catalogIndexMap = new Map();
+
+  allParts.forEach((p, idx) => {
+    if (!p || !p.name) return;
+    const eff = vpGetEffectivePartName(p.name);
+    const effLower = eff.toLowerCase();
+    catalogIndexMap.set(effLower, idx + 1);
+    if (!vpIsPartDeleted(p.name, eff)) {
+      candidateMap.set(effLower, {
+        name: eff,
+        rawName: p.rawName || p.name,
+        zoneId: p.zoneId || 'geral',
+        zoneName: p.zoneName || 'Peças do veículo',
+        vehicleType: vpGetPartVehicleType(eff) || currentVehicleType,
+        normName: window.vpNormalizeSearch(eff),
+        normRawName: window.vpNormalizeSearch(p.rawName || p.name),
+        orderNum: idx + 1
+      });
+    }
+  });
+
+  if (Array.isArray(vpCustomPartsList)) {
+    vpCustomPartsList.forEach(cp => {
+      if (!cp || !cp.name) return;
+      const cpEff = vpGetEffectivePartName(cp.name);
+      const cpLower = cpEff.toLowerCase();
+      if (!vpIsPartDeleted(cp.name, cpEff) && !candidateMap.has(cpLower)) {
+        const orderNum = catalogIndexMap.get(cpLower) || '🔢';
+        candidateMap.set(cpLower, {
+          name: cpEff,
+          rawName: cp.name,
+          zoneId: cp.zoneId || 'geral',
+          zoneName: 'Peças do veículo',
+          vehicleType: cp.vehicleType || vpGetPartVehicleType(cpEff) || currentVehicleType,
+          normName: window.vpNormalizeSearch(cpEff),
+          normRawName: window.vpNormalizeSearch(cp.name),
+          orderNum: orderNum
+        });
+      }
+    });
+  }
+
+  const candidates = Array.from(candidateMap.values());
+  vpSearchCandidatesCache = { candidates, catalogIndexMap };
+  vpSearchCandidatesCacheKey = cacheKey;
+  return vpSearchCandidatesCache;
+}
+
 window.vpOpenSearchModal = function(initialQuery = '') {
   const modal = document.getElementById('vpSearchModal');
   const input = document.getElementById('vpModalSearchInput');
@@ -12675,7 +12826,7 @@ window.vpOpenSearchModal = function(initialQuery = '') {
     if (clearBtn) clearBtn.style.display = input.value ? 'block' : 'none';
     setTimeout(() => input.focus(), 80);
   }
-  window.vpOnModalSearchInput(initialQuery || '');
+  window.vpOnModalSearchInput(initialQuery || '', true);
 };
 
 window.vpCloseSearchModal = function() {
@@ -12693,58 +12844,56 @@ window.vpClearModalSearch = function() {
   const clearBtn = document.getElementById('vpModalClearBtn');
   if (input) input.value = '';
   if (clearBtn) clearBtn.style.display = 'none';
-  window.vpOnModalSearchInput('');
+  window.vpOnModalSearchInput('', true);
   if (input) input.focus();
 };
 
-window.vpOnModalSearchInput = function(query = '') {
+let vpModalSearchDebounceTimer = null;
+
+window.vpOnModalSearchInput = function(query = '', immediate = false) {
   const clearBtn = document.getElementById('vpModalClearBtn');
   if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
 
+  if (!immediate) {
+    if (vpModalSearchDebounceTimer) clearTimeout(vpModalSearchDebounceTimer);
+    vpModalSearchDebounceTimer = setTimeout(() => {
+      vpExecuteModalSearch(query);
+    }, 90);
+  } else {
+    if (vpModalSearchDebounceTimer) clearTimeout(vpModalSearchDebounceTimer);
+    vpExecuteModalSearch(query);
+  }
+};
+
+function vpExecuteModalSearch(query = '') {
   const container = document.getElementById('vpModalSearchResults');
   const countEl = document.getElementById('vpModalResultsCount');
   const selCountEl = document.getElementById('vpModalSelectedCount');
   if (!container) return;
 
   const rawQ = (query || '').trim();
+  const { candidates } = vpGetSearchCandidates();
 
-  const allParts = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts : [];
-  const candidateMap = new Map();
+  let filtered = [];
+  if (!rawQ) {
+    filtered = candidates.slice(0, 50);
+  } else {
+    const qNorm = window.vpNormalizeSearch(rawQ);
+    const qCompact = qNorm.replace(/\s+/g, '');
+    const qTokens = qNorm.split(' ').filter(Boolean);
 
-  allParts.forEach(p => {
-    if (!p || !p.name) return;
-    const eff = vpGetEffectivePartName(p.name);
-    if (!vpIsPartDeleted(p.name, eff)) {
-      candidateMap.set(eff.toLowerCase(), {
-        name: eff,
-        rawName: p.rawName || p.name,
-        zoneId: p.zoneId || 'geral',
-        zoneName: p.zoneName || 'Peças do veículo',
-        vehicleType: vpGetPartVehicleType(eff) || vpDetectedVehicleType || 'carro'
-      });
-    }
-  });
-
-  if (Array.isArray(vpCustomPartsList)) {
-    vpCustomPartsList.forEach(cp => {
-      if (!cp || !cp.name) return;
-      const cpEff = vpGetEffectivePartName(cp.name);
-      if (!vpIsPartDeleted(cp.name, cpEff) && !candidateMap.has(cpEff.toLowerCase())) {
-        candidateMap.set(cpEff.toLowerCase(), {
-          name: cpEff,
-          rawName: cp.name,
-          zoneId: cp.zoneId || 'geral',
-          zoneName: 'Peças do veículo',
-          vehicleType: cp.vehicleType || vpGetPartVehicleType(cpEff) || 'carro'
-        });
+    filtered = candidates.filter(p => {
+      const nCompact = p.normName.replace(/\s+/g, '');
+      const rCompact = p.normRawName.replace(/\s+/g, '');
+      if (qCompact && (nCompact.includes(qCompact) || rCompact.includes(qCompact))) {
+        return true;
       }
+      if (qTokens.length > 0 && qTokens.every(tok => p.normName.includes(tok) || p.normRawName.includes(tok))) {
+        return true;
+      }
+      return false;
     });
   }
-
-  const allList = Array.from(candidateMap.values());
-  const filtered = !rawQ ? allList.slice(0, 80) : allList.filter(p => {
-    return window.vpPartMatchesQuery(p.name, p.rawName, rawQ);
-  });
 
   if (countEl) {
     countEl.textContent = `${filtered.length} peça(s) encontrada(s)`;
@@ -12768,17 +12917,17 @@ window.vpOnModalSearchInput = function(query = '') {
     return;
   }
 
-  container.innerHTML = filtered.map(item => {
+  const MAX_RENDER = 45;
+  const toRender = filtered.slice(0, MAX_RENDER);
+  const catIcons = { carro: '🚗', moto: '🏍️', picape: '🛻', caminhao: '🚛' };
+
+  let html = toRender.map(item => {
     const selected = vpGetSelectedPart(item.name);
     const isTroca = selected && selected.action === 'troca';
     const isReparo = selected && selected.action === 'reparo';
     const hasObs = Boolean(selected && selected.obs);
-    const catIcons = { carro: '🚗', moto: '🏍️', picape: '🛻', caminhao: '🚛' };
     const catIcon = catIcons[item.vehicleType] || '🚗';
-
-    // Posição no catálogo original
-    const catalogIdx = Array.isArray(vpAllVehicleParts) ? vpAllVehicleParts.findIndex(p => (p.name || '').toLowerCase() === (item.name || '').toLowerCase()) : -1;
-    const orderNum = catalogIdx !== -1 ? (catalogIdx + 1) : '🔢';
+    const orderNum = item.orderNum || '🔢';
 
     return `
       <div style="padding: 7px 9px; border-radius: 10px; border: 1.5px solid ${isTroca ? '#dc2626' : (isReparo ? '#0284c7' : '#e2e8f0')}; background: ${isTroca ? '#fff5f5' : (isReparo ? '#f0f9ff' : '#ffffff')}; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
@@ -12830,6 +12979,17 @@ window.vpOnModalSearchInput = function(query = '') {
       </div>
     `;
   }).join('');
+
+  if (filtered.length > MAX_RENDER) {
+    html += `
+      <div style="text-align: center; padding: 10px 4px; font-size: 0.76rem; font-weight: 700; color: #64748b; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: 4px;">
+        Exibindo as 45 primeiras de ${filtered.length} peças encontradas. Digite mais letras para refinar.
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
 };
 
 window.vpToggleModalAction = function(name, zoneId, zoneName, action, rawName) {
@@ -12905,9 +13065,9 @@ window.vpToggleModalAction = function(name, zoneId, zoneName, action, rawName) {
     }
   }
 
-  // Atualiza modal de busca
+  // Atualiza modal de busca imediatamente
   const curQuery = document.getElementById('vpModalSearchInput')?.value || '';
-  window.vpOnModalSearchInput(curQuery);
+  window.vpOnModalSearchInput(curQuery, true);
 
   vpUpdateTriggerButton();
   vpUpdateDockAndSheet();
@@ -12928,7 +13088,7 @@ window.vpModalEditObs = function(partName) {
   }
   vpSaveState(false);
   const curQuery = document.getElementById('vpModalSearchInput')?.value || '';
-  window.vpOnModalSearchInput(curQuery);
+  window.vpOnModalSearchInput(curQuery, true);
   vpUpdateTriggerButton();
   vpUpdateDockAndSheet();
 };
