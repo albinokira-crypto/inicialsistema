@@ -43,7 +43,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.55.0';
+let CURRENT_APP_VERSION = 'v2.55.1';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -12990,7 +12990,7 @@ function vpExecuteModalSearch(query = '') {
 
   container.innerHTML = html;
 }
-};
+window.vpExecuteModalSearch = vpExecuteModalSearch;
 
 window.vpToggleModalAction = function(name, zoneId, zoneName, action, rawName) {
   const current = vpGetSelectedPart(name);

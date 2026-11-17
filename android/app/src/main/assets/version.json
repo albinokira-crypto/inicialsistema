@@ -1,7 +1,7 @@
 {
-  "version": "2.55.0",
-  "versionCode": 2550,
-  "updatedAt": "2026-11-16T22:00:00.000Z",
-  "buildDate": "2026-11-16T22:00:00.000Z",
-  "changelog": "Otimizacao e fluidez imediata na digitacao da busca de pecas e adicao das opcoes Sem e N/I no campo de bateria nos relatorios."
+  "version": "2.55.1",
+  "versionCode": 2551,
+  "updatedAt": "2026-11-16T22:30:00.000Z",
+  "buildDate": "2026-11-16T22:30:00.000Z",
+  "changelog": "Correcao critica de inicializacao da tela inicial e resumo da semana v2.55.1."
 }
