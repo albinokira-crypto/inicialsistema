@@ -88,7 +88,7 @@
 
         <section class="card tabs-card" id="vistoriaTypeTabsCard" style="margin-top: 10px;">
           <div id="vistoriaTypeTabs" class="vistoria-type-tabs">
-            <button class="tab-btn active" type="button" data-type="Inicial">
+            <button class="tab-btn" type="button" data-type="Inicial">
               <div class="tab-btn-icon-box">🚗</div>
               <span class="tab-btn-label">Inicial</span>
             </button>
@@ -127,7 +127,7 @@
           </div>
         </section>
 
-      <section class="card" id="formCard">
+      <section class="card" id="formCard" hidden>
         <h2 id="formTitle">Novo registro</h2>
 
         <form id="itemForm" class="form-grid">
@@ -199,7 +199,7 @@
               </button>
             </div>
           </label>
-          <input type="hidden" id="typeInput" name="type" value="Inicial" />
+          <input type="hidden" id="typeInput" name="type" value="" />
           <label>
             Seguradora
             <div id="insurerButtonsContainer" class="insurer-buttons-container"></div>
@@ -549,7 +549,7 @@
               <span style="font-size: 1.4rem;">📱</span>
               <div>
                 <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Versão em Uso</div>
-                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.55.1</div>
+                <div id="systemAppVersionDisplay" style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">v2.55.2</div>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -565,7 +565,7 @@
             <div style="display: flex; align-items: center; gap: 6px; color: #475569;">
               <span>🌐</span>
               <span>Servidor (version.json):</span>
-              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v2.55.1</strong>
+              <strong id="serverVersionJsonDisplay" style="color: #2563eb;">v2.55.2</strong>
             </div>
             <button type="button" onclick="checkForSystemUpdates(true)" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-weight: 700; font-size: 0.72rem; padding: 3px 8px; border-radius: 5px; cursor: pointer;">
               🔍 Checar
@@ -577,7 +577,7 @@
           </button>
 
           <button id="downloadApkBtn" type="button" onclick="baixarApkAtualizado(event)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #059669; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(5,150,105,0.25);">
-            📥 Baixar APK Atualizado (v2.55.1)
+            📥 Baixar APK Atualizado (v2.55.2)
           </button>
 
           <button id="downloadOpenCamera2Btn" type="button" onclick="baixarOpenCamera2Apk(event)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 4px rgba(124,58,237,0.25);">
@@ -1390,7 +1390,7 @@
 
     <!-- REPORT PREVIEW MODAL -->
     <div id="reportPreviewModal" class="photo-modal-overlay" style="display: none;">
-      <div class="photo-modal" style="max-width: 520px; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);">
+      <div class="photo-modal" style="max-width: 520px; max-height: 90vh; overflow-y: auto; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);">
         <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 12px;">
           <h3 id="reportPreviewTitle" style="margin: 0; color: #1e293b; font-size: 1.05rem; font-weight: 800;">📋 Relatório do Veículo</h3>
           <span id="reportPreviewBadge" class="badge-inicial" style="font-size: 0.75rem;">Vistoria</span>
@@ -1401,13 +1401,28 @@
           <textarea id="reportPreviewContent" readonly style="width: 100%; height: 260px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.85rem; line-height: 1.5; padding: 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; background: #f8fafc; color: #1e293b; resize: vertical; box-sizing: border-box;"></textarea>
         </div>
 
+        <div id="reportPreviewObsEditor" style="display: none; margin-bottom: 12px; background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 12px; padding: 12px; box-sizing: border-box;">
+          <label for="reportPreviewObsTextarea" style="display: block; font-size: 0.80rem; font-weight: 800; color: #92400e; margin-bottom: 6px;">
+            📝 Campo de Observação (Obs.):
+          </label>
+          <textarea id="reportPreviewObsTextarea" rows="3" placeholder="Digite a observação da vistoria..." style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1.5px solid #f59e0b; background: #ffffff; font-size: 0.85rem; color: #0f172a; outline: none; resize: vertical;"></textarea>
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button id="saveReportPreviewObsBtn" type="button" style="flex: 1.5; padding: 9px 12px; border-radius: 8px; border: none; background: #d97706; color: #ffffff; font-weight: 800; font-size: 0.82rem; cursor: pointer;">
+              💾 Salvar Observação
+            </button>
+            <button id="cancelReportPreviewObsBtn" type="button" style="flex: 1; padding: 9px 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-weight: 700; font-size: 0.82rem; cursor: pointer;">
+              Cancelar
+            </button>
+          </div>
+        </div>
+
         <div style="display: flex; flex-direction: column; gap: 8px;">
           <div style="display: flex; gap: 8px;">
             <button id="partsReportPreviewBtn" class="primary-btn" type="button" style="flex: 1; padding: 11px 6px; font-weight: 800; font-size: 0.85rem; background: #3b82f6; color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 6px rgba(59,130,246,0.25);">
               🚗 Partes do Veículo
             </button>
-            <button id="whatsappReportPreviewBtn" class="primary-btn" type="button" style="flex: 1; padding: 11px 6px; font-weight: 800; font-size: 0.85rem; background: #16a34a; color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 6px rgba(22,163,74,0.25);">
-              📲 Enviar Vistoria
+            <button id="obsReportPreviewBtn" class="primary-btn" type="button" style="flex: 1; padding: 11px 6px; font-weight: 800; font-size: 0.85rem; background: #d97706; color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 6px rgba(217,119,6,0.25);">
+              📝 Observação
             </button>
           </div>
           <button id="photosReportPreviewBtn" class="ghost-btn" type="button" style="padding: 10px; font-weight: 700; color: #1e40af; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; cursor: pointer;">
@@ -1521,7 +1536,7 @@
 
     <!-- JSZIP CDN for client-side ZIP packaging -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=2480"></script>
+    <script src="app.js?v=2552"></script>
   
     <!-- MODAL DE AGENDAR VISTORIA COM SEGURADO (WHATSAPP) -->
     <div id="agendarVistoriaModal" class="photo-modal-overlay" style="display: none; z-index: 10020; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px);">

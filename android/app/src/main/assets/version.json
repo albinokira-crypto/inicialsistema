@@ -1,7 +1,7 @@
 {
-  "version": "2.55.1",
-  "versionCode": 2551,
-  "updatedAt": "2026-11-16T22:30:00.000Z",
-  "buildDate": "2026-11-16T22:30:00.000Z",
-  "changelog": "Correcao critica de inicializacao da tela inicial e resumo da semana v2.55.1."
+  "version": "2.55.2",
+  "versionCode": 2552,
+  "updatedAt": "2026-11-24T22:25:00.000Z",
+  "buildDate": "2026-11-24T22:25:00.000Z",
+  "changelog": "Abertura da aba Vistorias sem tipo selecionado e formulario recolhido apos salvar; botao de observacao direta no modal do relatorio v2.55.2."
 }

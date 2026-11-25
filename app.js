@@ -17,6 +17,10 @@ function backToHomeMenu() {
   const vOfClear = document.getElementById('vistoriaOficinaComboboxClearBtn');
   if (vOfClear) vOfClear.style.display = 'none';
   selectedDay = getAutomaticDayOfWeek() || 'Segunda';
+  editingId = null;
+  selectedType = '';
+  if (typeof typeInput !== 'undefined' && typeInput) typeInput.value = '';
+  updateTypeButtonsHighlight();
   if (typeof searchInput !== 'undefined' && searchInput) {
     searchInput.value = '';
     if (typeof clearSearchButton !== 'undefined' && clearSearchButton) clearSearchButton.hidden = true;
@@ -43,7 +47,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.55.1';
+let CURRENT_APP_VERSION = 'v2.55.2';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -267,7 +271,7 @@ const reportPreviewBadge = document.getElementById('reportPreviewBadge');
 const reportPreviewMeta = document.getElementById('reportPreviewMeta');
 const reportPreviewContent = document.getElementById('reportPreviewContent');
 const partsReportPreviewBtn = document.getElementById('partsReportPreviewBtn');
-const whatsappReportPreviewBtn = document.getElementById('whatsappReportPreviewBtn');
+const obsReportPreviewBtn = document.getElementById('obsReportPreviewBtn');
 const photosReportPreviewBtn = document.getElementById('photosReportPreviewBtn');
 let currentReportModalId = null;
 
@@ -568,7 +572,7 @@ let editingInsurerId = null;
 let editingOficinaId = null;
 let editingSupervisaoId = null;
 let selectedDay = 'Seguradoras';
-let selectedType = 'Inicial';
+let selectedType = '';
 let appInitialized = false;
 let selectedSupervisaoStage = 'Todos';
 let selectedSupervisaoOficina = 'Todas';
@@ -951,13 +955,13 @@ dayTabs.addEventListener('click', (event) => {
   selectedDay = target.dataset.day;
   
   if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
-    selectedType = 'Inicial';
+    selectedType = '';
     if (vistoriaTypeTabs) {
       vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
-        b.classList.toggle('active', b.dataset.type === 'Inicial');
+        b.classList.remove('active');
       });
     }
-    if (typeInput) typeInput.value = 'Inicial';
+    if (typeInput) typeInput.value = '';
     updateVistoriaFormTitle();
   }
 
@@ -1108,11 +1112,12 @@ if (vistoriaTypeTabs) {
   vistoriaTypeTabs.addEventListener('click', (event) => {
     const btn = event.target.closest('.tab-btn');
     if (!btn) return;
-    selectedType = btn.dataset.type;
+    selectedType = btn.dataset.type || '';
     vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.type === selectedType);
     });
     if (typeInput) typeInput.value = selectedType;
+    if (formCard) formCard.hidden = !Boolean(selectedType);
     
     updateVistoriaFormTitle();
     updateCompanyReportTemplateUI();
@@ -1408,17 +1413,11 @@ function openReportModal(id) {
   }
   if (contentEl) {
     contentEl.value = reportText;
+    contentEl.style.height = '260px';
   }
 
-  if (whatsappReportPreviewBtn) {
-    if (item.sent) {
-      whatsappReportPreviewBtn.innerHTML = '✅ Enviado';
-      whatsappReportPreviewBtn.style.background = '#059669';
-    } else {
-      whatsappReportPreviewBtn.innerHTML = isInspection ? '📲 Enviar Vistoria' : '📲 Enviar Supervisão';
-      whatsappReportPreviewBtn.style.background = '#16a34a';
-    }
-  }
+  toggleReportPreviewObsEditor(false);
+  updateObsReportPreviewBtnLabel(item, isInspection);
 
   if (partsReportPreviewBtn) {
     const isMoto = item.type === 'Moto' || item.vehicleType === 'moto';
@@ -1433,7 +1432,127 @@ function openReportModal(id) {
   }
 }
 
+function getReportModalRecord(id) {
+  if (!id) return null;
+  const insp = items.find(entry => entry.id === id);
+  if (insp) return { item: insp, isInspection: true };
+  const sup = supervisoes.find(s => s.id === id);
+  if (sup) return { item: sup, isInspection: false };
+  return null;
+}
+
+function getReportModalObsValue(item, isInspection) {
+  if (!item) return '';
+  if (isInspection) {
+    const d = item.details || {};
+    return (d.obs || d.obsRoubo || d.obsIncendio || d.obsEnchente || (item.type === 'Complemento' ? d.conteudoLivre : '') || '').toString();
+  }
+  return (item.obs || '').toString();
+}
+
+function updateObsReportPreviewBtnLabel(item, isInspection) {
+  if (!obsReportPreviewBtn) return;
+  const obsVal = getReportModalObsValue(item, isInspection).trim();
+  if (obsVal) {
+    obsReportPreviewBtn.innerHTML = '📝 Editar Obs.';
+    obsReportPreviewBtn.style.background = '#b45309';
+  } else {
+    obsReportPreviewBtn.innerHTML = '📝 Observação';
+    obsReportPreviewBtn.style.background = '#d97706';
+  }
+}
+
+function toggleReportPreviewObsEditor(show) {
+  const editorEl = document.getElementById('reportPreviewObsEditor');
+  const textareaEl = document.getElementById('reportPreviewObsTextarea');
+  const previewEl = document.getElementById('reportPreviewContent');
+  if (!editorEl) return;
+
+  if (show) {
+    const rec = getReportModalRecord(currentReportModalId);
+    if (!rec) return;
+    if (textareaEl) {
+      textareaEl.value = getReportModalObsValue(rec.item, rec.isInspection);
+    }
+    if (previewEl) {
+      previewEl.style.height = '155px';
+    }
+    editorEl.style.display = 'block';
+    setTimeout(() => {
+      if (textareaEl) {
+        textareaEl.focus();
+        const len = textareaEl.value.length;
+        textareaEl.setSelectionRange(len, len);
+        editorEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 40);
+  } else {
+    editorEl.style.display = 'none';
+    if (previewEl) {
+      previewEl.style.height = '260px';
+    }
+  }
+}
+
+function saveReportPreviewObs() {
+  const rec = getReportModalRecord(currentReportModalId);
+  const textareaEl = document.getElementById('reportPreviewObsTextarea');
+  if (!rec || !textareaEl) return;
+
+  const newObs = textareaEl.value.trim();
+  const { item, isInspection } = rec;
+  const nowStr = new Date().toLocaleString('pt-BR');
+  const nowTime = Date.now();
+
+  if (isInspection) {
+    if (!item.details || typeof item.details !== 'object') {
+      item.details = {};
+    }
+    item.details.obs = newObs;
+    if ('obsIncendio' in item.details) item.details.obsIncendio = newObs;
+    if ('obsRoubo' in item.details) item.details.obsRoubo = newObs;
+    if ('obsEnchente' in item.details) item.details.obsEnchente = newObs;
+    if (item.type === 'Complemento' && 'conteudoLivre' in item.details && !newObs) {
+      item.details.conteudoLivre = '';
+    }
+    item.updatedAt = nowStr;
+    item.updatedAtTime = nowTime;
+    saveItems();
+    render();
+    updateLocalAndServerData();
+  } else {
+    item.obs = newObs;
+    item.updatedAt = nowStr;
+    item.updatedAtTime = nowTime;
+    saveSupervisoes();
+    renderSupervisaoReport();
+    render();
+  }
+
+  const contentEl = document.getElementById('reportPreviewContent');
+  if (contentEl) {
+    contentEl.value = isInspection ? getSurveyText(currentReportModalId) : formatSingleSupervisaoText(item);
+  }
+
+  const metaEl = document.getElementById('reportPreviewMeta');
+  if (metaEl) {
+    if (isInspection) {
+      const dataCriacao = item.date ? formatDateString(item.date) : (item.createdAt || '—');
+      metaEl.innerHTML = `📅 <strong>Data:</strong> ${escapeHtml(dataCriacao)} &nbsp;|&nbsp; 🕒 <strong>Última Atualização:</strong> ${escapeHtml(nowStr)}`;
+    } else {
+      metaEl.innerHTML = `🕒 <strong>Última Atualização:</strong> ${escapeHtml(nowStr)}`;
+    }
+  }
+
+  toggleReportPreviewObsEditor(false);
+  updateObsReportPreviewBtnLabel(item, isInspection);
+  if (typeof showToastNotification === 'function') {
+    showToastNotification('Observação salva no relatório!', 2500);
+  }
+}
+
 function closeReportPreviewModal() {
+  toggleReportPreviewObsEditor(false);
   const modalEl = document.getElementById('reportPreviewModal');
   if (modalEl) {
     modalEl.style.display = 'none';
@@ -1455,12 +1574,24 @@ if (partsReportPreviewBtn) {
   });
 }
 
-if (whatsappReportPreviewBtn) {
-  whatsappReportPreviewBtn.addEventListener('click', () => {
+if (obsReportPreviewBtn) {
+  obsReportPreviewBtn.addEventListener('click', () => {
     if (!currentReportModalId) return;
-    if (typeof shareVistoriaWhatsAppSequence === 'function') {
-      shareVistoriaWhatsAppSequence(currentReportModalId);
-    }
+    const editorEl = document.getElementById('reportPreviewObsEditor');
+    const isCurrentlyOpen = editorEl && editorEl.style.display !== 'none';
+    toggleReportPreviewObsEditor(!isCurrentlyOpen);
+  });
+}
+
+const saveReportPreviewObsBtn = document.getElementById('saveReportPreviewObsBtn');
+if (saveReportPreviewObsBtn) {
+  saveReportPreviewObsBtn.addEventListener('click', saveReportPreviewObs);
+}
+
+const cancelReportPreviewObsBtn = document.getElementById('cancelReportPreviewObsBtn');
+if (cancelReportPreviewObsBtn) {
+  cancelReportPreviewObsBtn.addEventListener('click', () => {
+    toggleReportPreviewObsEditor(false);
   });
 }
 
@@ -1498,8 +1629,9 @@ function cancelEdit() {
   if (avaliacaoReset) avaliacaoReset.value = '';
   const avaliacaoInput = document.getElementById('avaliacaoItemInput');
   if (avaliacaoInput) avaliacaoInput.value = '';
+  selectedType = '';
   if (providerSelect) providerSelect.value = '';
-  if (typeInput) typeInput.value = selectedType || 'Inicial';
+  if (typeInput) typeInput.value = '';
   updateTypeButtonsHighlight();
   updateInsurerButtonsHighlight();
   updateFormState();
@@ -1697,15 +1829,24 @@ function handleMenuButtonClick(targetDay) {
     }
     
     if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay)) {
-      selectedType = 'Inicial';
+      editingId = null;
+      selectedType = '';
+      if (form) form.reset();
+      if (typeof vpSelectedPartsMap !== 'undefined' && vpSelectedPartsMap) {
+        vpSelectedPartsMap.clear();
+      }
+      currentVistoriaIdForParts = null;
+      if (providerSelect) providerSelect.value = '';
+      updateInsurerButtonsHighlight();
+      updateFormState();
       const typeTabsEl = document.getElementById('vistoriaTypeTabs');
       if (typeTabsEl) {
         typeTabsEl.querySelectorAll('.tab-btn').forEach((b) => {
-          b.classList.toggle('active', b.dataset.type === 'Inicial');
+          b.classList.remove('active');
         });
       }
       const typeInputEl = document.getElementById('typeInput');
-      if (typeInputEl) typeInputEl.value = 'Inicial';
+      if (typeInputEl) typeInputEl.value = '';
       updateVistoriaFormTitle();
     }
     
@@ -1760,6 +1901,10 @@ window.backToHomeMenu = function() {
   const vOfClear = document.getElementById('vistoriaOficinaComboboxClearBtn');
   if (vOfClear) vOfClear.style.display = 'none';
   selectedDay = getAutomaticDayOfWeek() || 'Segunda';
+  editingId = null;
+  selectedType = '';
+  if (typeof typeInput !== 'undefined' && typeInput) typeInput.value = '';
+  updateTypeButtonsHighlight();
   if (typeof searchInput !== 'undefined' && searchInput) {
     searchInput.value = '';
     if (typeof clearSearchButton !== 'undefined' && clearSearchButton) clearSearchButton.hidden = true;
@@ -1977,8 +2122,9 @@ function saveItem(event) {
   if (reparosReset) reparosReset.value = '';
   const obsReset = document.querySelector('textarea[name="obs"]');
   if (obsReset) obsReset.value = '';
+  selectedType = '';
   if (providerSelect) providerSelect.value = '';
-  if (typeInput) typeInput.value = selectedType || 'Inicial';
+  if (typeInput) typeInput.value = '';
   updateTypeButtonsHighlight();
   updateInsurerButtonsHighlight();
   editingId = null;
@@ -1999,6 +2145,9 @@ function saveItem(event) {
   renderDynamicSurveyFields();
   render();
   updateLocalAndServerData();
+  if (typeof window.scrollTo === 'function') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
 
 function saveInsurer(event) {
@@ -2956,6 +3105,10 @@ function getSurveyText(id) {
       sections.push(`Reparos\n${details.reparos.trim()}`);
     }
 
+    if (details.obs && details.obs.trim() && details.obs.trim() !== reclamacaoVal) {
+      sections.push(`Obs.: ${details.obs.trim()}`);
+    }
+
     return sections.join('\n\n');
   } else if (item.type === 'Vistoria final') {
     const ofName = item.oficinaName || 'Sem oficina';
@@ -3228,9 +3381,21 @@ function handleAction(action, id) {
   
   selectedType = item.type || 'Inicial';
   if (typeInput) typeInput.value = selectedType;
+
+  const isWeekdayBeforeEdit = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
+  if (!isWeekdayBeforeEdit) {
+    selectedDay = item.day || 'Segunda';
+    updateDayTabs();
+    if (welcomeScreen) welcomeScreen.hidden = true;
+    if (homeSummaryCard) homeSummaryCard.hidden = true;
+    if (appHeader) appHeader.style.display = 'none';
+    if (appContent) appContent.hidden = false;
+  }
+
   if (item.companyId) {
     selectCompany(item.companyId);
   }
+  if (formCard) formCard.hidden = false;
   
   if (vistoriaTypeTabs) {
     vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
@@ -3348,16 +3513,10 @@ function handleAction(action, id) {
   updateInsurerButtonsHighlight();
   updateFormState();
 
-  const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
-  if (!isWeekday) {
-    selectedDay = item.day || 'Segunda';
-    updateDayTabs();
-    if (welcomeScreen) welcomeScreen.hidden = true;
-    if (homeSummaryCard) homeSummaryCard.hidden = true;
-    if (appHeader) appHeader.style.display = 'none';
-    if (appContent) appContent.hidden = false;
+  if (formCard) {
+    formCard.hidden = false;
+    formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-
   plateInput.focus();
 }
 
@@ -3415,7 +3574,8 @@ function updateFormDisplay() {
   if (oficinaCard) oficinaCard.hidden = selectedDay !== 'Oficinas';
 
   const isWeekday = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(selectedDay);
-  if (formCard) formCard.hidden = !isWeekday;
+  const hasSelectedType = Boolean(selectedType);
+  if (formCard) formCard.hidden = !(isWeekday && hasSelectedType);
   if (recordsCard) recordsCard.hidden = !isWeekday && selectedDay !== 'Todas as vistorias';
   if (reportCard) reportCard.hidden = selectedDay !== 'Total da semana';
   
@@ -3444,8 +3604,10 @@ function updateFormDisplay() {
     }
   }
 
-  if (isWeekday) {
+  if (isWeekday && hasSelectedType) {
     renderDynamicSurveyFields();
+  } else if (dynamicFieldsContainer) {
+    dynamicFieldsContainer.innerHTML = '';
   }
 
   if (selectedDay === 'Supervisão') {
@@ -3751,6 +3913,10 @@ function handleOficinaAction(action, id) {
 
 function renderDynamicSurveyFields() {
   if (!dynamicFieldsContainer) return;
+  if (!selectedType) {
+    dynamicFieldsContainer.innerHTML = '';
+    return;
+  }
 
   const officeDropdownHtml = `
     <div style="width: 100%; max-width: 100%; box-sizing: border-box; position: relative;">
@@ -5429,7 +5595,7 @@ function escapeHtml(value) {
 function updateTypeButtonsHighlight() {
   if (vistoriaTypeTabs) {
     vistoriaTypeTabs.querySelectorAll('.tab-btn').forEach((b) => {
-      b.classList.toggle('active', b.dataset.type === (selectedType || 'Inicial'));
+      b.classList.toggle('active', Boolean(selectedType) && b.dataset.type === selectedType);
     });
   }
 }
@@ -5862,6 +6028,10 @@ function formatSingleSupervisaoText(s) {
 
   if (s.other && s.other.trim()) {
     details.push(`Alguma outra pendência?: ${s.other.trim()}`);
+  }
+
+  if (s.obs && s.obs.trim()) {
+    details.push(`Obs.: ${s.obs.trim()}`);
   }
 
   if (details.length > 0) {
@@ -7076,11 +7246,6 @@ function markAsSent(id) {
     btn.style.background = '#059669';
     btn.style.boxShadow = '0 2px 4px rgba(5,150,105,0.35)';
   });
-
-  if (whatsappReportPreviewBtn && (currentReportModalId === id || String(currentReportModalId) === strId)) {
-    whatsappReportPreviewBtn.innerHTML = '✅ Enviado';
-    whatsappReportPreviewBtn.style.background = '#059669';
-  }
 }
 window.markAsSent = markAsSent;
 
