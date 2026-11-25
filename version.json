@@ -1,7 +1,7 @@
 {
-  "version": "2.55.2",
-  "versionCode": 2552,
-  "updatedAt": "2026-11-24T22:25:00.000Z",
-  "buildDate": "2026-11-24T22:25:00.000Z",
-  "changelog": "Abertura da aba Vistorias sem tipo selecionado e formulario recolhido apos salvar; botao de observacao direta no modal do relatorio v2.55.2."
+  "version": "2.55.3",
+  "versionCode": 2553,
+  "updatedAt": "2026-11-24T22:38:00.000Z",
+  "buildDate": "2026-11-24T22:38:00.000Z",
+  "changelog": "Removida restauracao automatica da vistoria LON-2I83 no relatorio semanal e corrigida sincronizacao offline/online de exclusoes e limpeza da semana v2.55.3."
 }

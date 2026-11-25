@@ -47,7 +47,7 @@ function homeLogout() {
 }
 window.homeLogout = homeLogout;
 
-let CURRENT_APP_VERSION = 'v2.55.2';
+let CURRENT_APP_VERSION = 'v2.55.3';
 try {
   localStorage.removeItem('gestao_app_theme');
   document.documentElement.removeAttribute('data-theme');
@@ -289,6 +289,157 @@ const DEFAULT_STAGES = [
   "Finalizado"
 ];
 
+const DELETED_RECORDS_SYNC_KEY = 'web-system-deleted-records-v1';
+
+function toNumericTimestamp(val) {
+  if (typeof val === 'number' && !isNaN(val)) return val;
+  if (!val) return 0;
+  const s = String(val).trim();
+  if (/^\d+$/.test(s)) return Number(s) || 0;
+  const brMatch = s.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:,\s*(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (brMatch) {
+    const dt = new Date(
+      parseInt(brMatch[3], 10),
+      parseInt(brMatch[2], 10) - 1,
+      parseInt(brMatch[1], 10),
+      parseInt(brMatch[4] || '0', 10),
+      parseInt(brMatch[5] || '0', 10),
+      parseInt(brMatch[6] || '0', 10)
+    );
+    return isNaN(dt.getTime()) ? 0 : dt.getTime();
+  }
+  const parsed = Date.parse(s);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+function normalizeDeletedMeta(raw) {
+  const base = { deletedIds: {}, clearedAllAt: {} };
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return base;
+  if (raw.deletedIds && typeof raw.deletedIds === 'object') {
+    Object.keys(raw.deletedIds).forEach(k => {
+      const bucket = raw.deletedIds[k];
+      if (bucket && typeof bucket === 'object') {
+        base.deletedIds[k] = { ...bucket };
+      }
+    });
+  }
+  if (raw.clearedAllAt && typeof raw.clearedAllAt === 'object') {
+    Object.keys(raw.clearedAllAt).forEach(k => {
+      base.clearedAllAt[k] = toNumericTimestamp(raw.clearedAllAt[k]);
+    });
+  }
+  return base;
+}
+
+function getSyncedDeletedMeta() {
+  let localMeta = normalizeDeletedMeta(null);
+  let nativeMeta = normalizeDeletedMeta(null);
+
+  try {
+    const raw = localStorage.getItem(DELETED_RECORDS_SYNC_KEY);
+    if (raw) localMeta = normalizeDeletedMeta(JSON.parse(raw));
+  } catch (e) {}
+
+  if (window.AndroidInterface && typeof window.AndroidInterface.getNativeData === 'function') {
+    try {
+      const nativeRaw = window.AndroidInterface.getNativeData(DELETED_RECORDS_SYNC_KEY);
+      if (nativeRaw) nativeMeta = normalizeDeletedMeta(JSON.parse(nativeRaw));
+    } catch (e) {}
+  }
+
+  const merged = normalizeDeletedMeta(nativeMeta);
+  Object.keys(localMeta.clearedAllAt).forEach(k => {
+    merged.clearedAllAt[k] = Math.max(merged.clearedAllAt[k] || 0, localMeta.clearedAllAt[k] || 0);
+  });
+  Object.keys(localMeta.deletedIds).forEach(k => {
+    if (!merged.deletedIds[k]) merged.deletedIds[k] = {};
+    Object.keys(localMeta.deletedIds[k]).forEach(id => {
+      merged.deletedIds[k][id] = Math.max(
+        toNumericTimestamp(merged.deletedIds[k][id]),
+        toNumericTimestamp(localMeta.deletedIds[k][id])
+      );
+    });
+  });
+  return merged;
+}
+
+function saveSyncedDeletedMeta(meta) {
+  const normalized = normalizeDeletedMeta(meta);
+  Object.keys(normalized.deletedIds).forEach(k => {
+    const entries = Object.entries(normalized.deletedIds[k]);
+    if (entries.length > 500) {
+      entries.sort((a, b) => b[1] - a[1]);
+      normalized.deletedIds[k] = Object.fromEntries(entries.slice(0, 500));
+    }
+  });
+  const jsonStr = JSON.stringify(normalized);
+  try {
+    localStorage.setItem(DELETED_RECORDS_SYNC_KEY, jsonStr);
+  } catch (e) {}
+  if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
+    try {
+      window.AndroidInterface.saveNativeData(DELETED_RECORDS_SYNC_KEY, jsonStr);
+    } catch (e) {}
+  }
+}
+
+function recordDeletedEntity(storageKey, id) {
+  if (!storageKey || id === undefined || id === null) return;
+  const meta = getSyncedDeletedMeta();
+  if (!meta.deletedIds[storageKey]) meta.deletedIds[storageKey] = {};
+  meta.deletedIds[storageKey][String(id)] = Date.now();
+  saveSyncedDeletedMeta(meta);
+}
+
+function recordClearAllEntities(storageKey) {
+  if (!storageKey) return;
+  const meta = getSyncedDeletedMeta();
+  meta.clearedAllAt[storageKey] = Date.now();
+  saveSyncedDeletedMeta(meta);
+}
+
+function filterDeletedRecords(list, storageKey, syncMeta) {
+  if (!Array.isArray(list) || !syncMeta) return list;
+  const deletedBucket = (syncMeta.deletedIds && syncMeta.deletedIds[storageKey]) || {};
+  const clearedAt = toNumericTimestamp(syncMeta.clearedAllAt && syncMeta.clearedAllAt[storageKey]);
+  return list.filter(item => {
+    if (!item || typeof item !== 'object') return true;
+    const itemId = item.id !== undefined && item.id !== null ? String(item.id) : null;
+    const itemTime = toNumericTimestamp(item.updatedAtTime || item.updatedAt) || (itemId && /^\d+$/.test(itemId) ? Number(itemId) : 0);
+    if (clearedAt > 0 && itemTime <= clearedAt) {
+      return false;
+    }
+    if (itemId && deletedBucket[itemId]) {
+      const deletedAt = toNumericTimestamp(deletedBucket[itemId]);
+      if (itemTime <= deletedAt) return false;
+    }
+    return true;
+  });
+}
+
+function clearCurrentWeekRecords() {
+  const now = Date.now();
+  lastSavedVistoriaId = null;
+  items.forEach((item) => {
+    item.clearedFromWeek = true;
+    item.weekClearedAt = now;
+    item.updatedAtTime = Math.max(toNumericTimestamp(item.updatedAtTime), now);
+  });
+  saveItems();
+  updateHomeSummary();
+  render();
+}
+
+function clearAllVistoriasAndSupervisoes() {
+  recordClearAllEntities(STORAGE_KEY);
+  recordClearAllEntities('web-system-supervisoes-v1');
+  lastSavedVistoriaId = null;
+  items = [];
+  supervisoes = [];
+  saveItems();
+  saveSupervisoes();
+}
+
 function getSafeStorage(key, defaultVal) {
   let localData = null;
   let nativeData = null;
@@ -309,15 +460,16 @@ function getSafeStorage(key, defaultVal) {
     } catch (e) {}
   }
 
+  const syncMeta = getSyncedDeletedMeta();
+
   // Se ambas as fontes possuem arrays de registros (ex: vistorias / supervisões), fazemos MERGE bidirecional seguro
-  // garantindo que NENHUM registro seja perdido se uma das pontas estiver desatualizada
+  // garantindo que registros atualizados, limpos da semana ou excluídos permaneçam consistentes entre offline e online
   if (Array.isArray(localData) && Array.isArray(nativeData)) {
     // Caso especial para arrays de strings (como etapas/tipos de serviço)
     const isStringArray = (localData.length > 0 && typeof localData[0] === 'string') ||
                           (nativeData.length > 0 && typeof nativeData[0] === 'string');
     if (isStringArray) {
       const mergedSet = new Set();
-      // Insere primeiro os dados locais mais recentes e depois os nativos preservando tudo
       localData.forEach(s => { if (typeof s === 'string' && s.trim()) mergedSet.add(s.trim()); });
       nativeData.forEach(s => { if (typeof s === 'string' && s.trim()) mergedSet.add(s.trim()); });
       let merged = Array.from(mergedSet);
@@ -334,6 +486,9 @@ function getSafeStorage(key, defaultVal) {
       return merged;
     }
 
+    const cleanNative = filterDeletedRecords(nativeData, key, syncMeta);
+    const cleanLocal = filterDeletedRecords(localData, key, syncMeta);
+
     const getItemKey = (item) => {
       if (!item) return null;
       if (item.id !== undefined && item.id !== null) return String(item.id);
@@ -348,27 +503,39 @@ function getSafeStorage(key, defaultVal) {
 
     const mergedMap = new Map();
     // 1. Insere itens nativos primeiro
-    nativeData.forEach(item => {
+    cleanNative.forEach(item => {
       const k = getItemKey(item);
       if (k) mergedMap.set(k, item);
     });
-    // 2. Mescla itens do localStorage (mantém o que tiver dados mais completos ou timestamp mais recente)
-    localData.forEach(item => {
+    // 2. Mescla itens do localStorage preservando a versão mais recente (por timestamp numérico)
+    cleanLocal.forEach(item => {
       const k = getItemKey(item);
       if (!k) return;
       if (!mergedMap.has(k)) {
         mergedMap.set(k, item);
       } else {
         const existing = mergedMap.get(k);
-        const existingTime = existing.updatedAtTime || existing.updatedAt || 0;
-        const itemTime = item.updatedAtTime || item.updatedAt || 0;
-        if (itemTime >= existingTime) {
+        const existingTime = toNumericTimestamp(existing.updatedAtTime || existing.updatedAt);
+        const itemTime = toNumericTimestamp(item.updatedAtTime || item.updatedAt);
+        if (itemTime > existingTime) {
           mergedMap.set(k, { ...existing, ...item });
+        } else if (existingTime > itemTime) {
+          mergedMap.set(k, { ...item, ...existing });
+        } else {
+          const mergedItem = { ...existing, ...item };
+          if (existing.clearedFromWeek === true || item.clearedFromWeek === true) {
+            mergedItem.clearedFromWeek = true;
+            mergedItem.weekClearedAt = Math.max(
+              toNumericTimestamp(existing.weekClearedAt),
+              toNumericTimestamp(item.weekClearedAt)
+            );
+          }
+          mergedMap.set(k, mergedItem);
         }
       }
     });
     const merged = Array.from(mergedMap.values());
-    if (merged.length === 0 && Array.isArray(defaultVal)) {
+    if (merged.length === 0 && Array.isArray(defaultVal) && defaultVal.length > 0 && !(syncMeta.clearedAllAt && syncMeta.clearedAllAt[key])) {
       return [...defaultVal];
     }
     // Sincroniza em ambas as pontas para ficarem 100% íntegras
@@ -383,15 +550,17 @@ function getSafeStorage(key, defaultVal) {
   }
 
   if (localData !== null) {
+    const cleaned = Array.isArray(localData) ? filterDeletedRecords(localData, key, syncMeta) : localData;
     if (window.AndroidInterface && typeof window.AndroidInterface.saveNativeData === 'function') {
-      try { window.AndroidInterface.saveNativeData(key, JSON.stringify(localData)); } catch(e) {}
+      try { window.AndroidInterface.saveNativeData(key, JSON.stringify(cleaned)); } catch(e) {}
     }
-    return localData;
+    return cleaned;
   }
 
   if (nativeData !== null) {
-    try { localStorage.setItem(key, JSON.stringify(nativeData)); } catch(e) {}
-    return nativeData;
+    const cleaned = Array.isArray(nativeData) ? filterDeletedRecords(nativeData, key, syncMeta) : nativeData;
+    try { localStorage.setItem(key, JSON.stringify(cleaned)); } catch(e) {}
+    return cleaned;
   }
 
   return defaultVal;
@@ -894,13 +1063,7 @@ function attachGlobalEventListeners() {
         'Para confirmar, digite a palavra LIMPAR abaixo:'
       );
       if (verification && verification.trim().toUpperCase() === 'LIMPAR') {
-        lastSavedVistoriaId = null;
-        items.forEach((item) => {
-          item.clearedFromWeek = true;
-        });
-        saveItems();
-        updateHomeSummary();
-        render();
+        clearCurrentWeekRecords();
       }
     });
   }
@@ -1007,13 +1170,7 @@ if (supervisaoOficinaSelect) {
 if (clearWeekButton) {
   clearWeekButton.addEventListener('click', () => {
     if (window.confirm('Deseja apagar os registros da semana atual? Eles continuarão no relatório mensal.')) {
-      lastSavedVistoriaId = null;
-      items.forEach((item) => {
-        item.clearedFromWeek = true;
-      });
-      saveItems();
-      updateHomeSummary();
-      render();
+      clearCurrentWeekRecords();
     }
   });
 }
@@ -1021,10 +1178,7 @@ if (clearWeekButton) {
 if (clearMonthButton) {
   clearMonthButton.addEventListener('click', () => {
     if (window.confirm('Deseja apagar permanentemente todos os registros de todas as vistorias e supervisões?')) {
-      items = [];
-      supervisoes = [];
-      saveItems();
-      saveSupervisoes();
+      clearAllVistoriasAndSupervisoes();
       render();
       renderSupervisaoReport();
     }
@@ -1925,13 +2079,7 @@ window.homeClearWeek = function() {
     'Para confirmar, digite a palavra LIMPAR abaixo:'
   );
   if (verification && verification.trim().toUpperCase() === 'LIMPAR') {
-    lastSavedVistoriaId = null;
-    items.forEach((item) => {
-      item.clearedFromWeek = true;
-    });
-    saveItems();
-    updateHomeSummary();
-    render();
+    clearCurrentWeekRecords();
   }
 };
 
@@ -2491,10 +2639,7 @@ function render() {
             'Para confirmar que deseja prosseguir, digite a palavra APAGAR no campo abaixo:'
           );
           if (verification && verification.trim().toUpperCase() === 'APAGAR') {
-            items = [];
-            supervisoes = [];
-            saveItems();
-            saveSupervisoes();
+            clearAllVistoriasAndSupervisoes();
             selectedOficinaForTodasVistorias = null;
             render();
             renderSupervisaoReport();
@@ -2619,10 +2764,7 @@ function render() {
           'Para confirmar que deseja prosseguir, digite a palavra APAGAR no campo abaixo:'
         );
         if (verification && verification.trim().toUpperCase() === 'APAGAR') {
-          items = [];
-          supervisoes = [];
-          saveItems();
-          saveSupervisoes();
+          clearAllVistoriasAndSupervisoes();
           selectedOficinaForTodasVistorias = null;
           showOficinasInTodasVistorias = false;
           render();
@@ -3364,6 +3506,7 @@ function handleAction(action, id) {
           deleteVehicleFolderAndMedia(plateMatch[0]);
         }
       }
+      recordDeletedEntity(STORAGE_KEY, id);
       items = items.filter((entry) => String(entry.id) !== String(id));
       saveItems();
       render();
@@ -3716,6 +3859,7 @@ function renderInsurers() {
 
 function handleInsurerAction(action, id) {
   if (action === 'delete-insurer') {
+    recordDeletedEntity('web-system-insurers-v1', id);
     insurers = insurers.filter((insurer) => insurer.id !== id);
     saveInsurers();
     renderInsurers();
@@ -3890,6 +4034,7 @@ function renderOficinas() {
 function handleOficinaAction(action, id) {
   if (action === 'delete-oficina') {
     if (window.confirm('Deseja excluir esta oficina?')) {
+      recordDeletedEntity('web-system-oficinas-v1', id);
       oficinas = oficinas.filter((oficina) => oficina.id !== id);
       saveOficinas();
       renderOficinas();
@@ -5453,106 +5598,23 @@ function autoFixItemDays(rawItems) {
         }
       }
 
-      if (isPastWeek && updated.clearedFromWeek !== true) {
-        updated = { ...updated, clearedFromWeek: true };
+      const pUpper = (updated.plate || '').toUpperCase();
+      const isLegacyLonPalio = updated.id === 'vistoria_lon2i83_1510' ||
+        ((pUpper.includes('LON-2I83') || pUpper.includes('LON2I83')) && (dStr === '2026-10-15' || dStr === '15/10/2026'));
+
+      if ((isPastWeek || isLegacyLonPalio) && updated.clearedFromWeek !== true) {
+        const now = Date.now();
+        updated = {
+          ...updated,
+          clearedFromWeek: true,
+          weekClearedAt: now,
+          updatedAtTime: Math.max(toNumericTimestamp(updated.updatedAtTime), now)
+        };
         changed = true;
       }
     }
     return updated;
   });
-
-  // RESTAURAÇÃO AUTOMÁTICA DA VISTORIA LON-2I83 (FIAT PALIO BRANCO - 15/10 - SOS AUTOS / APVS)
-  const palioTrocas = [
-    'Farol Diant. LD',
-    'Capô do motor',
-    'Para choque Diant.',
-    'Painel frontal / mini frente',
-    'Braço LD do Capô',
-    'Para lama Diant. LD',
-    'Moldura do milha LD',
-    'Moldura da caixa de roda LD',
-    'Farol de milha LD',
-    'Para barro Diant. LD',
-    'Alma do para choque Diant.'
-  ].join('\n');
-
-  const palioReparos = [
-    'Porta Diant. LD',
-    'Caixa de roda Diant. LD'
-  ].join('\n');
-
-  const palioFullDetails = {
-    rebocado: 'Sim',
-    chaveVeiculo: 'Sim',
-    motorFunciona: 'Sim',
-    arCondicionado: 'Não',
-    estepe: 'Sim',
-    macaco: 'Sim',
-    triangulo: 'Sim',
-    chaveRoda: 'Sim',
-    radio: 'Outra',
-    radioBrand: 'Positron',
-    parabrisa: 'Bom',
-    bateria: 'Moura',
-    numeroMotor: 'Não',
-    obs: 'Número do motor Inacessível, devido a natureza do evento conforme mostra em vídeo enviado.',
-    trocas: palioTrocas,
-    reparos: palioReparos
-  };
-
-  const palioIndex = fixed.findIndex(i => {
-    const p = (i.plate || '').toUpperCase();
-    return p.includes('LON-2I83') || p.includes('LON2I83');
-  });
-
-  if (palioIndex >= 0) {
-    const existing = fixed[palioIndex];
-    const details = { ...(existing.details || {}), ...palioFullDetails };
-    // Garante data 15/10 (Quinta-feira), oficina e seguradora corretas
-    fixed[palioIndex] = {
-      ...existing,
-      date: '2026-10-15',
-      day: 'Quinta',
-      plate: 'LON-2I83 - FIAT PALIO BRANCO - INICIAL - SOS AUTOS - DUQUE DE CAXIAS',
-      provider: existing.provider || 'APVS',
-      oficinaName: existing.oficinaName || 'SOS AUTOS - DUQUE DE CAXIAS',
-      type: 'Inicial',
-      vehicleType: 'carro',
-      companyId: existing.companyId || 'empresa-1',
-      companyName: existing.companyName || 'RL',
-      sent: true,
-      clearedFromWeek: Boolean(existing.clearedFromWeek),
-      details: details,
-      updatedAt: '15/10/2026, 17:00:00',
-      updatedAtTime: existing.updatedAtTime || Date.now()
-    };
-    changed = true;
-  } else {
-    // Se não existia nenhum registro com a placa, cria e insere
-    const palioNew = {
-      id: 'vistoria_lon2i83_1510',
-      date: '2026-10-15',
-      day: 'Quinta',
-      plate: 'LON-2I83 - FIAT PALIO BRANCO - INICIAL - SOS AUTOS - DUQUE DE CAXIAS',
-      provider: 'APVS',
-      providerId: 'seg_apvs',
-      oficinaId: 'of_sos_autos',
-      oficinaName: 'SOS AUTOS - DUQUE DE CAXIAS',
-      value: 0,
-      type: 'Inicial',
-      vehicleType: 'carro',
-      companyId: 'empresa-1',
-      companyName: 'RL',
-      sent: true,
-      clearedFromWeek: false,
-      details: palioFullDetails,
-      createdAt: '15/10/2026, 17:00:00',
-      updatedAt: '15/10/2026, 17:00:00',
-      updatedAtTime: Date.now()
-    };
-    fixed.unshift(palioNew);
-    changed = true;
-  }
 
   if (changed) {
     try {
@@ -5922,6 +5984,7 @@ function handleSupervisaoAction(action, id) {
           deleteVehicleFolderAndMedia(plateMatch[0]);
         }
       }
+      recordDeletedEntity('web-system-supervisoes-v1', id);
       supervisoes = supervisoes.filter((entry) => String(entry.id) !== String(id));
       saveSupervisoes();
       renderSupervisaoReport();
@@ -6875,6 +6938,7 @@ function handleDeleteCompany(id) {
   }
   const c = companies.find(comp => comp.id === id);
   if (confirm(`Deseja realmente remover a empresa "${c ? c.name : id}"?`)) {
+    recordDeletedEntity(COMPANIES_STORAGE_KEY, id);
     companies = companies.filter(comp => comp.id !== id);
     if (activeCompanyId === id) {
       activeCompanyId = companies[0].id;
